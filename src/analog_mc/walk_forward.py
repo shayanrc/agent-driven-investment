@@ -306,8 +306,19 @@ def run_walk_forward(
             continue
 
         t0 = time.perf_counter()
-        log.info("fold %d/%d: searching...", fold.index, len(folds))
-        result = run_search(fold, returns_arr, features, config)
+        # Test-only conditional sampling contingency (V2_PLAN open question 7):
+        # if the user opted to disable conditional sampling during search, build a
+        # search-time config copy with conditional_block_sampling=False. Test eval
+        # below uses the original config (so the test forecasts get the v2.2 path).
+        if config.conditional_block_sampling and not config.conditional_block_sampling_in_search:
+            from dataclasses import replace
+            search_config = replace(config, conditional_block_sampling=False)
+            log.info("fold %d/%d: searching (search uses v1 sampling; test uses conditional)...",
+                     fold.index, len(folds))
+        else:
+            search_config = config
+            log.info("fold %d/%d: searching...", fold.index, len(folds))
+        result = run_search(fold, returns_arr, features, search_config)
         log.info(
             "fold %d/%d: search done in %.1fs — best weights=%s n_eff=%g val_crps=%.5f",
             fold.index, len(folds), time.perf_counter() - t0,

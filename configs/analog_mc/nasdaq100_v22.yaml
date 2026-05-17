@@ -33,6 +33,7 @@ drift_mode: trailing_momentum
 momentum_lookback: 20
 momentum_shrinkage: 0.5
 conditional_block_sampling: true
+conditional_block_sampling_in_search: false  # contingency: search uses v1 sampling for speed; test eval gets conditional benefit
 
 pit_n_bins: 20
 acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]

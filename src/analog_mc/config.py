@@ -62,6 +62,10 @@ class Config:
 
     # ---- v2.2 ----------------------------------------------------------
     conditional_block_sampling: bool = False  # v1 default off; v2.2 turns on per-path re-match
+    conditional_block_sampling_in_search: bool = True  # if False, search uses v1 sampling
+    # even when conditional_block_sampling=True. The "test-only" contingency from V2_PLAN
+    # open question 7: search is cheap (v1/v2.1), test eval gets the conditional benefit.
+    # Approximately right when optimal weights are similar under v1 and v2.
 
     # ---- Diagnostics ----------------------------------------------------
     pit_n_bins: int = 20
