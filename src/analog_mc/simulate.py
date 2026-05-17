@@ -24,7 +24,7 @@ import pandas as pd
 
 from analog_mc.config import Config
 from analog_mc.distances import composite_distance, distances_to_probs
-from analog_mc.sampling import generate_paths
+from analog_mc.sampling import generate_paths, generate_paths_conditional
 
 
 def _z_columns(config: Config) -> list[str]:
@@ -180,8 +180,6 @@ def forecast(
     z_candidates = z_all[eligible]
     sigma_at_candidates = sigma_all[eligible]
 
-    distances = composite_distance(z_target, z_candidates, weights)
-
     # n_eff must be <= K (eligible candidate count). Caller is responsible for
     # picking values that satisfy this for all origins in a fold; if not, we
     # cap at K rather than failing hard. (Aggressive search grids occasionally
@@ -191,6 +189,26 @@ def forecast(
         raise ValueError(
             f"Effective candidate pool ({eligible.size}) is too small for n_eff>1."
         )
+
+    if config.conditional_block_sampling:
+        return generate_paths_conditional(
+            z_at_origin=z_target,
+            z_at_candidates=z_candidates,
+            candidate_indices=eligible,
+            returns=returns,
+            sigma_at_candidates=sigma_at_candidates,
+            sigma_init=float(sigma_init),
+            mu_origin=float(mu_origin),
+            weights=weights,
+            n_eff=target,
+            origin_idx=origin_idx,
+            config=config,
+            rng=rng,
+            drift_target=drift_target,
+            record_ratios=record_ratios,
+        )
+
+    distances = composite_distance(z_target, z_candidates, weights)
     probs = distances_to_probs(distances, target_n_eff=target)
 
     return generate_paths(

@@ -28,6 +28,12 @@ from __future__ import annotations
 import numpy as np
 
 from analog_mc.config import Config
+from analog_mc.distances import (
+    composite_distance,
+    composite_distance_batched,
+    distances_to_probs,
+    distances_to_probs_batched,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +216,192 @@ def generate_paths(
         for r_idx in range(block_length):
             r = scaled[:, r_idx]
             running_var = one_minus_alpha * running_var + alpha * r * r
+
+    if ratios_out is not None:
+        return paths, ratios_out
+    return paths
+
+
+# ---------------------------------------------------------------------------
+# v2.2: Conditional block sampling
+# ---------------------------------------------------------------------------
+
+
+def _zscore_from_window(window: np.ndarray) -> np.ndarray:
+    """Per-row z-score = mean / std(ddof=1) over the last axis.
+
+    Mirrors features.causal_zscore semantics: same window convention, same
+    NaN-on-constant-window behaviour. Returns NaN where std is zero so
+    downstream comparisons fail loudly rather than silently producing 0.
+    """
+    mean = window.mean(axis=-1)
+    std = window.std(axis=-1, ddof=1)
+    z = np.where(std > 0, mean / np.where(std > 0, std, 1.0), np.nan)
+    return z
+
+
+def _sample_indices_from_probs_batched(probs: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Vectorized per-row categorical sample.
+
+    Args:
+        probs: shape (n_paths, K), each row sums to 1.
+        rng:   np.random.Generator.
+
+    Returns:
+        shape (n_paths,) int array — index into [0, K) for each row.
+    """
+    cum = probs.cumsum(axis=1)
+    # Clamp small floating drift so the last column is exactly >= u.
+    cum[:, -1] = 1.0
+    u = rng.random(probs.shape[0])
+    return (cum < u[:, None]).sum(axis=1)
+
+
+def generate_paths_conditional(
+    z_at_origin: np.ndarray,
+    z_at_candidates: np.ndarray,
+    candidate_indices: np.ndarray,
+    returns: np.ndarray,
+    sigma_at_candidates: np.ndarray,
+    sigma_init: float,
+    mu_origin: float,
+    weights: np.ndarray,
+    n_eff: float,
+    origin_idx: int,
+    config: Config,
+    rng: np.random.Generator,
+    drift_target: float = 0.0,
+    record_ratios: bool = False,
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+    """v2.2: Conditional block sampling — per-block re-match against per-path state.
+
+    For block 0 the behaviour is identical to ``generate_paths`` (probs derived
+    from the real-data origin's z-scores). For blocks 1..n_blocks-1 each path
+    maintains its own effective sub-origin at ``t_eff = origin_idx + k * block_length``;
+    z-scores are recomputed from a per-path return tail (real returns at
+    indices ≤ origin_idx followed by the path's own simulated returns), distances
+    are re-derived against the SAME v1 candidate set, and probabilities are
+    re-solved via the batched n_eff parameterization.
+
+    Architectural invariants preserved:
+
+      * **C3** — ``mu_origin`` is per forecast, never per-block. The same constant
+        is subtracted in every block (matching v1.1's semantics).
+      * **C4** — running EWMA σ continues to use the path's scaled-block recursion.
+      * **C5** — analog at index d still contributes block returns[d+1:d+1+block_length].
+      * **C6** — the candidate set is the v1 eligibility set (``d + block_length <
+        origin_idx``), UNCHANGED across blocks. The V2_PLAN.md open question 5
+        recommendation to "re-restrict to d + block_length < t_eff" would expand
+        the set and admit candidates whose forward block overlaps real post-origin
+        returns. That's a walk-forward leak; the conservative resolution is to
+        keep the v1 set.
+      * **C7** — drift_target is added AFTER the σ ratio multiplier in every block.
+      * **C10** — drift_target is constant per forecast (held at the origin value
+        passed in by ``forecast``).
+    """
+    if sigma_init <= 0:
+        raise ValueError(f"sigma_init must be > 0; got {sigma_init}")
+
+    n_paths = config.n_paths
+    horizon = config.forecast_horizon
+    block_length = config.block_length
+    n_blocks = config.n_blocks
+    horizons = tuple(int(h) for h in config.zscore_horizons)
+    max_h = max(horizons)
+    alpha = _alpha_from_halflife(config.ewma_halflife)
+    one_minus_alpha = 1.0 - alpha
+
+    if origin_idx + 1 < max_h:
+        raise ValueError(
+            f"origin_idx={origin_idx} has insufficient prior history for "
+            f"max(zscore_horizons)={max_h}."
+        )
+
+    paths = np.empty((n_paths, horizon), dtype=np.float64)
+    running_var = np.full(n_paths, sigma_init * sigma_init, dtype=np.float64)
+    ratios_out = np.empty((n_paths, n_blocks), dtype=np.float64) if record_ratios else None
+
+    # ---- Block 0 — same as v1: distances from the real-data origin ----
+    distances0 = composite_distance(z_at_origin, z_at_candidates, weights)
+    probs0 = distances_to_probs(distances0, target_n_eff=n_eff)
+    chosen_local, raw_blocks = sample_analog_blocks(
+        probs=probs0,
+        candidate_indices=candidate_indices,
+        returns=returns,
+        block_length=block_length,
+        n_paths=n_paths,
+        rng=rng,
+    )
+    sigma_current = np.sqrt(running_var)
+    sigma_historical = sigma_at_candidates[chosen_local]
+    demeaned = raw_blocks - mu_origin
+    raw_ratio = sigma_current / sigma_historical
+    ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
+    if ratios_out is not None:
+        ratios_out[:, 0] = raw_ratio
+    scaled = demeaned * ratio[:, None] + drift_target
+    paths[:, :block_length] = scaled
+    for r_idx in range(block_length):
+        r = scaled[:, r_idx]
+        running_var = one_minus_alpha * running_var + alpha * r * r
+
+    # ---- Per-path tail buffer for blocks 1+ ----
+    # Warm-start with the last (max_h - block_length) REAL returns ending at origin_idx,
+    # then append the just-simulated block 0 returns. Length stays at max_h.
+    real_tail = returns[origin_idx - (max_h - block_length) + 1 : origin_idx + 1]
+    # Shape (n_paths, max_h)
+    tail = np.empty((n_paths, max_h), dtype=np.float64)
+    tail[:, : max_h - block_length] = real_tail[None, :]
+    tail[:, max_h - block_length :] = scaled
+
+    # Pre-cast candidate features for the batched paths.
+    z_cand = np.asarray(z_at_candidates, dtype=np.float64)
+    sigma_cand = np.asarray(sigma_at_candidates, dtype=np.float64)
+    K = z_cand.shape[0]
+    if K == 0:
+        raise ValueError("z_at_candidates is empty")
+    capped_n_eff = float(min(n_eff, K))
+
+    # ---- Blocks 1..n_blocks-1 — per-path conditional re-match ----
+    for b in range(1, n_blocks):
+        # z-scores per path at the new effective sub-origin.
+        z_per_path = np.empty((n_paths, len(horizons)), dtype=np.float64)
+        for h_idx, h in enumerate(horizons):
+            window = tail[:, -h:]
+            z_per_path[:, h_idx] = _zscore_from_window(window)
+        # If any path produced NaN (zero-std window), fall back to the
+        # real-origin z for that path-axis. Rare; sampled returns degenerating
+        # to a constant within max_h is essentially impossible at n_paths>=2.
+        nan_mask = np.isnan(z_per_path)
+        if nan_mask.any():
+            broadcast_origin = np.broadcast_to(z_at_origin, z_per_path.shape)
+            z_per_path = np.where(nan_mask, broadcast_origin, z_per_path)
+
+        distances = composite_distance_batched(z_per_path, z_cand, weights)
+        probs = distances_to_probs_batched(distances, target_n_eff=capped_n_eff)
+
+        chosen_local = _sample_indices_from_probs_batched(probs, rng)
+        d = candidate_indices[chosen_local]
+        starts = d + 1
+        offsets = np.arange(block_length, dtype=np.int64)
+        raw_blocks = returns[starts[:, None] + offsets[None, :]]
+
+        sigma_current = np.sqrt(running_var)
+        sigma_historical = sigma_cand[chosen_local]
+        demeaned = raw_blocks - mu_origin
+        raw_ratio = sigma_current / sigma_historical
+        ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
+        if ratios_out is not None:
+            ratios_out[:, b] = raw_ratio
+        scaled = demeaned * ratio[:, None] + drift_target
+        paths[:, b * block_length : (b + 1) * block_length] = scaled
+
+        for r_idx in range(block_length):
+            r = scaled[:, r_idx]
+            running_var = one_minus_alpha * running_var + alpha * r * r
+
+        # Roll the tail buffer: drop oldest block_length, append the new block.
+        tail = np.concatenate([tail[:, block_length:], scaled], axis=1)
 
     if ratios_out is not None:
         return paths, ratios_out

@@ -60,6 +60,9 @@ class Config:
     momentum_lookback: int = 20
     momentum_shrinkage: float = 0.5
 
+    # ---- v2.2 ----------------------------------------------------------
+    conditional_block_sampling: bool = False  # v1 default off; v2.2 turns on per-path re-match
+
     # ---- Diagnostics ----------------------------------------------------
     pit_n_bins: int = 20
     acf_lags: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
