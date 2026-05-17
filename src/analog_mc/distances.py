@@ -134,3 +134,71 @@ def distances_to_probs(
     f = lambda tau: _n_eff_of_tau(distances, tau) - target_n_eff
     tau_star = brentq(f, tau_low, tau_high, xtol=tol)
     return _softmax_neg(distances, tau_star)
+
+
+def composite_distance_batched(
+    z_targets: np.ndarray,
+    z_candidates: np.ndarray,
+    weights: np.ndarray,
+) -> np.ndarray:
+    """Per-row composite distance for ``n_paths`` query points.
+
+    Args:
+        z_targets:    shape (n_paths, H) — z-scores for n_paths query origins
+                      (e.g., the per-path effective sub-origins in conditional
+                      block sampling).
+        z_candidates: shape (K, H) — candidate analog z-scores.
+        weights:      shape (H,) — non-negative weights.
+
+    Returns:
+        shape (n_paths, K) array of distances. Row i equals
+        ``composite_distance(z_targets[i], z_candidates, weights)``.
+
+    Used by v2.2 conditional block sampling, where each path has its own
+    effective sub-origin and so its own distance vector to the candidate pool.
+    """
+    if z_targets.ndim != 2:
+        raise ValueError(f"z_targets must be 2-D; got shape {z_targets.shape}")
+    if z_candidates.ndim != 2 or z_candidates.shape[1] != z_targets.shape[1]:
+        raise ValueError(
+            f"z_candidates must be (K, {z_targets.shape[1]}); got {z_candidates.shape}"
+        )
+    if weights.shape != (z_targets.shape[1],):
+        raise ValueError(f"weights must have shape ({z_targets.shape[1]},); got {weights.shape}")
+    if np.any(weights < 0):
+        raise ValueError("weights must be non-negative")
+
+    # (n_paths, K, H) = (1, K, H) - (n_paths, 1, H)
+    diff = z_candidates[None, :, :] - z_targets[:, None, :]
+    sq = diff * diff
+    weighted_sq_sum = sq @ weights  # (n_paths, K)
+    return np.sqrt(np.maximum(weighted_sq_sum, 0.0))
+
+
+def distances_to_probs_batched(
+    distances: np.ndarray,
+    target_n_eff: float,
+    tol: float = 1e-4,
+) -> np.ndarray:
+    """Per-row n_eff-parameterized probability conversion.
+
+    Naive vectorization: calls the scalar ``distances_to_probs`` once per row.
+    The per-row brentq solves are independent and have different brackets, so
+    a true vectorized Brent would add complexity without a clear win. Profile
+    before optimizing.
+
+    Args:
+        distances:    shape (n_paths, K) array of non-negative distances.
+        target_n_eff: scalar target effective sample size in (1, K].
+        tol:          absolute tolerance forwarded to each scalar solve.
+
+    Returns:
+        shape (n_paths, K) array of probability vectors (each row sums to 1).
+    """
+    if distances.ndim != 2:
+        raise ValueError(f"distances must be 2-D; got shape {distances.shape}")
+    n_paths = distances.shape[0]
+    out = np.empty_like(distances, dtype=np.float64)
+    for i in range(n_paths):
+        out[i] = distances_to_probs(distances[i], target_n_eff=target_n_eff, tol=tol)
+    return out

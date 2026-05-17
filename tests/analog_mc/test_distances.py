@@ -5,7 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from analog_mc.distances import composite_distance, distances_to_probs
+from analog_mc.distances import (
+    composite_distance,
+    composite_distance_batched,
+    distances_to_probs,
+    distances_to_probs_batched,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -117,3 +122,52 @@ def test_distances_to_probs_is_monotone_in_target() -> None:
         n_effs.append(np.exp(-np.sum(p[p > 0] * np.log(p[p > 0]))))
     # Strictly increasing.
     assert all(b > a for a, b in zip(n_effs, n_effs[1:]))
+
+
+# ---------------------------------------------------------------------------
+# composite_distance_batched (v2.2)
+# ---------------------------------------------------------------------------
+
+
+def test_composite_distance_batched_matches_scalar() -> None:
+    rng = np.random.default_rng(0)
+    z_targets = rng.normal(size=(7, 3))
+    z_candidates = rng.normal(size=(40, 3))
+    weights = np.array([1.0, 0.5, 2.0])
+    batched = composite_distance_batched(z_targets, z_candidates, weights)
+    assert batched.shape == (7, 40)
+    for i in range(7):
+        expected = composite_distance(z_targets[i], z_candidates, weights)
+        np.testing.assert_allclose(batched[i], expected, rtol=1e-12, atol=1e-12)
+
+
+def test_composite_distance_batched_rejects_bad_shapes() -> None:
+    with pytest.raises(ValueError):
+        composite_distance_batched(np.zeros(3), np.zeros((5, 3)), np.ones(3))
+    with pytest.raises(ValueError):
+        composite_distance_batched(np.zeros((2, 3)), np.zeros((5, 4)), np.ones(3))
+    with pytest.raises(ValueError):
+        composite_distance_batched(np.zeros((2, 3)), np.zeros((5, 3)), np.ones(2))
+    with pytest.raises(ValueError):
+        composite_distance_batched(np.zeros((2, 3)), np.zeros((5, 3)), np.array([-1.0, 1.0, 1.0]))
+
+
+# ---------------------------------------------------------------------------
+# distances_to_probs_batched (v2.2)
+# ---------------------------------------------------------------------------
+
+
+def test_distances_to_probs_batched_matches_scalar_row_by_row() -> None:
+    rng = np.random.default_rng(3)
+    distances = rng.uniform(0.0, 4.0, size=(8, 200))
+    batched = distances_to_probs_batched(distances, target_n_eff=50.0)
+    assert batched.shape == (8, 200)
+    np.testing.assert_allclose(batched.sum(axis=1), 1.0, atol=1e-9)
+    for i in range(8):
+        expected = distances_to_probs(distances[i], target_n_eff=50.0)
+        np.testing.assert_allclose(batched[i], expected, rtol=1e-9, atol=1e-12)
+
+
+def test_distances_to_probs_batched_rejects_1d() -> None:
+    with pytest.raises(ValueError, match="must be 2-D"):
+        distances_to_probs_batched(np.array([1.0, 2.0, 3.0]), target_n_eff=2.0)
