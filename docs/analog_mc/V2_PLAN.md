@@ -205,6 +205,33 @@ No code change needed; just document the reinterpretation in v3 notes if/when th
 
 ---
 
+## v2.1 acceptance results
+
+Run: `runs/analog_mc/20260517T050831Z/` (`configs/analog_mc/nasdaq100_v21.yaml`, fast preset with `drift_mode: trailing_momentum`, `momentum_lookback: 20`, `momentum_shrinkage: 0.5`). 76 folds, 273,120 origin × step pairs, ~32 min wall time.
+
+| Criterion | Target | v2.1 result | Verdict |
+|---|---|---|---|
+| `sloped_global_pit` not firing | metric within ±0.1 | **+0.0572 (ok)** ← was +0.158 firing (canonical) | ✅ PASS |
+| Mean aggregate CRPS within budget | ≤ 0.0547 (+5% vs v1 fast 0.0521) | **0.05313** (+1.97% vs v1 fast; +1.21% vs canonical 0.05246) | ✅ PASS |
+| ≥3 distinct (w0,w1,w2) triples | ≥3 across folds | many distinct triples in the per-fold summary | ✅ PASS |
+
+**What v2.1 changed:**
+
+| Metric | v1 canonical (zero) | v2.1 fast (trailing_momentum) | Δ |
+|---|---|---|---|
+| Mean aggregate CRPS | 0.05246 | 0.05313 | +1.21% (within tolerance) |
+| Low-vol CRPS | 0.02770 | 0.03147 | **+13.7%** (drift hurts when no real momentum) |
+| Mid-vol CRPS | 0.03917 | 0.04204 | +7.3% |
+| **High-vol CRPS** | **0.09108** | **0.08624** | **−5.4% (the win)** |
+| `sloped_global_pit` metric | +0.158 (fired) | +0.0572 (ok) | drift eliminated PIT slope |
+| `u_shaped_high_vol_pit` metric | +2.190 | +1.768 | further from firing — tail inflator stays out of v2 |
+| `acf_seam_degradation` metric | −1.071 (fired) | −1.056 (fired) | unchanged, as expected — this is the v2.2 trigger |
+| Tuned vs fixed ⅓-⅓-⅓ baseline | +17.84% | +20.28% | tuning still earns its keep |
+
+**Net read:** v2.1 trades a small low-vol calibration loss for a real high-vol calibration gain and eliminates the PIT slope. The trade-off is the right direction — high-vol calibration was the headline concern in the v1 plan, and the diagnostic-driven design says the slope-elimination is what the rule predicted. Proceed to v2.2.
+
+---
+
 ## Reference: v1 baseline numbers
 
 Canonical v1 baseline: `runs/analog_mc/20260516T180000Z/` (76 folds, 273,120 origin × step pairs, 3h 47m wall time). The `nasdaq100_fast.yaml` proxy run is kept here for context; numbers agree within ~1% on aggregate CRPS but the decision-rule verdicts shifted (see notes below the table).
