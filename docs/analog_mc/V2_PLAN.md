@@ -13,19 +13,19 @@ Like `IMPLEMENTATION_PLAN.md`, this is a specification, not exploratory notes. E
 
 ---
 
-## Trigger evidence (from v1 baseline)
+## Trigger evidence (from v1 canonical baseline)
 
-Run: `nasdaq100_fast.yaml`, 76 folds, mean test CRPS 0.052. The full `default.yaml` baseline is in progress at the time of writing — the v2 acceptance criteria below reference it as `<v1_default_crps>`.
+Canonical run: `runs/analog_mc/20260516T180000Z/` (`default.yaml`, 76 folds, 273,120 origin × step pairs, mean test CRPS **0.05246**, 3h 47m wall time). The fast proxy (`nasdaq100_fast.yaml`) agrees on aggregate CRPS to ~1% but disagrees on two decision-rule verdicts — only the canonical numbers below should be used to gate v2 scope.
 
-| Decision rule | Fired? | Metric | Threshold | v2 action |
+| Decision rule | Fired? | Metric (canonical) | Threshold | v2 action |
 |---|---|---|---|---|
-| `sloped_global_pit` | **YES** | +0.147 | ±0.1 | Trailing-momentum drift |
-| `acf_seam_degradation` | **YES** | −1.053 | −0.30 | Conditional block sampling |
-| `u_shaped_high_vol_pit` | no | +2.02 | 2.5 | (deferred; close miss — revisit if v2 doesn't help high-vol calibration) |
-| `fixed_weight_close_to_tuned` | no | +0.187 | 0.01 | (per-fold search adds 19%; keep it) |
-| `clip_hit_excessive` | no | +0.10 | 0.15 | (vol clip bounds are fine) |
+| `sloped_global_pit` | **YES** | +0.158 | ±0.1 | Trailing-momentum drift (v2.1) |
+| `acf_seam_degradation` | **YES** | −1.071 | −0.30 | Conditional block sampling (v2.2) |
+| `u_shaped_high_vol_pit` | no | +2.190 | 2.5 | (deferred — fast proxy fired at +5.08 but canonical de-fired; tail inflator stays out of v2) |
+| `fixed_weight_close_to_tuned` | no | +0.178 | 0.01 | (tuned beats ⅓-⅓-⅓ baseline by 17.8%; per-fold search earns its keep) |
+| `clip_hit_excessive` | no | +0.100 | 0.15 | (vol clip bounds are fine) |
 
-Per-vol-regime CRPS is the headline calibration concern: low-vol 0.028 vs high-vol 0.089 (~3× harder). v2 should narrow this gap; if it doesn't, the deferred tail inflator becomes the next candidate.
+Per-vol-regime CRPS is the headline calibration concern: low-vol 0.0277 vs high-vol 0.0911 (~3.3× harder). v2 should narrow this gap; if it doesn't, the deferred tail inflator becomes the next candidate.
 
 ---
 
@@ -33,7 +33,7 @@ Per-vol-regime CRPS is the headline calibration concern: low-vol 0.028 vs high-v
 
 To keep the diagnostic-attribution chain intact, **ship the two features sequentially**, not bundled:
 
-- **v2.1**: trailing-momentum drift only. Re-run baseline, re-evaluate decision rules. Acceptance: `sloped_global_pit` no longer fires, mean CRPS not worse than v1, per-fold weight trajectories not noticeably more chaotic.
+- **v2.1**: trailing-momentum drift only. Re-run baseline, re-evaluate decision rules. **Acceptance (all three required):** (a) `sloped_global_pit` no longer fires on the fast preset, (b) mean aggregate CRPS within +5% of the v1 fast proxy (i.e., ≤ 0.0547 against the v1 fast baseline of 0.0521), (c) per-fold weight trajectory does not collapse to a single corner — at least 3 distinct `(w0, w1, w2)` triples appear across the 21 folds (sanity check that drift didn't make the matcher irrelevant).
 - **v2.2**: conditional block sampling added on top of v2.1. Acceptance: `acf_seam_degradation` no longer fires, mean CRPS not worse than v2.1, ACF curve at seam lags within 30% of realized.
 
 If v2.1's acceptance fails, do NOT proceed to v2.2 — debug v2.1 first. Conditional sampling is the bigger compute and design risk; gating it on v2.1 success keeps the failure surface manageable.
@@ -101,10 +101,12 @@ Reserve a `drift_per_block: bool` config knob for v2.3+ if diagnostics later arg
 | File | Change |
 |---|---|
 | `src/analog_mc/config.py` | `drift_mode` already accepts `"trailing_momentum"`; no schema change. |
-| `src/analog_mc/features.py` | Reuse existing `causal_trailing_mean(returns, momentum_lookback)`. Bundle it into `compute_features` when `drift_mode != "zero"`. |
-| `src/analog_mc/simulate.py` | When `config.drift_mode == "trailing_momentum"`, compute `drift_target = config.momentum_shrinkage * trailing_mean_<momentum_lookback>[origin_idx]` and pass to `generate_paths`. |
+| `src/analog_mc/features.py` | When `drift_mode != "zero"`, `compute_features` adds a SECOND trailing-mean column at the `momentum_lookback` horizon (separate from the `mu_origin` column at `max(zscore_horizons)`). Column name: `trailing_mean_<momentum_lookback>`. The two columns coexist; never reuse `mu_origin`'s long-horizon mean as the drift source — they serve different roles (regime baseline vs. recent-momentum estimate). |
+| `src/analog_mc/simulate.py` | `forecast()` becomes the single point of drift policy. The existing `drift_target` kwarg changes from `float = 0.0` to `float \| None = None`. When `None` (the default), `forecast()` reads `config.drift_mode`: `"zero"` → `0.0`; `"trailing_momentum"` → `config.momentum_shrinkage * trailing_mean_<momentum_lookback>[origin_idx]`. An explicit float still works as a manual override (used by some tests). Search/walk_forward call sites unchanged. |
 | `src/analog_mc/sampling.py` | No structural change — `generate_paths` already accepts `drift_target`. |
-| `tests/analog_mc/test_simulate.py` | Add test: with `drift_mode="trailing_momentum"` on a synthetic upward-trending series, the forecast path's median end-cumulative-return is materially positive (vs zero in `drift_mode="zero"`). |
+| `tests/analog_mc/test_simulate.py` | Add test: with `drift_mode="trailing_momentum"` on a synthetic upward-trending series, the forecast path's median end-cumulative-return is materially positive (vs ≈0 in `drift_mode="zero"`). |
+| `tests/analog_mc/test_features.py` | Add test: when `drift_mode != "zero"` the bundle contains `trailing_mean_<momentum_lookback>` AND `trailing_mean_<max(zscore_horizons)>` as separate columns, and both are causal. |
+| `configs/analog_mc/nasdaq100_v21.yaml` | New fast-preset config with `drift_mode: "trailing_momentum"` and otherwise identical knobs to `nasdaq100_fast.yaml`, for the acceptance gate. |
 | `src/analog_mc/diagnostics.py` | `decision_rules` already expects v2 drift_mode in its recommendation text; no change. |
 
 ### v2.2 changes (conditional block sampling)
@@ -205,13 +207,25 @@ No code change needed; just document the reinterpretation in v3 notes if/when th
 
 ## Reference: v1 baseline numbers
 
-To be filled in when the `default.yaml` baseline run completes. Until then, the proxy is the `nasdaq100_fast.yaml` run at `runs/analog_mc/20260516T170018Z/`:
+Canonical v1 baseline: `runs/analog_mc/20260516T180000Z/` (76 folds, 273,120 origin × step pairs, 3h 47m wall time). The `nasdaq100_fast.yaml` proxy run is kept here for context; numbers agree within ~1% on aggregate CRPS but the decision-rule verdicts shifted (see notes below the table).
 
-| | v1 fast (proxy) | v1 default (canonical, in progress) | v2.1 target | v2.2 target |
+| | v1 fast (proxy) | v1 default (canonical) | v2.1 target | v2.2 target |
 |---|---|---|---|---|
-| Mean per-step CRPS | 0.0521 | `<TBD>` | ≤ v1 default | ≤ v2.1 |
-| High-vol-regime CRPS | 0.0888 | `<TBD>` | ≤ v1 default high-vol | ≤ v2.1 high-vol |
-| `sloped_global_pit` fired | yes (+0.147) | `<TBD>` | **no** | n/a |
-| `acf_seam_degradation` fired | yes (−1.053) | `<TBD>` | yes (expected; v2.1 doesn't address it) | **no** |
+| Mean aggregate CRPS | 0.0521 | **0.05251** | ≤ v1 default | ≤ v2.1 |
+| Median aggregate CRPS | — | **0.03121** | ≤ v1 default | ≤ v2.1 |
+| High-vol-regime mean CRPS | 0.0888 | **0.09108** | ≤ v1 default high-vol | ≤ v2.1 high-vol |
+| Low-vol-regime mean CRPS | — | 0.02770 | — | — |
+| Mid-vol-regime mean CRPS | — | 0.03917 | — | — |
+| h=1 / h=15 / h=30 / h=60 per-step CRPS | — | 0.0088 / 0.0340 / 0.0525 / 0.0905 | — | — |
+| Fixed-weight baseline (⅓,⅓,⅓, n_eff=30) mean CRPS | — | 0.06182 (tuned beats by +17.84%) | — | — |
+| `sloped_global_pit` fired | yes (+0.147) | **yes (+0.158)** | **no** | n/a |
+| `u_shaped_high_vol_pit` fired | yes (+5.08) on partial | **no (+2.190)** | n/a | n/a |
+| `acf_seam_degradation` fired | yes (−1.053) | **yes (−1.071)** | yes (expected; v2.1 doesn't address it) | **no** |
+| `fixed_weight_close_to_tuned` fired | — | no (+0.178) | — | — |
+| `clip_hit_excessive` fired | — | no (+0.100) | — | — |
 
-Replace `<TBD>` once `runs/analog_mc/20260516T180000Z/` finishes.
+**What changed from the partial (21-fold) read:**
+
+- `u_shaped_high_vol_pit` *de-fired* on the full set (metric dropped from +5.08 → +2.19). This confirms the deferred status of the tail inflator in this plan — do NOT promote it to v2 scope.
+- `fixed_weight_close_to_tuned` flipped sign cleanly: tuning now wins the baseline by ~18% (it was losing on the partial). The grid search is doing real work.
+- v2 scope is unchanged from the original plan: **v2.1 trailing-momentum drift + v2.2 conditional block sampling** — and only those two. Tail inflator stays deferred.

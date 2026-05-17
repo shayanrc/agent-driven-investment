@@ -10,6 +10,8 @@ All 11 stages are implemented and unit-tested (164 tests, 2 intentionally skippe
 - 5 v2-trigger decision rules in `diagnostics.py` per Stage 9 of this plan
 - Crash-resumable per-fold persistence (parquet for search grid, compressed npz for forecast paths + σ ratios + realized, JSON summaries)
 
+**Canonical v1 baseline:** `runs/analog_mc/20260516T180000Z/` (`default.yaml`, 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05246, 3h 47m wall time). Two v2 triggers fired (`sloped_global_pit`, `acf_seam_degradation`); `u_shaped_high_vol_pit` did NOT fire on the full set despite firing on a partial-run read — the tail inflator stays out of v2. See `V2_PLAN.md` for the canonical decision-rule table and v2 scope.
+
 For the end-to-end run command and high-level architecture, see the project `README.md` at the repo root.
 
 ## Revision history
