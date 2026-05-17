@@ -86,7 +86,12 @@ def causal_trailing_mean(returns: pd.Series, horizon: int) -> pd.Series:
     return m
 
 
-def compute_features(returns: pd.Series, halflife: float, horizons: tuple[int, ...]) -> pd.DataFrame:
+def compute_features(
+    returns: pd.Series,
+    halflife: float,
+    horizons: tuple[int, ...],
+    momentum_lookback: int | None = None,
+) -> pd.DataFrame:
     """Compute the standard feature bundle.
 
     Columns:
@@ -94,6 +99,12 @@ def compute_features(returns: pd.Series, halflife: float, horizons: tuple[int, .
       * ``zscore_<h>`` — trailing z-score at each horizon h in ``horizons``.
       * ``trailing_mean_<max_h>`` — trailing arithmetic mean at the longest
         horizon. Used as the source of ``mu_origin`` in C3.
+      * ``trailing_mean_<momentum_lookback>`` — added only when
+        ``momentum_lookback`` is given AND differs from ``max(horizons)``.
+        Used as the source of v2.1 trailing-momentum drift. Kept distinct
+        from the mu_origin column because the two serve different roles:
+        the long-horizon mean defines current regime baseline, the short
+        lookback estimates recent directional pressure.
 
     The DataFrame is indexed identically to ``returns``.
     """
@@ -102,4 +113,6 @@ def compute_features(returns: pd.Series, halflife: float, horizons: tuple[int, .
         cols[f"zscore_{h}"] = causal_zscore(returns, h)
     max_h = max(horizons)
     cols[f"trailing_mean_{max_h}"] = causal_trailing_mean(returns, max_h)
+    if momentum_lookback is not None and momentum_lookback != max_h:
+        cols[f"trailing_mean_{momentum_lookback}"] = causal_trailing_mean(returns, momentum_lookback)
     return pd.DataFrame(cols, index=returns.index)

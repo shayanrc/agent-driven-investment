@@ -102,6 +102,39 @@ def test_causal_trailing_mean_no_lookahead(returns_series: pd.Series, horizon: i
     assert full.iloc[t] == pytest.approx(truncated.iloc[t], rel=1e-12, abs=1e-12)
 
 
+def test_compute_features_adds_momentum_column_when_requested(returns_series: pd.Series) -> None:
+    """v2.1: passing momentum_lookback adds a second trailing-mean column,
+    distinct from the mu_origin long-horizon column."""
+    horizons = (20, 50, 200)
+    df = compute_features(returns_series, halflife=20.0, horizons=horizons, momentum_lookback=20)
+    assert "trailing_mean_200" in df.columns  # mu_origin (C3)
+    assert "trailing_mean_20" in df.columns  # momentum source (v2.1)
+    # Causality at a representative index.
+    t = 250
+    truncated = compute_features(
+        returns_series.iloc[: t + 1], halflife=20.0, horizons=horizons, momentum_lookback=20,
+    )
+    assert df["trailing_mean_20"].iloc[t] == pytest.approx(
+        truncated["trailing_mean_20"].iloc[t], rel=1e-12, abs=1e-12,
+    )
+
+
+def test_compute_features_skips_momentum_column_when_redundant(returns_series: pd.Series) -> None:
+    """If momentum_lookback equals max(horizons), the column already exists as
+    mu_origin; we should not duplicate it."""
+    horizons = (20, 50, 200)
+    df = compute_features(returns_series, halflife=20.0, horizons=horizons, momentum_lookback=200)
+    # Exactly one trailing_mean column.
+    tm_cols = [c for c in df.columns if c.startswith("trailing_mean_")]
+    assert tm_cols == ["trailing_mean_200"]
+
+
+def test_compute_features_no_momentum_column_when_none(returns_series: pd.Series) -> None:
+    """v1 default: momentum_lookback=None means no extra column."""
+    df = compute_features(returns_series, halflife=20.0, horizons=(20, 50, 200))
+    assert [c for c in df.columns if c.startswith("trailing_mean_")] == ["trailing_mean_200"]
+
+
 def test_causal_trailing_mean_matches_hand_computation(returns_series: pd.Series) -> None:
     """At index 100 with horizon 20, mean must equal mean of returns[81..100]."""
     horizon = 20
