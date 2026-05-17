@@ -149,3 +149,155 @@ def test_forecast_caps_n_eff_at_pool_size(synthetic_setup) -> None:
         rng=np.random.default_rng(0),
     )
     assert paths.shape == (cfg.n_paths, cfg.forecast_horizon)
+
+
+# ---------------------------------------------------------------------------
+# v2.1 — trailing-momentum drift
+# ---------------------------------------------------------------------------
+
+
+def _trending_setup(daily_drift: float, lookback: int = 20):
+    """Build a long synthetic series with a known per-day drift."""
+    rng = np.random.default_rng(0)
+    n = 1500
+    returns = pd.Series(
+        rng.normal(daily_drift, 0.01, size=n),
+        index=pd.date_range("2010-01-04", periods=n, freq="B"),
+        name="log_return",
+    )
+    cfg_zero = Config(
+        forecast_horizon=20,
+        block_length=5,
+        n_blocks=4,
+        n_paths=300,
+        ewma_halflife=10,
+        zscore_horizons=(20, 50, 200),
+        train_initial_size=600,
+        val_size=60,
+        test_size=60,
+        drift_mode="zero",
+        momentum_lookback=lookback,
+    )
+    cfg_mom = Config(
+        forecast_horizon=20,
+        block_length=5,
+        n_blocks=4,
+        n_paths=300,
+        ewma_halflife=10,
+        zscore_horizons=(20, 50, 200),
+        train_initial_size=600,
+        val_size=60,
+        test_size=60,
+        drift_mode="trailing_momentum",
+        momentum_lookback=lookback,
+        momentum_shrinkage=1.0,  # disable shrinkage so the drift sign is unambiguous
+    )
+    features_zero = compute_features(
+        returns, halflife=cfg_zero.ewma_halflife, horizons=cfg_zero.zscore_horizons,
+    )
+    features_mom = compute_features(
+        returns, halflife=cfg_mom.ewma_halflife, horizons=cfg_mom.zscore_horizons,
+        momentum_lookback=cfg_mom.momentum_lookback,
+    )
+    return returns, features_zero, cfg_zero, features_mom, cfg_mom
+
+
+def test_trailing_momentum_shifts_median_in_drift_direction() -> None:
+    """C7+C10: on a synthetic series with positive drift, trailing-momentum forecasts
+    have materially positive median end-cum-return; zero-drift forecasts do not."""
+    daily_drift = 0.004  # large enough to dominate noise at 20-day horizon
+    returns, feats_zero, cfg_zero, feats_mom, cfg_mom = _trending_setup(daily_drift)
+    candidate_idx = np.arange(250, 1200, dtype=np.int64)
+    origin = 1250
+
+    paths_zero = forecast(
+        origin_idx=origin,
+        returns=returns.to_numpy(),
+        candidate_idx=candidate_idx,
+        features=feats_zero,
+        weights=np.array([1.0, 1.0, 1.0]),
+        n_eff=30.0,
+        config=cfg_zero,
+        rng=np.random.default_rng(1),
+    )
+    paths_mom = forecast(
+        origin_idx=origin,
+        returns=returns.to_numpy(),
+        candidate_idx=candidate_idx,
+        features=feats_mom,
+        weights=np.array([1.0, 1.0, 1.0]),
+        n_eff=30.0,
+        config=cfg_mom,
+        rng=np.random.default_rng(1),
+    )
+
+    cum_zero = paths_zero.sum(axis=1)  # end-cumulative log return per path
+    cum_mom = paths_mom.sum(axis=1)
+    # The drift contribution over 20 steps is ~ daily_drift * 20 = 0.08.
+    # Mom forecast median should be materially above zero-drift median.
+    assert np.median(cum_mom) > np.median(cum_zero) + 0.04, (
+        f"momentum drift failed to lift median: zero={np.median(cum_zero):.4f}, "
+        f"mom={np.median(cum_mom):.4f}"
+    )
+    assert np.median(cum_mom) > 0.03  # positive drift should produce positive median
+
+
+def test_trailing_momentum_zero_when_drift_is_zero() -> None:
+    """Sanity: if the underlying series has no drift, trailing_momentum reduces
+    to noise around zero (no systematic bias from the implementation itself)."""
+    returns, _, _, feats_mom, cfg_mom = _trending_setup(daily_drift=0.0)
+    candidate_idx = np.arange(250, 1200, dtype=np.int64)
+    paths_mom = forecast(
+        origin_idx=1250,
+        returns=returns.to_numpy(),
+        candidate_idx=candidate_idx,
+        features=feats_mom,
+        weights=np.array([1.0, 1.0, 1.0]),
+        n_eff=30.0,
+        config=cfg_mom,
+        rng=np.random.default_rng(0),
+    )
+    cum = paths_mom.sum(axis=1)
+    # 20-day cumulative log return std ~ 0.01 * sqrt(20) ~ 0.045; median should be
+    # within ~one std of zero. Loose tolerance since this is a single origin.
+    assert abs(np.median(cum)) < 0.05
+
+
+def test_trailing_momentum_requires_feature_column() -> None:
+    """Clean error when drift_mode=trailing_momentum but the feature bundle
+    was built without momentum_lookback (i.e., missing column)."""
+    returns, _, _, _, cfg_mom = _trending_setup(daily_drift=0.001)
+    # Re-compute features WITHOUT the momentum column.
+    feats_no_mom = compute_features(returns, halflife=cfg_mom.ewma_halflife, horizons=cfg_mom.zscore_horizons)
+    candidate_idx = np.arange(250, 1200, dtype=np.int64)
+    with pytest.raises(ValueError, match="requires features column"):
+        forecast(
+            origin_idx=1250,
+            returns=returns.to_numpy(),
+            candidate_idx=candidate_idx,
+            features=feats_no_mom,
+            weights=np.array([1.0, 1.0, 1.0]),
+            n_eff=30.0,
+            config=cfg_mom,
+            rng=np.random.default_rng(0),
+        )
+
+
+def test_explicit_drift_target_overrides_config() -> None:
+    """An explicit drift_target float should bypass the config's drift_mode."""
+    returns, feats_zero, cfg_zero, _, _ = _trending_setup(daily_drift=0.0)
+    candidate_idx = np.arange(250, 1200, dtype=np.int64)
+    # Even though config is drift_mode='zero', passing drift_target=0.01 should
+    # shift the median up by ~0.01*20 = 0.2.
+    paths = forecast(
+        origin_idx=1250,
+        returns=returns.to_numpy(),
+        candidate_idx=candidate_idx,
+        features=feats_zero,
+        weights=np.array([1.0, 1.0, 1.0]),
+        n_eff=30.0,
+        config=cfg_zero,
+        rng=np.random.default_rng(0),
+        drift_target=0.01,
+    )
+    assert np.median(paths.sum(axis=1)) > 0.15

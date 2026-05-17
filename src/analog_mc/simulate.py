@@ -31,6 +31,39 @@ def _z_columns(config: Config) -> list[str]:
     return [f"zscore_{h}" for h in config.zscore_horizons]
 
 
+def _resolve_drift_target(config: Config, features: pd.DataFrame, origin_idx: int) -> float:
+    """Compute the per-day drift target for a forecast given the config's drift_mode.
+
+    C10: drift is read once at the origin and applied uniformly to all blocks
+    (matching mu_origin's semantics — a per-forecast regime descriptor, not a
+    per-block re-estimate). C7: this value is added AFTER the σ ratio in
+    scale_block, so it is never multiplied by analog vol.
+    """
+    mode = config.drift_mode
+    if mode == "zero":
+        return 0.0
+    if mode == "trailing_momentum":
+        col = f"trailing_mean_{config.momentum_lookback}"
+        if col not in features.columns:
+            raise ValueError(
+                f"drift_mode='trailing_momentum' requires features column "
+                f"'{col}'. Pass momentum_lookback={config.momentum_lookback} "
+                f"to compute_features()."
+            )
+        mu = float(features[col].to_numpy()[origin_idx])
+        if np.isnan(mu):
+            raise ValueError(
+                f"trailing_mean_{config.momentum_lookback} is NaN at "
+                f"origin_idx={origin_idx}; need at least {config.momentum_lookback} "
+                f"prior returns."
+            )
+        return config.momentum_shrinkage * mu
+    if mode == "scale_with_vol":
+        # Reserved; never implemented in v1/v2.
+        raise NotImplementedError("drift_mode='scale_with_vol' is reserved, not implemented.")
+    raise ValueError(f"Unknown drift_mode: {mode!r}")
+
+
 def eligible_candidates(
     candidate_idx: np.ndarray,
     features: pd.DataFrame,
@@ -68,7 +101,7 @@ def forecast(
     n_eff: float,
     config: Config,
     rng: np.random.Generator,
-    drift_target: float = 0.0,
+    drift_target: float | None = None,
     record_ratios: bool = False,
 ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     """Generate Monte Carlo paths for a single forecast origin.
@@ -88,15 +121,22 @@ def forecast(
                        candidate count).
         config:        pipeline config.
         rng:           np.random.Generator.
-        drift_target:  per-day expected log return injected after vol scaling
-                       (v1 default 0.0).
+        drift_target:  per-day expected log return injected after vol scaling.
+                       If ``None`` (the default), it is computed from
+                       ``config.drift_mode``: ``"zero"`` → 0.0;
+                       ``"trailing_momentum"`` →
+                       ``config.momentum_shrinkage *
+                       trailing_mean_<momentum_lookback>[origin_idx]``.
+                       A float overrides the config (used by tests that want
+                       to assert sign/magnitude behaviour deterministically).
 
     Returns:
         shape (n_paths, forecast_horizon) array of simulated log returns.
 
     Raises:
         ValueError: if no eligible candidates remain, or if features at the
-                    origin are NaN.
+                    origin are NaN, or if drift_mode requires a feature column
+                    that is missing.
     """
     if returns.ndim != 1:
         raise ValueError(f"returns must be 1-D; got shape {returns.shape}")
@@ -126,6 +166,9 @@ def forecast(
             f"Features at origin_idx={origin_idx} contain NaN; need at least "
             f"max(zscore_horizons)={max(config.zscore_horizons)} prior returns."
         )
+
+    if drift_target is None:
+        drift_target = _resolve_drift_target(config, features, origin_idx)
 
     eligible = eligible_candidates(candidate_idx, features, origin_idx, config)
     if eligible.size == 0:

@@ -272,7 +272,12 @@ def run_walk_forward(
 
     log.info("Run directory: %s", run_dir)
     log.info("Computing features over %d returns", len(returns))
-    features = compute_features(returns, halflife=config.ewma_halflife, horizons=config.zscore_horizons)
+    features = compute_features(
+        returns,
+        halflife=config.ewma_halflife,
+        horizons=config.zscore_horizons,
+        momentum_lookback=config.momentum_lookback if config.drift_mode != "zero" else None,
+    )
     folds = generate_folds(returns, config)
     log.info("Generated %d folds", len(folds))
 

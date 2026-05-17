@@ -314,7 +314,12 @@ def fixed_weight_baseline_crps(
     from analog_mc.features import compute_features
     from analog_mc.walk_forward import _evaluate_on_test
 
-    features = compute_features(returns, halflife=config.ewma_halflife, horizons=config.zscore_horizons)
+    features = compute_features(
+        returns,
+        halflife=config.ewma_halflife,
+        horizons=config.zscore_horizons,
+        momentum_lookback=config.momentum_lookback if config.drift_mode != "zero" else None,
+    )
     folds = generate_folds(returns, config)
     weights_arr = np.array(weights)
 
