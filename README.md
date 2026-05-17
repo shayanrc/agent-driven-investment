@@ -150,7 +150,7 @@ The dashboard is a thin presentation layer. All real computation lives in `src/a
 
 ## Status
 
-**`analog_mc` v2.1 in progress** — v1 canonical baseline complete; v2.1 (trailing-momentum drift) shipped and accepted; v2.2 (conditional block sampling) is the next milestone. 174 unit tests passing.
+**`analog_mc` v2.1 is the canonical default.** v1 baseline shipped; v2.1 (trailing-momentum drift) promoted to `default.yaml` after canonical-grid acceptance — PIT slope eliminated, high-vol CRPS −5.2%, mean CRPS flat. v2.2 (conditional block sampling) implemented and tested but deferred: target rule didn't improve because the ACF gap is a structural within-block artifact, not a seam problem. 186 unit tests passing.
 
 **📊 [Results lookup: `docs/analog_mc/RESULTS.md`](docs/analog_mc/RESULTS.md)** — headline numbers, decision-rule verdicts, key plots inline for every run that shaped a v1/v2 decision. Start there.
 
@@ -158,8 +158,8 @@ The dashboard is a thin presentation layer. All real computation lives in `src/a
 
 | v2 feature | Triggered by | Status |
 |---|---|---|
-| Trailing-momentum drift (`drift_mode='trailing_momentum'`) | Sloped global PIT | ✅ v2.1 shipped + accepted |
-| Conditional block sampling | Squared-return ACF degradation > 30% at seam lags | 🔄 v2.2 in progress |
+| Trailing-momentum drift (`drift_mode='trailing_momentum'`) | Sloped global PIT | ✅ **v2.1 shipped as default** |
+| Conditional block sampling | Squared-return ACF degradation > 30% at seam lags | ⚠️ v2.2 implemented as opt-in, **deferred to v3** (audit: gap is structural, not seam) |
 | Tail inflator | U-shape in high-vol-regime PIT | deferred (didn't fire) |
 | Drop per-fold search | Fixed-weight baseline within 1% of tuned CRPS | not triggered |
 | Revisit distance metric | Clip-hit fraction > 15% on either bound | not triggered |

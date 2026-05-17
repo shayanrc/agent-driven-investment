@@ -1,5 +1,15 @@
 # analog_mc v2 — Implementation Plan
 
+## Outcome summary
+
+| Feature | Status | Notes |
+|---|---|---|
+| **v2.1** trailing-momentum drift | ✅ **Shipped as canonical default** | All three acceptance criteria passed on canonical-grid baseline. PIT slope eliminated, high-vol CRPS −5.2%, mean CRPS flat. `default.yaml` now sets `drift_mode: trailing_momentum`. |
+| **v2.2** conditional block sampling | ⚠️ **Implemented, deferred to v3** | Target rule `acf_seam_degradation` did not improve. Audit showed the gap is a structural within-block ACF artifact (real-data within-window lag-1 ACF = −0.125 vs unconditional +0.27); per-block re-matching can only touch seam dynamics. v2.2 code remains as an opt-in mode via `conditional_block_sampling: true`. Fix needs per-step σ injection — v3 scope. |
+| Tail inflator | Deferred (not implemented) | `u_shaped_high_vol_pit` did not fire on canonical v1. |
+
+See [`RESULTS.md`](RESULTS.md) for the full numbers, plots, and audit. The rest of this document is the original v2 specification (preserved for historical reference of what was planned vs what landed).
+
 ## Purpose
 
 v2 adds the two features that v1's Stage 9 diagnostics specifically flagged as needed for NASDAQ100:
@@ -258,3 +268,41 @@ Canonical v1 baseline: `runs/analog_mc/20260516T180000Z/` (76 folds, 273,120 ori
 - `u_shaped_high_vol_pit` *de-fired* on the full set (metric dropped from +5.08 → +2.19). This confirms the deferred status of the tail inflator in this plan — do NOT promote it to v2 scope.
 - `fixed_weight_close_to_tuned` flipped sign cleanly: tuning now wins the baseline by ~18% (it was losing on the partial). The grid search is doing real work.
 - v2 scope is unchanged from the original plan: **v2.1 trailing-momentum drift + v2.2 conditional block sampling** — and only those two. Tail inflator stays deferred.
+
+---
+
+## v3 carryover (open after v2)
+
+These items were surfaced during v2 implementation/acceptance and are NOT in v2 scope. Capture them here so a future v3 spec has a clear starting point.
+
+### Carryover 1: ACF gap is structural, not seam-specific
+
+The rule `acf_seam_degradation` reads the worst seam-lag (10/20/30/40/50) gap between simulated and realized squared-return ACF. v2.2 was designed around the assumption that this is a *seam* problem. The v2.2 audit (RESULTS.md) showed it is not:
+
+- Realized unconditional lag-1 ACF(r²) = +0.271 (GARCH-driven, slowly-varying vol across days)
+- Realized **within-10-day-window** lag-1 ACF(r²) = **−0.125** (within-window structure after demeaning)
+- v1 / v2.1 / v2.2 simulated lag-1 ACF ≈ 0 — closer to within-window than to unconditional
+
+Any sampler that draws 10-day blocks intact inherits the within-window structure. Per-block re-matching (v2.2) doesn't change within-block dynamics, so it can't recover the GARCH-like clustering. Three v3 candidates:
+
+- **v3a:** Per-step σ injection — every simulated return is rescaled by the path's instantaneous σ_running, not just block-wise. Preserves analog z-score shape but tracks vol day-by-day.
+- **v3b:** GARCH-conditional resampling — fit a GARCH(1,1) on real returns, simulate vol path, and only condition the *sign/shape* on the analog. Mixes parametric vol with non-parametric direction.
+- **v3c:** Block-length sweep — verify the within-block-window argument by re-running v1 with `block_length=5` and `block_length=20`. Smaller blocks should approach the unconditional ACF (within-window structure tracks more of the true within-block variation).
+
+Recommendation: try v3c first (cheapest, diagnostic), then v3a (smallest design lift) before v3b.
+
+### Carryover 2: Rule rename — `acf_seam_degradation` is misleading
+
+The metric is computed at seam lags but the gap is approximately the same magnitude at non-seam lags. Rename to `acf_global_degradation` and document that v2.2 conditional sampling does not address it (only v3a/v3b can).
+
+### Carryover 3: Tail inflator triggers re-check on every new dataset
+
+`u_shaped_high_vol_pit` did not fire on canonical v1 or canonical v2.1 (both near +2.2, threshold 2.5). It DID fire on a partial-run read at +5.08. If we re-baseline on a different asset/period, re-check whether the rule fires — the deferred tail inflator only stays deferred while the rule stays quiet.
+
+### Carryover 4: v2.2 conditional sampling as opt-in
+
+`generate_paths_conditional` ships in `sampling.py` with full tests. The config flag `conditional_block_sampling: bool = False` keeps it off by default. The CRPS gain it provides (~5% on the fast preset A/B test) is real but doesn't come from fixing the diagnostic it was designed to fix — so promoting it would muddy the diagnostic-attribution chain. Re-evaluate if v3a/v3b lands and the ACF rule turns green: at that point conditional sampling becomes either redundant or stackable, and the gain attribution becomes clean.
+
+### Carryover 5: `default_v21.yaml` cleanup
+
+After the v2.1 promotion to canonical, `default_v21.yaml` is functionally identical to `default.yaml`. Keep it for one version as documentation of the v2.1 acceptance run, then delete when v3 lands.

@@ -2,7 +2,7 @@
 
 ## Build status
 
-All 11 stages are implemented and unit-tested (164 tests, 2 intentionally skipped). Concrete artifacts:
+All 11 v1 stages + v2.1 (trailing-momentum drift) are implemented, unit-tested (186 tests, 2 intentionally skipped), and shipped as the canonical default. v2.2 (conditional block sampling) is implemented and shipped as an opt-in mode but deferred from default after the acceptance audit — see V2_PLAN.md and RESULTS.md for the audit conclusion. Concrete artifacts:
 
 - `src/analog_mc/{config,data,features,distances,sampling,simulate,scoring,search,walk_forward,diagnostics}.py`
 - CLI entry: `python -m analog_mc walk-forward --config <yaml>` (used by the run-experiment dashboard view)
@@ -10,7 +10,9 @@ All 11 stages are implemented and unit-tested (164 tests, 2 intentionally skippe
 - 5 v2-trigger decision rules in `diagnostics.py` per Stage 9 of this plan
 - Crash-resumable per-fold persistence (parquet for search grid, compressed npz for forecast paths + σ ratios + realized, JSON summaries)
 
-**Canonical v1 baseline:** `runs/analog_mc/20260516T180000Z/` (`default.yaml`, 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05246, 3h 47m wall time). Two v2 triggers fired (`sloped_global_pit`, `acf_seam_degradation`); `u_shaped_high_vol_pit` did NOT fire on the full set despite firing on a partial-run read — the tail inflator stays out of v2. See `V2_PLAN.md` for the canonical decision-rule table and v2 scope.
+**Canonical v1 baseline (archived):** `runs/analog_mc/20260516T180000Z/` (`default.yaml` with the original `drift_mode: zero`, 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05246, 3h 47m). Two v2 triggers fired (`sloped_global_pit`, `acf_seam_degradation`).
+
+**Canonical v2.1 baseline (current default):** `runs/analog_mc/20260517T145344Z/` (`default_v21.yaml`, identical to the live `default.yaml` after the v2.1 promotion — 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05265, 3h 43m). `sloped_global_pit` no longer fires (+0.158 → +0.053); high-vol-regime CRPS improved 5.2% (0.0911 → 0.0864). `acf_seam_degradation` still fires unchanged — see RESULTS.md v2.2 audit for why it can't be fixed by per-block re-matching.
 
 **Results lookup:** [`RESULTS.md`](RESULTS.md) is the quick-reference dashboard for every walk-forward run that has shaped a v1/v2 decision — headline numbers, decision-rule verdicts, key plots inline, and pointers to persisted artifacts. Check it first before re-deriving anything from raw run directories.
 
@@ -19,6 +21,10 @@ For the end-to-end run command and high-level architecture, see the project `REA
 ## Revision history
 
 - **v1.1** — Revised C3 (per-analog vol scaling). The original per-block demean (`raw_block.mean()`) caused every Monte Carlo path to collapse to a point mass at zero cumulative log return at every block boundary (h = 10, 20, 30, 40, 50, 60), destroying calibration diagnostics at those horizons. Replaced with a single shared baseline per forecast (`mu_origin` = trailing causal mean at the forecast origin over the longest z-score horizon). Each analog block is demeaned against the same constant, preserving its deviation from current regime drift. See C3 for details and the architectural diagram step 2e. Stage 1 also adds `causal_trailing_mean` to `features.py`.
+
+- **v2.1** — Added trailing-momentum drift. `forecast()` reads `drift_mode` from config; when `"trailing_momentum"`, drift is the shrunk recent-mean estimate at the origin, applied per C7 (after σ ratio) and C10 (constant per forecast). `compute_features` adds a second trailing-mean column at `momentum_lookback` when needed. Acceptance: `sloped_global_pit` no longer fires (+0.158 → +0.053), high-vol-regime CRPS improved 5.2%, mean CRPS essentially flat. v2.1 promoted to canonical default — `default.yaml` now sets `drift_mode: trailing_momentum`.
+
+- **v2.2** — Implemented conditional block sampling (`generate_paths_conditional`, batched τ solver, per-path z-score buffer) and the test-only contingency (`conditional_block_sampling_in_search`). Acceptance gate **failed**: the target rule `acf_seam_degradation` did not improve (metric −1.056 → −1.121 on the fast preset). Audit traced the cause to a structural ceiling: any sampler that draws 10-day analog blocks intact inherits the within-window squared-return ACF (real-data within-10-day ACF = −0.125), not the unconditional ACF (+0.27). v2.2 ships as an opt-in mode (`conditional_block_sampling: true` in config) but stays off-by-default. Fixing the ACF rule needs per-step σ injection — v3 scope. See RESULTS.md for the full audit.
 
 ## Purpose of this document
 
