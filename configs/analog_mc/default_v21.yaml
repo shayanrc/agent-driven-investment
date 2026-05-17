@@ -1,0 +1,40 @@
+# Canonical v2.1 preset: identical to default.yaml except drift_mode is
+# "trailing_momentum". The like-for-like comparison against the v1 canonical
+# baseline (runs/analog_mc/20260516T180000Z/) before promoting v2.1 to default.
+
+ticker: NASDAQ100
+data_path: data/NASDAQ100.csv
+date_col: observation_date
+close_col: NASDAQ100
+
+forecast_horizon: 60
+block_length: 10
+n_blocks: 6
+n_paths: 1000
+
+zscore_horizons: [20, 50, 200]
+
+ewma_halflife: 20
+
+train_initial_size: 1000
+val_size: 60
+test_size: 60
+
+weight_grid_resolution: 0.1
+n_eff_values: [15, 30, 50, 80, 150]
+local_refine_top_k: 5
+nelder_mead_xatol: 0.01
+nelder_mead_maxiter: 50
+
+vol_clip_lower: 0.5
+vol_clip_upper: 3.0
+drift_mode: trailing_momentum
+momentum_lookback: 20
+momentum_shrinkage: 0.5
+
+pit_n_bins: 20
+acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+vol_regime_quantiles: [0.33, 0.67]
+
+random_seed: 42
+runs_dir: runs/analog_mc
