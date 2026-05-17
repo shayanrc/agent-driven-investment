@@ -11,6 +11,8 @@ A third feature (tail inflator for the high-vol-regime PIT) is *not* in v2 scope
 
 Like `IMPLEMENTATION_PLAN.md`, this is a specification, not exploratory notes. Every decision below was made for a stated reason; do not silently change architectural decisions during implementation.
 
+**Results lookup:** [`RESULTS.md`](RESULTS.md) holds the headline numbers, decision-rule verdicts, and key plots for every run. Check it before re-deriving from raw run directories.
+
 ---
 
 ## Trigger evidence (from v1 canonical baseline)

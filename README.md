@@ -150,17 +150,19 @@ The dashboard is a thin presentation layer. All real computation lives in `src/a
 
 ## Status
 
-**`analog_mc` v1.1** — 11 stages complete, 164 unit tests passing. The v1.1 fix (shared-baseline `μ_origin` demean replacing the original per-block demean) is documented in `docs/analog_mc/IMPLEMENTATION_PLAN.md` under "Revision history".
+**`analog_mc` v2.1 in progress** — v1 canonical baseline complete; v2.1 (trailing-momentum drift) shipped and accepted; v2.2 (conditional block sampling) is the next milestone. 174 unit tests passing.
+
+**📊 [Results lookup: `docs/analog_mc/RESULTS.md`](docs/analog_mc/RESULTS.md)** — headline numbers, decision-rule verdicts, key plots inline for every run that shaped a v1/v2 decision. Start there.
 
 **v2 features** are gated behind specific diagnostic findings (see `decision_rules()` in `diagnostics.py`):
 
-| v2 feature | Triggered by |
-|---|---|
-| Trailing-momentum drift (`drift_mode='trailing_momentum'`) | Sloped global PIT |
-| Conditional block sampling | Squared-return ACF degradation > 30% at seam lags |
-| Tail inflator | U-shape in high-vol-regime PIT |
-| Drop per-fold search | Fixed-weight baseline within 1% of tuned CRPS |
-| Revisit distance metric | Clip-hit fraction > 15% on either bound |
+| v2 feature | Triggered by | Status |
+|---|---|---|
+| Trailing-momentum drift (`drift_mode='trailing_momentum'`) | Sloped global PIT | ✅ v2.1 shipped + accepted |
+| Conditional block sampling | Squared-return ACF degradation > 30% at seam lags | 🔄 v2.2 in progress |
+| Tail inflator | U-shape in high-vol-regime PIT | deferred (didn't fire) |
+| Drop per-fold search | Fixed-weight baseline within 1% of tuned CRPS | not triggered |
+| Revisit distance metric | Clip-hit fraction > 15% on either bound | not triggered |
 
 ---
 

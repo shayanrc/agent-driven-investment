@@ -12,6 +12,8 @@ All 11 stages are implemented and unit-tested (164 tests, 2 intentionally skippe
 
 **Canonical v1 baseline:** `runs/analog_mc/20260516T180000Z/` (`default.yaml`, 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05246, 3h 47m wall time). Two v2 triggers fired (`sloped_global_pit`, `acf_seam_degradation`); `u_shaped_high_vol_pit` did NOT fire on the full set despite firing on a partial-run read — the tail inflator stays out of v2. See `V2_PLAN.md` for the canonical decision-rule table and v2 scope.
 
+**Results lookup:** [`RESULTS.md`](RESULTS.md) is the quick-reference dashboard for every walk-forward run that has shaped a v1/v2 decision — headline numbers, decision-rule verdicts, key plots inline, and pointers to persisted artifacts. Check it first before re-deriving anything from raw run directories.
+
 For the end-to-end run command and high-level architecture, see the project `README.md` at the repo root.
 
 ## Revision history
