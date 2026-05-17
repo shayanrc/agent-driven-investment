@@ -24,7 +24,10 @@ nelder_mead_maxiter: 50
 
 vol_clip_lower: 0.5
 vol_clip_upper: 3.0
-drift_mode: zero
+# v2.1 canonical: trailing-momentum drift eliminates the sloped_global_pit metric
+# (+0.158 -> +0.053) and improves high-vol-regime CRPS by 5.2% with mean CRPS
+# unchanged. See docs/analog_mc/RESULTS.md for the full comparison vs zero-drift.
+drift_mode: trailing_momentum
 momentum_lookback: 20
 momentum_shrinkage: 0.5
 
