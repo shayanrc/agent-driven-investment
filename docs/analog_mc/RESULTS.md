@@ -15,6 +15,8 @@ Quick-reference dashboard for every walk-forward run that has shaped a v1/v2 dec
 
 **v2.1 canonical** (`runs/analog_mc/20260517T145344Z/`, `configs/analog_mc/default.yaml` with `drift_mode: trailing_momentum`) is the current default. It ties v1 on aggregate CRPS, beats v1 high-vol CRPS by 5.2%, and eliminates the sloped-PIT firing. v2.2 conditional block sampling was implemented and tested but **did not address its target rule** — see the v2.2 audit section below.
 
+> **🔬 Ablation update (2026-05-18):** the 2×2 `(drift, conditional)` decomposition in [`ABLATIONS.md`](ABLATIONS.md) finds that **conditional sampling alone (Cell C) dominates aggregate CRPS** (−7.8% vs v1, −9.5% vs v2.1 default, −4.7% vs v2.2). Drift's only validated effect is PIT calibration; on aggregate CRPS it slightly hurts. The freeze of v2.1 as default may be revisited — see ABLATIONS.md "Conclusions" for the three-way decision matrix.
+
 | | v1 canonical (zero) | **v2.1 canonical (DEFAULT)** | v2.2 fast (drift + conditional) |
 |---|---|---|---|
 | Mean aggregate CRPS | 0.05246 | **0.05265** | 0.05045 |

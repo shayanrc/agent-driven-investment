@@ -303,6 +303,8 @@ The metric is computed at seam lags but the gap is approximately the same magnit
 
 `generate_paths_conditional` ships in `sampling.py` with full tests. The config flag `conditional_block_sampling: bool = False` keeps it off by default. The CRPS gain it provides (~5% on the fast preset A/B test) is real but doesn't come from fixing the diagnostic it was designed to fix — so promoting it would muddy the diagnostic-attribution chain. Re-evaluate if v3a/v3b lands and the ACF rule turns green: at that point conditional sampling becomes either redundant or stackable, and the gain attribution becomes clean.
 
+**2026-05-18 ablation update.** The 2×2 `(drift, conditional)` decomposition in [`ABLATIONS.md`](ABLATIONS.md) revisited the v2.2 deferral with the missing (zero drift, conditional) cell. Findings: **conditional sampling alone (Cell C) wins aggregate CRPS by 7.8% over v1, and 9.5% over v2.1 default**, winning every per-vol regime and 66–90% of folds vs every other cell. Drift's only validated effect is PIT calibration. The deferral of v2.2 is now a *production* decision (cost: ~12× slower test eval), not a *correctness* decision. Promote v2.2 (drift + conditional) or Cell C (conditional only) as default if the test-eval cost is acceptable. The ACF carryover (carryover 1) is unchanged — neither cell fixes it; that's still v3 scope.
+
 ### Carryover 5: `default_v21.yaml` cleanup
 
 After the v2.1 promotion to canonical, `default_v21.yaml` is functionally identical to `default.yaml`. Keep it for one version as documentation of the v2.1 acceptance run, then delete when v3 lands.
