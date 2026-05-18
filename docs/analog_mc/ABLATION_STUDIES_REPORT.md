@@ -1,4 +1,4 @@
-# analog_mc — v2 ablation results
+# analog_mc — v2 ablation studies report
 
 Companion to [`ABLATION_STUDIES_PLAN.md`](ABLATION_STUDIES_PLAN.md) (the spec). This file holds the results.
 

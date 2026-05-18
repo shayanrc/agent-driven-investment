@@ -1,4 +1,4 @@
-"""Multi-run ablation decomposition: emit comparison tables for paste into ABLATIONS.md.
+"""Multi-run ablation decomposition: emit comparison tables for paste into ABLATION_STUDIES_REPORT.md.
 
 Given a list of run directories (each is a completed walk_forward output), load
 each via analog_mc.diagnostics.load_run and emit markdown-formatted tables for:

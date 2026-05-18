@@ -1,6 +1,6 @@
 # analog_mc — v2 ablation studies plan
 
-Companion to `ABLATIONS.md` (which holds the *results*). This file is the *spec* — the design of which cells get run, what each cell answers, and how we'll know the study is done.
+Companion to `ABLATION_STUDIES_REPORT.md` (which holds the *results*). This file is the *spec* — the design of which cells get run, what each cell answers, and how we'll know the study is done.
 
 ## Motivation
 
@@ -46,7 +46,7 @@ Phase 1 needs Cell C-fast. Phase 2 is the A-canonical vs B-canonical comparison 
 
 **Run already done.** `runs/analog_mc/20260517T145344Z/` is the canonical v2.1 run (drift on, conditional off, full 66×5 grid, 1000 paths). It ties v1 canonical (0.05246) on aggregate at 0.05265 (+0.36% within Monte Carlo noise), wins high-vol-regime CRPS by 5.2%, and eliminates the sloped-PIT firing (+0.158 → +0.053). On the strength of those numbers, `default.yaml` was flipped to `drift_mode: trailing_momentum` and `default_v21.yaml` preserved as the like-for-like reproduction.
 
-Phase 2's only remaining task is documentation: include the A-canonical ↔ B-canonical comparison in the headline 2×2 table in `ABLATIONS.md` so the search-resolution-controlled drift effect (+0.00019 ≈ +0.36%) sits alongside the fast-preset deltas.
+Phase 2's only remaining task is documentation: include the A-canonical ↔ B-canonical comparison in the headline 2×2 table in `ABLATION_STUDIES_REPORT.md` so the search-resolution-controlled drift effect (+0.00019 ≈ +0.36%) sits alongside the fast-preset deltas.
 
 ## Decomposition analyses (no new runs)
 
@@ -70,7 +70,7 @@ All five decompositions run cheaply on persisted artifacts; the script skips the
 2. Launch Cell C walk-forward in background; arm a 15-min cron status check. ✅
 3. **In parallel:** author `scripts/ablation_decompose.py` and dry-run it on the 5 existing cells (A-fast, A-canonical, B-fast, B-canonical, D-fast) to catch any plumbing issue before C lands. ⏳
 4. When Cell C completes (~6 h), render diagnostic figs for it and rerun decompose with all 6 cells.
-5. Author `docs/analog_mc/ABLATIONS.md` — the results report.
+5. Author `docs/analog_mc/ABLATION_STUDIES_REPORT.md` — the results report.
 6. Update `RESULTS.md` (one-line index pointer to ABLATIONS) and `V2_PLAN.md` (ablation-conclusion paragraph under the v2.2 audit).
 7. Commit granularly (preset, script, results doc, doc pointers).
 
@@ -82,9 +82,9 @@ All runs are crash-resumable via `walk_forward.run_walk_forward(resume=True)` so
 |---|---|
 | `configs/analog_mc/ablation_C_cond_only.yaml` | Cell C preset |
 | `scripts/ablation_decompose.py` | Multi-run decomposition table generator |
-| `docs/analog_mc/ABLATIONS.md` | Results report — headline 2×2 + Phase-2 row + all decompositions + conclusion |
+| `docs/analog_mc/ABLATION_STUDIES_REPORT.md` | Results report — headline 2×2 + Phase-2 row + all decompositions + conclusion |
 | `docs/analog_mc/ABLATION_STUDIES_PLAN.md` | **This file** — the spec |
-| Pointer updates in `RESULTS.md` and `V2_PLAN.md` | Cross-references; not duplicates of ABLATIONS.md content |
+| Pointer updates in `RESULTS.md` and `V2_PLAN.md` | Cross-references; not duplicates of ABLATION_STUDIES_REPORT.md content |
 
 ## Existing helpers to reuse
 
