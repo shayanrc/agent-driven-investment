@@ -1,9 +1,13 @@
 """Render every Stage 9 diagnostic for a given run dir, save figures to <run>/figs/.
 
 Usage:
-    uv run python scripts/render_diagnostics.py <run_dir>
+    uv run python scripts/render_diagnostics.py <run_dir> [--skip-fixed-baseline]
 
 If <run_dir> is omitted, defaults to the most recent run under runs/analog_mc/.
+``--skip-fixed-baseline`` skips the (1/3, 1/3, 1/3) re-eval, which re-runs the
+whole walk-forward and is intractable on configs with conditional_block_sampling
+turned on (~12 h re-eval). Use it for ablation runs where the cell-vs-cell
+deltas are the comparison and the fixed-weight baseline isn't needed.
 """
 
 from __future__ import annotations
@@ -52,7 +56,10 @@ def _pick_run_dir(arg: str | None) -> Path:
 
 
 def main() -> None:
-    run_dir = _pick_run_dir(sys.argv[1] if len(sys.argv) > 1 else None)
+    argv = sys.argv[1:]
+    skip_fixed = "--skip-fixed-baseline" in argv
+    argv = [a for a in argv if a != "--skip-fixed-baseline"]
+    run_dir = _pick_run_dir(argv[0] if argv else None)
     print(f"== loading run from {run_dir}")
     run = load_run(run_dir)
     config = run.config
@@ -106,11 +113,15 @@ def main() -> None:
         except Exception as exc:
             print(f"  FAILED {name}: {exc!r}")
 
-    print(f"\n== fixed-weight baseline (1/3, 1/3, 1/3, n_eff=30) — this re-runs walk-forward eval")
-    baseline = fixed_weight_baseline_crps(returns, config)
-    print(f"  mean test CRPS (fixed):  {baseline['mean_test_crps']:.5f}")
-    print(f"  mean test CRPS (tuned):  {pf['test_crps'].mean():.5f}")
-    print(f"  delta: {(baseline['mean_test_crps'] - pf['test_crps'].mean()) / pf['test_crps'].mean() * 100:+.2f}%")
+    if skip_fixed:
+        print("\n== fixed-weight baseline: SKIPPED (--skip-fixed-baseline)")
+        baseline = None
+    else:
+        print(f"\n== fixed-weight baseline (1/3, 1/3, 1/3, n_eff=30) — this re-runs walk-forward eval")
+        baseline = fixed_weight_baseline_crps(returns, config)
+        print(f"  mean test CRPS (fixed):  {baseline['mean_test_crps']:.5f}")
+        print(f"  mean test CRPS (tuned):  {pf['test_crps'].mean():.5f}")
+        print(f"  delta: {(baseline['mean_test_crps'] - pf['test_crps'].mean()) / pf['test_crps'].mean() * 100:+.2f}%")
 
     print(f"\n== v2-trigger decision rules")
     rules = decision_rules(run, returns, fixed_baseline=baseline)
