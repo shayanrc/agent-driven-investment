@@ -156,6 +156,14 @@ def composite_distance_batched(
 
     Used by v2.2 conditional block sampling, where each path has its own
     effective sub-origin and so its own distance vector to the candidate pool.
+
+    Implementation: weighted-Euclidean identity ``‖x − y‖²_w = ‖x‖²_w + ‖y‖²_w
+    − 2 (x · (w⊙y))``, which factors the (n_paths, K, H) broadcast into a
+    single GEMM ``z_targets @ (z_candidates * weights).T`` plus two cheap
+    norm vectors. Memory drops from O(n_paths·K·H) to O(n_paths·K) and the
+    dominant work routes through BLAS instead of three NumPy elementwise
+    passes — material at the n_paths≈500–1000, K≈5000 sizes the late
+    walk-forward folds hit.
     """
     if z_targets.ndim != 2:
         raise ValueError(f"z_targets must be 2-D; got shape {z_targets.shape}")
@@ -168,40 +176,23 @@ def composite_distance_batched(
     if np.any(weights < 0):
         raise ValueError("weights must be non-negative")
 
-    # (n_paths, K, H) = (1, K, H) - (n_paths, 1, H)
-    diff = z_candidates[None, :, :] - z_targets[:, None, :]
-    sq = diff * diff
-    weighted_sq_sum = sq @ weights  # (n_paths, K)
-    return np.sqrt(np.maximum(weighted_sq_sum, 0.0))
-
-
-def _softmax_neg_and_log(distances: np.ndarray, tau: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Stable softmax of -distances/tau per row, returning both p and log p.
-
-    Args:
-        distances: (n_paths, K)
-        tau:       (n_paths,)
-
-    Returns:
-        p:     (n_paths, K) probabilities (each row sums to 1)
-        log_p: (n_paths, K) log probabilities (-inf where p underflowed to 0)
-    """
-    log_w = -distances / tau[:, None]
-    log_w -= log_w.max(axis=1, keepdims=True)
-    w = np.exp(log_w)
-    w_sum = w.sum(axis=1, keepdims=True)
-    p = w / w_sum
-    log_p = log_w - np.log(w_sum)
-    return p, log_p
-
-
-def _n_eff_batched(distances: np.ndarray, tau: np.ndarray) -> np.ndarray:
-    """exp(entropy) of softmax(-distances / tau) per row."""
-    p, log_p = _softmax_neg_and_log(distances, tau)
-    # Mask underflow rows: p=0 contributes 0 to entropy.
-    contrib = np.where(p > 0, -p * log_p, 0.0)
-    entropy = contrib.sum(axis=1)
-    return np.exp(entropy)
+    wz_cand = z_candidates * weights                       # (K, H)
+    targ_sq = (z_targets * z_targets) @ weights            # (n_paths,)
+    cand_sq = (z_candidates * z_candidates) @ weights      # (K,)
+    # Cross is the only (n_paths, K) allocation; subsequent ops fold the
+    # remaining identity terms into it in-place to avoid 4× the bandwidth
+    # the naive expression incurs (each `+`/`*` on a (n_paths, K) array
+    # allocates a fresh 44 MB at canonical resolution).
+    out = z_targets @ wz_cand.T                            # (n_paths, K) — BLAS GEMM
+    out *= -2.0
+    out += targ_sq[:, None]
+    out += cand_sq[None, :]
+    # Cancellation on near-identical (target, candidate) pairs can produce
+    # small negatives; clip before sqrt (semantics identical to the broadcast
+    # form, which also clamped via maximum(0)).
+    np.maximum(out, 0.0, out=out)
+    np.sqrt(out, out=out)
+    return out
 
 
 def distances_to_probs_batched(
@@ -217,6 +208,17 @@ def distances_to_probs_batched(
     using fully vectorized NumPy ops at every iteration. ~50–100× faster than
     a naive per-row brentq loop, which is the difference between a tractable
     v2.2 walk-forward and an intractable one.
+
+    Implementation: three (n_paths, K) buffers (``log_w``, ``w``, ``scratch``)
+    are pre-allocated once and reused for every bisection iteration. The
+    unfused expression form would allocate ~5 fresh (n_paths, K) arrays per
+    iteration × max_iter ≈ 110 fresh allocations at canonical resolution;
+    that allocation churn — not the floating-point work — dominates the
+    function's cost at large K. The per-iteration entropy is computed via
+    the identity ``H = log(Σ w) − Σ p · log_w_shifted`` so ``log_p`` never
+    has to be materialized (and the ``p > 0`` guard the original carried is
+    unnecessary: when ``exp(log_w_shifted)`` underflows, ``p · log_w_shifted``
+    evaluates to ``0 · finite = 0`` in IEEE float — no NaN to mask).
 
     Args:
         distances:    shape (n_paths, K) array of non-negative distances.
@@ -266,21 +268,50 @@ def distances_to_probs_batched(
     log_tau_low = np.log(safe_range) + np.log(1e-6)
     log_tau_high = np.log(safe_range) + np.log(1e6)
 
-    # Bisection on log τ. Each iter is O(n_paths * K) pure NumPy.
+    # Workhorse buffers — allocated once, reused for every bisection step.
+    log_w = np.empty_like(distances)
+    w = np.empty_like(distances)
+    scratch = np.empty_like(distances)
+    log_target_n_eff = np.log(target_n_eff)
+
+    # Bisection on log τ. Each iter is O(n_paths * K) pure NumPy, allocating
+    # only (n_paths,)-sized auxiliaries — no (n_paths, K) churn.
     for _ in range(max_iter):
         log_tau_mid = 0.5 * (log_tau_low + log_tau_high)
-        n_eff_mid = _n_eff_batched(distances, np.exp(log_tau_mid))
-        # n_eff is monotone increasing in τ. If n_eff > target, τ too large
-        # (too diffuse) -> shrink upper bound. Else expand lower bound.
-        too_diffuse = n_eff_mid > target_n_eff
+        # log_w := -distances * (1 / tau_mid) per row, in-place.
+        # Computing inv_tau via exp(-log_tau_mid) saves one np.exp call vs
+        # exp(log_tau_mid) then 1/.
+        inv_tau = np.exp(-log_tau_mid)  # (n_paths,)
+        np.multiply(distances, -inv_tau[:, None], out=log_w)
+        log_w -= log_w.max(axis=1, keepdims=True)  # numerical-stability shift
+
+        np.exp(log_w, out=w)                       # w := exp(log_w_shifted)
+        w_sum = w.sum(axis=1)                       # (n_paths,)
+        w /= w_sum[:, None]                         # w := p, in-place
+
+        np.multiply(w, log_w, out=scratch)          # scratch := p · log_w_shifted
+        # entropy = log(Σ w) − Σ p · log_w_shifted   (since log p = log_w − log Σ w)
+        entropy = np.log(w_sum)
+        entropy -= scratch.sum(axis=1)
+
+        # Compare in log-space against log(target_n_eff) — saves one np.exp per
+        # iter vs the original ``n_eff_mid > target_n_eff`` comparison.
+        too_diffuse = entropy > log_target_n_eff
         log_tau_high = np.where(too_diffuse, log_tau_mid, log_tau_high)
         log_tau_low = np.where(too_diffuse, log_tau_low, log_tau_mid)
         if (log_tau_high - log_tau_low).max() < tol:
             break
 
-    tau_star = np.exp(0.5 * (log_tau_low + log_tau_high))
-    p, _ = _softmax_neg_and_log(distances, tau_star)
+    # Final p at the converged midpoint. Re-uses the same buffers — one more
+    # in-place softmax pass, no fresh allocation.
+    log_tau_final = 0.5 * (log_tau_low + log_tau_high)
+    inv_tau = np.exp(-log_tau_final)
+    np.multiply(distances, -inv_tau[:, None], out=log_w)
+    log_w -= log_w.max(axis=1, keepdims=True)
+    np.exp(log_w, out=w)
+    w /= w.sum(axis=1, keepdims=True)
+
     # Degenerate rows get exact uniform.
     if degenerate.any():
-        p[degenerate] = 1.0 / K
-    return p
+        w[degenerate] = 1.0 / K
+    return w

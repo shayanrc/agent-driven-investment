@@ -64,6 +64,30 @@ Canonical conditional cells (`C-canonical`, `D-canonical`) were not run — extr
 | **C-fast** | **0.04809** | **−0.00406** | **−7.79%** |
 | D-fast (v2.2) | 0.05045 | −0.00170 | −3.25% |
 
+### Mean CRPS deltas vs B-canonical (v2.1, current production default)
+
+| cell | mean_crps | Δ vs B-canonical | rel |
+|---|---|---|---|
+| A-fast (v1) | 0.05215 | −0.00050 | −0.95% |
+| A-canonical (v1) | 0.05251 | −0.00014 | −0.27% |
+| B-fast (v2.1, fast preset) | 0.05313 | +0.00048 | +0.91% |
+| **C-fast** | **0.04809** | **−0.00456** | **−8.66%** |
+| D-fast (v2.2) | 0.05045 | −0.00220 | −4.18% |
+
+Reads against today's default: promoting Cell C buys **−8.66%** mean CRPS, promoting v2.2 (Cell D) buys **−4.18%**, reverting to v1 canonical costs only **+0.27%** (within Monte Carlo noise). The fast-preset v2.1 (B-fast) is 0.91% worse than the canonical v2.1, so the search-resolution gain from canonical is roughly the same magnitude as the within-cell noise.
+
+### Mean CRPS deltas vs B-fast (v2.1, equal-compute baseline)
+
+| cell | mean_crps | Δ vs B-fast | rel |
+|---|---|---|---|
+| A-fast (v1) | 0.05215 | −0.00098 | −1.84% |
+| A-canonical (v1) | 0.05251 | −0.00062 | −1.17% |
+| B-canonical (v2.1, default) | 0.05265 | −0.00048 | −0.90% |
+| **C-fast** | **0.04809** | **−0.00504** | **−9.49%** |
+| D-fast (v2.2) | 0.05045 | −0.00268 | −5.04% |
+
+Same compute budget (500 paths, 21×2 grid) as the fast-preset cells. This is the fair head-to-head within the 2×2 factorial — every drift-only cell (A or B) loses to every conditional-only cell (C or D).
+
 ### 2×2 attribution (fast preset, drift × conditional)
 
 | Effect | Computation | Result |
