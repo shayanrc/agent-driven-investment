@@ -40,7 +40,7 @@ PIT slope and ACF rules fire in every cell — both are unaffected by block geom
 | 20 | +0.170 | −0.004 | −0.004 | −0.004 |
 | 50 | +0.083 | −0.004 | −0.003 | −0.006 |
 
-![E1 block-length ACF comparison](figs/e1_block_length_acf.png)
+![E1 block-length ACF comparison](../figs/e1_block_length_acf.png)
 
 **Reading:** Simulated ACF is essentially flat at every lag for every block length. Shrinking blocks from 20 → 5 does NOT walk the simulated ACF toward the realized +0.27 → +0.08 curve. The expected mechanism (shorter blocks → less within-window structure inheritance) does not produce a recoverable ACF in this experiment.
 

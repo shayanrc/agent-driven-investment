@@ -22,17 +22,17 @@ Closes [`V3_PLAN.md`](V3_PLAN.md). Aggregates the outcomes of E1–E11 (with ext
 
 | ID | Hypothesis | Verdict | CRPS Δ | Rule impact | Detail |
 |---|---|---|---|---|---|
-| **E1** | Shorter blocks → ACF recovery (v3c carryover) | ❌ Falsified | bl=20: −2.9% vs bl=10 (CRPS direction, not ACF) | `acf_seam` flat across bl ∈ {5,10,20} | [`_e1_block_length.md`](_e1_block_length.md) |
-| **E2** | Lower shrinkage at Cell B beats s=0.50 | ✅ Confirmed | s=0.25 at Cell B: −4.9% vs s=0.50 | Pareto curve mapped | [`_e2_momentum.md`](_e2_momentum.md) |
+| **E1** | Shorter blocks → ACF recovery (v3c carryover) | ❌ Falsified | bl=20: −2.9% vs bl=10 (CRPS direction, not ACF) | `acf_seam` flat across bl ∈ {5,10,20} | [`experiments/_e1_block_length.md`](experiments/_e1_block_length.md) |
+| **E2** | Lower shrinkage at Cell B beats s=0.50 | ✅ Confirmed | s=0.25 at Cell B: −4.9% vs s=0.50 | Pareto curve mapped | [`experiments/_e2_momentum.md`](experiments/_e2_momentum.md) |
 | **E2-D-s25** | s=0.25 stacks with Cell D | ✅ CRPS, ⚠️ PIT | Cell D s25: −6.1% vs s=0.50; PIT +0.105 🔥 marginal | sloped_pit fires by 0.005 (fast) | same |
 | **E2-ext** | Pareto sweet-spot in s∈{0.30,0.35,0.40} | ✅ s=0.30 found | s=0.30 (fast): −5.5%; PIT +0.0958 ✅ | All rules pass | same |
 | **E2-canonical** | Confirm s=0.30 at canonical resolution | ✅ **v2.4 PROMOTED** | **−6.0% vs v2.3, −9.7% vs v2.1**; PIT +0.0216 ✅ | All non-structural rules pass | same |
-| **E3** | Cell D gain robust to seed noise | ✅ Confirmed (early stop, 2-pt) | Gap 0.08% << 4% Cell D gain | All rules stable to ≤0.013 | [`_e3_seed_noise.md`](_e3_seed_noise.md) |
+| **E3** | Cell D gain robust to seed noise | ✅ Confirmed (early stop, 2-pt) | Gap 0.08% << 4% Cell D gain | All rules stable to ≤0.013 | [`experiments/_e3_seed_noise.md`](experiments/_e3_seed_noise.md) |
 | **E7** | Promote Cell D as v2.3 default | ✅ Shipped | (config flip; gates passed) | same as Cell D fast | (folded into v2.3 commit) |
-| **E9-A** | GARCH-conditional σ closes ACF rule | ❌ Falsified | −2.2% mean, −3.8% high-vol | lag-1 ACF: −0.004 → +0.016 (still fails) | [`_e9_v3b.md`](_e9_v3b.md) |
+| **E9-A** | GARCH-conditional σ closes ACF rule | ❌ Falsified | −2.2% mean, −3.8% high-vol | lag-1 ACF: −0.004 → +0.016 (still fails) | [`experiments/_e9_v3b.md`](experiments/_e9_v3b.md) |
 | **E9-D** | Cell D + GARCH would stack | ⏭️ Skipped (E9-A result) | — | — | same |
-| **E10** | bl=20 stacks with Cell D | ❌ Falsified | E10: +0.3% (flat) vs Cell D | Mechanism overlap with cond. sampling | [`_e10_celld_bl20.md`](_e10_celld_bl20.md) |
-| **E11** | drift+bl=20 displaces Cell D | ❌ Falsified | E11: +2.7% vs Cell D | bl=20 + drift can't substitute for cond. | [`_e11_cellB_bl20.md`](_e11_cellB_bl20.md) |
+| **E10** | bl=20 stacks with Cell D | ❌ Falsified | E10: +0.3% (flat) vs Cell D | Mechanism overlap with cond. sampling | [`experiments/_e10_celld_bl20.md`](experiments/_e10_celld_bl20.md) |
+| **E11** | drift+bl=20 displaces Cell D | ❌ Falsified | E11: +2.7% vs Cell D | bl=20 + drift can't substitute for cond. | [`experiments/_e11_cellB_bl20.md`](experiments/_e11_cellB_bl20.md) |
 
 Aggregate JSON metrics: `results/analog_mc/data/_e{1,2,3,10}_data.json` and `_e2_canonical_Ds30_data.json`.
 
@@ -100,12 +100,12 @@ See [`V4_EXPERIMENTS_PLAN.md`](V4_EXPERIMENTS_PLAN.md) for the structured plan. 
 
 ### v3 experiment reports
 
-- [`_e1_block_length.md`](_e1_block_length.md) — E1 block-length sweep
-- [`_e2_momentum.md`](_e2_momentum.md) — E2 momentum shrinkage sweep + extension + canonical confirmation
-- [`_e3_seed_noise.md`](_e3_seed_noise.md) — E3 seed noise floor
-- [`_e9_v3b.md`](_e9_v3b.md) — E9-A GARCH-conditional resampling
-- [`_e10_celld_bl20.md`](_e10_celld_bl20.md) — E10 Cell D × bl=20
-- [`_e11_cellB_bl20.md`](_e11_cellB_bl20.md) — E11 Cell B × bl=20
+- [`experiments/_e1_block_length.md`](experiments/_e1_block_length.md) — E1 block-length sweep
+- [`experiments/_e2_momentum.md`](experiments/_e2_momentum.md) — E2 momentum shrinkage sweep + extension + canonical confirmation
+- [`experiments/_e3_seed_noise.md`](experiments/_e3_seed_noise.md) — E3 seed noise floor
+- [`experiments/_e9_v3b.md`](experiments/_e9_v3b.md) — E9-A GARCH-conditional resampling
+- [`experiments/_e10_celld_bl20.md`](experiments/_e10_celld_bl20.md) — E10 Cell D × bl=20
+- [`experiments/_e11_cellB_bl20.md`](experiments/_e11_cellB_bl20.md) — E11 Cell B × bl=20
 
 ### Aggregate metrics (machine-readable)
 

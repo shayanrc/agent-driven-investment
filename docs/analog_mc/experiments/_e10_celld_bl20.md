@@ -32,7 +32,7 @@ Single new run, fast preset, Cell D config with `block_length=20, n_blocks=3`. C
 
 Three-way + realized:
 
-![E10 ACF comparison](figs/e10_celld_bl20_acf.png)
+![E10 ACF comparison](../figs/e10_celld_bl20_acf.png)
 
 All three simulated curves are essentially flat at every lag (consistent with E1's structural-ceiling finding). E10's lag-1 ACF is −0.005, no closer to the realized +0.27 than the other cells. Confirms that bl=20 was never an ACF lever — only a CRPS lever under zero drift.
 

@@ -11,13 +11,13 @@ Like the prior plan docs: every decision below was made for a stated reason. Sur
 | Item | State (2026-05-20, end of v3 fast-preset phase) |
 |---|---|
 | Current default | **v2.3 — Cell D** (shipped 2026-05-19 via E7 flip; drift+cond, shrinkage=0.50, bl=10) |
-| **v2.4 promotion candidate** | **Cell-D-s30** — drift+cond with `momentum_shrinkage=0.30`. Fast preset: 0.04765 mean CRPS (**−5.5% vs v2.3 default, −9.5% vs v2.1**), PIT slope +0.0958 (passes +0.10 threshold). Canonical confirmation pending. See [`_e2_momentum.md`](_e2_momentum.md). |
-| **E1 (block-length sweep)** | ✅ done — [`_e1_block_length.md`](_e1_block_length.md). ACF flat across bl ∈ {5, 10, 20}; block geometry is not the ACF lever. |
-| **E10 (Cell D × bl=20)** | ✅ done — [`_e10_celld_bl20.md`](_e10_celld_bl20.md). bl=20 doesn't stack with Cell D. |
-| **E3 (seed noise floor)** | ✅ done (2-pt, early stop) — [`_e3_seed_noise.md`](_e3_seed_noise.md). 0.08% noise floor. |
-| **E11 (Cell B × bl=20)** | ✅ done — [`_e11_cellB_bl20.md`](_e11_cellB_bl20.md). bl=20 stacks with drift but loses to Cell D by 2.7%; doesn't displace conditional sampling. |
-| **E2 + extension (momentum sweep)** | ✅ done — [`_e2_momentum.md`](_e2_momentum.md). 5+3 cell Pareto sweep. **s=0.30 found as Pareto sweet-spot** at Cell D config. |
-| **E9-A (GARCH-conditional, zero drift)** | ✅ done — [`_e9_v3b.md`](_e9_v3b.md). GARCH gives +2.2% mean CRPS but **does NOT close the ACF rule**. Lag-1 ACF nudges from −0.004 to +0.016 vs realized +0.27. **`acf_seam_degradation` structurally unfixable within the analog-block primitive.** E9-D skipped (would inherit same ACF ceiling). v3b ships as opt-in `vol_model: "garch"`. |
+| **v2.4 promotion candidate** | **Cell-D-s30** — drift+cond with `momentum_shrinkage=0.30`. Fast preset: 0.04765 mean CRPS (**−5.5% vs v2.3 default, −9.5% vs v2.1**), PIT slope +0.0958 (passes +0.10 threshold). Canonical confirmation pending. See [`_e2_momentum.md`](experiments/_e2_momentum.md). |
+| **E1 (block-length sweep)** | ✅ done — [`_e1_block_length.md`](experiments/_e1_block_length.md). ACF flat across bl ∈ {5, 10, 20}; block geometry is not the ACF lever. |
+| **E10 (Cell D × bl=20)** | ✅ done — [`_e10_celld_bl20.md`](experiments/_e10_celld_bl20.md). bl=20 doesn't stack with Cell D. |
+| **E3 (seed noise floor)** | ✅ done (2-pt, early stop) — [`_e3_seed_noise.md`](experiments/_e3_seed_noise.md). 0.08% noise floor. |
+| **E11 (Cell B × bl=20)** | ✅ done — [`_e11_cellB_bl20.md`](experiments/_e11_cellB_bl20.md). bl=20 stacks with drift but loses to Cell D by 2.7%; doesn't displace conditional sampling. |
+| **E2 + extension (momentum sweep)** | ✅ done — [`_e2_momentum.md`](experiments/_e2_momentum.md). 5+3 cell Pareto sweep. **s=0.30 found as Pareto sweet-spot** at Cell D config. |
+| **E9-A (GARCH-conditional, zero drift)** | ✅ done — [`_e9_v3b.md`](experiments/_e9_v3b.md). GARCH gives +2.2% mean CRPS but **does NOT close the ACF rule**. Lag-1 ACF nudges from −0.004 to +0.016 vs realized +0.27. **`acf_seam_degradation` structurally unfixable within the analog-block primitive.** E9-D skipped (would inherit same ACF ceiling). v3b ships as opt-in `vol_model: "garch"`. |
 | Decision rules that still fire | `acf_seam_degradation` everywhere (now confirmed structural — v4 scope) |
 | Decision rules creeping toward firing | `u_shaped_high_vol_pit` (cleanest at Cell-D-sNN variants: +1.50 to +1.65; threshold +2.50) |
 | Open V2_PLAN carryovers | ~~v3c (E1)~~, ~~v3b (E9)~~, ~~v3a~~ (held — same ceiling), tail-inflator re-check, multi-asset robustness |
@@ -55,7 +55,7 @@ Tier-4 speedups (`max_iter=14`, float32 flag, CuPy port) are deferred to [`SPEED
 
 ### E1. Block-length sweep (v3c) — ✅ done
 
-**Status (2026-05-19).** All three cells ran fast preset (76 folds each). Full results in [`_e1_block_length.md`](_e1_block_length.md); summary:
+**Status (2026-05-19).** All three cells ran fast preset (76 folds each). Full results in [`_e1_block_length.md`](experiments/_e1_block_length.md); summary:
 
 | | bl=5 | bl=10 | bl=20 |
 |---|---|---|---|
@@ -439,13 +439,13 @@ LLM-paced re-estimate of E9 (5h instead of 1.5 days) changes the calculus: codin
 |---|---|---|
 | `configs/analog_mc/ablation_E1_bl{5,10,20}.yaml` | E1 cells | ✅ |
 | `runs/analog_mc/20260519T{060335,064102,071520}Z` | E1 run dirs | ✅ |
-| `docs/analog_mc/_e1_block_length.md` | E1 results | ✅ |
+| `docs/analog_mc/experiments/_e1_block_length.md` | E1 results | ✅ |
 | `docs/analog_mc/figs/e1_block_length_acf.png` | E1 ACF comparison plot | ✅ |
 | `scripts/_e1_aggregate.py` | E1 aggregator (reusable for E10/E9 ACF curves) | ✅ |
 | `configs/analog_mc/ablation_E10_celld_bl20.yaml` | E10 cell | ✅ |
-| `docs/analog_mc/_e10_celld_bl20.md` + figs | E10 results | ✅ |
+| `docs/analog_mc/experiments/_e10_celld_bl20.md` + figs | E10 results | ✅ |
 | `configs/analog_mc/ablation_E3_seed{7,1337,2024,99}.yaml` | E3 seed configs (only seed7 ran) | ✅ |
-| `docs/analog_mc/_e3_seed_noise.md` | E3 results | ✅ |
+| `docs/analog_mc/experiments/_e3_seed_noise.md` | E3 results | ✅ |
 | `configs/analog_mc/ablation_E11_cellB_bl20.yaml` | E11 (post-E10 add) | pending |
 | `configs/analog_mc/ablation_E2_s{00,25,50,75,100}.yaml` | E2 5-cell partial | pending |
 | `src/analog_mc/vol.py` + `src/analog_mc/sampling.py::scale_block_garch` | E9 (v3b) implementation | pending |
