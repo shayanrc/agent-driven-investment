@@ -27,6 +27,25 @@ from analog_mc.distances import composite_distance, distances_to_probs
 from analog_mc.sampling import generate_paths, generate_paths_conditional
 
 
+# Per-worker GARCH fit cache (E9). The fit depends only on (returns, origin_idx);
+# search calls forecast() many times per origin with different weights/n_eff.
+# Without this cache, GARCH fitting dominates wall time. See simulate.forecast.
+_GARCH_FIT_CACHE: dict[tuple[int, int], object] = {}
+
+
+def _garch_fit_cached(returns: np.ndarray, origin_idx: int) -> object:
+    """Cache GARCHFit by (id(returns), origin_idx). Per-worker memory."""
+    from analog_mc.vol import fit_garch
+
+    key = (id(returns), origin_idx)
+    cached = _GARCH_FIT_CACHE.get(key)
+    if cached is not None:
+        return cached
+    fit = fit_garch(returns[: origin_idx + 1])
+    _GARCH_FIT_CACHE[key] = fit
+    return fit
+
+
 def _z_columns(config: Config) -> list[str]:
     return [f"zscore_{h}" for h in config.zscore_horizons]
 
@@ -190,6 +209,29 @@ def forecast(
             f"Effective candidate pool ({eligible.size}) is too small for n_eff>1."
         )
 
+    # v3b (E9): when vol_model='garch', fit GARCH(1,1) on causal returns up to
+    # and through the forecast origin, then simulate per-path σ trajectories
+    # over the forecast horizon. Per-step rescaling inside generate_paths swaps
+    # the block-constant σ ratio for σ_path[t] / σ_historical_at_step[t].
+    #
+    # The GARCH fit depends ONLY on (returns, origin_idx) — not weights/n_eff/rng.
+    # Search calls forecast() ~150 times per origin (weight×n_eff combos), so we
+    # cache the fit per (id(returns), origin_idx) to avoid refitting. Per-worker
+    # cache (multiprocessing has separate memory) — bounded growth: at most
+    # ~76 folds × ~120 origins per fold / N_workers per-worker entries; the fit
+    # object is tiny so total memory is negligible.
+    sigma_path: np.ndarray | None = None
+    if config.vol_model == "garch":
+        from analog_mc.vol import fit_garch, simulate_garch_sigma_paths
+
+        fit = _garch_fit_cached(returns, origin_idx)
+        sigma_path = simulate_garch_sigma_paths(
+            fit=fit,
+            horizon=config.forecast_horizon,
+            n_paths=config.n_paths,
+            rng=rng,
+        )
+
     if config.conditional_block_sampling:
         return generate_paths_conditional(
             z_at_origin=z_target,
@@ -206,6 +248,8 @@ def forecast(
             rng=rng,
             drift_target=drift_target,
             record_ratios=record_ratios,
+            sigma_path=sigma_path,
+            sigma_at_returns=sigma_all if sigma_path is not None else None,
         )
 
     distances = composite_distance(z_target, z_candidates, weights)
@@ -222,4 +266,6 @@ def forecast(
         rng=rng,
         drift_target=drift_target,
         record_ratios=record_ratios,
+        sigma_path=sigma_path,
+        sigma_at_returns=sigma_all if sigma_path is not None else None,
     )

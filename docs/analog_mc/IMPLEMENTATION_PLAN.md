@@ -2,7 +2,7 @@
 
 ## Build status
 
-All 11 v1 stages + v2.1 (trailing-momentum drift) are implemented, unit-tested (186 tests, 2 intentionally skipped), and shipped as the canonical default. v2.2 (conditional block sampling) is implemented and shipped as an opt-in mode but deferred from default after the acceptance audit — see V2_PLAN.md and RESULTS.md for the audit conclusion. Concrete artifacts:
+All 11 v1 stages + v2.1 (trailing-momentum drift) + v2.2 (conditional block sampling) + v2.3 (Cell D promotion) are implemented, unit-tested, and shipped. **The canonical default is now Cell D from the 2×2 ablation: drift + conditional block sampling (test-time only).** Promotion gates (E3 seed noise floor, E10 bl=20 alternative) passed 2026-05-19; see V3_PLAN.md, RESULTS.md, and the v2.3 entry below. Concrete artifacts:
 
 - `src/analog_mc/{config,data,features,distances,sampling,simulate,scoring,search,walk_forward,diagnostics}.py`
 - CLI entry: `python -m analog_mc walk-forward --config <yaml>` (used by the run-experiment dashboard view)
@@ -12,7 +12,9 @@ All 11 v1 stages + v2.1 (trailing-momentum drift) are implemented, unit-tested (
 
 **Canonical v1 baseline (archived):** `runs/analog_mc/20260516T180000Z/` (`default.yaml` with the original `drift_mode: zero`, 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05246, 3h 47m). Two v2 triggers fired (`sloped_global_pit`, `acf_seam_degradation`).
 
-**Canonical v2.1 baseline (current default):** `runs/analog_mc/20260517T145344Z/` (`default_v21.yaml`, identical to the live `default.yaml` after the v2.1 promotion — 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05265, 3h 43m). `sloped_global_pit` no longer fires (+0.158 → +0.053); high-vol-regime CRPS improved 5.2% (0.0911 → 0.0864). `acf_seam_degradation` still fires unchanged — see RESULTS.md v2.2 audit for why it can't be fixed by per-block re-matching.
+**Canonical v2.1 baseline (archived):** `runs/analog_mc/20260517T145344Z/` (`default_v21.yaml`, mean test CRPS 0.05265, 3h 43m). `sloped_global_pit` no longer fires (+0.158 → +0.053); high-vol-regime CRPS improved 5.2% (0.0911 → 0.0864) vs v1. `acf_seam_degradation` still fires unchanged — see RESULTS.md v2.2 audit for why it can't be fixed by per-block re-matching.
+
+**Canonical v2.3 baseline (current default):** `runs/analog_mc/20260518T155800Z/` (`default_v22.yaml`, identical to the live `default.yaml` after v2.3 promotion — 76 folds, 273,120 origin × step pairs, mean test CRPS 0.05056, 7h 36m). Cell D = trailing-momentum drift + conditional block sampling. −4.0% mean CRPS vs v2.1 canonical, −3.9% high-vol CRPS, PIT calibration preserved. `acf_seam_degradation` still fires (structural ceiling, v3 scope).
 
 **Results lookup:** [`RESULTS.md`](RESULTS.md) is the quick-reference dashboard for every walk-forward run that has shaped a v1/v2 decision — headline numbers, decision-rule verdicts, key plots inline, and pointers to persisted artifacts. Check it first before re-deriving anything from raw run directories.
 
@@ -24,7 +26,9 @@ For the end-to-end run command and high-level architecture, see the project `REA
 
 - **v2.1** — Added trailing-momentum drift. `forecast()` reads `drift_mode` from config; when `"trailing_momentum"`, drift is the shrunk recent-mean estimate at the origin, applied per C7 (after σ ratio) and C10 (constant per forecast). `compute_features` adds a second trailing-mean column at `momentum_lookback` when needed. Acceptance: `sloped_global_pit` no longer fires (+0.158 → +0.053), high-vol-regime CRPS improved 5.2%, mean CRPS essentially flat. v2.1 promoted to canonical default — `default.yaml` now sets `drift_mode: trailing_momentum`.
 
-- **v2.2** — Implemented conditional block sampling (`generate_paths_conditional`, batched τ solver, per-path z-score buffer) and the test-only contingency (`conditional_block_sampling_in_search`). Acceptance gate **failed**: the target rule `acf_seam_degradation` did not improve (metric −1.056 → −1.121 on the fast preset). Audit traced the cause to a structural ceiling: any sampler that draws 10-day analog blocks intact inherits the within-window squared-return ACF (real-data within-10-day ACF = −0.125), not the unconditional ACF (+0.27). v2.2 ships as an opt-in mode (`conditional_block_sampling: true` in config) but stays off-by-default. Fixing the ACF rule needs per-step σ injection — v3 scope. See RESULTS.md for the full audit.
+- **v2.2** — Implemented conditional block sampling (`generate_paths_conditional`, batched τ solver, per-path z-score buffer) and the test-only contingency (`conditional_block_sampling_in_search`). Acceptance gate **failed**: the target rule `acf_seam_degradation` did not improve (metric −1.056 → −1.121 on the fast preset). Audit traced the cause to a structural ceiling: any sampler that draws 10-day analog blocks intact inherits the within-window squared-return ACF (real-data within-10-day ACF = −0.125), not the unconditional ACF (+0.27). v2.2 ships as an opt-in mode (`conditional_block_sampling: true` in config). Initially stayed off-by-default. Fixing the ACF rule needs σ-scaling work — v3 scope. See RESULTS.md for the full audit.
+
+- **v2.3** *(2026-05-19, promoted)* — **Default flipped to Cell D from the 2×2 ablation: trailing-momentum drift + conditional block sampling.** The 2×2 `(drift, conditional)` decomposition in ABLATION_STUDIES_REPORT.md reframed the v2.2 deferral: conditional sampling delivers a CRPS gain (~4% canonical) as an independent mechanism, separate from the ACF rule it was originally designed to fix. Cell D canonical confirmation (`runs/analog_mc/20260518T155800Z/`) landed at mean CRPS 0.05056 (−4.0% vs v2.1), high-vol CRPS 0.0831 (−3.9%), with PIT calibration preserved (sloped_global_pit +0.055, well below ±0.10). Promotion gates per V3_PLAN: **E3 seed-noise floor (0.08% << 4% gain → robust)** and **E10 Cell D × bl=20 (does not stack → vanilla Cell D is the right target)**. `acf_seam_degradation` still fires (structural; v3b/E9 GARCH-conditional resampling is the next planned fix). `default_v22.yaml` is kept as archived acceptance config; `default.yaml` now mirrors it.
 
 ## Purpose of this document
 

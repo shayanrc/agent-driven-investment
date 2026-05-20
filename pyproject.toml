@@ -3,6 +3,7 @@ name = "agent-driven-investment"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "arch>=8.0.0",
     "matplotlib>=3.10.9",
     "numpy>=2.4.5",
     "pandas>=3.0.3",

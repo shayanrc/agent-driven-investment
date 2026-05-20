@@ -1,0 +1,129 @@
+{
+  "lags_reported": [
+    1,
+    5,
+    10,
+    15,
+    20,
+    50
+  ],
+  "realized_acf_at_lags": {
+    "1": 0.2712925696399574,
+    "5": 0.2562470175414738,
+    "10": 0.20758751930171848,
+    "15": 0.15158873218380786,
+    "20": 0.16986856446321008,
+    "50": 0.08324072861012428
+  },
+  "cells": {
+    "D-fast": {
+      "run_dir": "runs/analog_mc/20260517T070003Z",
+      "config": {
+        "block_length": 10,
+        "n_blocks": 6,
+        "drift_mode": "trailing_momentum",
+        "conditional_block_sampling": true
+      },
+      "mean_crps": 0.05040715361534781,
+      "median_crps": 0.041245281224857246,
+      "per_regime_crps": {
+        "low_vol": 0.029295932061209753,
+        "mid_vol": 0.03977256334284153,
+        "high_vol": 0.08261639010227635
+      },
+      "sim_acf_at_lags": {
+        "1": 0.006150673143565655,
+        "5": 0.014815681613981724,
+        "10": -0.011784999631345272,
+        "15": -0.0144131388515234,
+        "20": -0.01640363782644272,
+        "50": -0.006212927401065826
+      },
+      "rules": {}
+    },
+    "E1-bl20": {
+      "run_dir": "runs/analog_mc/20260519T071520Z",
+      "config": {
+        "block_length": 20,
+        "n_blocks": 3,
+        "drift_mode": "zero",
+        "conditional_block_sampling": false
+      },
+      "mean_crps": 0.050631832562286386,
+      "median_crps": 0.030910141518716492,
+      "per_regime_crps": {
+        "low_vol": 0.027131514240883246,
+        "mid_vol": 0.03862125365973665,
+        "high_vol": 0.08651056376061826
+      },
+      "sim_acf_at_lags": {
+        "1": -0.0036054737865924835,
+        "5": 0.016923516988754272,
+        "10": -0.001248484244570136,
+        "15": -0.010567022487521172,
+        "20": -0.0037003043107688427,
+        "50": -0.006518526468425989
+      },
+      "rules": {
+        "sloped_global_pit": {
+          "metric": 0.14058289396602225,
+          "fired": true
+        },
+        "u_shaped_high_vol_pit": {
+          "metric": 1.9727604203903621,
+          "fired": false
+        },
+        "acf_seam_degradation": {
+          "metric": -1.1152151814860625,
+          "fired": true
+        },
+        "clip_hit_excessive": {
+          "metric": 0.09652299355594611,
+          "fired": false
+        }
+      }
+    },
+    "E10": {
+      "run_dir": "runs/analog_mc/20260519T083821Z",
+      "config": {
+        "block_length": 20,
+        "n_blocks": 3,
+        "drift_mode": "trailing_momentum",
+        "conditional_block_sampling": true
+      },
+      "mean_crps": 0.050548154619927295,
+      "median_crps": 0.031054614228012145,
+      "per_regime_crps": {
+        "low_vol": 0.029520868359132355,
+        "mid_vol": 0.03992611008983902,
+        "high_vol": 0.08252279436446168
+      },
+      "sim_acf_at_lags": {
+        "1": 0.0015837452374398708,
+        "5": 0.021906742826104164,
+        "10": 0.00013600038073491305,
+        "15": -0.010238675400614738,
+        "20": -0.017885135486721992,
+        "50": -0.006359130144119263
+      },
+      "rules": {
+        "sloped_global_pit": {
+          "metric": 0.049428822495606345,
+          "fired": false
+        },
+        "u_shaped_high_vol_pit": {
+          "metric": 1.6468338842439563,
+          "fired": false
+        },
+        "acf_seam_degradation": {
+          "metric": -1.1293973109781739,
+          "fired": true
+        },
+        "clip_hit_excessive": {
+          "metric": 0.10083289396602226,
+          "fired": false
+        }
+      }
+    }
+  }
+}

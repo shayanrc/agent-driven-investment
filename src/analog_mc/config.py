@@ -67,6 +67,11 @@ class Config:
     # open question 7: search is cheap (v1/v2.1), test eval gets the conditional benefit.
     # Approximately right when optimal weights are similar under v1 and v2.
 
+    # ---- v3b (E9) -------------------------------------------------------
+    vol_model: str = "ewma"  # "ewma" (default) or "garch" — when "garch", scale_block uses
+    # a GARCH(1,1)-simulated σ path per step instead of block-constant σ ratio. EWMA branch
+    # is exactly the v2.x behavior. GARCH is gated on E9 acceptance per V3_PLAN.
+
     # ---- Diagnostics ----------------------------------------------------
     pit_n_bins: int = 20
     acf_lags: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
@@ -114,6 +119,8 @@ class Config:
             raise ValueError("n_paths must be >= 1")
         if self.drift_mode not in {"zero", "trailing_momentum", "scale_with_vol"}:
             raise ValueError(f"drift_mode must be one of zero|trailing_momentum|scale_with_vol; got {self.drift_mode}")
+        if self.vol_model not in {"ewma", "garch"}:
+            raise ValueError(f"vol_model must be 'ewma' or 'garch'; got {self.vol_model}")
 
     # ---- I/O ------------------------------------------------------------
     def to_dict(self) -> dict[str, Any]:

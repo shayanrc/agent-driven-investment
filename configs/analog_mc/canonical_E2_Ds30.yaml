@@ -1,3 +1,8 @@
+# Canonical Cell-D-s30 confirmation run. v2.2 (Cell D) knobs with
+# momentum_shrinkage=0.30 (the E2-extension Pareto winner). Confirms the
+# fast-preset finding at full canonical resolution (66×5 weight grid, 1000
+# paths) before promoting to v2.4 default.
+
 ticker: NASDAQ100
 data_path: data/NASDAQ100.csv
 date_col: observation_date
@@ -24,18 +29,11 @@ nelder_mead_maxiter: 50
 
 vol_clip_lower: 0.5
 vol_clip_upper: 3.0
-# v2.3 canonical (promoted 2026-05-19): trailing-momentum drift + conditional
-# block sampling (test-time only). Confirmed at canonical resolution as Cell D
-# from the 2×2 (drift, conditional) ablation: -4.0% mean CRPS vs v2.1 canonical
-# while preserving PIT calibration (sloped_global_pit +0.055, well below ±0.10).
-# Promotion gates passed by E3 (seed noise floor 0.08% << 4% gain) and E10
-# (Cell D × bl=20 does NOT stack — vanilla Cell D is the right target).
-# See docs/analog_mc/RESULTS.md and docs/analog_mc/V3_PLAN.md.
 drift_mode: trailing_momentum
 momentum_lookback: 20
-momentum_shrinkage: 0.5
+momentum_shrinkage: 0.30
 conditional_block_sampling: true
-conditional_block_sampling_in_search: false  # search uses v1 sampling (cheap); test eval gets conditional
+conditional_block_sampling_in_search: false
 
 pit_n_bins: 20
 acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
