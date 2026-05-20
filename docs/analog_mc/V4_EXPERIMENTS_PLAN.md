@@ -60,9 +60,9 @@ This is the cheapest experiment that can falsify a foundational claim of the pip
 
 **Acceptance criteria for promoting FHS as a comparator baseline in `RESULTS.md`:** ran successfully on 76 folds, full diagnostic stack rendered (CRPS, per-vol-regime CRPS, PIT, ACF), no implementation bugs (sanity: σ-clip-hit rate < 10%, drift bias ≈ 0).
 
-**Deliverables.** `src/analog_mc/baselines/fhs.py`, `configs/analog_mc/baseline_fhs.yaml`, run dir, `_a1_fhs.md` report.
+**Deliverables.** `src/analog_mc/baselines/fhs.py`, `configs/analog_mc/baseline_fhs.yaml`, run dir, `_a1_fhs.md` report. **Plus the mandatory fat-tail panel**: 15 charts in `docs/analog_mc/experiments/figs/a1_fhs_fat_tail/`, coverage table in `_a1_fhs.md`, per-anchor CRPS diff vs v2.4 baseline.
 
-**Cost.** ~3 h impl (GARCH fit + residual bootstrap + integration with walk_forward harness) + ~2 h run. Total ~5 h.
+**Cost.** ~3 h impl (GARCH fit + residual bootstrap + integration with walk_forward harness) + ~2 h run + ~30 min fat-tail panel render. Total ~5.5 h.
 
 ---
 
@@ -77,7 +77,7 @@ This is the cheapest experiment that can falsify a foundational claim of the pip
 - If max-corr ≥1% worse: our hand-tuned distance is doing real work. Document this and close the question.
 - If max-corr ≥1% better: structural win; integrate into the matcher and re-run canonical Cell-D-s30 with the new distance.
 
-**Deliverables.** `src/analog_mc/distances_maxcorr.py`, `configs/analog_mc/ablation_A2_maxcorr.yaml`, `_a2_maxcorr.md`.
+**Deliverables.** `src/analog_mc/distances_maxcorr.py`, `configs/analog_mc/ablation_A2_maxcorr.yaml`, `_a2_maxcorr.md`. **Plus the mandatory fat-tail panel**: 15 charts in `docs/analog_mc/experiments/figs/a2_maxcorr_fat_tail/`, coverage table in `_a2_maxcorr.md`, per-anchor CRPS diff vs v2.4 baseline.
 
 **Cost.** ~1 d impl (max-correlation computation has to be causal and vectorised over the 10k-day history — non-trivial) + ~4 h run.
 
@@ -106,7 +106,7 @@ Our k-NN matcher degrades worst at high-vol regime onsets (large local Jacobian)
 
 Independent of the ACF rule, expect ≥1-2% mean CRPS gain in high-vol regime even if ACF stays put (the Jacobian correction's primary effect).
 
-**Deliverables.** `src/analog_mc/local_linear.py`, sampling.py changes (gated on `local_linear_correction: bool`), `configs/analog_mc/ablation_B1_localreg.yaml`, tests, `_b1_local_linear.md`.
+**Deliverables.** `src/analog_mc/local_linear.py`, sampling.py changes (gated on `local_linear_correction: bool`), `configs/analog_mc/ablation_B1_localreg.yaml`, tests, `_b1_local_linear.md`. **Plus the mandatory fat-tail panel**: 15 charts in `docs/analog_mc/experiments/figs/b1_local_linear_fat_tail/`, coverage table in `_b1_local_linear.md`, per-anchor CRPS diff vs v2.4 baseline. *B1 is the experiment FAT_TAIL_EVAL.md is structurally designed to evaluate — the panel is the headline result, not a supplementary deliverable.*
 
 **Cost.** ~1.5 d impl + ~3 h run.
 
@@ -127,6 +127,8 @@ The cheap fix is delay-coordinate embedding: extend the state from `{z₂₀, z�
 
 **Why P2 (not P0).** Implementation is cheap but the prediction is *less specific* than B1 — Burov's theory tells us the matcher is biased but doesn't prescribe a specific delay structure. B1 is more targeted; B2 is a softer "follow the theory" hedge.
 
+**Deliverables.** `features.py` lagged-return extension, `configs/analog_mc/ablation_B2_delay.yaml`, `_b2_delay_coords.md`. **Plus the mandatory fat-tail panel**: 15 charts in `docs/analog_mc/experiments/figs/b2_delay_coords_fat_tail/`, coverage table in `_b2_delay_coords.md`, per-anchor CRPS diff vs v2.4 baseline.
+
 **Cost.** ~1 d impl + ~2 h run.
 
 ---
@@ -145,6 +147,8 @@ This is the candidate fix for `sloped_global_pit` margin pressure (Cell-D-s30 pa
 - If PIT unchanged: weight uncertainty is not the slope's cause — focus on the prior over (w, n_eff) jointly instead.
 
 **Why P2.** More complex implementation than B2, more speculative payoff. Worth scoping but defer.
+
+**Deliverables.** Dirichlet sampling in `search.py`/`simulate.py`, config knob `weight_posterior_alpha: float | None`, `configs/analog_mc/ablation_B3_dirichlet.yaml`, tests, `_b3_dirichlet.md`. **Plus the mandatory fat-tail panel**: 15 charts in `docs/analog_mc/experiments/figs/b3_dirichlet_fat_tail/`, coverage table in `_b3_dirichlet.md`, per-anchor CRPS diff vs v2.4 baseline.
 
 **Cost.** ~2 d impl + ~3 h run.
 
@@ -187,9 +191,11 @@ Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 conven
 
 ## Mandatory fat-tail evaluation
 
-**Every v4 experiment that produces a forecast must report the [`FAT_TAIL_EVAL.md`](FAT_TAIL_EVAL.md) panel** — 8 anchors, 60-day forecast vs realized, coverage table, per-anchor CRPS diff vs v2.4 baseline. The aggregate CRPS / PIT diagnostics are necessary but not sufficient: v3 surfaced that the analog primitive systematically misses bear-bottom-rally regimes, and aggregate metrics average those misses away. An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors is not promotable without explicit justification.
+**Every v4 experiment that produces a forecast must report the [`FAT_TAIL_EVAL.md`](FAT_TAIL_EVAL.md) panel** — 15 anchors (5 extreme-positive z₅₀, 3 extreme-negative z₅₀, 7 hand-curated regime-coverage), 60-day forecast vs realized, coverage table, per-anchor CRPS diff vs v2.4 baseline. The aggregate CRPS / PIT diagnostics are necessary but not sufficient: v3 surfaced that the analog primitive systematically misses regime-transition rallies, and aggregate metrics average those misses away. **An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors is not promotable without explicit justification.**
 
-The 8-anchor list is pinned at `results/analog_mc/data/fat_tail_eval_anchors.json`. Use `scripts/select_fat_tail_anchors.py` to regenerate after a canonical re-run.
+The 15-anchor list is pinned at `results/analog_mc/data/fat_tail_eval_anchors.json`. Use `scripts/select_fat_tail_anchors.py` to regenerate after a canonical re-run; `scripts/plot_forecast_from_date.py --date <ISO>` to render per-anchor charts.
+
+Each experiment-producing-a-forecast (A1, A2, B1, B2, B3 below) lists this panel as a required deliverable. The diagnostic-only experiment C1 does not produce forecasts and is exempt.
 
 ## What v4 explicitly does not test
 
