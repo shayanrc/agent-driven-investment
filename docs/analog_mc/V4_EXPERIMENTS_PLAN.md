@@ -14,6 +14,7 @@ Companion to [`V3_PLAN.md`](V3_PLAN.md), [`RELATED_WORKS.md`](RELATED_WORKS.md),
 | Open architectural question | Can we close `acf_seam_degradation` without abandoning analog matching? v4 tests two candidate answers (B1, B2) before considering a full architectural rewrite. |
 | Open attribution question | E9-A's small CRPS win is unattributable — no textbook baseline isolates whether analog-block selection adds value over plain GARCH + residual bootstrap (A1). |
 | Open primitive question | Is composite-Euclidean z-score the right matcher distance at all, or have we been over-engineering the wrong knob? (A2) |
+| **v3.5 diagnostic reshape** | [`V3_5_RESULTS.md`](V3_5_RESULTS.md) (executed 2026-05-20) confirmed the fat-tail failures are **"right-era, wrong-magnitude"** matches: matcher gets direction right (sign-match ≥76% in 3/5 failures) but picks temporally-clustered analogs whose forward windows underestimate the realized move. Pool has 156–194 ≥+30% rallies per failure fold but matcher places <1% mass on them. Reshape applied below: **B1 → sole P0, A2 → joint P0, A1 → P1** (FHS catches only 2/5 in spot-check, not the full failure surface). |
 
 ## v4 scope and non-scope
 
@@ -32,24 +33,33 @@ Mid-v4 the literature-cited "abandon the analog primitive" path (e.g. parametric
 
 | ID | Title | Category | Source | Cost | Priority |
 |---|---|---|---|---|---|
-| **A1** | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | **P0** |
 | **B1** | Platzer local-linear correction | Structural | Tier 2 — `arXiv 2007.14216` | ~1.5 d impl + ~3 h run | **P0** |
+| **A2** | OFTER maximal-correlation distance | Attribution | Tier 1 — `arXiv 2304.03877` | ~1 d impl + ~4 h run | **P0** |
 | **C1** | Block-bootstrap KS / PIT GoF | Diagnostic | Tier 3 — `arXiv 2511.05733` | ~half-day impl | **P1** |
-| A2 | OFTER maximal-correlation distance | Attribution | Tier 1 — `arXiv 2304.03877` | ~1 d impl + ~4 h run | P1 |
+| A1 | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | P1 |
 | B2 | Delay-coordinate features | Structural | Tier 2 — `arXiv 2005.06623` (Burov) | ~1 d impl + ~2 h run | P2 |
 | B3 | Dirichlet posterior on analog weights | Structural | Tier 2 — `arXiv 1701.04485` (McDermott–Wikle) | ~2 d impl + ~3 h run | P2 |
+| B4 | Regularized weight search (candidate) | Structural | v3.5 incidental — `V3_5_RESULTS.md` | ~3 h impl + ~2 h run | P2 (gated) |
 
-P0 = sequenced first. P1 = run after P0 if results don't make them obsolete. P2 = scoped now, defer execution.
+P0 = sequenced first. P1 = run after P0 if results don't make them obsolete. P2 = scoped now, defer execution. B4 is gated on B1/A2 outcomes — only runs if val/test gap at failure anchors persists.
+
+**v3.5 reshape (2026-05-20).** Priorities above reflect the v3.5 diagnostic findings ([`V3_5_RESULTS.md`](V3_5_RESULTS.md)):
+- **B1** is the structurally-targeted fix for the "right-era, wrong-magnitude" failure pattern (V3.5.4 evidence) — promoted to sole P0.
+- **A2** is the orthogonal test of whether breaking Euclidean-on-features temporal clustering recovers tail-magnitude analogs — promoted to joint P0.
+- **A1** retains attribution-baseline value but loses its "ahead of B1" justification — the V3.5.3 spot-check showed it only catches 2/5 failure anchors. Demoted to P1.
+- **B4** is a new candidate surfaced by V3.5.1 (failure folds disproportionately at extreme grid corners with bad val/test generalization). P2 / gated.
 
 ---
 
 ## Category A — Attribution baselines
 
-### A1. Textbook FHS baseline — **P0**
+### A1. Textbook FHS baseline — **P1** (was P0; reshaped by v3.5)
 
 **Motivation.** E9-A (GARCH-conditional resampling) showed −2.2% mean CRPS, −3.8% high-vol vs the EWMA baseline at zero drift. We currently cannot attribute this gain: it could come from (a) σ-conditioning (the GARCH path), or (b) the analog-block selection retaining intra-block dependence structure that residual bootstrap would destroy. Without a textbook-FHS baseline that strips the analog primitive entirely, **E9 wins are unattributable** and we cannot honestly claim the analog primitive does meaningful work in high-vol regimes.
 
 This is the cheapest experiment that can falsify a foundational claim of the pipeline.
+
+**v3.5 reshape.** V3.5.3 ([`v3.5/_v3_5_3_fhs_spotcheck.md`](v3.5/_v3_5_3_fhs_spotcheck.md)) ran a FHS spot-check at the 5 failure anchors and found 2/5 catches at the 90%-band ≥45/60 threshold. FHS wins decisively on COVID-style V-recoveries (2020-03-16, 2026-02-19) by inflating the σ-driven dispersion, but underperforms v2.4 on the 2001 V-recovery (GARCH fits a calmer pre-2001 regime → tight bands) and the bull-momentum→crash failures. Conclusion: A1 only addresses a *sub-pattern* of the failure surface, not the whole. The attribution-baseline motivation still holds; the "ahead of B1" justification does not. **Demoted to P1.**
 
 **Method.** GARCH(1,1) fit per origin (reuse `_garch_fit_cached` from E9). Sample per-step σ trajectories as in E9, but draw return signs from i.i.d. bootstrap of standardised GARCH residuals instead of analog-block selection. No matcher, no k-NN, no weights. Same 76 folds, same metrics.
 
@@ -66,9 +76,11 @@ This is the cheapest experiment that can falsify a foundational claim of the pip
 
 ---
 
-### A2. OFTER maximal-correlation distance — **P1**
+### A2. OFTER maximal-correlation distance — **P0** (was P1; promoted by v3.5)
 
 **Motivation.** OFTER (`arXiv 2304.03877`) uses a *modified maximal correlation coefficient* as its k-NN distance, instead of weighted Euclidean over hand-picked features. This is the single cleanest test of our matcher-distance design — does our hand-tuned `(w₁, w₂, w₃, n_eff)` grid actually beat a principled correlation-based distance? If max-corr matches or beats us, the entire `weight_grid_resolution` search has been over-engineering the wrong primitive.
+
+**v3.5 reshape.** V3.5.4 ([`v3.5/_v3_5_4_analog_autopsy.md`](v3.5/_v3_5_4_analog_autopsy.md)) showed that the v2.4 matcher's top-20 analogs are heavily **temporally clustered** — once one date matches, its z-score neighbours dominate the top-K. The cluster's forward windows are mutually correlated and systematically mild, even when the global pool has the realized tail magnitude available (V3.5.2: 156–194 ≥+30% rallies per failure pool, but matcher places <1% mass on them). Max-correlation distance attacks this exact pathology: it doesn't share the Euclidean-on-features locality and is plausibly diversity-preserving across regimes. Promoted to joint P0 alongside B1. A2 and B1 are orthogonal code paths and can run in parallel.
 
 **Method.** Replace `compute_distances()` in `src/analog_mc/distances.py` with a max-correlation variant computed over the same input feature vectors. Keep all other knobs at v2.4 (Cell-D-s30) defaults. Single fast-preset run.
 
@@ -85,9 +97,11 @@ This is the cheapest experiment that can falsify a foundational claim of the pip
 
 ## Category B — Structural improvements to the analog primitive
 
-### B1. Platzer local-linear correction — **P0**
+### B1. Platzer local-linear correction — **P0** (single highest-priority experiment after v3.5)
 
 **Motivation.** This is the *only* literature-prescribed fix that is compatible with the analog-block scaffolding and could plausibly close `acf_seam_degradation` from inside the v3 architecture. E9 failed to close the rule because per-step σ scaling preserves the intra-block direction structure that drives the ACF gap. Local-linear regression changes the *conditional mean*, which is the right knob.
+
+**v3.5 evidence.** V3.5.4 ([`v3.5/_v3_5_4_analog_autopsy.md`](v3.5/_v3_5_4_analog_autopsy.md)) made this the highest-info-density v4 experiment. The matcher's *mean placement* misses badly at the 5 failure anchors (e.g. 2020-03-16: realized +43.8%, matcher E[60d] = +5.9%) and places ≤8% mass on the realized-magnitude tail in 3/5 cases. B1's Jacobian-bias correction is the textbook fix for high-Lyapunov regimes — exactly the regime-transition shape of these failures. The motivation is no longer just "close ACF": it's "address the *headline* fat-tail failure pattern surfaced in V3.5.4."
 
 From RELATED_WORKS Tier 2 (Platzer–Yiou, `arXiv 2007.14216`):
 > *Forecast error scales N^(−2/d), grows along large-Lyapunov directions, and analog + local linear regression explicitly estimates the Jacobian, eliminating the leading bias.*
@@ -154,6 +168,24 @@ This is the candidate fix for `sloped_global_pit` margin pressure (Cell-D-s30 pa
 
 ---
 
+### B4. Regularized weight search — **P2 (candidate, gated)**
+
+**Motivation.** Surfaced by V3.5.1 ([`v3.5/_v3_5_1_weights.md`](v3.5/_v3_5_1_weights.md)). 4 of 5 failure folds land at extreme grid corners (max weight > 0.9) with materially worse val_crps than test_crps — e.g. 2001-10-02 (val 0.152, test 0.108), 2010-04-23 (val 0.050, test 0.038). The 60-day val window at regime-transition anchors is short and stressful; the search lands at corner solutions that don't generalize. Plausibly a small but real failure-anchor contributor, orthogonal to the matcher selection / Jacobian-inflation questions.
+
+**Method.** Add a Dirichlet prior on weights centered on the cross-fold median (≈ `[0.10, 0.10, 0.15]`) with small uniform mass. Score candidates as `val_crps − λ · log p(weights | prior)`. Single hyperparameter `λ`. Re-run the 76-fold harness; compare per-anchor coverage on the 15-anchor fat-tail panel.
+
+**Decision rule.**
+- If regularized search resolves ≥2 of the 5 failure anchors without regressing controls: ship as a v4 minor improvement.
+- Otherwise close as a non-finding.
+
+**Why P2 and gated.** B1 / A2 may already close these failures; if so, B4 isn't needed. Gate execution on B1+A2 fat-tail results.
+
+**Deliverables.** `search.py` regularization hook, `configs/analog_mc/ablation_B4_regweights.yaml`, `_b4_regularized_search.md`. **Plus the mandatory fat-tail panel.**
+
+**Cost.** ~3 h impl + ~2 h run.
+
+---
+
 ## Category C — Diagnostic upgrades
 
 ### C1. Chandy block-bootstrap KS / PIT GoF — **P1**
@@ -174,14 +206,17 @@ Chandy et al. (`arXiv 2511.05733`) provide a block-bootstrap KS test that's spec
 
 ## Sequencing
 
-1. **Wait for canonical Cell-D-s30 to land** (currently `runs/analog_mc/20260520T045525Z`, ETA ~3 h). Promote to v2.4 if gates pass; this is the new baseline for all v4 comparisons.
-2. **A1 (textbook FHS)** — runs in parallel with C1 (different code paths, no compute conflict on the GARCH cache). A1 result determines whether we even have an analog-primitive worth structurally improving.
-3. **B1 (local-linear correction)** — gated on A1 outcome. If A1 confirms analog primitive adds value, B1 is the highest-info-density experiment available.
-4. **C1 (KS GoF diagnostic)** — runs alongside B1 (no compute). Becomes the new decision rule for v4 promotions if it agrees with heuristics on retroactive v3 data.
-5. **A2 (OFTER max-corr)** — only run if B1 fails to close ACF rule; tests whether the matcher's distance primitive is the right knob at all.
-6. **B2 / B3** — scoped but execution deferred. Re-evaluate after A1/B1/A2 land.
+Reshaped 2026-05-20 per [`V3_5_RESULTS.md`](V3_5_RESULTS.md). The pre-v3.5 sequencing put A1 ahead of B1 on attribution grounds; v3.5's per-anchor evidence reorders that — see "v3.5 reshape" notes throughout.
 
-End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` (rule still firing at < −0.30), the analog-block primitive's structural ceiling is confirmed and v5 must consider abandoning intact 10-day blocks (finer-granularity sampling, or parametric / DL path generation).
+1. **Canonical Cell-D-s30 baseline already landed** at `runs/analog_mc/20260520T045525Z` (76 folds, 1000 paths, 66×5 weight grid). This is the v2.4 reference for all v4 comparisons; per-fold artefacts are in place and were the substrate for v3.5's diagnostics.
+2. **B1 (Platzer local-linear correction)** — single highest-priority experiment. V3.5.4 identifies the matcher's magnitude-underestimation as the headline failure pattern; B1's Jacobian-bias correction is the canonical fix.
+3. **A2 (OFTER max-correlation distance)** — runs in parallel with B1 (independent code paths, no compute conflict). V3.5.4 identifies temporal clustering of top-K analogs as the contributing matcher-side pathology; A2 is the cleanest orthogonal test.
+4. **C1 (KS GoF diagnostic)** — runs alongside B1/A2 (no compute). Same role as before: becomes the new promotion decision rule if it agrees with heuristics on retroactive v3 data.
+5. **A1 (textbook FHS)** — runs after B1/A2 land. Still required as an attribution baseline (does the analog primitive add value over plain FHS?) and the V3.5.3 spot-check showed it solves a sub-pattern (COVID-style V-recoveries) cleanly — worth running formally, just no longer ahead of B1.
+6. **B4 (regularized weight search)** — gated on whether B1+A2 close the failure anchors. If they do, B4 isn't needed. If a residual val/test gap persists at the failure anchors after B1+A2, run B4.
+7. **B2 / B3** — scoped, execution deferred. Re-evaluate after the top block lands.
+
+End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` (rule still firing at < −0.30) *and* fail to recover the 5 fat-tail failure anchors (V3.5 failure set: 90%-band ≥45/60 days in ≥3 of 5), the analog-block primitive's structural ceiling is confirmed and v5 must consider abandoning intact 10-day blocks (finer-granularity sampling, or parametric / DL path generation). The v3.5 evidence ruled out the "pool is empty" stop condition, so this end-of-v4 decision will be substantive regardless of outcome.
 
 ---
 

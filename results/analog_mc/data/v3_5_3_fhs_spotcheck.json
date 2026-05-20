@@ -1,0 +1,192 @@
+[
+  {
+    "label": "failure",
+    "anchor_date": "2010-04-23",
+    "origin_idx": 6130,
+    "fold_index": 42,
+    "realized_60d_pct": -10.444064943342457,
+    "v24": {
+      "in_50": 3,
+      "in_90": 27,
+      "terminal_50_width_pct": 9.262725722703813,
+      "terminal_90_width_pct": 25.91394044334564
+    },
+    "fhs": {
+      "in_50": 2,
+      "in_90": 9,
+      "terminal_50_width_pct": 10.90265305530993,
+      "terminal_90_width_pct": 27.03812525920839
+    }
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2001-10-02",
+    "origin_idx": 3977,
+    "fold_index": 24,
+    "realized_60d_pct": 38.56491025298225,
+    "v24": {
+      "in_50": 6,
+      "in_90": 44,
+      "terminal_50_width_pct": 43.03192984608317,
+      "terminal_90_width_pct": 118.0395288630964
+    },
+    "fhs": {
+      "in_50": 0,
+      "in_90": 24,
+      "terminal_50_width_pct": 25.41229102878627,
+      "terminal_90_width_pct": 64.02344863949048
+    }
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2018-10-08",
+    "origin_idx": 8260,
+    "fold_index": 60,
+    "realized_60d_pct": -12.650248476094871,
+    "v24": {
+      "in_50": 4,
+      "in_90": 31,
+      "terminal_50_width_pct": 8.50433297555011,
+      "terminal_90_width_pct": 21.37109980930073
+    },
+    "fhs": {
+      "in_50": 3,
+      "in_90": 30,
+      "terminal_50_width_pct": 11.695980171681853,
+      "terminal_90_width_pct": 30.13332753427812
+    }
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2020-03-16",
+    "origin_idx": 8621,
+    "fold_index": 63,
+    "realized_60d_pct": 43.78509425415722,
+    "v24": {
+      "in_50": 6,
+      "in_90": 38,
+      "terminal_50_width_pct": 40.856548935769254,
+      "terminal_90_width_pct": 80.46726894030326
+    },
+    "fhs": {
+      "in_50": 59,
+      "in_90": 60,
+      "terminal_50_width_pct": 59.479948440764765,
+      "terminal_90_width_pct": 162.5262975819791
+    }
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2026-02-19",
+    "origin_idx": 10111,
+    "fold_index": 75,
+    "realized_60d_pct": 17.452920353554013,
+    "v24": {
+      "in_50": 32,
+      "in_90": 41,
+      "terminal_50_width_pct": 10.548533888464418,
+      "terminal_90_width_pct": 29.358557523788885
+    },
+    "fhs": {
+      "in_50": 29,
+      "in_90": 60,
+      "terminal_50_width_pct": 12.987810141615984,
+      "terminal_90_width_pct": 32.56464478954628
+    }
+  },
+  {
+    "label": "control",
+    "anchor_date": "1991-03-26",
+    "origin_idx": 1321,
+    "fold_index": 2,
+    "realized_60d_pct": -1.5528771677938868,
+    "v24": {
+      "in_50": 48,
+      "in_90": 60,
+      "terminal_50_width_pct": 15.518954977771449,
+      "terminal_90_width_pct": 46.9164102127815
+    },
+    "fhs": {
+      "in_50": 48,
+      "in_90": 60,
+      "terminal_50_width_pct": 14.44587905625031,
+      "terminal_90_width_pct": 34.24955767104908
+    }
+  },
+  {
+    "label": "control",
+    "anchor_date": "2010-11-10",
+    "origin_idx": 6270,
+    "fold_index": 43,
+    "realized_60d_pct": 7.380218855988385,
+    "v24": {
+      "in_50": 47,
+      "in_90": 56,
+      "terminal_50_width_pct": 9.422257651737254,
+      "terminal_90_width_pct": 25.44442019716452
+    },
+    "fhs": {
+      "in_50": 49,
+      "in_90": 56,
+      "terminal_50_width_pct": 10.936678218574281,
+      "terminal_90_width_pct": 28.716835636040226
+    }
+  },
+  {
+    "label": "control",
+    "anchor_date": "2012-03-14",
+    "origin_idx": 6607,
+    "fold_index": 46,
+    "realized_60d_pct": -5.508767136437987,
+    "v24": {
+      "in_50": 28,
+      "in_90": 55,
+      "terminal_50_width_pct": 10.650338212295374,
+      "terminal_90_width_pct": 23.67741859687663
+    },
+    "fhs": {
+      "in_50": 33,
+      "in_90": 60,
+      "terminal_50_width_pct": 12.919247567374025,
+      "terminal_90_width_pct": 31.924235455853733
+    }
+  },
+  {
+    "label": "control",
+    "anchor_date": "2025-07-02",
+    "origin_idx": 9952,
+    "fold_index": 74,
+    "realized_60d_pct": 8.223518443027466,
+    "v24": {
+      "in_50": 59,
+      "in_90": 60,
+      "terminal_50_width_pct": 12.89877501996587,
+      "terminal_90_width_pct": 34.42197034634019
+    },
+    "fhs": {
+      "in_50": 58,
+      "in_90": 60,
+      "terminal_50_width_pct": 11.61190409847701,
+      "terminal_90_width_pct": 31.10057119917825
+    }
+  },
+  {
+    "label": "control",
+    "anchor_date": "2017-06-01",
+    "origin_idx": 7919,
+    "fold_index": 57,
+    "realized_60d_pct": 0.10349848964414932,
+    "v24": {
+      "in_50": 43,
+      "in_90": 60,
+      "terminal_50_width_pct": 7.060909415288574,
+      "terminal_90_width_pct": 19.40826538234617
+    },
+    "fhs": {
+      "in_50": 44,
+      "in_90": 60,
+      "terminal_50_width_pct": 10.542059870198417,
+      "terminal_90_width_pct": 25.844529338440392
+    }
+  }
+]

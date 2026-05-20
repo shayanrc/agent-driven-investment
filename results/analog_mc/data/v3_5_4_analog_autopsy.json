@@ -1,0 +1,1862 @@
+[
+  {
+    "label": "failure",
+    "anchor_date": "2010-04-23",
+    "origin_idx": 6130,
+    "fold_index": 42,
+    "weights": [
+      0.8999999999999999,
+      0.1,
+      8.326672684688674e-17
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 5841,
+    "realized_60d_pct": -10.444064943342424,
+    "expected_60d_pct_matcher": 4.112956170102061,
+    "miss_pct_matcher_mean": -14.557021113444485,
+    "prob_mass_sign_match": 0.21300384261967734,
+    "prob_mass_abs_ge_realized": 0.24376253934727432,
+    "prob_mass_rally_ge_30": 0.02599984502464083,
+    "prob_mass_drop_le_neg30": 0.019213180943804472,
+    "top_5_cum_prob": 0.19296963305462594,
+    "top_20_cum_prob": 0.4242085100722585,
+    "top_100_cum_prob": 0.7848236756952589,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 860,
+        "candidate_date": "1989-05-30",
+        "prob": 0.11246567966342105,
+        "distance": 0.013787775358730159,
+        "forward_60d_pct": 1.8259281801582317
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 2410,
+        "candidate_date": "1995-07-17",
+        "prob": 0.02162671236613321,
+        "distance": 0.050532268869278515,
+        "forward_60d_pct": -7.731483808279305
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 3292,
+        "candidate_date": "1999-01-11",
+        "prob": 0.02045343475553812,
+        "distance": 0.05177538517943657,
+        "forward_60d_pct": 11.227489525942902
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 2407,
+        "candidate_date": "1995-07-12",
+        "prob": 0.01935931300986545,
+        "distance": 0.05300064591935231,
+        "forward_60d_pct": -1.2006003001500787
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 2408,
+        "candidate_date": "1995-07-13",
+        "prob": 0.01906449325966811,
+        "distance": 0.05334265714821517,
+        "forward_60d_pct": -2.714102014573516
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 783,
+        "candidate_date": "1989-02-07",
+        "prob": 0.01866455804075295,
+        "distance": 0.0538151613608356,
+        "forward_60d_pct": 5.222326356347029
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 780,
+        "candidate_date": "1989-02-02",
+        "prob": 0.018010073098604158,
+        "distance": 0.054610689720352344,
+        "forward_60d_pct": 5.730236477589945
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 781,
+        "candidate_date": "1989-02-03",
+        "prob": 0.017753143290065807,
+        "distance": 0.05493091900622023,
+        "forward_60d_pct": 5.6745801968732135
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 2409,
+        "candidate_date": "1995-07-14",
+        "prob": 0.017096938415274075,
+        "distance": 0.05577030677663552,
+        "forward_60d_pct": -7.276426210053399
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 5979,
+        "candidate_date": "2009-09-16",
+        "prob": 0.01663861277636412,
+        "distance": 0.05637591075079852,
+        "forward_60d_pct": 4.388158238239059
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 3297,
+        "candidate_date": "1999-01-19",
+        "prob": 0.015710815897671506,
+        "distance": 0.05765464726305735,
+        "forward_60d_pct": 5.020381470318025
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 861,
+        "candidate_date": "1989-05-31",
+        "prob": 0.01566067464307006,
+        "distance": 0.05772588925677142,
+        "forward_60d_pct": 2.731425375221419
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 1299,
+        "candidate_date": "1991-02-22",
+        "prob": 0.015601097729595387,
+        "distance": 0.0578108347967139,
+        "forward_60d_pct": 4.018018742710039
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 2403,
+        "candidate_date": "1995-07-06",
+        "prob": 0.015111814019730878,
+        "distance": 0.05852098818145069,
+        "forward_60d_pct": 5.634896275299273
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 1300,
+        "candidate_date": "1991-02-25",
+        "prob": 0.014993466087350457,
+        "distance": 0.05869621311014392,
+        "forward_60d_pct": 4.4832826747720045
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 275,
+        "candidate_date": "1987-02-04",
+        "prob": 0.01450792835038348,
+        "distance": 0.05942987390978124,
+        "forward_60d_pct": 7.106628242074953
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 862,
+        "candidate_date": "1989-06-01",
+        "prob": 0.013613886980150938,
+        "distance": 0.060847417085971245,
+        "forward_60d_pct": 2.4259010158170558
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 3296,
+        "candidate_date": "1999-01-15",
+        "prob": 0.013504960363910204,
+        "distance": 0.06102645325403348,
+        "forward_60d_pct": 6.157083598268365
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 3535,
+        "candidate_date": "1999-12-28",
+        "prob": 0.01229313411306476,
+        "distance": 0.06312176240580436,
+        "forward_60d_pct": 30.186734451598518
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 2404,
+        "candidate_date": "1995-07-07",
+        "prob": 0.012077773211643727,
+        "distance": 0.06351565890343885,
+        "forward_60d_pct": 1.111776728451619
+      }
+    ]
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2001-10-02",
+    "origin_idx": 3977,
+    "fold_index": 24,
+    "weights": [
+      0.0,
+      0.1,
+      0.9
+    ],
+    "n_eff_requested": 50.0,
+    "n_eff_used": 50.0,
+    "pool_size": 3681,
+    "realized_60d_pct": 38.56491025298223,
+    "expected_60d_pct_matcher": 12.252868293158972,
+    "miss_pct_matcher_mean": 26.312041959823258,
+    "prob_mass_sign_match": 0.8896921146588541,
+    "prob_mass_abs_ge_realized": 0.0027143357591648543,
+    "prob_mass_rally_ge_30": 0.02744742431257547,
+    "prob_mass_drop_le_neg30": 0.018713730739676783,
+    "top_5_cum_prob": 0.3891766130854095,
+    "top_20_cum_prob": 0.7099005494964318,
+    "top_100_cum_prob": 0.9476841979455741,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 3854,
+        "candidate_date": "2001-04-02",
+        "prob": 0.10569564519752093,
+        "distance": 0.0022898982616198207,
+        "forward_60d_pct": 15.788154927534093
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 3857,
+        "candidate_date": "2001-04-05",
+        "prob": 0.07933397800390021,
+        "distance": 0.006489302115924199,
+        "forward_60d_pct": 20.277146901023425
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 3858,
+        "candidate_date": "2001-04-06",
+        "prob": 0.07832271669287479,
+        "distance": 0.006677081663334053,
+        "forward_60d_pct": 25.825875593856807
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 3853,
+        "candidate_date": "2001-03-30",
+        "prob": 0.0643842657865282,
+        "distance": 0.009545532503345706,
+        "forward_60d_pct": 11.337676783727746
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 3859,
+        "candidate_date": "2001-04-09",
+        "prob": 0.06144000740458544,
+        "distance": 0.010230676932798935,
+        "forward_60d_pct": 18.213364658862076
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 3855,
+        "candidate_date": "2001-04-03",
+        "prob": 0.04427502366542987,
+        "distance": 0.015026453368052145,
+        "forward_60d_pct": 29.297737750616193
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 3852,
+        "candidate_date": "2001-03-29",
+        "prob": 0.040144450189677855,
+        "distance": 0.016459980785525977,
+        "forward_60d_pct": 11.563903425156873
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 1207,
+        "candidate_date": "1990-10-11",
+        "prob": 0.03858585911511532,
+        "distance": 0.017039594065816763,
+        "forward_60d_pct": 16.284278709364976
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 3860,
+        "candidate_date": "2001-04-10",
+        "prob": 0.024548268313421717,
+        "distance": 0.023659239124811472,
+        "forward_60d_pct": 4.425891968683082
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 1208,
+        "candidate_date": "1990-10-12",
+        "prob": 0.024480282602754613,
+        "distance": 0.02369983297263164,
+        "forward_60d_pct": 14.977207293666005
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 3856,
+        "candidate_date": "2001-04-04",
+        "prob": 0.02325882927343884,
+        "distance": 0.02444901732040867,
+        "forward_60d_pct": 33.51741747218648
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 3851,
+        "candidate_date": "2001-03-28",
+        "prob": 0.020491800986779253,
+        "distance": 0.026302978795750713,
+        "forward_60d_pct": 7.817278526044924
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 3849,
+        "candidate_date": "2001-03-26",
+        "prob": 0.017210311620693235,
+        "distance": 0.028857426128100945,
+        "forward_60d_pct": 2.6632476593712706
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 3843,
+        "candidate_date": "2001-03-16",
+        "prob": 0.016501398316161656,
+        "distance": 0.029473124110469002,
+        "forward_60d_pct": 12.41388519644775
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 3861,
+        "candidate_date": "2001-04-11",
+        "prob": 0.01390238774830095,
+        "distance": 0.031981732950043314,
+        "forward_60d_pct": 3.016341297591052
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 1206,
+        "candidate_date": "1990-10-10",
+        "prob": 0.012684007224045708,
+        "distance": 0.033324247975641715,
+        "forward_60d_pct": 13.500914616156233
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 1210,
+        "candidate_date": "1990-10-16",
+        "prob": 0.012349067893931058,
+        "distance": 0.033715962089126535,
+        "forward_60d_pct": 18.55096984712066
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 1209,
+        "candidate_date": "1990-10-15",
+        "prob": 0.01168216297592832,
+        "distance": 0.034528588230481896,
+        "forward_60d_pct": 15.783879539415423
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 1194,
+        "candidate_date": "1990-09-24",
+        "prob": 0.01102048178298219,
+        "distance": 0.03538205518778502,
+        "forward_60d_pct": 12.19594594594593
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 3863,
+        "candidate_date": "2001-04-16",
+        "prob": 0.009589604702361539,
+        "distance": 0.037417751991763545,
+        "forward_60d_pct": -0.5241757109703538
+      }
+    ]
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2018-10-08",
+    "origin_idx": 8260,
+    "fold_index": 60,
+    "weights": [
+      0.09000000000000002,
+      0.6749999999999999,
+      0.235
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 8001,
+    "realized_60d_pct": -12.650248476094884,
+    "expected_60d_pct_matcher": 2.9458548360100356,
+    "miss_pct_matcher_mean": -15.596103312104919,
+    "prob_mass_sign_match": 0.2846789472032228,
+    "prob_mass_abs_ge_realized": 0.3210945005840964,
+    "prob_mass_rally_ge_30": 0.008397940542544315,
+    "prob_mass_drop_le_neg30": 0.0009326654713504221,
+    "top_5_cum_prob": 0.18356958949576319,
+    "top_20_cum_prob": 0.43852352390752236,
+    "top_100_cum_prob": 0.8121392680197416,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 3697,
+        "candidate_date": "2000-08-17",
+        "prob": 0.05962611823650146,
+        "distance": 0.0015926560624419364,
+        "forward_60d_pct": -24.547915595247716
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 5351,
+        "candidate_date": "2007-03-21",
+        "prob": 0.03643432230761215,
+        "distance": 0.004257604025110601,
+        "forward_60d_pct": 7.532316549949125
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 2009,
+        "candidate_date": "1993-12-13",
+        "prob": 0.03605999569624268,
+        "distance": 0.004313475532168033,
+        "forward_60d_pct": 6.52431791221828
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 2008,
+        "candidate_date": "1993-12-10",
+        "prob": 0.028797288430843334,
+        "distance": 0.005530235153137749,
+        "forward_60d_pct": 6.463200330783581
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 3696,
+        "candidate_date": "2000-08-16",
+        "prob": 0.022651864824563557,
+        "distance": 0.006828883886032266,
+        "forward_60d_pct": -17.848572388310345
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 715,
+        "candidate_date": "1988-10-31",
+        "prob": 0.022314070123164973,
+        "distance": 0.006910170150706047,
+        "forward_60d_pct": 5.275203112484372
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 721,
+        "candidate_date": "1988-11-08",
+        "prob": 0.021746426934145476,
+        "distance": 0.007049578845333511,
+        "forward_60d_pct": 9.335251798561206
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 5459,
+        "candidate_date": "2007-08-23",
+        "prob": 0.021361495235380196,
+        "distance": 0.007146201267778457,
+        "forward_60d_pct": 6.042818394517124
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 2828,
+        "candidate_date": "1997-03-11",
+        "prob": 0.01928306183364378,
+        "distance": 0.007700000687108365,
+        "forward_60d_pct": 9.677077195050199
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 1493,
+        "candidate_date": "1991-11-27",
+        "prob": 0.01845664412086068,
+        "distance": 0.007936979941226689,
+        "forward_60d_pct": 18.616555060828155
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 3698,
+        "candidate_date": "2000-08-18",
+        "prob": 0.017110133211417036,
+        "distance": 0.008346818456733495,
+        "forward_60d_pct": -25.49934208971215
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 3684,
+        "candidate_date": "2000-07-31",
+        "prob": 0.016949681822056088,
+        "distance": 0.00839779192703747,
+        "forward_60d_pct": -7.095183343261347
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 2599,
+        "candidate_date": "1996-04-15",
+        "prob": 0.016817894446430982,
+        "distance": 0.00844002142488662,
+        "forward_60d_pct": 7.588204490410444
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 4445,
+        "candidate_date": "2003-08-13",
+        "prob": 0.016408814801463664,
+        "distance": 0.00857324536569227,
+        "forward_60d_pct": 16.96060949910867
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 3148,
+        "candidate_date": "1998-06-17",
+        "prob": 0.016324467329815365,
+        "distance": 0.008601127323680445,
+        "forward_60d_pct": 0.922325338213259
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 5129,
+        "candidate_date": "2006-05-02",
+        "prob": 0.015426445652422788,
+        "distance": 0.008907243471062204,
+        "forward_60d_pct": -12.509393880219955
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 1814,
+        "candidate_date": "1993-03-08",
+        "prob": 0.014351534028711326,
+        "distance": 0.009297999836827258,
+        "forward_60d_pct": 3.6862897841086317
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 5532,
+        "candidate_date": "2007-12-06",
+        "prob": 0.013550395931415818,
+        "distance": 0.009608764995104904,
+        "forward_60d_pct": -17.581839118276122
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 7262,
+        "candidate_date": "2014-10-21",
+        "prob": 0.012822774946244064,
+        "distance": 0.009907367115503954,
+        "forward_60d_pct": 4.299502189409821
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 8144,
+        "candidate_date": "2018-04-24",
+        "prob": 0.012030093994586976,
+        "distance": 0.010252597503967335,
+        "forward_60d_pct": 12.955961315399534
+      }
+    ]
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2020-03-16",
+    "origin_idx": 8621,
+    "fold_index": 63,
+    "weights": [
+      0.00025,
+      0.0,
+      0.99975
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 8361,
+    "realized_60d_pct": 43.78509425415717,
+    "expected_60d_pct_matcher": 5.865505096842273,
+    "miss_pct_matcher_mean": 37.9195891573149,
+    "prob_mass_sign_match": 0.8758109014880564,
+    "prob_mass_abs_ge_realized": 2.165431995203604e-06,
+    "prob_mass_rally_ge_30": 0.00599938278160843,
+    "prob_mass_drop_le_neg30": 0.00985759280487268,
+    "top_5_cum_prob": 0.14992787615454642,
+    "top_20_cum_prob": 0.40451131402876933,
+    "top_100_cum_prob": 0.8156433449679685,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 4683,
+        "candidate_date": "2004-07-26",
+        "prob": 0.03850544348706378,
+        "distance": 0.0002250110883165883,
+        "forward_60d_pct": 6.19482048263682
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 8418,
+        "candidate_date": "2019-05-24",
+        "prob": 0.0348316505914346,
+        "distance": 0.0003697897483254921,
+        "forward_60d_pct": 4.978934277136315
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 6458,
+        "candidate_date": "2011-08-10",
+        "prob": 0.02627194615278984,
+        "distance": 0.0007769892048335653,
+        "forward_60d_pct": 14.211635770757702
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 8421,
+        "candidate_date": "2019-05-30",
+        "prob": 0.02519887640655427,
+        "distance": 0.0008372007367062624,
+        "forward_60d_pct": 3.0307505451736327
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 5156,
+        "candidate_date": "2006-06-09",
+        "prob": 0.02511995951670393,
+        "distance": 0.0008417296043982441,
+        "forward_60d_pct": 3.3991631043796655
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 8419,
+        "candidate_date": "2019-05-28",
+        "prob": 0.02502485185149193,
+        "distance": 0.0008472065690842796,
+        "forward_60d_pct": 6.2491928148848075
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 8417,
+        "candidate_date": "2019-05-23",
+        "prob": 0.023697418850197105,
+        "distance": 0.0009259007252480889,
+        "forward_60d_pct": 5.629364265941383
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 8420,
+        "candidate_date": "2019-05-29",
+        "prob": 0.021637513604446885,
+        "distance": 0.001057200299007951,
+        "forward_60d_pct": 6.797554615165202
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 7479,
+        "candidate_date": "2015-09-01",
+        "prob": 0.01961378399687159,
+        "distance": 0.0011989798342818961,
+        "forward_60d_pct": 12.799839715349727
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 2148,
+        "candidate_date": "1994-07-01",
+        "prob": 0.019231319605638206,
+        "distance": 0.0012274125706886172,
+        "forward_60d_pct": 8.138210704663473
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 8302,
+        "candidate_date": "2018-12-07",
+        "prob": 0.01804407093393289,
+        "distance": 0.0013194186057977728,
+        "forward_60d_pct": 6.2542433622094995
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 7685,
+        "candidate_date": "2016-06-27",
+        "prob": 0.017560664288937003,
+        "distance": 0.0013586272156484315,
+        "forward_60d_pct": 15.536592042465557
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 1094,
+        "candidate_date": "1990-05-02",
+        "prob": 0.016871962437831563,
+        "distance": 0.0014163927668239904,
+        "forward_60d_pct": 8.215827338129444
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 8291,
+        "candidate_date": "2018-11-20",
+        "prob": 0.014352199904387923,
+        "distance": 0.001649934312118373,
+        "forward_60d_pct": 8.202593550442906
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 2147,
+        "candidate_date": "1994-06-30",
+        "prob": 0.013866377497442777,
+        "distance": 0.0016996547839934534,
+        "forward_60d_pct": 7.93782958645568
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 8424,
+        "candidate_date": "2019-06-04",
+        "prob": 0.013420697807955096,
+        "distance": 0.0017468235351406588,
+        "forward_60d_pct": 5.876443297171008
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 6456,
+        "candidate_date": "2011-08-08",
+        "prob": 0.013261100641327838,
+        "distance": 0.0017640964311653813,
+        "forward_60d_pct": 11.555654786462078
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 8425,
+        "candidate_date": "2019-06-05",
+        "prob": 0.013114460479929453,
+        "distance": 0.0017801512569979824,
+        "forward_60d_pct": 6.666897478153722
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 456,
+        "candidate_date": "1987-10-22",
+        "prob": 0.012871040487535705,
+        "distance": 0.0018072025330238908,
+        "forward_60d_pct": 5.34702313487565
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 2215,
+        "candidate_date": "1994-10-06",
+        "prob": 0.012015975486296963,
+        "distance": 0.0019064563421015395,
+        "forward_60d_pct": 3.9571633799138306
+      }
+    ]
+  },
+  {
+    "label": "failure",
+    "anchor_date": "2026-02-19",
+    "origin_idx": 10111,
+    "fold_index": 75,
+    "weights": [
+      0.9773437500000002,
+      8.59375e-05,
+      0.02257031249999982
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 9801,
+    "realized_60d_pct": 17.452920353554056,
+    "expected_60d_pct_matcher": 5.121802772534413,
+    "miss_pct_matcher_mean": 12.331117581019644,
+    "prob_mass_sign_match": 0.7625058714368309,
+    "prob_mass_abs_ge_realized": 0.0809574419958529,
+    "prob_mass_rally_ge_30": 0.0014507514667624708,
+    "prob_mass_drop_le_neg30": 0.002969318274625257,
+    "top_5_cum_prob": 0.19348168391320894,
+    "top_20_cum_prob": 0.4289193349718312,
+    "top_100_cum_prob": 0.7915594869108677,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 1381,
+        "candidate_date": "1991-06-20",
+        "prob": 0.04327376520849344,
+        "distance": 0.0004897364234295517,
+        "forward_60d_pct": 6.912035615597167
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 2503,
+        "candidate_date": "1995-11-27",
+        "prob": 0.041411487081527094,
+        "distance": 0.000639538803999288,
+        "forward_60d_pct": 12.109912704082525
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 7330,
+        "candidate_date": "2015-01-29",
+        "prob": 0.03753197087517383,
+        "distance": 0.0009745222455077901,
+        "forward_60d_pct": 8.219594150214737
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 2500,
+        "candidate_date": "1995-11-21",
+        "prob": 0.03578698943380576,
+        "distance": 0.00113665414534953,
+        "forward_60d_pct": 7.805370763818775
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 8090,
+        "candidate_date": "2018-02-05",
+        "prob": 0.03547747131420884,
+        "distance": 0.001166236159690438,
+        "forward_60d_pct": 2.286973977512119
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 7134,
+        "candidate_date": "2014-04-21",
+        "prob": 0.03338554080660654,
+        "distance": 0.0013732058847527,
+        "forward_60d_pct": 10.460259273304096
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 9008,
+        "candidate_date": "2021-09-27",
+        "prob": 0.02018807670825376,
+        "distance": 0.003086281199105258,
+        "forward_60d_pct": 5.139554430765658
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 8095,
+        "candidate_date": "2018-02-12",
+        "prob": 0.01686831324826597,
+        "distance": 0.0036980986827014712,
+        "forward_60d_pct": 5.661687500479151
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 3625,
+        "candidate_date": "2000-05-05",
+        "prob": 0.01635606360574915,
+        "distance": 0.003803118479335217,
+        "forward_60d_pct": -4.533451181555048
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 6752,
+        "candidate_date": "2012-10-09",
+        "prob": 0.016136361960776807,
+        "distance": 0.003849172731229812,
+        "forward_60d_pct": -0.8461224251620214
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 7122,
+        "candidate_date": "2014-04-02",
+        "prob": 0.015808720435770002,
+        "distance": 0.00391903168745524,
+        "forward_60d_pct": 4.867716496771357
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 3196,
+        "candidate_date": "1998-08-24",
+        "prob": 0.01570100161710078,
+        "distance": 0.003942315850885092,
+        "forward_60d_pct": 9.309806553263545
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 2047,
+        "candidate_date": "1994-02-04",
+        "prob": 0.014620094156727572,
+        "distance": 0.004185222628275702,
+        "forward_60d_pct": -5.019120458890947
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 7121,
+        "candidate_date": "2014-04-01",
+        "prob": 0.01355009131878661,
+        "distance": 0.004444053544907236,
+        "forward_60d_pct": 4.6061119615129265
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 4566,
+        "candidate_date": "2004-02-05",
+        "prob": 0.01341188608236051,
+        "distance": 0.004478966651877073,
+        "forward_60d_pct": -4.835943907117368
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 968,
+        "candidate_date": "1989-10-31",
+        "prob": 0.013111048973163304,
+        "distance": 0.004556224105132301,
+        "forward_60d_pct": -8.700925343634935
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 3442,
+        "candidate_date": "1999-08-16",
+        "prob": 0.012022363572365153,
+        "distance": 0.004851436589557319,
+        "forward_60d_pct": 19.476196240510333
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 3373,
+        "candidate_date": "1999-05-07",
+        "prob": 0.011980121832972217,
+        "distance": 0.004863423243418085,
+        "forward_60d_pct": 5.734914271413105
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 3433,
+        "candidate_date": "1999-08-03",
+        "prob": 0.011172280128904904,
+        "distance": 0.00510117213110113,
+        "forward_60d_pct": 9.748211398815565
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 6009,
+        "candidate_date": "2009-10-28",
+        "prob": 0.011125686610819118,
+        "distance": 0.005115404356385904,
+        "forward_60d_pct": 7.2411210063850096
+      }
+    ]
+  },
+  {
+    "label": "control",
+    "anchor_date": "1991-03-26",
+    "origin_idx": 1321,
+    "fold_index": 2,
+    "weights": [
+      0.40781249999999974,
+      0.00094921875,
+      0.5912382812500003
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 1041,
+    "realized_60d_pct": -1.5528771677938646,
+    "expected_60d_pct_matcher": 7.4890056418356465,
+    "miss_pct_matcher_mean": -9.041882809629511,
+    "prob_mass_sign_match": 0.15586572143059485,
+    "prob_mass_abs_ge_realized": 0.8963695591484857,
+    "prob_mass_rally_ge_30": 0.013235972432086223,
+    "prob_mass_drop_le_neg30": 0.0008519195612619237,
+    "top_5_cum_prob": 0.13063439346501715,
+    "top_20_cum_prob": 0.3817720765574648,
+    "top_100_cum_prob": 0.8169419082477064,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 787,
+        "candidate_date": "1989-02-13",
+        "prob": 0.02877196459453508,
+        "distance": 0.011117954315558362,
+        "forward_60d_pct": 9.197999031789639
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 776,
+        "candidate_date": "1989-01-27",
+        "prob": 0.028350391130232168,
+        "distance": 0.011385702050272558,
+        "forward_60d_pct": 7.464312956303831
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 786,
+        "candidate_date": "1989-02-10",
+        "prob": 0.0259356414684411,
+        "distance": 0.01300051215286993,
+        "forward_60d_pct": 9.143287922029009
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 827,
+        "candidate_date": "1989-04-12",
+        "prob": 0.02428196372019986,
+        "distance": 0.014195607909556731,
+        "forward_60d_pct": 8.855762738274532
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 790,
+        "candidate_date": "1989-02-16",
+        "prob": 0.023294432551608943,
+        "distance": 0.01494874218727786,
+        "forward_60d_pct": 11.223511873070047
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 829,
+        "candidate_date": "1989-04-14",
+        "prob": 0.022207189528440526,
+        "distance": 0.015815770316220952,
+        "forward_60d_pct": 7.866207676103332
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 218,
+        "candidate_date": "1986-11-12",
+        "prob": 0.0197958198063364,
+        "distance": 0.017900798667650607,
+        "forward_60d_pct": 19.26775655996704
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 777,
+        "candidate_date": "1989-01-30",
+        "prob": 0.01931153098175315,
+        "distance": 0.01835008066297634,
+        "forward_60d_pct": 6.748565862106304
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 199,
+        "candidate_date": "1986-10-16",
+        "prob": 0.018166987829070974,
+        "distance": 0.0194583251487845,
+        "forward_60d_pct": 12.503524104877407
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 793,
+        "candidate_date": "1989-02-22",
+        "prob": 0.01731592157769977,
+        "distance": 0.02032864364297478,
+        "forward_60d_pct": 13.619724375538379
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 770,
+        "candidate_date": "1989-01-19",
+        "prob": 0.017271218164809504,
+        "distance": 0.020375533297912998,
+        "forward_60d_pct": 7.764301932768514
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 1103,
+        "candidate_date": "1990-05-15",
+        "prob": 0.017026233475229035,
+        "distance": 0.02063467376696793,
+        "forward_60d_pct": -6.8421755980222265
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 205,
+        "candidate_date": "1986-10-24",
+        "prob": 0.01630195810750966,
+        "distance": 0.02142319085626015,
+        "forward_60d_pct": 15.700500105656158
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 763,
+        "candidate_date": "1989-01-10",
+        "prob": 0.01629357733629317,
+        "distance": 0.021432518600682605,
+        "forward_60d_pct": 5.162091946232916
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 297,
+        "candidate_date": "1987-03-09",
+        "prob": 0.016150869436030686,
+        "distance": 0.021592092260852475,
+        "forward_60d_pct": 1.8030361155258579
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 216,
+        "candidate_date": "1986-11-10",
+        "prob": 0.015620777057871614,
+        "distance": 0.022197437183496455,
+        "forward_60d_pct": 21.027098205003814
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 301,
+        "candidate_date": "1987-03-13",
+        "prob": 0.014929333504298738,
+        "distance": 0.023018674890602563,
+        "forward_60d_pct": 3.44507534396159
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 771,
+        "candidate_date": "1989-01-20",
+        "prob": 0.014435573261043196,
+        "distance": 0.02362874421680774,
+        "forward_60d_pct": 9.15594498669039
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 204,
+        "candidate_date": "1986-10-23",
+        "prob": 0.013311625390349371,
+        "distance": 0.025099076478751547,
+        "forward_60d_pct": 17.143862117481557
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 774,
+        "candidate_date": "1989-01-25",
+        "prob": 0.012999067635711868,
+        "distance": 0.025530068454385654,
+        "forward_60d_pct": 9.52853051332896
+      }
+    ]
+  },
+  {
+    "label": "control",
+    "anchor_date": "2010-11-10",
+    "origin_idx": 6270,
+    "fold_index": 43,
+    "weights": [
+      0.883125,
+      1.5625000000000014e-05,
+      0.11685937499999995
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 5961,
+    "realized_60d_pct": 7.380218855988363,
+    "expected_60d_pct_matcher": 5.989658452332558,
+    "miss_pct_matcher_mean": 1.3905604036558055,
+    "prob_mass_sign_match": 0.6653617013822101,
+    "prob_mass_abs_ge_realized": 0.5680007627826942,
+    "prob_mass_rally_ge_30": 0.09186481087919138,
+    "prob_mass_drop_le_neg30": 0.00789046438222564,
+    "top_5_cum_prob": 0.1281819634994072,
+    "top_20_cum_prob": 0.36257209862667905,
+    "top_100_cum_prob": 0.823286320998142,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 1779,
+        "candidate_date": "1993-01-15",
+        "prob": 0.029912908918419537,
+        "distance": 0.0020382001486828533,
+        "forward_60d_pct": -8.799177301972371
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 2715,
+        "candidate_date": "1996-09-27",
+        "prob": 0.027624845282083678,
+        "distance": 0.002801224675289927,
+        "forward_60d_pct": 10.750204772199389
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 2566,
+        "candidate_date": "1996-02-27",
+        "prob": 0.02469082110605734,
+        "distance": 0.003877893411579829,
+        "forward_60d_pct": 9.0841388052606
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 5955,
+        "candidate_date": "2009-08-12",
+        "prob": 0.023545619370755128,
+        "distance": 0.004333282464114382,
+        "forward_60d_pct": 6.267018195963225
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 3255,
+        "candidate_date": "1998-11-16",
+        "prob": 0.0224077688220915,
+        "distance": 0.004808235522565313,
+        "forward_60d_pct": 32.732447817836594
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 2560,
+        "candidate_date": "1996-02-16",
+        "prob": 0.021577245823985472,
+        "distance": 0.005170389088984118,
+        "forward_60d_pct": 12.3400749547687
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 3253,
+        "candidate_date": "1998-11-12",
+        "prob": 0.019984547372190346,
+        "distance": 0.005905658043839502,
+        "forward_60d_pct": 32.56917642887327
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 2035,
+        "candidate_date": "1994-01-19",
+        "prob": 0.01943078411174284,
+        "distance": 0.006175110257783699,
+        "forward_60d_pct": -9.86515084403755
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 3266,
+        "candidate_date": "1998-12-02",
+        "prob": 0.018143534385226166,
+        "distance": 0.006832368303338699,
+        "forward_60d_pct": 16.64947594018855
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 5017,
+        "candidate_date": "2005-11-17",
+        "prob": 0.017646837704783588,
+        "distance": 0.007098530977446006,
+        "forward_60d_pct": -0.19327244853512004
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 1336,
+        "candidate_date": "1991-04-17",
+        "prob": 0.015723722362933415,
+        "distance": 0.008204944650552168,
+        "forward_60d_pct": -5.624955889618155
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 1512,
+        "candidate_date": "1991-12-26",
+        "prob": 0.01522754234442276,
+        "distance": 0.008512407255743303,
+        "forward_60d_pct": 8.084672277480308
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 5482,
+        "candidate_date": "2007-09-26",
+        "prob": 0.014048735609805511,
+        "distance": 0.009285009271757488,
+        "forward_60d_pct": -0.8954309081681378
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 2555,
+        "candidate_date": "1996-02-09",
+        "prob": 0.013941928769581625,
+        "distance": 0.009358187550759098,
+        "forward_60d_pct": 6.068923452272079
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 2623,
+        "candidate_date": "1996-05-17",
+        "prob": 0.013885656567902175,
+        "distance": 0.009396968032506262,
+        "forward_60d_pct": -3.1426875696645373
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 2716,
+        "candidate_date": "1996-09-30",
+        "prob": 0.01370891541429195,
+        "distance": 0.009519800785495098,
+        "forward_60d_pct": 13.262290192250404
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 779,
+        "candidate_date": "1989-02-01",
+        "prob": 0.013446138357102387,
+        "distance": 0.009705386506241387,
+        "forward_60d_pct": 6.423528162658609
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 2027,
+        "candidate_date": "1994-01-07",
+        "prob": 0.013137059050142603,
+        "distance": 0.009928371947066852,
+        "forward_60d_pct": -3.8218291417559724
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 5027,
+        "candidate_date": "2005-12-02",
+        "prob": 0.012641060633354186,
+        "distance": 0.010297414869948103,
+        "forward_60d_pct": -0.8963782107540008
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 784,
+        "candidate_date": "1989-02-08",
+        "prob": 0.011846426619806756,
+        "distance": 0.010919958314635896,
+        "forward_60d_pct": 7.045514338332048
+      }
+    ]
+  },
+  {
+    "label": "control",
+    "anchor_date": "2012-03-14",
+    "origin_idx": 6607,
+    "fold_index": 46,
+    "weights": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 6321,
+    "realized_60d_pct": -5.508767136437975,
+    "expected_60d_pct_matcher": 3.150302408219292,
+    "miss_pct_matcher_mean": -8.659069544657267,
+    "prob_mass_sign_match": 0.2870303648487159,
+    "prob_mass_abs_ge_realized": 0.525286358632878,
+    "prob_mass_rally_ge_30": 0.017527379492241105,
+    "prob_mass_drop_le_neg30": 0.0017634438228386249,
+    "top_5_cum_prob": 0.08096707901819114,
+    "top_20_cum_prob": 0.286093749683559,
+    "top_100_cum_prob": 0.8371270546653998,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 2630,
+        "candidate_date": "1996-05-29",
+        "prob": 0.017075613209056158,
+        "distance": 2.1942395900684253e-05,
+        "forward_60d_pct": 0.6705164749147619
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 699,
+        "candidate_date": "1988-10-07",
+        "prob": 0.016208489453288077,
+        "distance": 6.213055997817546e-05,
+        "forward_60d_pct": 0.8863636363637628
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 6261,
+        "candidate_date": "2010-10-28",
+        "prob": 0.01616098660680435,
+        "distance": 6.439384853851315e-05,
+        "forward_60d_pct": 8.184136017241617
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 4913,
+        "candidate_date": "2005-06-22",
+        "prob": 0.01581502127687557,
+        "distance": 8.10809511417876e-05,
+        "forward_60d_pct": 4.241507859954563
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 5952,
+        "candidate_date": "2009-08-07",
+        "prob": 0.015706968472166988,
+        "distance": 8.636759158320989e-05,
+        "forward_60d_pct": 3.2985693026817975
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 3005,
+        "candidate_date": "1997-11-19",
+        "prob": 0.015673516885797486,
+        "distance": 8.801163346952579e-05,
+        "forward_60d_pct": 9.779428747401585
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 4948,
+        "candidate_date": "2005-08-11",
+        "prob": 0.015257539903672996,
+        "distance": 0.0001087539080073599,
+        "forward_60d_pct": 1.7274232343108986
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 6153,
+        "candidate_date": "2010-05-26",
+        "prob": 0.014761106747629248,
+        "distance": 0.0001342612332095039,
+        "forward_60d_pct": 1.629863009123378
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 2616,
+        "candidate_date": "1996-05-08",
+        "prob": 0.014501809027488762,
+        "distance": 0.00014792744415006998,
+        "forward_60d_pct": 0.6495561617410495
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 3202,
+        "candidate_date": "1998-09-01",
+        "prob": 0.014456959839993224,
+        "distance": 0.0001503159729612999,
+        "forward_60d_pct": 31.55564334271559
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 2602,
+        "candidate_date": "1996-04-18",
+        "prob": 0.013658111793992006,
+        "distance": 0.0001941486048764804,
+        "forward_60d_pct": -4.191399343268499
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 1329,
+        "candidate_date": "1991-04-08",
+        "prob": 0.01354789666609511,
+        "distance": 0.00020039650974196938,
+        "forward_60d_pct": -7.0959550154181095
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 4789,
+        "candidate_date": "2004-12-23",
+        "prob": 0.013322203994583634,
+        "distance": 0.00021335081209936102,
+        "forward_60d_pct": -9.52272137748742
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 4622,
+        "candidate_date": "2004-04-27",
+        "prob": 0.01331876600688641,
+        "distance": 0.0002135498381564127,
+        "forward_60d_pct": -7.1605640671353115
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 720,
+        "candidate_date": "1988-11-07",
+        "prob": 0.013241287042956606,
+        "distance": 0.00021804879420429107,
+        "forward_60d_pct": 10.814754289716412
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 1621,
+        "candidate_date": "1992-06-02",
+        "prob": 0.013201167740850237,
+        "distance": 0.00022038874963024174,
+        "forward_60d_pct": -6.632202748707616
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 4797,
+        "candidate_date": "2005-01-05",
+        "prob": 0.01300831659227242,
+        "distance": 0.00023173695648157772,
+        "forward_60d_pct": -5.156657963446543
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 3019,
+        "candidate_date": "1997-12-10",
+        "prob": 0.012654262928627829,
+        "distance": 0.00025301599466631686,
+        "forward_60d_pct": 11.16907501863098
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 4453,
+        "candidate_date": "2003-08-25",
+        "prob": 0.012401335766878338,
+        "distance": 0.00026858500799753493,
+        "forward_60d_pct": 5.315553086076896
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 1803,
+        "candidate_date": "1993-02-19",
+        "prob": 0.01212238972764349,
+        "distance": 0.00028612818057939526,
+        "forward_60d_pct": 1.3652563807771578
+      }
+    ]
+  },
+  {
+    "label": "control",
+    "anchor_date": "2025-07-02",
+    "origin_idx": 9952,
+    "fold_index": 74,
+    "weights": [
+      0.9942187500000002,
+      0.00014062500000000002,
+      0.005640624999999849
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 9681,
+    "realized_60d_pct": 8.223518443027489,
+    "expected_60d_pct_matcher": 4.64333310343212,
+    "miss_pct_matcher_mean": 3.580185339595369,
+    "prob_mass_sign_match": 0.7633559173155694,
+    "prob_mass_abs_ge_realized": 0.3054535673354499,
+    "prob_mass_rally_ge_30": 0.002995015567473688,
+    "prob_mass_drop_le_neg30": 0.0005832929643970596,
+    "top_5_cum_prob": 0.1411539457838631,
+    "top_20_cum_prob": 0.35312342385807755,
+    "top_100_cum_prob": 0.8092087127921944,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 298,
+        "candidate_date": "1987-03-10",
+        "prob": 0.044036924990538774,
+        "distance": 0.0013612061822315595,
+        "forward_60d_pct": 0.9649265463218981
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 5270,
+        "candidate_date": "2006-11-20",
+        "prob": 0.036574264612558756,
+        "distance": 0.001784160390616467,
+        "forward_60d_pct": 1.6576025191123112
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 9388,
+        "candidate_date": "2023-03-31",
+        "prob": 0.020415137110887504,
+        "distance": 0.0031122856951197784,
+        "forward_60d_pct": 13.528356351966675
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 6259,
+        "candidate_date": "2010-10-26",
+        "prob": 0.02022143837553299,
+        "distance": 0.003134000836619364,
+        "forward_60d_pct": 7.044194332365894
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 6605,
+        "candidate_date": "2012-03-12",
+        "prob": 0.019906180694345053,
+        "distance": 0.0031697924200048033,
+        "forward_60d_pct": -3.798099627859519
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 8705,
+        "candidate_date": "2020-07-15",
+        "prob": 0.019814254976888594,
+        "distance": 0.0031803356454084947,
+        "forward_60d_pct": 7.935763356781567
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 6619,
+        "candidate_date": "2012-03-30",
+        "prob": 0.01765784196243437,
+        "distance": 0.003442789975459324,
+        "forward_60d_pct": -7.455893614781816
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 9422,
+        "candidate_date": "2023-05-19",
+        "prob": 0.01748441056771345,
+        "distance": 0.0034652728241962374,
+        "forward_60d_pct": 7.773251547253857
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 6338,
+        "candidate_date": "2011-02-17",
+        "prob": 0.01642863834041305,
+        "distance": 0.0036071437658848587,
+        "forward_60d_pct": -2.490855324349406
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 5246,
+        "candidate_date": "2006-10-17",
+        "prob": 0.015728704587040253,
+        "distance": 0.00370631713531299,
+        "forward_60d_pct": 7.769608273231965
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 8369,
+        "candidate_date": "2019-03-18",
+        "prob": 0.01511015857558365,
+        "distance": 0.0037977035398208347,
+        "forward_60d_pct": 2.5602352080455804
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 7826,
+        "candidate_date": "2017-01-18",
+        "prob": 0.013996388985645428,
+        "distance": 0.00397211156139286,
+        "forward_60d_pct": 5.889019650503613
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 1338,
+        "candidate_date": "1991-04-19",
+        "prob": 0.013930920483802248,
+        "distance": 0.003982791132017079,
+        "forward_60d_pct": -3.4744525547444893
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 1694,
+        "candidate_date": "1992-09-15",
+        "prob": 0.01272617456965547,
+        "distance": 0.004188820096235745,
+        "forward_60d_pct": 11.857571589346039
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 2707,
+        "candidate_date": "1996-09-17",
+        "prob": 0.012388975182445774,
+        "distance": 0.004249988450152174,
+        "forward_60d_pct": 18.530103806228393
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 8713,
+        "candidate_date": "2020-07-27",
+        "prob": 0.012078279240502992,
+        "distance": 0.004307841116423126,
+        "forward_60d_pct": 9.400639662444199
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 3281,
+        "candidate_date": "1998-12-23",
+        "prob": 0.011636358070874812,
+        "distance": 0.00439274514345018,
+        "forward_60d_pct": 7.825900514579831
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 2303,
+        "candidate_date": "1995-02-10",
+        "prob": 0.011229291469527095,
+        "distance": 0.004473855723345814,
+        "forward_60d_pct": 10.499802678923764
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 3153,
+        "candidate_date": "1998-06-24",
+        "prob": 0.011000109324428246,
+        "distance": 0.004520825457635448,
+        "forward_60d_pct": -2.9575708404699252
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 4375,
+        "candidate_date": "2003-05-05",
+        "prob": 0.010758971737259022,
+        "distance": 0.004571313883725479,
+        "forward_60d_pct": 9.429641965029113
+      }
+    ]
+  },
+  {
+    "label": "control",
+    "anchor_date": "2017-06-01",
+    "origin_idx": 7919,
+    "fold_index": 57,
+    "weights": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "n_eff_requested": 150.0,
+    "n_eff_used": 150.0,
+    "pool_size": 7641,
+    "realized_60d_pct": 0.10349848964412711,
+    "expected_60d_pct_matcher": 6.0938585856888645,
+    "miss_pct_matcher_mean": -5.990360096044737,
+    "prob_mass_sign_match": 0.7303976482234344,
+    "prob_mass_abs_ge_realized": 0.9915798515715086,
+    "prob_mass_rally_ge_30": 0.07359920582616349,
+    "prob_mass_drop_le_neg30": 0.007522910140717955,
+    "top_5_cum_prob": 0.0911870562774034,
+    "top_20_cum_prob": 0.32467090904918916,
+    "top_100_cum_prob": 0.8378459076580054,
+    "top_analogs": [
+      {
+        "rank": 1,
+        "candidate_idx": 850,
+        "candidate_date": "1989-05-15",
+        "prob": 0.01883356153103089,
+        "distance": 5.932587323398408e-05,
+        "forward_60d_pct": 4.284346577309717
+      },
+      {
+        "rank": 2,
+        "candidate_idx": 280,
+        "candidate_date": "1987-02-11",
+        "prob": 0.018498105490857793,
+        "distance": 0.00021176489882696048,
+        "forward_60d_pct": 8.171383111717256
+      },
+      {
+        "rank": 3,
+        "candidate_idx": 3519,
+        "candidate_date": "1999-12-03",
+        "prob": 0.018350404881037303,
+        "distance": 0.00027976208172536543,
+        "forward_60d_pct": 35.8293641662228
+      },
+      {
+        "rank": 4,
+        "candidate_idx": 5053,
+        "candidate_date": "2006-01-11",
+        "prob": 0.017849735139401465,
+        "distance": 0.000514398289328255,
+        "forward_60d_pct": -2.002570752570665
+      },
+      {
+        "rank": 5,
+        "candidate_idx": 3523,
+        "candidate_date": "1999-12-09",
+        "prob": 0.017655249235075936,
+        "distance": 0.0006073226090684281,
+        "forward_60d_pct": 38.62043491438101
+      },
+      {
+        "rank": 6,
+        "candidate_idx": 5269,
+        "candidate_date": "2006-11-17",
+        "prob": 0.017133723764020663,
+        "distance": 0.0008616497414404289,
+        "forward_60d_pct": 1.1562362898254852
+      },
+      {
+        "rank": 7,
+        "candidate_idx": 5052,
+        "candidate_date": "2006-01-10",
+        "prob": 0.01703215632819377,
+        "distance": 0.0009120797912754997,
+        "forward_60d_pct": -0.27637297737403976
+      },
+      {
+        "rank": 8,
+        "candidate_idx": 3302,
+        "candidate_date": "1999-01-26",
+        "prob": 0.01686073021484928,
+        "distance": 0.0009978819799824623,
+        "forward_60d_pct": 5.879158180584065
+      },
+      {
+        "rank": 9,
+        "candidate_idx": 2750,
+        "candidate_date": "1996-11-15",
+        "prob": 0.0167488457801198,
+        "distance": 0.0010543541510742438,
+        "forward_60d_pct": 12.64134894426081
+      },
+      {
+        "rank": 10,
+        "candidate_idx": 3521,
+        "candidate_date": "1999-12-07",
+        "prob": 0.016513189606987545,
+        "distance": 0.0011745428152074022,
+        "forward_60d_pct": 38.61962883921783
+      },
+      {
+        "rank": 11,
+        "candidate_idx": 2719,
+        "candidate_date": "1996-10-03",
+        "prob": 0.016182552385408135,
+        "distance": 0.0013460971088390394,
+        "forward_60d_pct": 11.194973630395078
+      },
+      {
+        "rank": 12,
+        "candidate_idx": 949,
+        "candidate_date": "1989-10-04",
+        "prob": 0.015380627878913807,
+        "distance": 0.0017771915726993437,
+        "forward_60d_pct": -3.057600692940732
+      },
+      {
+        "rank": 13,
+        "candidate_idx": 287,
+        "candidate_date": "1987-02-23",
+        "prob": 0.015264649865796474,
+        "distance": 0.0018413923694648449,
+        "forward_60d_pct": 2.1158066512857676
+      },
+      {
+        "rank": 14,
+        "candidate_idx": 2720,
+        "candidate_date": "1996-10-04",
+        "prob": 0.015206522007765738,
+        "distance": 0.0018737533693385378,
+        "forward_60d_pct": 8.198967225208186
+      },
+      {
+        "rank": 15,
+        "candidate_idx": 779,
+        "candidate_date": "1989-02-01",
+        "prob": 0.015204209252460566,
+        "distance": 0.0018750434862412901,
+        "forward_60d_pct": 6.423528162658609
+      },
+      {
+        "rank": 16,
+        "candidate_idx": 1311,
+        "candidate_date": "1991-03-12",
+        "prob": 0.01497603806264607,
+        "distance": 0.0020032979618588853,
+        "forward_60d_pct": 9.390832568715823
+      },
+      {
+        "rank": 17,
+        "candidate_idx": 6624,
+        "candidate_date": "2012-04-09",
+        "prob": 0.014847336392944447,
+        "distance": 0.0020765055902357,
+        "forward_60d_pct": -3.435791502127672
+      },
+      {
+        "rank": 18,
+        "candidate_idx": 2390,
+        "candidate_date": "1995-06-16",
+        "prob": 0.014144639862135416,
+        "distance": 0.002487751220779655,
+        "forward_60d_pct": 17.083679502289506
+      },
+      {
+        "rank": 19,
+        "candidate_idx": 3529,
+        "candidate_date": "1999-12-17",
+        "prob": 0.014075556575660156,
+        "distance": 0.002529279130039752,
+        "forward_60d_pct": 22.922086039299217
+      },
+      {
+        "rank": 20,
+        "candidate_idx": 2406,
+        "candidate_date": "1995-07-11",
+        "prob": 0.013913074793883819,
+        "distance": 0.002627760511364652,
+        "forward_60d_pct": -0.884783148338586
+      }
+    ]
+  }
+]
