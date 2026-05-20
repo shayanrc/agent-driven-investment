@@ -80,6 +80,17 @@ class Config:
     # full spec (decisions D1–D10). Knob-off must produce bit-identical paths
     # to v2.4 (test in tests/analog_mc/test_local_linear.py).
 
+    # ---- v4 A2.1 (correlation-window matcher distance) -----------------
+    matcher_distance: str = "weighted_euclidean"  # or "corrwindow"
+    # weighted_euclidean (v2.x default): compute distance(z_target, z_cand)
+    # = sqrt(Σ_h w_h · (z_target_h - z_cand_h)²). Uses the (w₁, w₂, w₃) grid.
+    # corrwindow (A2.1): distance(target, cand) = 1 - |Pearson_corr(W_target,
+    # W_cand)| where W_x is the corrwindow_length-day causal pre-window. The
+    # weights argument to forecast() is ignored under corrwindow. Conditional
+    # block sampling is disabled under corrwindow in v1 (block-0 distribution
+    # used for all blocks) — see docs/analog_mc/experiments/_a2_design.md.
+    corrwindow_length: int = 20
+
     # ---- Diagnostics ----------------------------------------------------
     pit_n_bins: int = 20
     acf_lags: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
@@ -129,6 +140,13 @@ class Config:
             raise ValueError(f"drift_mode must be one of zero|trailing_momentum|scale_with_vol; got {self.drift_mode}")
         if self.vol_model not in {"ewma", "garch"}:
             raise ValueError(f"vol_model must be 'ewma' or 'garch'; got {self.vol_model}")
+        if self.matcher_distance not in {"weighted_euclidean", "corrwindow"}:
+            raise ValueError(
+                f"matcher_distance must be 'weighted_euclidean' or 'corrwindow'; "
+                f"got {self.matcher_distance!r}"
+            )
+        if self.corrwindow_length < 2:
+            raise ValueError(f"corrwindow_length must be >= 2; got {self.corrwindow_length}")
 
     # ---- I/O ------------------------------------------------------------
     def to_dict(self) -> dict[str, Any]:
