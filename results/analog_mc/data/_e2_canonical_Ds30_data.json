@@ -1,0 +1,35 @@
+{
+  "run_dir": "runs/analog_mc/20260520T045525Z",
+  "config": "configs/analog_mc/canonical_E2_Ds30.yaml",
+  "wall_time_seconds": 23834.6,
+  "n_folds": 76,
+  "n_origins_total": 4552,
+  "n_paths": 1000,
+  "weight_grid_resolution": 0.1,
+  "n_eff_values": [15, 30, 50, 80, 150],
+  "momentum_shrinkage": 0.30,
+  "conditional_block_sampling": true,
+  "headline": {
+    "mean_crps": 0.04755,
+    "per_regime_crps": {
+      "low": 0.0269,
+      "mid": 0.0371,
+      "high": 0.0790
+    }
+  },
+  "decision_rules": {
+    "sloped_global_pit": {"metric": 0.0216, "threshold": 0.10, "fired": false},
+    "u_shaped_high_vol_pit": {"metric": 0.9628, "threshold": 2.5, "fired": false},
+    "acf_seam_degradation": {"metric": -1.1214, "threshold": -0.30, "fired": true, "note": "structural, see _e9_v3b.md"},
+    "clip_hit_excessive": {"metric": 0.106, "threshold": 0.15, "fired": false, "note": "estimated from Cell-D-s30 fast — diagnostic_report.json not generated due to manual abort"}
+  },
+  "baselines": {
+    "cell_d_canonical_v23": {"mean_crps": 0.05056, "sloped_global_pit": 0.059},
+    "cell_d_s30_fast": {"mean_crps": 0.04765, "sloped_global_pit": 0.0958}
+  },
+  "gates": {
+    "mean_crps_<=_0.05056": true,
+    "sloped_global_pit_<=_0.10": true,
+    "verdict": "BOTH PASS — promote to v2.4 default"
+  }
+}
