@@ -13,40 +13,40 @@
       "anchor_date": "1991-03-26",
       "z50_classical": 3.08066179013065,
       "anchor_close": 264.67,
-      "realized_60d_close": 260.27,
-      "realized_60d_return_pct": -1.6624475762270108
+      "realized_60d_close": 260.56,
+      "realized_60d_return_pct": -1.5528771677938646
     },
     {
       "origin_idx": 6130,
       "anchor_date": "2010-04-23",
       "z50_classical": 3.7827298359145365,
       "anchor_close": 2055.33,
-      "realized_60d_close": 1819.28,
-      "realized_60d_return_pct": -11.484773734631414
+      "realized_60d_close": 1840.67,
+      "realized_60d_return_pct": -10.444064943342424
     },
     {
       "origin_idx": 6270,
       "anchor_date": "2010-11-10",
       "z50_classical": 3.3758968818383583,
       "anchor_close": 2187.74,
-      "realized_60d_close": 2338.2,
-      "realized_60d_return_pct": 6.877416877691145
+      "realized_60d_close": 2349.2,
+      "realized_60d_return_pct": 7.380218855988363
     },
     {
       "origin_idx": 6607,
       "anchor_date": "2012-03-14",
       "z50_classical": 3.6527940741703087,
       "anchor_close": 2708.41,
-      "realized_60d_close": 2535.41,
-      "realized_60d_return_pct": -6.387511491982378
+      "realized_60d_close": 2559.21,
+      "realized_60d_return_pct": -5.508767136437975
     },
     {
       "origin_idx": 9952,
       "anchor_date": "2025-07-02",
       "z50_classical": 3.1393502730497382,
       "anchor_close": 22641.89,
-      "realized_60d_close": 24397.31,
-      "realized_60d_return_pct": 7.75297468541718
+      "realized_60d_close": 24503.85,
+      "realized_60d_return_pct": 8.223518443027489
     }
   ],
   "negative": [
@@ -55,94 +55,103 @@
       "anchor_date": "1990-09-24",
       "z50_classical": -2.563889829404867,
       "anchor_close": 177.6,
-      "realized_60d_close": 195.06,
-      "realized_60d_return_pct": 9.831081081081084
+      "realized_60d_close": 199.26,
+      "realized_60d_return_pct": 12.195945945945951
     },
     {
       "origin_idx": 3856,
       "anchor_date": "2001-04-04",
       "z50_classical": -2.6213732323484944,
       "anchor_close": 1370.75,
-      "realized_60d_close": 1808.94,
-      "realized_60d_return_pct": 31.967171256611348
+      "realized_60d_close": 1830.19,
+      "realized_60d_return_pct": 33.51741747218677
     },
     {
       "origin_idx": 3977,
       "anchor_date": "2001-10-02",
       "z50_classical": -2.1808488783510427,
       "anchor_close": 1159.37,
-      "realized_60d_close": 1590.84,
-      "realized_60d_return_pct": 37.215901739737966
+      "realized_60d_close": 1606.48,
+      "realized_60d_return_pct": 38.56491025298223
     }
   ],
   "regime_coverage": [
     {
       "origin_idx": 3602,
       "anchor_date": "2000-04-03",
-      "regime_label": "Dotcom peak",
       "z50_classical": 0.2628075925224645,
       "anchor_close": 4077.02,
       "realized_60d_close": 3771.06,
-      "realized_60d_return_pct": -7.504500836395211
+      "realized_60d_return_pct": -7.504500836395211,
+      "regime_label": "dotcom peak",
+      "requested_date": "2000-04-03",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 5740,
       "anchor_date": "2008-10-03",
-      "regime_label": "Post-Lehman (shifted from 2008-09-15 to nearest in-window)",
       "z50_classical": -1.1084936640859224,
       "anchor_close": 1470.84,
       "realized_60d_close": 1201.34,
-      "realized_60d_return_pct": -18.322863125832857
+      "realized_60d_return_pct": -18.322863125832857,
+      "regime_label": "post-Lehman / GFC",
+      "requested_date": "2008-10-03",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 7919,
       "anchor_date": "2017-06-01",
-      "regime_label": "Calm bull",
       "z50_classical": 2.23460234830635,
       "anchor_close": 5816.51,
       "realized_60d_close": 5822.53,
-      "realized_60d_return_pct": 0.10349848964412711
+      "realized_60d_return_pct": 0.10349848964412711,
+      "regime_label": "calm bull market",
+      "requested_date": "2017-06-01",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 8260,
       "anchor_date": "2018-10-08",
-      "regime_label": "Q4'18 selloff (shifted from 2018-10-01 to nearest in-window)",
       "z50_classical": 0.14623628365430083,
       "anchor_close": 7352.82,
       "realized_60d_close": 6422.67,
-      "realized_60d_return_pct": -12.650248476094884
+      "realized_60d_return_pct": -12.650248476094884,
+      "regime_label": "Q4-2018 selloff onset",
+      "requested_date": "2018-10-08",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 8621,
       "anchor_date": "2020-03-16",
-      "regime_label": "COVID crash",
       "z50_classical": -0.9579002064239485,
       "anchor_close": 7020.38,
       "realized_60d_close": 10094.26,
-      "realized_60d_return_pct": 43.78509425415717
+      "realized_60d_return_pct": 43.78509425415717,
+      "regime_label": "COVID crash",
+      "requested_date": "2020-03-16",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 9115,
       "anchor_date": "2022-03-01",
-      "regime_label": "UKR + Fed tightening",
       "z50_classical": -0.9662999740345846,
       "anchor_close": 14005.99,
       "realized_60d_close": 11943.93,
-      "realized_60d_return_pct": -14.722700787305998
+      "realized_60d_return_pct": -14.722700787305998,
+      "regime_label": "Russia-Ukraine + Fed tightening",
+      "requested_date": "2022-03-01",
+      "snapped_to_nearest_in_window": false
     },
     {
       "origin_idx": 10111,
       "anchor_date": "2026-02-19",
-      "regime_label": "Recent rally (60-day forecast complete)",
       "z50_classical": -0.5155545294403672,
       "anchor_close": 24797.34,
       "realized_60d_close": 29125.2,
-      "realized_60d_return_pct": 17.452920353554056
+      "realized_60d_return_pct": 17.452920353554056,
+      "regime_label": "recent rally",
+      "requested_date": "2026-02-19",
+      "snapped_to_nearest_in_window": false
     }
-  ],
-  "regime_coverage_meta": {
-    "selection": "manually curated to span major historical NDX regimes",
-    "n_anchors": 7,
-    "note": "complements the algorithmically-selected fat-tail set"
-  }
+  ]
 }

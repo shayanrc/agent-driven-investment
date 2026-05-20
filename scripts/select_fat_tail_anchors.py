@@ -28,6 +28,20 @@ from analog_mc.features import compute_features
 CANONICAL_RUN = "runs/analog_mc/20260520T045525Z"
 OUT_JSON = "results/analog_mc/data/fat_tail_eval_anchors.json"
 
+# Hand-curated regime-coverage anchors. These are NOT selected by the |z₅₀|>3
+# rule — they were chosen to span macro regimes (crashes, bull-market calm,
+# post-crash bottoms) and stress-test the matcher on regime transitions where
+# z₅₀ alone may not flag the difficulty.
+REGIME_ANCHORS = [
+    ("2000-04-03", "dotcom peak"),
+    ("2008-10-03", "post-Lehman / GFC"),
+    ("2017-06-01", "calm bull market"),
+    ("2018-10-08", "Q4-2018 selloff onset"),
+    ("2020-03-16", "COVID crash"),
+    ("2022-03-01", "Russia-Ukraine + Fed tightening"),
+    ("2026-02-19", "recent rally"),
+]
+
 
 def cluster_pick(indices, scores, min_gap: int):
     """Greedy: rank by |score| desc, accept if no prior pick within min_gap."""
@@ -68,17 +82,39 @@ def main() -> None:
     neg_picks = sorted(neg_picks)
 
     def row(i):
+        # Forecast covers 60 log-returns starting at index i+1 (i is the last
+        # observed return); the 60-day-forward close is close[i+1+60] = close[i+61].
         return {
             "origin_idx": int(i),
             "anchor_date": str(close.index[i + 1].date()),
             "z50_classical": float(z50[i]),
             "anchor_close": float(close.iloc[i + 1]),
-            "realized_60d_close": float(close.iloc[i + 60]) if i + 60 < len(close) else None,
+            "realized_60d_close": float(close.iloc[i + 61]) if i + 61 < len(close) else None,
             "realized_60d_return_pct": (
-                float((close.iloc[i + 60] / close.iloc[i + 1] - 1) * 100)
-                if i + 60 < len(close) else None
+                float((close.iloc[i + 61] / close.iloc[i + 1] - 1) * 100)
+                if i + 61 < len(close) else None
             ),
         }
+
+    # Hand-curated regime anchors: snap each to the nearest in-window origin.
+    import pandas as pd
+    all_origins_sorted = np.array(sorted(all_origins))
+    regime_picks = []
+    for date_str, regime in REGIME_ANCHORS:
+        target = pd.Timestamp(date_str)
+        pos = close.index.searchsorted(target)
+        origin = pos - 1
+        if origin in all_origins:
+            chosen = origin
+            shifted = False
+        else:
+            chosen = int(all_origins_sorted[np.argmin(np.abs(all_origins_sorted - origin))])
+            shifted = True
+        r = row(chosen)
+        r["regime_label"] = regime
+        r["requested_date"] = date_str
+        r["snapped_to_nearest_in_window"] = shifted
+        regime_picks.append(r)
 
     anchors = {
         "selection": {
@@ -91,17 +127,23 @@ def main() -> None:
         },
         "positive": [row(i) for i in pos_picks],
         "negative": [row(i) for i in neg_picks],
+        "regime_coverage": regime_picks,
     }
 
     out = Path(OUT_JSON)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(anchors, indent=2))
     print(f"wrote {out}")
-    print(f"  {len(pos_picks)} positive anchors, {len(neg_picks)} negative")
+    print(f"  {len(pos_picks)} positive + {len(neg_picks)} negative + "
+          f"{len(regime_picks)} regime = {len(pos_picks)+len(neg_picks)+len(regime_picks)} total")
     for side in ("positive", "negative"):
         for a in anchors[side]:
             print(f"  {side[:3]}  {a['anchor_date']}  z={a['z50_classical']:+5.2f}  "
                   f"close={a['anchor_close']:9,.1f}  60d={a['realized_60d_return_pct']:+6.2f}%")
+    for a in anchors["regime_coverage"]:
+        shift_note = f" (snapped from {a['requested_date']})" if a["snapped_to_nearest_in_window"] else ""
+        print(f"  reg  {a['anchor_date']}{shift_note}  {a['regime_label']:32s}  "
+              f"close={a['anchor_close']:9,.1f}  60d={a['realized_60d_return_pct']:+6.2f}%")
 
 
 if __name__ == "__main__":
