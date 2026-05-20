@@ -72,6 +72,14 @@ class Config:
     # a GARCH(1,1)-simulated σ path per step instead of block-constant σ ratio. EWMA branch
     # is exactly the v2.x behavior. GARCH is gated on E9 acceptance per V3_PLAN.
 
+    # ---- v4 B1 (Platzer–Yiou local-linear correction) -------------------
+    local_linear_correction: bool = False  # default off — when True, applies a
+    # weighted-least-squares conditional-mean bias correction (Jacobian estimate)
+    # to the analog matcher's forecast, distributed as a uniform per-day drift
+    # across the horizon. See docs/analog_mc/experiments/_b1_design.md for the
+    # full spec (decisions D1–D10). Knob-off must produce bit-identical paths
+    # to v2.4 (test in tests/analog_mc/test_local_linear.py).
+
     # ---- Diagnostics ----------------------------------------------------
     pit_n_bins: int = 20
     acf_lags: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50)
