@@ -8,10 +8,11 @@ Every module-specific directory nests under the module name. The top-level direc
 
 ```
 src/<module>/                  # package code
-docs/<module>/                 # design docs (e.g., IMPLEMENTATION_PLAN.md)
+docs/<module>/                 # design docs (e.g., IMPLEMENTATION_PLAN.md) + per-experiment reports (_<id>_<name>.md)
 tests/<module>/                # tests
 configs/<module>/*.yaml        # YAML configs
-runs/<module>/<timestamp>/     # output artifacts
+runs/<module>/<timestamp>/     # raw per-fold run artifacts (gitignored)
+results/<module>/data/         # aggregated experiment JSONs (_<id>_data.json) — checked in
 dashboards/<module>/
   ├── app.py                   # module's runnable Streamlit entry point
   └── views/                   # view modules
@@ -19,6 +20,17 @@ dashboards/app.py              # thin global launcher
 ```
 
 When adding new module-scoped files, always nest them under `<top>/<module>/`. Never put module-specific code in the top-level `dashboards/`, `tests/`, `configs/`, or `runs/`.
+
+**Docs vs results.** `docs/<module>/_<id>_<name>.md` holds the experiment narrative (setup, mechanistic reading, decision-rule verdict). `results/<module>/data/_<id>_data.json` holds the machine-readable headline metrics that back the narrative. New aggregate scripts write to `results/<module>/data/` by default.
+
+## Data and configs
+
+- v1 reads from a single local CSV at `data/NASDAQ100.csv` (FRED-style: `observation_date`, `NASDAQ100`). No yfinance / multi-source dispatch — that's a deferred loader module.
+- The data loader takes `date_col` and `close_col` from config, not hardcoded — keeps the pipeline asset-agnostic.
+
+## Plans and branches
+
+Each new plan doc (`V<N>_PLAN.md`, `V<N>_EXPERIMENTS_PLAN.md`, `ABLATION_STUDIES_PLAN.md`, etc.) gets its own git branch — don't stream commits to main. Plan + its implementation + reports land together as a PR. Pure refactors of already-merged work may go on main; the rule is per-*plan*, not per-*change*.
 
 ## Source of truth for analog_mc
 
@@ -42,9 +54,9 @@ The 6 critical correctness constraints (C1–C6 in the plan) are non-negotiable:
 
 ## Memories
 
-Project-level memories live in `.claude/memories/` and are checked into git so the whole team (and future Claude sessions) share them. They're organized by topic and indexed in `.claude/memories/INDEX.md`. When a fact is genuinely project-shared (architecture decision, layout convention, external resource location), prefer adding it here over per-user memory.
+Project-shared facts (architecture decisions, layout conventions, workflow rules) live in `.claude/memories/` (indexed in `.claude/memories/INDEX.md`) or as bullets in this file. The detail in `.claude/memories/` includes the *why* and *how-to-apply* per topic; CLAUDE.md is the summary.
 
-Per-user/per-machine memories (personal preferences, role context) stay at `~/.claude/projects/<hash>/memory/`.
+Per-user/per-machine items (personal preferences, role context, machine paths) stay at `~/.claude/projects/<hash>/memory/`. Don't duplicate project facts there — refer to the project memories instead.
 
 ## What not to do (analog_mc)
 

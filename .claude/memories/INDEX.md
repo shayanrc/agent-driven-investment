@@ -11,7 +11,9 @@ When adding a new memory, append a one-line pointer below.
 - [project-csv-schema.md](project-csv-schema.md) — NASDAQ100.csv schema; configurable column names
 - [project-layout.md](project-layout.md) — Per-module namespacing convention
 - [project-streamlit.md](project-streamlit.md) — Local dashboard, designed for concurrent runs
+- [project-results-layout.md](project-results-layout.md) — Aggregated experiment JSONs live in `results/<module>/data/`
 
 ## Implementation discipline
 
 - [feedback-implementation-discipline.md](feedback-implementation-discipline.md) — Stage order, surfacing deviations
+- [feedback-branch-per-plan.md](feedback-branch-per-plan.md) — Each new plan doc gets its own branch; don't commit to main
