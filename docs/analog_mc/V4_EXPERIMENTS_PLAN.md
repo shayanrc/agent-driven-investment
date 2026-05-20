@@ -185,6 +185,12 @@ End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` 
 
 Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 convention (status, setup, headline numbers, mechanistic reading, decision-rule verdict, implication for the roadmap, deliverables). Aggregate findings will roll up into a future `V4_RESULTS.md` once at least A1 and B1 have landed.
 
+## Mandatory fat-tail evaluation
+
+**Every v4 experiment that produces a forecast must report the [`FAT_TAIL_EVAL.md`](FAT_TAIL_EVAL.md) panel** — 8 anchors, 60-day forecast vs realized, coverage table, per-anchor CRPS diff vs v2.4 baseline. The aggregate CRPS / PIT diagnostics are necessary but not sufficient: v3 surfaced that the analog primitive systematically misses bear-bottom-rally regimes, and aggregate metrics average those misses away. An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors is not promotable without explicit justification.
+
+The 8-anchor list is pinned at `results/analog_mc/data/fat_tail_eval_anchors.json`. Use `scripts/select_fat_tail_anchors.py` to regenerate after a canonical re-run.
+
 ## What v4 explicitly does not test
 
 Re-iterating to prevent scope creep:

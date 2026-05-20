@@ -12,6 +12,7 @@ When adding a new memory, append a one-line pointer below.
 - [project-layout.md](project-layout.md) — Per-module namespacing convention
 - [project-streamlit.md](project-streamlit.md) — Local dashboard, designed for concurrent runs
 - [project-results-layout.md](project-results-layout.md) — Aggregated experiment JSONs live in `results/<module>/data/`
+- [project-fat-tail-eval.md](project-fat-tail-eval.md) — Mandatory 8-anchor fat-tail eval for every v4+ forecasting experiment
 
 ## Implementation discipline
 

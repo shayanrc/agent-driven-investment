@@ -1,0 +1,78 @@
+{
+  "selection": {
+    "z50_scale": "classical (rolling_mean / rolling_std * sqrt(50))",
+    "positive_threshold": 3.0,
+    "negative_threshold": -2.0,
+    "negative_n_kept": 3,
+    "cluster_min_gap_days": 120,
+    "canonical_run": "runs/analog_mc/20260520T045525Z"
+  },
+  "positive": [
+    {
+      "origin_idx": 1321,
+      "anchor_date": "1991-03-26",
+      "z50_classical": 3.08066179013065,
+      "anchor_close": 264.67,
+      "realized_60d_close": 260.27,
+      "realized_60d_return_pct": -1.6624475762270108
+    },
+    {
+      "origin_idx": 6130,
+      "anchor_date": "2010-04-23",
+      "z50_classical": 3.7827298359145365,
+      "anchor_close": 2055.33,
+      "realized_60d_close": 1819.28,
+      "realized_60d_return_pct": -11.484773734631414
+    },
+    {
+      "origin_idx": 6270,
+      "anchor_date": "2010-11-10",
+      "z50_classical": 3.3758968818383583,
+      "anchor_close": 2187.74,
+      "realized_60d_close": 2338.2,
+      "realized_60d_return_pct": 6.877416877691145
+    },
+    {
+      "origin_idx": 6607,
+      "anchor_date": "2012-03-14",
+      "z50_classical": 3.6527940741703087,
+      "anchor_close": 2708.41,
+      "realized_60d_close": 2535.41,
+      "realized_60d_return_pct": -6.387511491982378
+    },
+    {
+      "origin_idx": 9952,
+      "anchor_date": "2025-07-02",
+      "z50_classical": 3.1393502730497382,
+      "anchor_close": 22641.89,
+      "realized_60d_close": 24397.31,
+      "realized_60d_return_pct": 7.75297468541718
+    }
+  ],
+  "negative": [
+    {
+      "origin_idx": 1194,
+      "anchor_date": "1990-09-24",
+      "z50_classical": -2.563889829404867,
+      "anchor_close": 177.6,
+      "realized_60d_close": 195.06,
+      "realized_60d_return_pct": 9.831081081081084
+    },
+    {
+      "origin_idx": 3856,
+      "anchor_date": "2001-04-04",
+      "z50_classical": -2.6213732323484944,
+      "anchor_close": 1370.75,
+      "realized_60d_close": 1808.94,
+      "realized_60d_return_pct": 31.967171256611348
+    },
+    {
+      "origin_idx": 3977,
+      "anchor_date": "2001-10-02",
+      "z50_classical": -2.1808488783510427,
+      "anchor_close": 1159.37,
+      "realized_60d_close": 1590.84,
+      "realized_60d_return_pct": 37.215901739737966
+    }
+  ]
+}
