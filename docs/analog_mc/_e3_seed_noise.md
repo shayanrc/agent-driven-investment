@@ -60,5 +60,5 @@ Combined with E10's verdict (vanilla Cell D is the right target — bl=20 does n
 - `configs/analog_mc/ablation_E3_seed{7,1337,2024,99}.yaml` (only seed=7 executed; others deleted from queue)
 - `runs/analog_mc/20260519T100304Z/` (seed=7)
 - `runs/analog_mc/20260517T070003Z/` (seed=42, pre-existing)
-- `docs/analog_mc/_e3_data.json`
+- `results/analog_mc/data/_e3_data.json`
 - This page.

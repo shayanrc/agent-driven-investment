@@ -2,7 +2,7 @@
 
 Produces:
     docs/analog_mc/figs/e1_block_length_acf.png
-    docs/analog_mc/_e1_data.json
+    results/analog_mc/data/_e1_data.json
 """
 
 from __future__ import annotations
@@ -163,8 +163,8 @@ def main() -> None:
                 for k, v in m["decision_rules"].items()
             },
         }
-    Path("docs/analog_mc/_e1_data.json").write_text(json.dumps(out, indent=2))
-    print("\nwrote docs/analog_mc/_e1_data.json")
+    Path("results/analog_mc/data/_e1_data.json").write_text(json.dumps(out, indent=2))
+    print("\nwrote results/analog_mc/data/_e1_data.json")
 
 
 if __name__ == "__main__":

@@ -52,6 +52,6 @@ Cell D's high-vol calibration win (high-vol CRPS 0.0826 at bl=10 vs 0.0911 at v1
 - `configs/analog_mc/ablation_E10_celld_bl20.yaml`
 - `runs/analog_mc/20260519T083821Z/`
 - `scripts/_e10_aggregate.py`
-- `docs/analog_mc/_e10_data.json`
+- `results/analog_mc/data/_e10_data.json`
 - `docs/analog_mc/figs/e10_celld_bl20_acf.png`
 - This page.

@@ -122,5 +122,5 @@ Trade-off characterization:
 - `configs/analog_mc/ablation_E2_Ds25.yaml` (Cell-D-s25 follow-up)
 - `runs/analog_mc/20260519T{152049,155549,163125,170637}Z/` (s00, s25, s50, s75)
 - `runs/analog_mc/20260519T174324Z/` (Cell-D-s25 follow-up)
-- `docs/analog_mc/_e2_data.json`
+- `results/analog_mc/data/_e2_data.json`
 - This page (decision-rule metrics pending diagnostics).
