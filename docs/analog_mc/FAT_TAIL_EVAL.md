@@ -1,6 +1,10 @@
 # Fat-tail evaluation set
 
-**Mandatory benchmark for every v4+ experiment.** This document defines the canonical 8-anchor set on which forecast calibration must be reported for any new modeling change. Companion to [`V4_EXPERIMENTS_PLAN.md`](V4_EXPERIMENTS_PLAN.md).
+**Mandatory benchmark for every v4+ experiment.** This document defines the canonical 15-anchor set on which forecast calibration must be reported for any new modeling change. Companion to [`V4_EXPERIMENTS_PLAN.md`](V4_EXPERIMENTS_PLAN.md).
+
+The set is split into:
+1. **Fat-tail anchors (8)** — algorithmically selected on extreme `|z₅₀|` ([§ Selection](#anchor-selection-methodology)).
+2. **Regime-coverage anchors (7)** — curated to span the major identified regimes (dotcom, GFC, calm bull, Q4-2018, COVID, Russia-Ukraine, recent) ([§ Regime panel](#regime-coverage-anchors-curated)).
 
 ## Purpose
 
@@ -62,6 +66,24 @@ Each entry is the number of days (out of 60) the realized price stayed inside th
 
 **Aggregate v2.4 coverage on this set:** 50%-band mean = 31.1/60 (vs theoretical 30 — close to nominal). 90%-band mean = 51.5/60 (vs theoretical 54 — slightly under-dispersed). 6/8 anchors pass, 2/8 fail.
 
+## Regime-coverage anchors (curated)
+
+These 7 anchors were manually picked to span the major historical NDX regimes — they complement the algorithmically-selected fat-tail set. Two of them (`2018-10-08`, `2008-10-03`) were shifted from the user-requested dates (`2018-10-01`, `2008-09-15`) to the nearest in-window date.
+
+| Anchor | Regime | Realized 60d | 50% band | 90% band | Verdict |
+|---|---|---:|---:|---:|---|
+| 2000-04-03 | Dotcom peak | −7.5% | 33/60 | 56/60 | ✅ well-calibrated, called direction |
+| 2008-10-03 | Post-Lehman | −18.3% | 7/60 | 52/60 | ✅ wide 90% band caught the crash; median under-shot |
+| 2017-06-01 | Calm bull | +0.1% | 43/60 | 60/60 | ✅ perfect, narrow band correctly held |
+| 2018-10-08 | Q4'18 selloff | −12.7% | 4/60 | 31/60 | ❌ realized fell out the bottom — model expected sideways |
+| 2020-03-16 | COVID crash | +43.8% | 6/60 | 38/60 | ❌ realized rallied hard out the top — model expected continued decline |
+| 2022-03-01 | UKR + Fed tightening | −14.7% | 29/60 | 58/60 | ✅ called the drawdown direction |
+| 2026-02-19 (re-fc) | Recent rally | +17.5% | 2/35 | 8/35 | ❌ realized rallied through ceiling |
+
+**Footnote on 2026-02-19.** The original 60-day forecast from 2026-02-19 actually achieved 32/60 (50%) and 41/60 (90%) — most of the misses were concentrated in the final 25 days of the window, after the realized crossed below the 50% band at 2026-03-26 and then rallied sharply. The `2/35` row above uses the **post-dip re-forecast** at 2026-03-26 (35 days of realized available), which is the more diagnostic view of what the model "thought next" once it had already missed. The 60-day original anchor is the apples-to-apples comparison data point for v4 experiments.
+
+**Aggregate coverage on the regime set (using original 60-day anchor for 2026-02-19):** 50%-band mean ≈ 27.7/60, 90%-band mean ≈ 49.4/60. Slightly worse than the fat-tail set, driven by the COVID and 2018-Q4 misses.
+
 ## Charts
 
 ### Positive momentum (|z₅₀| > 3)
@@ -84,6 +106,24 @@ Each entry is the number of days (out of 60) the realized price stayed inside th
 
 ![2001-10-02](figs/forecast_20011002.png)
 
+### Regime coverage (curated)
+
+![2000-04-03](figs/forecast_20000403.png)
+
+![2008-10-03](figs/forecast_20081003.png)
+
+![2017-06-01](figs/forecast_20170601.png)
+
+![2018-10-08](figs/forecast_20181008.png)
+
+![2020-03-16](figs/forecast_20200316.png)
+
+![2022-03-01](figs/forecast_20220301.png)
+
+![2026-02-19 (original 60-day)](figs/forecast_20260219.png)
+
+![2026-03-26 (post-dip re-forecast)](figs/reforecast_from_dip.png)
+
 ## Observations (v2.4 baseline)
 
 ### Pattern 1 — Bull-momentum extremes: mostly well-calibrated
@@ -100,12 +140,12 @@ The 2001-04-04 case stayed inside the 90% band only because the band was enormou
 
 ### Pattern 3 — "Bottom-of-bear + sharp rally" is the recurring miss
 
-Pulling this together with the earlier regime-coverage panel (2000-04, 2008-10, 2017-06, 2018-10, 2020-03, 2022-03 anchored ad-hoc; not in the formal eval set), the model's failure pattern is consistent: **bottom-of-bear → V-recovery rallies**.
+Combining failures from both the fat-tail set and the regime-coverage set, the model's failure pattern is consistent: **bottom-of-bear → V-recovery rallies** (and the symmetric inverse: complacency-top → sharp selloffs).
 
-- 2001-10-02: +38.6% in 60 days, missed (above 90% band)
-- 2020-03-16: +43.8% in 60 days, missed (8/60 in 90% band; the COVID rally)
-- 2018-10-08: −12.7% in 60 days, the inverse case (Q4-2018 selloff *after* the model expected sideways) — same pattern, opposite sign
-- 2026-02-19 / 2026-03-26: realized +17.5%, missed (the recent example)
+- 2001-10-02 (fat-tail): +38.6% in 60 days, missed (above 90% band)
+- 2020-03-16 (regime): +43.8% in 60 days, missed (6/60 in 50%, 38/60 in 90%; the COVID rally)
+- 2018-10-08 (regime): −12.7% in 60 days, the inverse case (Q4-2018 selloff *after* the model expected sideways) — same pattern, opposite sign
+- 2026-02-19 / 2026-03-26 (regime + re-forecast): realized +17.5%, missed (the recent example)
 
 These cases share a structural feature: the analog matcher draws from historical 10-day blocks. Rallies of +30%+ in 60 days are rare in the matcher's candidate pool, so they are sampled with low probability. **This is the limit of the analog primitive at fat-tail rallies — and is what v4's B1 (Platzer local-linear correction) is the candidate fix for.**
 
@@ -113,28 +153,38 @@ These cases share a structural feature: the analog matcher draws from historical
 
 For every v4 experiment that produces a forecast (A1 FHS baseline, B1 Platzer local-linear, A2 OFTER max-corr, B2 delay-coords, B3 Dirichlet weights):
 
-1. **Render the 8-anchor panel** using `scripts/plot_forecast_from_date.py --date <ISO>` for each anchor in `fat_tail_eval_anchors.json`. Save under `docs/analog_mc/experiments/figs/<exp_id>_fat_tail/`.
-2. **Produce the coverage table** (8 rows × {50% band days, 90% band days, verdict}) and a per-anchor diff vs the v2.4 baseline coverage table above.
-3. **Aggregate metrics**: per-anchor mean CRPS over the 60-day horizon, plus the aggregate mean across all 8 anchors. Compare against the v2.4 numbers (to be computed once and stored at `results/analog_mc/data/fat_tail_baseline_v24.json`).
-4. **Verdict**: did the experiment improve `bear-bottom + rally` anchors (the systematic miss) without regressing the well-calibrated bull-momentum anchors? This is the headline question for B1 specifically.
+1. **Render the 15-anchor panel** using `scripts/plot_forecast_from_date.py --date <ISO>` for each anchor in `fat_tail_eval_anchors.json` (8 fat-tail + 7 regime). Save under `docs/analog_mc/experiments/figs/<exp_id>_fat_tail/`.
+2. **Produce two coverage tables** (one per section) with the per-anchor diff vs the v2.4 baseline numbers above.
+3. **Aggregate metrics**: per-anchor mean CRPS over the 60-day horizon, plus the aggregate mean separately for the fat-tail set and the regime-coverage set. Compare against the v2.4 numbers (to be computed once and stored at `results/analog_mc/data/fat_tail_baseline_v24.json`).
+4. **Verdict**: did the experiment improve `bear-bottom + rally` anchors (the systematic miss surfaced by both 2001-10 in the fat-tail set and 2020-03 / 2018-10 / 2026 in the regime set) without regressing the well-calibrated bull-momentum and calm-bull anchors? This is the headline question for B1 specifically.
 
-An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors should not be promoted to default without explicit justification.
+An experiment that improves aggregate CRPS but regresses on >2 of the 15 anchors should not be promoted to default without explicit justification.
 
 ## How to reproduce
 
 ```bash
-# 1. Generate/refresh the anchor list (after a new canonical run, the
-#    walk-forward windows may shift slightly).
+# 1. Refresh the fat-tail anchor list (after a new canonical run, walk-forward
+#    windows may shift slightly). The regime anchors are appended manually
+#    via a second script run that preserves the regime section.
 uv run python scripts/select_fat_tail_anchors.py
 
-# 2. Render the 8 charts from the canonical run.
+# 2. Render all 15 charts from the canonical run.
+# Fat-tail (algorithmic):
 for d in 1991-03-26 2010-04-23 2010-11-10 2012-03-14 2025-07-02 \
          1990-09-24 2001-04-04 2001-10-02; do
     uv run python scripts/plot_forecast_from_date.py --date "$d"
 done
+# Regime coverage (curated):
+for d in 2000-04-03 2008-10-03 2017-06-01 2018-10-08 \
+         2020-03-16 2022-03-01 2026-02-19; do
+    uv run python scripts/plot_forecast_from_date.py --date "$d"
+done
+
+# 3. (Optional) The post-dip re-forecast variant of the 2026 anchor:
+uv run python scripts/plot_reforecast_from_dip.py
 ```
 
-The plot script writes to `docs/analog_mc/figs/forecast_<YYYYMMDD>.png` by default.
+The plot scripts write to `docs/analog_mc/figs/forecast_<YYYYMMDD>.png` by default.
 
 ## Carry-forward
 

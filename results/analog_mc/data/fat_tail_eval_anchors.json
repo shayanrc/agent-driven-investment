@@ -74,5 +74,75 @@
       "realized_60d_close": 1590.84,
       "realized_60d_return_pct": 37.215901739737966
     }
-  ]
+  ],
+  "regime_coverage": [
+    {
+      "origin_idx": 3602,
+      "anchor_date": "2000-04-03",
+      "regime_label": "Dotcom peak",
+      "z50_classical": 0.2628075925224645,
+      "anchor_close": 4077.02,
+      "realized_60d_close": 3771.06,
+      "realized_60d_return_pct": -7.504500836395211
+    },
+    {
+      "origin_idx": 5740,
+      "anchor_date": "2008-10-03",
+      "regime_label": "Post-Lehman (shifted from 2008-09-15 to nearest in-window)",
+      "z50_classical": -1.1084936640859224,
+      "anchor_close": 1470.84,
+      "realized_60d_close": 1201.34,
+      "realized_60d_return_pct": -18.322863125832857
+    },
+    {
+      "origin_idx": 7919,
+      "anchor_date": "2017-06-01",
+      "regime_label": "Calm bull",
+      "z50_classical": 2.23460234830635,
+      "anchor_close": 5816.51,
+      "realized_60d_close": 5822.53,
+      "realized_60d_return_pct": 0.10349848964412711
+    },
+    {
+      "origin_idx": 8260,
+      "anchor_date": "2018-10-08",
+      "regime_label": "Q4'18 selloff (shifted from 2018-10-01 to nearest in-window)",
+      "z50_classical": 0.14623628365430083,
+      "anchor_close": 7352.82,
+      "realized_60d_close": 6422.67,
+      "realized_60d_return_pct": -12.650248476094884
+    },
+    {
+      "origin_idx": 8621,
+      "anchor_date": "2020-03-16",
+      "regime_label": "COVID crash",
+      "z50_classical": -0.9579002064239485,
+      "anchor_close": 7020.38,
+      "realized_60d_close": 10094.26,
+      "realized_60d_return_pct": 43.78509425415717
+    },
+    {
+      "origin_idx": 9115,
+      "anchor_date": "2022-03-01",
+      "regime_label": "UKR + Fed tightening",
+      "z50_classical": -0.9662999740345846,
+      "anchor_close": 14005.99,
+      "realized_60d_close": 11943.93,
+      "realized_60d_return_pct": -14.722700787305998
+    },
+    {
+      "origin_idx": 10111,
+      "anchor_date": "2026-02-19",
+      "regime_label": "Recent rally (60-day forecast complete)",
+      "z50_classical": -0.5155545294403672,
+      "anchor_close": 24797.34,
+      "realized_60d_close": 29125.2,
+      "realized_60d_return_pct": 17.452920353554056
+    }
+  ],
+  "regime_coverage_meta": {
+    "selection": "manually curated to span major historical NDX regimes",
+    "n_anchors": 7,
+    "note": "complements the algorithmically-selected fat-tail set"
+  }
 }
