@@ -26,8 +26,11 @@ train_initial_size: 1000
 val_size: 60
 test_size: 60
 
+# Inherit A2.1 v1's lesson: pin n_eff=50 under corrwindow (search picks
+# bad n_eff with non-conditional sampling). See
+# ablation_A2_corrwindow_L100.yaml for the full rationale.
 weight_grid_resolution: 0.1
-n_eff_values: [15, 30, 50, 80, 150]
+n_eff_values: [50]
 local_refine_top_k: 5
 nelder_mead_xatol: 0.01
 nelder_mead_maxiter: 50

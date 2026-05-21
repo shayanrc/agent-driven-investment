@@ -27,8 +27,22 @@ train_initial_size: 1000
 val_size: 60
 test_size: 60
 
+# A2.1 v1 lesson: under corrwindow distance, weights are ignored (single
+# distance per pair), so the weight grid is noise. The search picks val_crps
+# minima which, with non-conditional sampling and corrwindow, prefer high
+# n_eff (broad distribution) — but high n_eff washes the shape-similar signal
+# that makes corrwindow win at failure anchors. The aborted A2.1 v0 run
+# (runs/analog_mc/_a2_corrwindow_v0_aborted_*) hit +52% on fold 24 vs sanity's
+# −48% by exactly this mechanism: search picked n_eff=150 everywhere, sanity
+# used v2.4's per-fold n_eff (which was 50 for fold 24).
+#
+# Fix: pin n_eff to 50. Sanity selected this as the right concentration for
+# the post-9/11 V-recovery failure fold; other failure folds (42, 60, 63, 75)
+# had n_eff=150 in v2.4 but their sanity wins were at L=100 + corrwindow even
+# at lower n_eff. The weight grid is still scanned (66 points) but its result
+# is noise — it just adds search cost without affecting paths.
 weight_grid_resolution: 0.1
-n_eff_values: [15, 30, 50, 80, 150]
+n_eff_values: [50]
 local_refine_top_k: 5
 nelder_mead_xatol: 0.01
 nelder_mead_maxiter: 50
