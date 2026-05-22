@@ -31,18 +31,33 @@ Mid-v4 the literature-cited "abandon the analog primitive" path (e.g. parametric
 
 ## Experiment inventory
 
-| ID | Title | Category | Source | Cost | Priority |
-|---|---|---|---|---|---|
-| **B1** | Platzer local-linear correction | Structural | Tier 2 — `arXiv 2007.14216` | ~1.5 d impl + ~3 h run | **P0** |
-| **A2** | OFTER maximal-correlation distance | Attribution | Tier 1 — `arXiv 2304.03877` | ~1 d impl + ~4 h run | **P0** |
-| **C1** | Block-bootstrap KS / PIT GoF | Diagnostic | Tier 3 — `arXiv 2511.05733` | ~half-day impl | **P1** |
-| A1 | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | P1 |
-| B2 | Delay-coordinate features | Structural | Tier 2 — `arXiv 2005.06623` (Burov) | ~1 d impl + ~2 h run | P2 |
-| B3 | Dirichlet posterior on analog weights | Structural | Tier 2 — `arXiv 1701.04485` (McDermott–Wikle) | ~2 d impl + ~3 h run | P2 |
-| B4 | Regularized weight search (candidate) | Structural | v3.5 incidental — `V3_5_RESULTS.md` | ~3 h impl + ~2 h run | P2 (gated) |
-| **B5** | A2.1+B1 joint (corrwindow + Platzer) | Structural | v4 sanity evidence — both knobs complementary at the 5 failure anchors | ~0 impl (both knobs ship) + ~3 h run | **P0 (gated)** |
+Status legend after v4 closure (2026-05-22): ✅ promoted, ⛔ ran-but-did-not-promote, ⏸ deferred, 🚫 cancelled.
+
+| ID | Title | Category | Source | Cost | Priority | **Outcome** |
+|---|---|---|---|---|---|---|
+| **B1** | Platzer local-linear correction | Structural | Tier 2 — `arXiv 2007.14216` | ~1.5 d impl + ~3 h run | **P0** | ⛔ ran, did not promote — see [`_b1_local_linear.md`](experiments/_b1_local_linear.md) |
+| **A2.1** | Correlation-window matcher distance | Attribution | v4 sanity-driven (OFTER substitute) | ~1 d impl + ~6 h run | **P0** | ⛔ ran, did not promote — see [`_a2_corrwindow_L100.md`](experiments/_a2_corrwindow_L100.md) |
+| **B5** | A2.1+B1 joint (corrwindow + Platzer) | Structural | v4 sanity evidence — both knobs complementary at the 5 failure anchors | ~0 impl (both knobs ship) + ~5 h run | **P0 (gated)** | ⛔ ran, did not promote — see [`_b5_joint.md`](experiments/_b5_joint.md) |
+| A2.2 | OFTER-faithful max-correlation | Attribution | Tier 1 — `arXiv 2304.03877` | unknown (paper-blocked) | P1 | ⏸ deferred — paper PDF not text-extractable |
+| A1 | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | P1 | ⏸ deferred to v5 — V3.5.3 spot-check showed partial fix; canonical worth running formally |
+| **C1** | Block-bootstrap KS / PIT GoF | Diagnostic | Tier 3 — `arXiv 2511.05733` | ~half-day impl | **P1** | ⏸ deferred to v5 — diagnostic only, no urgency |
+| B2 | Delay-coordinate features | Structural | Tier 2 — `arXiv 2005.06623` (Burov) | ~1 d impl + ~2 h run | P2 | ⏸ deferred |
+| B3 | Dirichlet posterior on analog weights | Structural | Tier 2 — `arXiv 1701.04485` (McDermott–Wikle) | ~2 d impl + ~3 h run | P2 | ⏸ deferred |
+| B4 | Regularized weight search (candidate) | Structural | v3.5 incidental — `V3_5_RESULTS.md` | ~3 h impl + ~2 h run | P2 (gated) | 🚫 cancelled — V3.5.1 issue no longer load-bearing per v4 results |
 
 P0 = sequenced first. P1 = run after P0 if results don't make them obsolete. P2 = scoped now, defer execution. B4 is gated on B1/A2 outcomes — only runs if val/test gap at failure anchors persists.
+
+### v4 closure (2026-05-22)
+
+**Final synthesis** at [`V4_RESULTS.md`](V4_RESULTS.md). **None of B1/A2.1/B5 promote**; v2.4 Cell-D-s30 remains canonical. Per the V4 promotion bar (≥3/5 failures recovered at 90-band ≥45/60 AND ≤2/15 anchors regressing CRPS >5%):
+
+| | Failures recovered | Anchors regress | Bar? |
+|---|---:|---:|---|
+| B1 | 1/5 | 5/15 | ❌ |
+| A2.1 | 2/5 | 10/15 | ❌ |
+| B5 | 2/5 | 10/15 | ❌ |
+
+The strongest mechanistic signal — A2.1's −47% CRPS at two failure anchors (V-recovery + flash crash) — points the next v5 work at **gated A2.1**: keep the corrwindow distance but fall back to weighted-Euclidean when val_crps is anomalously high (the 2008-10-03 collapse pattern). Detail in V4_RESULTS.md §"Strongest signal for v5".
 
 **v3.5 reshape (2026-05-20).** Priorities above reflect the v3.5 diagnostic findings ([`V3_5_RESULTS.md`](V3_5_RESULTS.md)):
 - **B1** is the structurally-targeted fix for the "right-era, wrong-magnitude" failure pattern (V3.5.4 evidence) — promoted to sole P0.
@@ -271,7 +286,13 @@ End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` 
 
 ## Reading on results
 
-Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 convention (status, setup, headline numbers, mechanistic reading, decision-rule verdict, implication for the roadmap, deliverables). Aggregate findings will roll up into a future `V4_RESULTS.md` once at least A1 and B1 have landed.
+Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 convention (status, setup, headline numbers, mechanistic reading, decision-rule verdict, implication for the roadmap, deliverables). Aggregate findings rolled up into [`V4_RESULTS.md`](V4_RESULTS.md) (closed 2026-05-22).
+
+Per-experiment reports:
+- [`experiments/_b1_local_linear.md`](experiments/_b1_local_linear.md) — Platzer local-linear correction
+- [`experiments/_a2_corrwindow_L100.md`](experiments/_a2_corrwindow_L100.md) — corrwindow distance (L=100, n_eff=50)
+- [`experiments/_b5_joint.md`](experiments/_b5_joint.md) — A2.1+B1 joint
+- Auto-generated fat-tail panel summaries: `_<exp>_fat_tail.md` next to each above.
 
 ## Mandatory fat-tail evaluation
 

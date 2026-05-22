@@ -138,9 +138,13 @@ failure mode B1's Jacobian variance inflation targets.
 
 ## Recommended v4 reshape
 
+> **v4 outcome (closed 2026-05-22).** All three reshaped P0 experiments (B1, A2.1, B5) ran; none promoted. Per-recommendation outcomes annotated inline below. Full synthesis at [`V4_RESULTS.md`](V4_RESULTS.md).
+
 Specific edits to apply to [`V4_EXPERIMENTS_PLAN.md`](V4_EXPERIMENTS_PLAN.md):
 
 ### 1. Promote B1 to sole P0; demote A1 to P1
+
+**Outcome.** Reshape applied. B1 canonical ran (`runs/analog_mc/20260520T155220Z`). Result: 1/5 V3.5 failures recovered (2001-10-02, 44→55), failure mean CRPS −6.6%, control mean CRPS −9.3%. **Did not promote** — only 1/5 recovery + 5/15 anchor regressions (the 1990-09-24 control 90-band collapsed 55→11; mechanism unclear, surfaces in V4_RESULTS.md). A1 (FHS canonical) deferred to v5.
 
 Rationale: V3.5.4 demonstrates the precise failure pattern B1 targets
 (magnitude mass on chosen-cluster forwards is too thin; Jacobian inflation
@@ -160,6 +164,8 @@ still ship, but not ahead of B1.
 ```
 
 ### 2. Promote A2 from P1 to P0 (joint with B1)
+
+**Outcome.** A2 was split into A2.1 (corrwindow, implementable) + A2.2 (OFTER-faithful, deferred). A2.1 canonical ran at L=100 + n_eff=50 (`runs/analog_mc/20260521T061730Z`, after aborting v0's n_eff search degeneracy). Result: failure mean CRPS −20.1% (cleanest signal of any v4 experiment), 2/5 V3.5 failures recovered (2010-04-23: 27→57, 2001-10-02: 44→53), but control mean CRPS +10% and 10/15 anchors regressed. **Did not promote.** The 2008-10-03 case collapsed catastrophically (+122% CRPS) because corrwindow confidently picks pre-GFC bull-momentum-peak windows whose forwards diverged sharply in late 2008. V5 direction: gated A2.1.
 
 Rationale: V3.5.4 shows the matcher's temporal clustering as a *contributing*
 mechanism. A2's max-correlation distance is a clean test of whether
@@ -201,6 +207,9 @@ Replace the current sequencing with:
 
 ### B4 — regularized weight search (candidate)
 
+**Outcome (2026-05-22).** Cancelled. The val/test gap diagnosed in V3.5.1 turned out not to be the load-bearing failure mechanism per V4_RESULTS.md — A2.1 and B5 show that fixing the matcher *distance* dwarfs any weight-search regularization effect. The original "search lands at corners" finding may still hold, but it's a secondary problem at best.
+
+
 **Motivation.** V3.5.1 revealed that failure folds disproportionately end
 at extreme grid corners with large val/test CRPS gaps (2001-10-02 val 0.152
 vs test 0.108; 2010-04-23 val 0.050 vs test 0.038). The 60-day val window
@@ -228,16 +237,23 @@ sequencing — if those close the failures, B4 isn't needed.
 
 - **Tail inflation (v5+).** Not raised by V3.5.2 (pool has the moves), so
   this is *not* a v4 add. Re-evaluate at end of v4 if B1+A2 fail to recover
-  the 2020-03-16 / 2026-02-19 magnitude.
+  the 2020-03-16 / 2026-02-19 magnitude. **→ v4 confirmed this** (all three
+  experiments collapse the COVID 90-band; A2.1 even tighter than v2.4).
+  Tail inflation is now a primary v5 candidate.
 - **The temporal-clustering pathology itself.** V3.5.4 surfaced that
   distance-based matching pulls top-20 analogs from 1–3 historical clusters.
   If B1+A2 don't address this, v5 questions about cluster-aware analog
-  selection (penalize within-cluster duplicates) open up.
+  selection (penalize within-cluster duplicates) open up. **→ A2.1
+  addresses it for V-recovery / flash-crash but creates a new pathology at
+  regime-coverage anchors** (shape-similar window over-confidence). V5
+  candidate: gated A2.1 with val_crps health check.
 - **Conditional-mean correction independent of dispersion.** The matcher's
   *mean* underestimates magnitude in 3/5 failures — B1's variance correction
   may not move the mean far enough. If post-B1 the conditional mean still
   misses by >15% at 2020-03-16, a v5 mean-correction experiment becomes
-  necessary.
+  necessary. **→ Confirmed**: B1 helped 2018-10-08 and 2026-02-19 by ~0–1%
+  but did not move the 2020-03-16 anchor materially (mean was still ~+6%
+  vs realized +44%).
 
 ## Deliverables produced
 

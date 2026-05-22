@@ -54,7 +54,7 @@ Bold = best CRPS for that row.
 ## Per-experiment narrative
 
 ### B1 — Platzer local-linear conditional-mean correction
-[`_b1_local_linear_fat_tail.md`](experiments/_b1_local_linear_fat_tail.md) · [`fat_tail_b1_local_linear_diff.json`](../../results/analog_mc/data/fat_tail_b1_local_linear_diff.json)
+Narrative: [`_b1_local_linear.md`](experiments/_b1_local_linear.md) · Fat-tail panel: [`_b1_local_linear_fat_tail.md`](experiments/_b1_local_linear_fat_tail.md) · Diff JSON: [`fat_tail_b1_local_linear_diff.json`](../../results/analog_mc/data/fat_tail_b1_local_linear_diff.json)
 
 The only experiment with **both failure AND control aggregate improvement** (−6.6% failure, −9.3% control CRPS). Drift correction works exactly as theory predicts at high-Lyapunov regimes: matcher gets direction right but underestimates magnitude → B1 supplies a per-day drift that closes the gap.
 
@@ -66,7 +66,7 @@ But:
 **Verdict.** Real, partial, broadly positive. Not promotable solo per V4 heuristic, but the cleanest example of "small correction, broad positive effect" — the analog primitive can be drift-corrected without breaking elsewhere.
 
 ### A2.1v1 — Correlation-window matcher distance (L=100, n_eff=50)
-[`_a2_corrwindow_L100_fat_tail.md`](experiments/_a2_corrwindow_L100_fat_tail.md) · [`fat_tail_a2_corrwindow_L100_diff.json`](../../results/analog_mc/data/fat_tail_a2_corrwindow_L100_diff.json)
+Narrative: [`_a2_corrwindow_L100.md`](experiments/_a2_corrwindow_L100.md) · Fat-tail panel: [`_a2_corrwindow_L100_fat_tail.md`](experiments/_a2_corrwindow_L100_fat_tail.md) · Diff JSON: [`fat_tail_a2_corrwindow_L100_diff.json`](../../results/analog_mc/data/fat_tail_a2_corrwindow_L100_diff.json)
 
 **Cleanest failure-anchor signal of any v4 experiment** — failure mean CRPS −20.1%, and the most dramatic single-anchor improvement landed (2010-04-23 flash crash: CRPS −47%, **90-band coverage 27→57**, blowing past the promotion bar).
 
@@ -80,7 +80,7 @@ But also:
 **Verdict.** The cleanest evidence that **matcher distance is the right lever for the failure-anchor problem** — V3.5.4's "temporal clustering" diagnosis is confirmed by A2.1's strong wins where it works. But too unstable at regime-coverage anchors to ship unmoderated. **Strongest candidate for v5 work** (a "gated" or "regularized" variant).
 
 ### B5 — A2.1 + B1 joint
-[`_b5_joint_fat_tail.md`](experiments/_b5_joint_fat_tail.md) · [`fat_tail_b5_joint_diff.json`](../../results/analog_mc/data/fat_tail_b5_joint_diff.json)
+Narrative: [`_b5_joint.md`](experiments/_b5_joint.md) · Fat-tail panel: [`_b5_joint_fat_tail.md`](experiments/_b5_joint_fat_tail.md) · Diff JSON: [`fat_tail_b5_joint_diff.json`](../../results/analog_mc/data/fat_tail_b5_joint_diff.json)
 
 The hypothesis was "additive on wins, attenuated on losses". Reality:
 - Additive at 2001-10-02 only: B5 CRPS 0.050 beats both A2.1 (0.060) and B1 (0.095).

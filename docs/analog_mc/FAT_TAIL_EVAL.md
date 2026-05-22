@@ -202,6 +202,18 @@ For every v4 experiment that produces a forecast (A1 FHS baseline, B1 Platzer lo
 
 An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors should not be promoted to default without explicit justification.
 
+### v4 outcome (closed 2026-05-22)
+
+The three v4 P0 experiments shipped: B1, A2.1, B5. **None promote** — full synthesis at [`V4_RESULTS.md`](V4_RESULTS.md). Headline counts vs the bar above:
+
+| Experiment | Failures recovered (90 ≥45) | Anchors regressing >5% CRPS | Promotion |
+|---|---:|---:|---|
+| B1 (Platzer local-linear) | 1/5 | 5/15 | ❌ |
+| A2.1 (corrwindow L=100) | 2/5 | 10/15 | ❌ |
+| B5 (joint) | 2/5 | 10/15 | ❌ |
+
+A2.1's strongest single-anchor win was **2010-04-23 (90-band 27 → 57)** — the cleanest evidence yet that the matcher distance is the right v5 lever, gated to avoid the 2008-10-03 catastrophic regression (+122% CRPS).
+
 ## How to reproduce
 
 ```bash

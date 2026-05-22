@@ -64,6 +64,18 @@ The failure/control split makes the headline obvious: v2.4 averages ~92% 90-band
 ![2022-03-01](figs/v24_fat_tail/v24_20220301.png)
 ![2026-02-19](figs/v24_fat_tail/v24_20260219.png)
 
+## v4 comparators (closed 2026-05-22)
+
+All three v4 P0 experiments shipped and produced their own panels against this baseline:
+
+| Experiment | Failure mean CRPS Δ | Failures ≥45/60 | Panel | Narrative |
+|---|---:|---:|---|---|
+| [B1 Platzer local-linear](_b1_local_linear_fat_tail.md) | −6.6% ✅ | 1/5 | [figs/b1_local_linear_fat_tail/](figs/b1_local_linear_fat_tail/) | [`_b1_local_linear.md`](_b1_local_linear.md) |
+| [A2.1 corrwindow L=100](_a2_corrwindow_L100_fat_tail.md) | **−20.1%** ✅✅ | 2/5 | [figs/a2_corrwindow_L100_fat_tail/](figs/a2_corrwindow_L100_fat_tail/) | [`_a2_corrwindow_L100.md`](_a2_corrwindow_L100.md) |
+| [B5 joint](_b5_joint_fat_tail.md) | −11.0% ✅ | 2/5 | [figs/b5_joint_fat_tail/](figs/b5_joint_fat_tail/) | [`_b5_joint.md`](_b5_joint.md) |
+
+None promote per the V4 bar (≥3 recovered, ≤2 regress); v2.4 (this baseline) remains canonical. Full synthesis at [`../V4_RESULTS.md`](../V4_RESULTS.md).
+
 ## How v4 experiments use this baseline
 
 Each v4 experiment that produces a forecast must:
