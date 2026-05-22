@@ -31,17 +31,33 @@ Mid-v4 the literature-cited "abandon the analog primitive" path (e.g. parametric
 
 ## Experiment inventory
 
-| ID | Title | Category | Source | Cost | Priority |
-|---|---|---|---|---|---|
-| **B1** | Platzer local-linear correction | Structural | Tier 2 — `arXiv 2007.14216` | ~1.5 d impl + ~3 h run | **P0** |
-| **A2** | OFTER maximal-correlation distance | Attribution | Tier 1 — `arXiv 2304.03877` | ~1 d impl + ~4 h run | **P0** |
-| **C1** | Block-bootstrap KS / PIT GoF | Diagnostic | Tier 3 — `arXiv 2511.05733` | ~half-day impl | **P1** |
-| A1 | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | P1 |
-| B2 | Delay-coordinate features | Structural | Tier 2 — `arXiv 2005.06623` (Burov) | ~1 d impl + ~2 h run | P2 |
-| B3 | Dirichlet posterior on analog weights | Structural | Tier 2 — `arXiv 1701.04485` (McDermott–Wikle) | ~2 d impl + ~3 h run | P2 |
-| B4 | Regularized weight search (candidate) | Structural | v3.5 incidental — `V3_5_RESULTS.md` | ~3 h impl + ~2 h run | P2 (gated) |
+Status legend after v4 closure (2026-05-22): ✅ promoted, ⛔ ran-but-did-not-promote, ⏸ deferred, 🚫 cancelled.
+
+| ID | Title | Category | Source | Cost | Priority | **Outcome** |
+|---|---|---|---|---|---|---|
+| **B1** | Platzer local-linear correction | Structural | Tier 2 — `arXiv 2007.14216` | ~1.5 d impl + ~3 h run | **P0** | ⛔ ran, did not promote — see [`_b1_local_linear.md`](experiments/_b1_local_linear.md) |
+| **A2.1** | Correlation-window matcher distance | Attribution | v4 sanity-driven (OFTER substitute) | ~1 d impl + ~6 h run | **P0** | ⛔ ran, did not promote — see [`_a2_corrwindow_L100.md`](experiments/_a2_corrwindow_L100.md) |
+| **B5** | A2.1+B1 joint (corrwindow + Platzer) | Structural | v4 sanity evidence — both knobs complementary at the 5 failure anchors | ~0 impl (both knobs ship) + ~5 h run | **P0 (gated)** | ⛔ ran, did not promote — see [`_b5_joint.md`](experiments/_b5_joint.md) |
+| A2.2 | OFTER-faithful max-correlation | Attribution | Tier 1 — `arXiv 2304.03877` | unknown (paper-blocked) | P1 | ⏸ deferred — paper PDF not text-extractable |
+| A1 | Textbook FHS baseline | Attribution | Tier-4 synthesis (RELATED_WORKS) | ~2-3 h compute | P1 | ⏸ deferred to v5 — V3.5.3 spot-check showed partial fix; canonical worth running formally |
+| **C1** | Block-bootstrap KS / PIT GoF | Diagnostic | Tier 3 — `arXiv 2511.05733` | ~half-day impl | **P1** | ⏸ deferred to v5 — diagnostic only, no urgency |
+| B2 | Delay-coordinate features | Structural | Tier 2 — `arXiv 2005.06623` (Burov) | ~1 d impl + ~2 h run | P2 | ⏸ deferred |
+| B3 | Dirichlet posterior on analog weights | Structural | Tier 2 — `arXiv 1701.04485` (McDermott–Wikle) | ~2 d impl + ~3 h run | P2 | ⏸ deferred |
+| B4 | Regularized weight search (candidate) | Structural | v3.5 incidental — `V3_5_RESULTS.md` | ~3 h impl + ~2 h run | P2 (gated) | 🚫 cancelled — V3.5.1 issue no longer load-bearing per v4 results |
 
 P0 = sequenced first. P1 = run after P0 if results don't make them obsolete. P2 = scoped now, defer execution. B4 is gated on B1/A2 outcomes — only runs if val/test gap at failure anchors persists.
+
+### v4 closure (2026-05-22)
+
+**Final synthesis** at [`V4_RESULTS.md`](V4_RESULTS.md). **None of B1/A2.1/B5 promote**; v2.4 Cell-D-s30 remains canonical. Per the V4 promotion bar (≥3/5 failures recovered at 90-band ≥45/60 AND ≤2/15 anchors regressing CRPS >5%):
+
+| | Failures recovered | Anchors regress | Bar? |
+|---|---:|---:|---|
+| B1 | 1/5 | 5/15 | ❌ |
+| A2.1 | 2/5 | 10/15 | ❌ |
+| B5 | 2/5 | 10/15 | ❌ |
+
+The strongest mechanistic signal — A2.1's −47% CRPS at two failure anchors (V-recovery + flash crash) — points the next v5 work at **gated A2.1**: keep the corrwindow distance but fall back to weighted-Euclidean when val_crps is anomalously high (the 2008-10-03 collapse pattern). Detail in V4_RESULTS.md §"Strongest signal for v5".
 
 **v3.5 reshape (2026-05-20).** Priorities above reflect the v3.5 diagnostic findings ([`V3_5_RESULTS.md`](V3_5_RESULTS.md)):
 - **B1** is the structurally-targeted fix for the "right-era, wrong-magnitude" failure pattern (V3.5.4 evidence) — promoted to sole P0.
@@ -76,7 +92,16 @@ This is the cheapest experiment that can falsify a foundational claim of the pip
 
 ---
 
-### A2. OFTER maximal-correlation distance — **P0** (was P1; promoted by v3.5)
+### A2. Matcher-distance ablation — **P0** (was P1; promoted by v3.5; split 2026-05-20 evening)
+
+A2 is now split into A2.1 (correlation-window, implementable now) and A2.2 (OFTER-faithful, deferred). Full design rationale in [`experiments/_a2_design.md`](experiments/_a2_design.md).
+
+- **A2.1 (corrwindow)** — Pearson correlation between L-day pre-origin return windows. Scaffold + sanity landed; canonical at L=100 queued behind B1. Sanity showed −17.15% failure-anchor CRPS at L=100, with material wins on flash-crash and V-recovery anchors.
+- **A2.2 (OFTER-faithful)** — deferred until the paper's exact definition is accessible (current WebFetch tooling can't extract the PDF text).
+
+The original A2 motivation below applies to both variants — A2.1 is the implementable approximation, A2.2 the literature-faithful target.
+
+#### Original motivation
 
 **Motivation.** OFTER (`arXiv 2304.03877`) uses a *modified maximal correlation coefficient* as its k-NN distance, instead of weighted Euclidean over hand-picked features. This is the single cleanest test of our matcher-distance design — does our hand-tuned `(w₁, w₂, w₃, n_eff)` grid actually beat a principled correlation-based distance? If max-corr matches or beats us, the entire `weight_grid_resolution` search has been over-engineering the wrong primitive.
 
@@ -168,6 +193,25 @@ This is the candidate fix for `sloped_global_pit` margin pressure (Cell-D-s30 pa
 
 ---
 
+### B5. A2.1+B1 joint — **P0 (gated on B1 + A2.1 ship)**
+
+**Motivation.** Both B1 (Platzer local-linear) and A2.1 (corrwindow distance at L=100) sanity-passed individually with complementary per-anchor strengths (see "Sanity-driven reshape" in §Sequencing). The two effects are **independent code paths**: B1 enters via `drift_target += correction / H` (after distance computation), A2.1 enters via the `matcher_distance` switch (the distance computation itself). Stacking them requires no new code — just a config that flips both knobs.
+
+**Method.** Inherit v2.4 Cell-D-s30 settings; flip `local_linear_correction: true` AND `matcher_distance: corrwindow`, `corrwindow_length: 100`. Same canonical 76-fold harness.
+
+**Decision rule.**
+- If failure mean CRPS improves more than `max(B1_solo, A2.1_solo)` by ≥3%: **additive structural win**. Promote as v2.5 if controls don't regress.
+- If failure mean CRPS ≈ `max(B1_solo, A2.1_solo)`: knobs are not additive (one dominates). Pick the single-knob winner.
+- If failure mean CRPS materially worse than either solo: knobs interact destructively. Investigate the interaction (likely the drift correction's regression coefficients are estimated on a different analog set under corrwindow, producing miscalibrated shifts).
+
+**Gating.** Only execute if both B1 and A2.1 canonical runs ship without major control regression (>5% control CRPS regression vs v2.4 means we're solving the wrong problem).
+
+**Deliverables.** `configs/analog_mc/ablation_B5_joint.yaml`, `_b5_joint.md` report. **Plus the mandatory fat-tail panel**, with a *triple* per-anchor comparison: v2.4 vs B1 vs A2.1 vs B5.
+
+**Cost.** ~0 impl (config-only) + ~3 h run + 30 min diagnostics.
+
+---
+
 ### B4. Regularized weight search — **P2 (candidate, gated)**
 
 **Motivation.** Surfaced by V3.5.1 ([`v3.5/_v3_5_1_weights.md`](v3.5/_v3_5_1_weights.md)). 4 of 5 failure folds land at extreme grid corners (max weight > 0.9) with materially worse val_crps than test_crps — e.g. 2001-10-02 (val 0.152, test 0.108), 2010-04-23 (val 0.050, test 0.038). The 60-day val window at regime-transition anchors is short and stressful; the search lands at corner solutions that don't generalize. Plausibly a small but real failure-anchor contributor, orthogonal to the matcher selection / Jacobian-inflation questions.
@@ -208,13 +252,33 @@ Chandy et al. (`arXiv 2511.05733`) provide a block-bootstrap KS test that's spec
 
 Reshaped 2026-05-20 per [`V3_5_RESULTS.md`](V3_5_RESULTS.md). The pre-v3.5 sequencing put A1 ahead of B1 on attribution grounds; v3.5's per-anchor evidence reorders that — see "v3.5 reshape" notes throughout.
 
+### Sanity-driven reshape (2026-05-20 evening)
+
+Both B1 and A2.1 sanity checks at the 5 V3.5 failure anchors completed:
+
+| Anchor | B1 isolated (CRPS Δ) | A2.1 L=100 isolated (CRPS Δ) | Best |
+|---|---:|---:|---|
+| 2001-10-02 V-recovery | **−22.7%** | **−48.3%** | A2.1 |
+| 2010-04-23 flash crash | **−12.4%** | **−36.4%** | A2.1 |
+| 2018-10-08 Q4 selloff | +0.7% (flat) | +20% (regress) | B1 |
+| 2020-03-16 COVID rally | +5.2% (regress) | −9% | A2.1 |
+| 2026-02-19 recent rally | **−13.0%** | flat | B1 |
+
+The two approaches are **complementary**: A2.1 dominates on shape-similar failure anchors (flash crash, V-recovery); B1 dominates where the matcher already gets direction right and just needs magnitude correction. Picking the better of the two per anchor yields a ~20% failure CRPS improvement (oracle bound, isolated). This motivates a joint experiment.
+
+**Reshape:**
+- Confirm A2.1 canonical at L=100 (sanity selects this as the winning window) — promote to P0 alongside B1.
+- Add **B5 (A2.1+B1 joint)** as a new candidate: stack the drift correction on top of the corrwindow distance. Both are independent knobs and require no new code. Cost: 1 canonical run (~3 h). Decision: gate on B1 + A2.1 canonical results — only run if both ship without regressing controls badly.
+- 2020-03-16 and 2018-10-08 remain hard. Neither experiment recovers magnitude on the COVID anchor; if the joint experiment also fails, **B6 (high-vol-regime variance inflation)** becomes a candidate (out of v4 scope; surface at end-of-v4 decision).
+
 1. **Canonical Cell-D-s30 baseline already landed** at `runs/analog_mc/20260520T045525Z` (76 folds, 1000 paths, 66×5 weight grid). This is the v2.4 reference for all v4 comparisons; per-fold artefacts are in place and were the substrate for v3.5's diagnostics.
-2. **B1 (Platzer local-linear correction)** — single highest-priority experiment. V3.5.4 identifies the matcher's magnitude-underestimation as the headline failure pattern; B1's Jacobian-bias correction is the canonical fix.
-3. **A2 (OFTER max-correlation distance)** — runs in parallel with B1 (independent code paths, no compute conflict). V3.5.4 identifies temporal clustering of top-K analogs as the contributing matcher-side pathology; A2 is the cleanest orthogonal test.
-4. **C1 (KS GoF diagnostic)** — runs alongside B1/A2 (no compute). Same role as before: becomes the new promotion decision rule if it agrees with heuristics on retroactive v3 data.
-5. **A1 (textbook FHS)** — runs after B1/A2 land. Still required as an attribution baseline (does the analog primitive add value over plain FHS?) and the V3.5.3 spot-check showed it solves a sub-pattern (COVID-style V-recoveries) cleanly — worth running formally, just no longer ahead of B1.
-6. **B4 (regularized weight search)** — gated on whether B1+A2 close the failure anchors. If they do, B4 isn't needed. If a residual val/test gap persists at the failure anchors after B1+A2, run B4.
-7. **B2 / B3** — scoped, execution deferred. Re-evaluate after the top block lands.
+2. **B1 (Platzer local-linear correction)** — canonical IN PROGRESS at `runs/analog_mc/20260520T155220Z` (started 2026-05-20 21:22, ETA ~7 h). Sanity (`scripts/v4_b1_sanity.py`) showed −6.7% failure CRPS / 4-of-5 sign agreement at isolated correction; canonical includes search-time effect.
+3. **A2.1 (correlation-window distance)** — corrwindow scaffolded (replaces OFTER-faithful, which is deferred until paper access). Sanity selects **L=100**. Canonical queued for execution after B1 canonical completes.
+4. **B5 (A2.1+B1 joint)** — new candidate from the sanity evidence. Both knobs are orthogonal in code (drift correction + distance change); cost is one extra canonical run. Decision: launch if B1 and A2.1 canonicals both ship without major control regression.
+5. **C1 (KS GoF diagnostic)** — runs alongside B1/A2 (no compute). Same role as before: becomes the new promotion decision rule if it agrees with heuristics on retroactive v3 data.
+6. **A1 (textbook FHS)** — runs after B1/A2 land. Still required as an attribution baseline (does the analog primitive add value over plain FHS?) and the V3.5.3 spot-check showed it solves a sub-pattern (COVID-style V-recoveries) cleanly — worth running formally, just no longer ahead of B1.
+7. **B4 (regularized weight search)** — gated on whether B1+A2+B5 close the failure anchors. If they do, B4 isn't needed. If a residual val/test gap persists, run B4.
+8. **B2 / B3** — scoped, execution deferred. Re-evaluate after the top block lands.
 
 End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` (rule still firing at < −0.30) *and* fail to recover the 5 fat-tail failure anchors (V3.5 failure set: 90%-band ≥45/60 days in ≥3 of 5), the analog-block primitive's structural ceiling is confirmed and v5 must consider abandoning intact 10-day blocks (finer-granularity sampling, or parametric / DL path generation). The v3.5 evidence ruled out the "pool is empty" stop condition, so this end-of-v4 decision will be substantive regardless of outcome.
 
@@ -222,7 +286,13 @@ End of v4 decision: if all of {B1, A2, B2} fail to close `acf_seam_degradation` 
 
 ## Reading on results
 
-Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 convention (status, setup, headline numbers, mechanistic reading, decision-rule verdict, implication for the roadmap, deliverables). Aggregate findings will roll up into a future `V4_RESULTS.md` once at least A1 and B1 have landed.
+Each v4 experiment gets its own `_<id>_<name>.md` report following the v3 convention (status, setup, headline numbers, mechanistic reading, decision-rule verdict, implication for the roadmap, deliverables). Aggregate findings rolled up into [`V4_RESULTS.md`](V4_RESULTS.md) (closed 2026-05-22).
+
+Per-experiment reports:
+- [`experiments/_b1_local_linear.md`](experiments/_b1_local_linear.md) — Platzer local-linear correction
+- [`experiments/_a2_corrwindow_L100.md`](experiments/_a2_corrwindow_L100.md) — corrwindow distance (L=100, n_eff=50)
+- [`experiments/_b5_joint.md`](experiments/_b5_joint.md) — A2.1+B1 joint
+- Auto-generated fat-tail panel summaries: `_<exp>_fat_tail.md` next to each above.
 
 ## Mandatory fat-tail evaluation
 

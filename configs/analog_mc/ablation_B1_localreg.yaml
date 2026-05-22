@@ -1,0 +1,53 @@
+# B1: Platzer–Yiou local-linear conditional-mean bias correction.
+# Inherits v2.4 Cell-D-s30 canonical settings; flips `local_linear_correction: true`.
+# Tests whether the Jacobian-bias correction closes the V3.5.4 "right-era,
+# wrong-magnitude" failure pattern at regime transitions.
+# Spec: docs/analog_mc/experiments/_b1_design.md.
+
+ticker: NASDAQ100
+data_path: data/NASDAQ100.csv
+date_col: observation_date
+close_col: NASDAQ100
+
+forecast_horizon: 60
+block_length: 10
+n_blocks: 6
+n_paths: 1000
+
+zscore_horizons: [20, 50, 200]
+
+ewma_halflife: 20
+
+train_initial_size: 1000
+val_size: 60
+test_size: 60
+
+weight_grid_resolution: 0.1
+n_eff_values: [15, 30, 50, 80, 150]
+local_refine_top_k: 5
+nelder_mead_xatol: 0.01
+nelder_mead_maxiter: 50
+
+vol_clip_lower: 0.5
+vol_clip_upper: 3.0
+
+# v2.4 canonical baseline knobs (Cell-D-s30) — held fixed.
+drift_mode: trailing_momentum
+momentum_lookback: 20
+momentum_shrinkage: 0.30
+conditional_block_sampling: true
+conditional_block_sampling_in_search: false
+
+# v3b GARCH off — B1 lives at the drift layer, orthogonal to vol_model.
+# Combining B1 + GARCH is out of B1 v1 scope; the canonical baseline is EWMA.
+vol_model: ewma
+
+# === B1 — the one knob that differs from default.yaml ===
+local_linear_correction: true
+
+pit_n_bins: 20
+acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+vol_regime_quantiles: [0.33, 0.67]
+
+random_seed: 42
+runs_dir: runs/analog_mc

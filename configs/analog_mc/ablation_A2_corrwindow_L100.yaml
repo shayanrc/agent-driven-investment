@@ -1,0 +1,72 @@
+# A2.1: matcher_distance='corrwindow' with corrwindow_length=100.
+# Inherits v2.4 Cell-D-s30 canonical settings. Selected L=100 from the
+# A2.1 sanity sweep (results/analog_mc/data/v4_a2_corrwindow_sanity.json):
+# −17.15% failure-anchor mean CRPS in the isolated test.
+#
+# IMPORTANT: A2.1 disables conditional block sampling under the hood
+# (see docs/analog_mc/experiments/_a2_design.md §3) — block-0 distance
+# is reused for every block. Setting conditional_block_sampling: true
+# below is harmless (the code path checks matcher_distance and routes
+# to generate_paths, not generate_paths_conditional).
+
+ticker: NASDAQ100
+data_path: data/NASDAQ100.csv
+date_col: observation_date
+close_col: NASDAQ100
+
+forecast_horizon: 60
+block_length: 10
+n_blocks: 6
+n_paths: 1000
+
+zscore_horizons: [20, 50, 200]
+
+ewma_halflife: 20
+
+train_initial_size: 1000
+val_size: 60
+test_size: 60
+
+# A2.1 v1 lesson: under corrwindow distance, weights are ignored (single
+# distance per pair), so the weight grid is noise. The search picks val_crps
+# minima which, with non-conditional sampling and corrwindow, prefer high
+# n_eff (broad distribution) — but high n_eff washes the shape-similar signal
+# that makes corrwindow win at failure anchors. The aborted A2.1 v0 run
+# (runs/analog_mc/_a2_corrwindow_v0_aborted_*) hit +52% on fold 24 vs sanity's
+# −48% by exactly this mechanism: search picked n_eff=150 everywhere, sanity
+# used v2.4's per-fold n_eff (which was 50 for fold 24).
+#
+# Fix: pin n_eff to 50. Sanity selected this as the right concentration for
+# the post-9/11 V-recovery failure fold; other failure folds (42, 60, 63, 75)
+# had n_eff=150 in v2.4 but their sanity wins were at L=100 + corrwindow even
+# at lower n_eff. The weight grid is still scanned (66 points) but its result
+# is noise — it just adds search cost without affecting paths.
+weight_grid_resolution: 0.1
+n_eff_values: [50]
+local_refine_top_k: 5
+nelder_mead_xatol: 0.01
+nelder_mead_maxiter: 50
+
+vol_clip_lower: 0.5
+vol_clip_upper: 3.0
+
+# v2.4 baseline knobs (Cell-D-s30) — held fixed.
+drift_mode: trailing_momentum
+momentum_lookback: 20
+momentum_shrinkage: 0.30
+conditional_block_sampling: true
+conditional_block_sampling_in_search: false
+
+vol_model: ewma
+local_linear_correction: false
+
+# === A2.1 — the one knob family that differs from default.yaml ===
+matcher_distance: corrwindow
+corrwindow_length: 100
+
+pit_n_bins: 20
+acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+vol_regime_quantiles: [0.33, 0.67]
+
+random_seed: 42
+runs_dir: runs/analog_mc

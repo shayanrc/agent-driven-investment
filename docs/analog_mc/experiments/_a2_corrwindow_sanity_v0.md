@@ -1,0 +1,52 @@
+# A2.1 corrwindow sanity v0 — per-failure isolated comparison
+
+Per-anchor v2.4 (weighted_euclidean) vs A2.1 (corrwindow) sweep over window_length ∈ {10, 20, 60, 100}. Search-time effect not included; fold-selected n_eff is reused, weights are ignored under corrwindow.
+
+**Important caveat**: A2.1 disables conditional block sampling (see A2.1 design §3), while v2.4 here uses it. So we're comparing two distance functions *and* the conditional-sampling regime simultaneously.
+
+## Aggregate by window length
+
+| L | Failure CRPS Δ | Failure 90/60 Δ | Control CRPS Δ | Control 90/60 Δ |
+|---:|---:|---:|---:|---:|
+| 10 | +7.60% | -3.4 | +22.70% | -1.8 |
+| 20 | +6.09% | +1.4 | +4.81% | +0.6 |
+| 60 | -4.32% | -9.2 | +28.58% | -0.4 |
+| 100 | -17.15% | +0.6 | +4.59% | -1.0 |
+
+## Per-anchor 90-band coverage
+
+| Anchor | Group | Realized | v2.4 | L=10 | L=20 | L=60 | L=100 |
+|---|---|---:|---: | ---: | ---: | ---: | ---: | ---: | ---: | ---:|
+| 2010-04-23 | failure | -10.4% | 28 | 28 | 40 | 18 | 57 |
+| 2001-10-02 | failure | +38.6% | 39 | 57 | 57 | 53 | 53 |
+| 2018-10-08 | failure | -12.7% | 32 | 29 | 38 | 13 | 19 |
+| 2020-03-16 | failure | +43.8% | 37 | 9 | 10 | 10 | 13 |
+| 2026-02-19 | failure | +17.5% | 41 | 37 | 39 | 37 | 38 |
+| 1991-03-26 | control | -1.6% | 60 | 60 | 60 | 60 | 60 |
+| 2010-11-10 | control | +7.4% | 56 | 58 | 57 | 59 | 57 |
+| 2012-03-14 | control | -5.5% | 57 | 47 | 60 | 53 | 52 |
+| 2025-07-02 | control | +8.2% | 60 | 60 | 60 | 60 | 60 |
+| 2017-06-01 | control | +0.1% | 60 | 59 | 59 | 59 | 59 |
+
+## Per-anchor CRPS
+
+| Anchor | Group | v2.4 | L=10 | L=20 | L=60 | L=100 |
+|---|---|---:|---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2010-04-23 | failure | 0.0703 | 0.0740 | 0.0711 | 0.0744 | 0.0447 |
+| 2001-10-02 | failure | 0.1169 | 0.0539 | 0.0682 | 0.0443 | 0.0604 |
+| 2018-10-08 | failure | 0.0635 | 0.0662 | 0.0556 | 0.0994 | 0.0761 |
+| 2020-03-16 | failure | 0.1766 | 0.2580 | 0.2515 | 0.1785 | 0.1608 |
+| 2026-02-19 | failure | 0.0505 | 0.0619 | 0.0604 | 0.0605 | 0.0538 |
+| 1991-03-26 | control | 0.0235 | 0.0309 | 0.0260 | 0.0313 | 0.0257 |
+| 2010-11-10 | control | 0.0156 | 0.0175 | 0.0180 | 0.0272 | 0.0167 |
+| 2012-03-14 | control | 0.0328 | 0.0437 | 0.0311 | 0.0396 | 0.0365 |
+| 2025-07-02 | control | 0.0175 | 0.0192 | 0.0192 | 0.0198 | 0.0151 |
+| 2017-06-01 | control | 0.0128 | 0.0141 | 0.0128 | 0.0135 | 0.0128 |
+
+## Verdict
+
+- **Best window length on failures**: L=100.
+- Failure CRPS Δ at L=100: **-17.15%**.
+- Control CRPS Δ at L=100: **+4.59%**.
+
+**Material failure improvement.** Worth launching A2.1 canonical with L=100, then comparing the joint search-time effect. Re-evaluate priority in V4_EXPERIMENTS_PLAN.

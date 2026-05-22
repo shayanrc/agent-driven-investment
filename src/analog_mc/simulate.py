@@ -24,7 +24,55 @@ import pandas as pd
 
 from analog_mc.config import Config
 from analog_mc.distances import composite_distance, distances_to_probs
+from analog_mc.distances_corrwindow import corrwindow_distance
+from analog_mc.local_linear import (
+    fit_local_linear_correction,
+    forward_logret_sums,
+)
 from analog_mc.sampling import generate_paths, generate_paths_conditional
+
+
+def _compute_block0_distances(
+    z_target: np.ndarray,
+    z_candidates: np.ndarray,
+    weights: np.ndarray,
+    returns: np.ndarray,
+    origin_idx: int,
+    eligible: np.ndarray,
+    config: Config,
+) -> np.ndarray:
+    """Block-0 distances under the configured matcher_distance.
+
+    weighted_euclidean (default): composite over z-scores (uses `weights`).
+    corrwindow (A2.1): Pearson-corr-window distance (ignores `weights`).
+    """
+    if config.matcher_distance == "weighted_euclidean":
+        return composite_distance(z_target, z_candidates, weights)
+    if config.matcher_distance == "corrwindow":
+        return corrwindow_distance(
+            returns=returns,
+            origin_idx=origin_idx,
+            candidate_idx=eligible,
+            window_length=config.corrwindow_length,
+        )
+    raise ValueError(f"Unknown matcher_distance: {config.matcher_distance!r}")
+
+
+# v4 B1: cache the H-day forward cumulative log-returns by (id(returns), horizon).
+# `forward_logret_sums` is O(N) but search calls forecast() ~150×/origin × 76 folds;
+# computing the array once per (returns, horizon) keeps overhead well under 1%.
+_FORWARD_RET_CACHE: dict[tuple[int, int], np.ndarray] = {}
+
+
+def _forward_logret_sums_cached(returns: np.ndarray, horizon: int) -> np.ndarray:
+    """Per-worker cache for B1's forward-return precompute."""
+    key = (id(returns), horizon)
+    cached = _FORWARD_RET_CACHE.get(key)
+    if cached is not None:
+        return cached
+    out = forward_logret_sums(returns, horizon)
+    _FORWARD_RET_CACHE[key] = out
+    return out
 
 
 # Per-worker GARCH fit cache (E9). The fit depends only on (returns, origin_idx);
@@ -209,6 +257,25 @@ def forecast(
             f"Effective candidate pool ({eligible.size}) is too small for n_eff>1."
         )
 
+    # v4 B1 (decision D6): compute the local-linear conditional-mean bias
+    # correction once per forecast, using the block-0 (real-origin)
+    # probabilities. Distribute as a uniform per-day drift across the horizon.
+    # No-op when local_linear_correction is False — paths must be bit-identical
+    # to v2.4 in that case (tested in tests/analog_mc/test_local_linear.py).
+    if config.local_linear_correction:
+        distances0 = _compute_block0_distances(
+            z_target, z_candidates, weights, returns, origin_idx, eligible, config,
+        )
+        probs0 = distances_to_probs(distances0, target_n_eff=target)
+        forward_all = _forward_logret_sums_cached(returns, config.forecast_horizon)
+        correction, _b1_diag = fit_local_linear_correction(
+            z_target=z_target,
+            z_candidates=z_candidates,
+            probs=probs0,
+            forward_returns=forward_all[eligible],
+        )
+        drift_target = drift_target + correction / config.forecast_horizon
+
     # v3b (E9): when vol_model='garch', fit GARCH(1,1) on causal returns up to
     # and through the forecast origin, then simulate per-path σ trajectories
     # over the forecast horizon. Per-step rescaling inside generate_paths swaps
@@ -232,7 +299,15 @@ def forecast(
             rng=rng,
         )
 
-    if config.conditional_block_sampling:
+    # A2.1: corrwindow disables conditional block sampling — block-0 distance
+    # is computed once and re-used for every block (per design _a2_design.md
+    # §3). Conditional re-matching would require per-path simulated windows
+    # which is out of A2.1 v1 scope.
+    use_conditional = (
+        config.conditional_block_sampling
+        and config.matcher_distance == "weighted_euclidean"
+    )
+    if use_conditional:
         return generate_paths_conditional(
             z_at_origin=z_target,
             z_at_candidates=z_candidates,
@@ -252,7 +327,9 @@ def forecast(
             sigma_at_returns=sigma_all if sigma_path is not None else None,
         )
 
-    distances = composite_distance(z_target, z_candidates, weights)
+    distances = _compute_block0_distances(
+        z_target, z_candidates, weights, returns, origin_idx, eligible, config,
+    )
     probs = distances_to_probs(distances, target_n_eff=target)
 
     return generate_paths(
