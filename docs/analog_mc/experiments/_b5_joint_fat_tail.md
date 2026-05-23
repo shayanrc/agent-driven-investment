@@ -36,3 +36,41 @@ Run: `runs/analog_mc/20260521T121025Z` · 15 anchors × 60-day horizon.
 - **Anchors regressing (CRPS up >5%)**: 10/15 (promotion bar: ≤2 without justification).
 - **Failure mean CRPS Δ**: -11.02%.
 - **Control mean CRPS Δ**: +28.56%.
+
+## Charts
+
+15 forecast panels rendered from `runs/analog_mc/20260521T121025Z`. Compare against the [v2.4 baseline panel](_v24_fat_tail_baseline.md#charts); a side-by-side 4-up grid per anchor lives at [`_fat_tail_compare.md`](_fat_tail_compare.md).
+
+### Stratum A.1 — Positive momentum (|z₅₀| > 3)
+
+![1991-03-26](figs/b5_joint_fat_tail/b5_joint_19910326.png)
+![2010-04-23](figs/b5_joint_fat_tail/b5_joint_20100423.png)
+![2010-11-10](figs/b5_joint_fat_tail/b5_joint_20101110.png)
+![2012-03-14](figs/b5_joint_fat_tail/b5_joint_20120314.png)
+![2025-07-02](figs/b5_joint_fat_tail/b5_joint_20250702.png)
+
+### Stratum A.2 — Negative momentum (top 3 most-extreme |z₅₀|)
+
+![1990-09-24](figs/b5_joint_fat_tail/b5_joint_19900924.png)
+![2001-04-04](figs/b5_joint_fat_tail/b5_joint_20010404.png)
+![2001-10-02](figs/b5_joint_fat_tail/b5_joint_20011002.png)
+
+### Stratum B — Regime-coverage (hand-curated, 7 anchors)
+
+![2000-04-03](figs/b5_joint_fat_tail/b5_joint_20000403.png)
+![2008-10-03](figs/b5_joint_fat_tail/b5_joint_20081003.png)
+![2017-06-01](figs/b5_joint_fat_tail/b5_joint_20170601.png)
+![2018-10-08](figs/b5_joint_fat_tail/b5_joint_20181008.png)
+![2020-03-16](figs/b5_joint_fat_tail/b5_joint_20200316.png)
+![2022-03-01](figs/b5_joint_fat_tail/b5_joint_20220301.png)
+![2026-02-19](figs/b5_joint_fat_tail/b5_joint_20260219.png)
+
+## Reproducing
+
+```bash
+uv run python scripts/render_fat_tail_panel.py \
+    --run-dir runs/analog_mc/20260521T121025Z \
+    --label "B5 (joint A2.1+B1)" \
+    --out-dir docs/analog_mc/experiments/figs/b5_joint_fat_tail \
+    --prefix b5_joint
+```
