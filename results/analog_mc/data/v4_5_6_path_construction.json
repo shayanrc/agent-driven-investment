@@ -1,0 +1,128 @@
+{
+  "method": {
+    "description": "V4.5.6 path-construction inspection \u2014 per-anchor per-day mean/std diagnostics from existing forecasts.npz.",
+    "expected_std_growth_brownian": 7.745966692414834
+  },
+  "anchors": [
+    {
+      "anchor_date": "2012-03-14",
+      "origin_idx": 6607,
+      "realized_60d_pct": -5.508767136437993,
+      "a2_terminal_mean_pct": 7.106738567352295,
+      "v24_terminal_mean_pct": 4.402429103851318,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 7.174830436706543,
+      "v24_cum_std_growth_actual": 8.030611038208008,
+      "a2_terminal_cum_std_pct": 6.439138889312744,
+      "v24_terminal_cum_std_pct": 7.338509559631348
+    },
+    {
+      "anchor_date": "2022-03-01",
+      "origin_idx": 9115,
+      "realized_60d_pct": -14.722700787305982,
+      "a2_terminal_mean_pct": 4.2961602210998535,
+      "v24_terminal_mean_pct": -2.242647171020508,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 3.557723045349121,
+      "v24_cum_std_growth_actual": 8.869329452514648,
+      "a2_terminal_cum_std_pct": 9.106783866882324,
+      "v24_terminal_cum_std_pct": 15.32580280303955
+    },
+    {
+      "anchor_date": "2026-02-19",
+      "origin_idx": 10111,
+      "realized_60d_pct": 17.452920353554006,
+      "a2_terminal_mean_pct": -5.4042792320251465,
+      "v24_terminal_mean_pct": -4.381956577301025,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 5.944940567016602,
+      "v24_cum_std_growth_actual": 6.766392707824707,
+      "a2_terminal_cum_std_pct": 6.940328121185303,
+      "v24_terminal_cum_std_pct": 9.876654624938965
+    },
+    {
+      "anchor_date": "2010-11-10",
+      "origin_idx": 6270,
+      "realized_60d_pct": 7.380218855988388,
+      "a2_terminal_mean_pct": 6.6052446365356445,
+      "v24_terminal_mean_pct": 4.064236164093018,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 8.213254928588867,
+      "v24_cum_std_growth_actual": 8.496820449829102,
+      "a2_terminal_cum_std_pct": 8.132048606872559,
+      "v24_terminal_cum_std_pct": 7.525958061218262
+    },
+    {
+      "anchor_date": "2001-04-04",
+      "origin_idx": 3856,
+      "realized_60d_pct": 33.51741747218679,
+      "a2_terminal_mean_pct": 94.14505004882812,
+      "v24_terminal_mean_pct": 74.58940887451172,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 7.831206321716309,
+      "v24_cum_std_growth_actual": 6.336015701293945,
+      "a2_terminal_cum_std_pct": 30.39688491821289,
+      "v24_terminal_cum_std_pct": 26.902755737304688
+    },
+    {
+      "anchor_date": "1991-03-26",
+      "origin_idx": 1321,
+      "realized_60d_pct": -1.5528771677938873,
+      "a2_terminal_mean_pct": 5.30802583694458,
+      "v24_terminal_mean_pct": 3.6519150733947754,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 10.369613647460938,
+      "v24_cum_std_growth_actual": 11.468255043029785,
+      "a2_terminal_cum_std_pct": 16.9898624420166,
+      "v24_terminal_cum_std_pct": 14.8406400680542
+    },
+    {
+      "anchor_date": "2017-06-01",
+      "origin_idx": 7919,
+      "realized_60d_pct": 0.10349848964414862,
+      "a2_terminal_mean_pct": 2.656540632247925,
+      "v24_terminal_mean_pct": 1.7641218900680542,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 4.750779628753662,
+      "v24_cum_std_growth_actual": 7.608953952789307,
+      "a2_terminal_cum_std_pct": 5.146886825561523,
+      "v24_terminal_cum_std_pct": 6.0064849853515625
+    },
+    {
+      "anchor_date": "2010-04-23",
+      "origin_idx": 6130,
+      "realized_60d_pct": -10.444064943342468,
+      "a2_terminal_mean_pct": -10.497696876525879,
+      "v24_terminal_mean_pct": -1.1701277494430542,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 11.972677230834961,
+      "v24_cum_std_growth_actual": 9.631490707397461,
+      "a2_terminal_cum_std_pct": 12.995189666748047,
+      "v24_terminal_cum_std_pct": 8.551980972290039
+    },
+    {
+      "anchor_date": "2001-10-02",
+      "origin_idx": 3977,
+      "realized_60d_pct": 38.56491025298229,
+      "a2_terminal_mean_pct": 44.3583984375,
+      "v24_terminal_mean_pct": 20.727039337158203,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 10.645666122436523,
+      "v24_cum_std_growth_actual": 7.784640312194824,
+      "a2_terminal_cum_std_pct": 20.2582950592041,
+      "v24_terminal_cum_std_pct": 27.989370346069336
+    },
+    {
+      "anchor_date": "2020-03-16",
+      "origin_idx": 8621,
+      "realized_60d_pct": 43.785094254157215,
+      "a2_terminal_mean_pct": -1.9321626424789429,
+      "v24_terminal_mean_pct": -15.871186256408691,
+      "cum_std_growth_sqrt_t_expected": 7.745966692414834,
+      "a2_cum_std_growth_actual": 5.670253753662109,
+      "v24_cum_std_growth_actual": 6.9014787673950195,
+      "a2_terminal_cum_std_pct": 22.258621215820312,
+      "v24_terminal_cum_std_pct": 30.79622459411621
+    }
+  ]
+}

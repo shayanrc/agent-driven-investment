@@ -1,0 +1,612 @@
+{
+  "method": {
+    "description": "V4.5.3 B1 \u03b2 autopsy: reproduce B1's WLS fit at each regression anchor; compute leverage scores; refit with max-leverage candidate dropped.",
+    "b1_run": "runs/analog_mc/20260520T155220Z"
+  },
+  "b1_regressions": [
+    "1991-03-26",
+    "2025-07-02",
+    "1990-09-24",
+    "2001-04-04",
+    "2008-10-03"
+  ],
+  "b1_wins_compared": [
+    "2010-04-23",
+    "2012-03-14",
+    "2001-10-02"
+  ],
+  "anchors": [
+    {
+      "anchor_date": "1991-03-26",
+      "section": "positive",
+      "origin_idx": 1321,
+      "realized_60d_return_pct": -1.5528771677938646,
+      "fold_index": 2,
+      "weights": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "n_eff": 150.0,
+      "n_eligible": 1041,
+      "original_b1": {
+        "correction": 0.018807196443690787,
+        "matcher_mean": -0.019831592700565736,
+        "predicted_mean": -0.0010243962568749487,
+        "clamp_hit": false,
+        "beta_norm": 0.5572967133418903,
+        "n_used": 1041,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": 1.8985165712939516
+      },
+      "leverage": {
+        "max": 0.09116055287135282,
+        "argmax_global_idx": 869,
+        "argmax_date": "1989-06-12",
+        "top_5": [
+          {
+            "analog_idx": 869,
+            "analog_date": "1989-06-12",
+            "leverage": 0.09116055287135282,
+            "prob": 0.022448992179733295,
+            "forward_pct": 1.4043915827996103
+          },
+          {
+            "analog_idx": 871,
+            "analog_date": "1989-06-14",
+            "leverage": 0.0763010160743039,
+            "prob": 0.02280417512436926,
+            "forward_pct": 2.769315978953149
+          },
+          {
+            "analog_idx": 870,
+            "analog_date": "1989-06-13",
+            "leverage": 0.07598071024786084,
+            "prob": 0.020138182864978163,
+            "forward_pct": 2.1520273390597278
+          },
+          {
+            "analog_idx": 783,
+            "analog_date": "1989-02-07",
+            "leverage": 0.07434120850479478,
+            "prob": 0.020310858618832396,
+            "forward_pct": 5.222326356347021
+          },
+          {
+            "analog_idx": 301,
+            "analog_date": "1987-03-13",
+            "leverage": 0.06858826433396213,
+            "prob": 0.027993544571396967,
+            "forward_pct": 3.4450753439615838
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": 0.018784429104214313,
+        "matcher_mean": -0.020607283898526264,
+        "predicted_mean": -0.0018228547943119518,
+        "clamp_hit": false,
+        "horizon_drift_pct": 1.8961966395844603
+      },
+      "trim_change_pct": -0.12105653037995649
+    },
+    {
+      "anchor_date": "2010-04-23",
+      "section": "positive",
+      "origin_idx": 6130,
+      "realized_60d_return_pct": -10.444064943342424,
+      "fold_index": 42,
+      "weights": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "n_eff": 150.0,
+      "n_eligible": 5841,
+      "original_b1": {
+        "correction": -0.03767007656427486,
+        "matcher_mean": 0.03431070463195461,
+        "predicted_mean": -0.0033593719323202487,
+        "clamp_hit": false,
+        "beta_norm": 0.401409979768614,
+        "n_used": 5841,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": -3.6969385146563614
+      },
+      "leverage": {
+        "max": 0.12735456152810137,
+        "argmax_global_idx": 212,
+        "argmax_date": "1986-11-04",
+        "top_5": [
+          {
+            "analog_idx": 212,
+            "analog_date": "1986-11-04",
+            "leverage": 0.12735456152810137,
+            "prob": 0.018710929528747478,
+            "forward_pct": 14.187846817839317
+          },
+          {
+            "analog_idx": 2407,
+            "analog_date": "1995-07-12",
+            "leverage": 0.09228270235402106,
+            "prob": 0.015373884742611027,
+            "forward_pct": -1.2006003001500793
+          },
+          {
+            "analog_idx": 860,
+            "analog_date": "1989-05-30",
+            "leverage": 0.0845514518596941,
+            "prob": 0.008771272224796985,
+            "forward_pct": 1.8259281801582428
+          },
+          {
+            "analog_idx": 2403,
+            "analog_date": "1995-07-06",
+            "leverage": 0.07820924138721527,
+            "prob": 0.01774595751756484,
+            "forward_pct": 5.634896275299266
+          },
+          {
+            "analog_idx": 505,
+            "analog_date": "1988-01-04",
+            "leverage": 0.07809688603316074,
+            "prob": 0.017468445536174045,
+            "forward_pct": 7.3234039923365915
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": -0.024601435193628604,
+        "matcher_mean": 0.03243512936272813,
+        "predicted_mean": 0.007833694169099528,
+        "clamp_hit": false,
+        "horizon_drift_pct": -2.430128628924091
+      },
+      "trim_change_pct": -34.69236742417496
+    },
+    {
+      "anchor_date": "2012-03-14",
+      "section": "positive",
+      "origin_idx": 6607,
+      "realized_60d_return_pct": -5.508767136437975,
+      "fold_index": 46,
+      "weights": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "n_eff": 150.0,
+      "n_eligible": 6321,
+      "original_b1": {
+        "correction": -0.08061792140134726,
+        "matcher_mean": 0.026864829018674558,
+        "predicted_mean": -0.0537530923826727,
+        "clamp_hit": false,
+        "beta_norm": 3.039255915863018,
+        "n_used": 6321,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": -7.745389076071708
+      },
+      "leverage": {
+        "max": 0.10317687717802196,
+        "argmax_global_idx": 1329,
+        "argmax_date": "1991-04-08",
+        "top_5": [
+          {
+            "analog_idx": 1329,
+            "analog_date": "1991-04-08",
+            "leverage": 0.10317687717802196,
+            "prob": 0.01354789666609511,
+            "forward_pct": -7.095955015418114
+          },
+          {
+            "analog_idx": 5952,
+            "analog_date": "2009-08-07",
+            "leverage": 0.08956013429752623,
+            "prob": 0.015706968472166988,
+            "forward_pct": 3.2985693026817975
+          },
+          {
+            "analog_idx": 4891,
+            "analog_date": "2005-05-20",
+            "leverage": 0.08046668187243942,
+            "prob": 0.011848485118402198,
+            "forward_pct": 2.9765798770114693
+          },
+          {
+            "analog_idx": 1330,
+            "analog_date": "1991-04-09",
+            "leverage": 0.06269394022901079,
+            "prob": 0.011970181736225386,
+            "forward_pct": -7.5144720451381435
+          },
+          {
+            "analog_idx": 1621,
+            "analog_date": "1992-06-02",
+            "leverage": 0.06034254796947656,
+            "prob": 0.013201167740850237,
+            "forward_pct": -6.632202748707612
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": -0.07329049172336809,
+        "matcher_mean": 0.028244650460628615,
+        "predicted_mean": -0.04504584126273947,
+        "clamp_hit": false,
+        "horizon_drift_pct": -7.066917210277538
+      },
+      "trim_change_pct": -9.089082862234049
+    },
+    {
+      "anchor_date": "2025-07-02",
+      "section": "positive",
+      "origin_idx": 9952,
+      "realized_60d_return_pct": 8.223518443027489,
+      "fold_index": 74,
+      "weights": [
+        0.983203125,
+        8.7890625e-05,
+        0.016708984375000045
+      ],
+      "n_eff": 150.0,
+      "n_eligible": 9681,
+      "original_b1": {
+        "correction": -0.033609015677693185,
+        "matcher_mean": 0.045088039450963055,
+        "predicted_mean": 0.011479023773269868,
+        "clamp_hit": false,
+        "beta_norm": 2.292598766306041,
+        "n_used": 9681,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": -3.305050716887793
+      },
+      "leverage": {
+        "max": 0.16580887136027458,
+        "argmax_global_idx": 6605,
+        "argmax_date": "2012-03-12",
+        "top_5": [
+          {
+            "analog_idx": 6605,
+            "analog_date": "2012-03-12",
+            "leverage": 0.16580887136027458,
+            "prob": 0.020592707707636684,
+            "forward_pct": -3.798099627859517
+          },
+          {
+            "analog_idx": 298,
+            "analog_date": "1987-03-10",
+            "leverage": 0.15567745330778684,
+            "prob": 0.028385028378752657,
+            "forward_pct": 0.9649265463218991
+          },
+          {
+            "analog_idx": 5270,
+            "analog_date": "2006-11-20",
+            "leverage": 0.09175009287833208,
+            "prob": 0.036937396318309654,
+            "forward_pct": 1.6576025191123174
+          },
+          {
+            "analog_idx": 6619,
+            "analog_date": "2012-03-30",
+            "leverage": 0.05981885603736947,
+            "prob": 0.014552086825423718,
+            "forward_pct": -7.455893614781815
+          },
+          {
+            "analog_idx": 6259,
+            "analog_date": "2010-10-26",
+            "leverage": 0.05596611863437774,
+            "prob": 0.02253677783643457,
+            "forward_pct": 7.044194332365889
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": -0.028678626890664173,
+        "matcher_mean": 0.04685018334416741,
+        "predicted_mean": 0.01817155645350324,
+        "clamp_hit": false,
+        "horizon_drift_pct": -2.8271298234101003
+      },
+      "trim_change_pct": -14.669839885556025
+    },
+    {
+      "anchor_date": "1990-09-24",
+      "section": "negative",
+      "origin_idx": 1194,
+      "realized_60d_return_pct": 12.195945945945951,
+      "fold_index": 1,
+      "weights": [
+        0.10250000000000001,
+        0.3075,
+        0.59
+      ],
+      "n_eff": 150.0,
+      "n_eligible": 921,
+      "original_b1": {
+        "correction": 0.1648048832883286,
+        "matcher_mean": 0.11970954641788471,
+        "predicted_mean": 0.2845144297062133,
+        "clamp_hit": false,
+        "beta_norm": 1.560081256018741,
+        "n_used": 921,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": 17.916302185290096
+      },
+      "leverage": {
+        "max": 0.07194465894608562,
+        "argmax_global_idx": 458,
+        "argmax_date": "1987-10-26",
+        "top_5": [
+          {
+            "analog_idx": 458,
+            "analog_date": "1987-10-26",
+            "leverage": 0.07194465894608562,
+            "prob": 0.014982827349181715,
+            "forward_pct": 19.09211243478935
+          },
+          {
+            "analog_idx": 485,
+            "analog_date": "1987-12-03",
+            "leverage": 0.07065733865412924,
+            "prob": 0.028100033515782677,
+            "forward_pct": 29.84580669424589
+          },
+          {
+            "analog_idx": 459,
+            "analog_date": "1987-10-27",
+            "leverage": 0.06978367629203919,
+            "prob": 0.01590160548563315,
+            "forward_pct": 18.849618849618814
+          },
+          {
+            "analog_idx": 487,
+            "analog_date": "1987-12-07",
+            "leverage": 0.05939611871404825,
+            "prob": 0.02146439481807653,
+            "forward_pct": 32.55726624108138
+          },
+          {
+            "analog_idx": 460,
+            "analog_date": "1987-10-28",
+            "leverage": 0.05854125850700666,
+            "prob": 0.014501936805109451,
+            "forward_pct": 19.70124228336253
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": 0.16518640458389078,
+        "matcher_mean": 0.11887269000906442,
+        "predicted_mean": 0.2840590945929552,
+        "clamp_hit": false,
+        "horizon_drift_pct": 17.96129834861919
+      },
+      "trim_change_pct": 0.23149878083084738
+    },
+    {
+      "anchor_date": "2001-04-04",
+      "section": "negative",
+      "origin_idx": 3856,
+      "realized_60d_return_pct": 33.51741747218677,
+      "fold_index": 23,
+      "weights": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "n_eff": 30.0,
+      "n_eligible": 3561,
+      "original_b1": {
+        "correction": 0.040129623703275885,
+        "matcher_mean": 0.0708612237854712,
+        "predicted_mean": 0.11099084748874709,
+        "clamp_hit": false,
+        "beta_norm": 0.7332208653173196,
+        "n_used": 3561,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": 4.094569668373606
+      },
+      "leverage": {
+        "max": 0.5208035467070631,
+        "argmax_global_idx": 1172,
+        "argmax_date": "1990-08-22",
+        "top_5": [
+          {
+            "analog_idx": 1172,
+            "analog_date": "1990-08-22",
+            "leverage": 0.5208035467070631,
+            "prob": 0.15383601888490625,
+            "forward_pct": 2.4539214096535678
+          },
+          {
+            "analog_idx": 1194,
+            "analog_date": "1990-09-24",
+            "leverage": 0.4642057638383113,
+            "prob": 0.1445157305786837,
+            "forward_pct": 12.195945945945928
+          },
+          {
+            "analog_idx": 1193,
+            "analog_date": "1990-09-21",
+            "leverage": 0.2725130332919075,
+            "prob": 0.044975318429191,
+            "forward_pct": 6.4737991266375445
+          },
+          {
+            "analog_idx": 1173,
+            "analog_date": "1990-08-23",
+            "leverage": 0.16693927180274842,
+            "prob": 0.03266134854737925,
+            "forward_pct": 3.741095967244407
+          },
+          {
+            "analog_idx": 1207,
+            "analog_date": "1990-10-11",
+            "leverage": 0.1194203880100736,
+            "prob": 0.016345076197323075,
+            "forward_pct": 16.284278709364965
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": 0.03263230399613701,
+        "matcher_mean": 0.07933661107216214,
+        "predicted_mean": 0.11196891506829915,
+        "clamp_hit": false,
+        "horizon_drift_pct": 3.3170576697871343
+      },
+      "trim_change_pct": -18.682756067126668
+    },
+    {
+      "anchor_date": "2001-10-02",
+      "section": "negative",
+      "origin_idx": 3977,
+      "realized_60d_return_pct": 38.56491025298223,
+      "fold_index": 24,
+      "weights": [
+        0.0,
+        0.00025,
+        0.99975
+      ],
+      "n_eff": 80.0,
+      "n_eligible": 3681,
+      "original_b1": {
+        "correction": 0.12346831936440081,
+        "matcher_mean": 0.05427779261315562,
+        "predicted_mean": 0.17774611197755644,
+        "clamp_hit": false,
+        "beta_norm": 1.7519182669373579,
+        "n_used": 3681,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": 13.141416005457721
+      },
+      "leverage": {
+        "max": 0.12515489945438543,
+        "argmax_global_idx": 3858,
+        "argmax_date": "2001-04-06",
+        "top_5": [
+          {
+            "analog_idx": 3858,
+            "analog_date": "2001-04-06",
+            "leverage": 0.12515489945438543,
+            "prob": 0.05931114943332538,
+            "forward_pct": 25.82587559385681
+          },
+          {
+            "analog_idx": 3857,
+            "analog_date": "2001-04-05",
+            "leverage": 0.12361012978747392,
+            "prob": 0.061366951948318385,
+            "forward_pct": 20.27714690102343
+          },
+          {
+            "analog_idx": 3854,
+            "analog_date": "2001-04-02",
+            "leverage": 0.11175586692470017,
+            "prob": 0.05311335205013993,
+            "forward_pct": 15.788154927534089
+          },
+          {
+            "analog_idx": 1210,
+            "analog_date": "1990-10-16",
+            "leverage": 0.10800045800500094,
+            "prob": 0.03346097328872993,
+            "forward_pct": 18.550969847120662
+          },
+          {
+            "analog_idx": 3859,
+            "analog_date": "2001-04-09",
+            "leverage": 0.10222544329969982,
+            "prob": 0.0400178710269419,
+            "forward_pct": 18.213364658862062
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": 0.12546033789928465,
+        "matcher_mean": 0.04321547118572758,
+        "predicted_mean": 0.16867580908501223,
+        "clamp_hit": false,
+        "horizon_drift_pct": 13.367020432701453
+      },
+      "trim_change_pct": 1.6133843443714966
+    },
+    {
+      "anchor_date": "2008-10-03",
+      "section": "regime_coverage",
+      "origin_idx": 5740,
+      "realized_60d_return_pct": -18.322863125832857,
+      "fold_index": 39,
+      "weights": [
+        0.030000000000000138,
+        0.4274999999999996,
+        0.5425000000000002
+      ],
+      "n_eff": 30.0,
+      "n_eligible": 5481,
+      "original_b1": {
+        "correction": 0.020021294296958952,
+        "matcher_mean": -0.1252106315876768,
+        "predicted_mean": -0.10518933729071786,
+        "clamp_hit": false,
+        "beta_norm": 1.8678955215229778,
+        "n_used": 5481,
+        "n_dropped_no_forward": 0,
+        "horizon_drift_pct": 2.0223064728353566
+      },
+      "leverage": {
+        "max": 0.3549597534609065,
+        "argmax_global_idx": 3784,
+        "argmax_date": "2000-12-20",
+        "top_5": [
+          {
+            "analog_idx": 3784,
+            "analog_date": "2000-12-20",
+            "leverage": 0.3549597534609065,
+            "prob": 0.08830391017463546,
+            "forward_pct": -21.709978645625846
+          },
+          {
+            "analog_idx": 3954,
+            "analog_date": "2001-08-23",
+            "leverage": 0.22428665141176732,
+            "prob": 0.048437166264877755,
+            "forward_pct": 5.376825341687765
+          },
+          {
+            "analog_idx": 3783,
+            "analog_date": "2000-12-19",
+            "leverage": 0.21596176190130154,
+            "prob": 0.14103590992031456,
+            "forward_pct": -31.34316540466643
+          },
+          {
+            "analog_idx": 4146,
+            "analog_date": "2002-06-06",
+            "leverage": 0.17349144647142006,
+            "prob": 0.07150070262502142,
+            "forward_pct": -18.593320778839402
+          },
+          {
+            "analog_idx": 3949,
+            "analog_date": "2001-08-16",
+            "leverage": 0.15903781021156788,
+            "prob": 0.07414004384539367,
+            "forward_pct": 0.037927154578268694
+          }
+        ]
+      },
+      "trimmed_b1": {
+        "correction": 0.04370807402303713,
+        "matcher_mean": -0.1136324350577419,
+        "predicted_mean": -0.06992436103470477,
+        "clamp_hit": false,
+        "horizon_drift_pct": 4.467734191635506
+      },
+      "trim_change_pct": 118.30793441598814
+    }
+  ]
+}

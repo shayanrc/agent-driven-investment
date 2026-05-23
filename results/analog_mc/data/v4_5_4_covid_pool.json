@@ -1,0 +1,307 @@
+{
+  "anchor_date": "2020-03-16",
+  "origin_idx": 8621,
+  "realized_60d_return_pct": 43.79,
+  "v24_fold_index": 63,
+  "a2_fold_index": 63,
+  "matchers": {
+    "v2.4_weighted_euclidean": {
+      "n_eligible": 8361,
+      "count_above_30pct": 179,
+      "count_above_40pct": 63,
+      "count_above_50pct": 20,
+      "prob_mass_above_30pct": 0.00599938278160843,
+      "prob_mass_above_40pct": 7.1447013514827605e-09,
+      "prob_mass_above_50pct": 5.924062918166981e-17,
+      "uniform_baseline_above_30pct": 0.021408922377706016,
+      "uniform_baseline_above_40pct": 0.007534983853606028,
+      "uniform_baseline_above_50pct": 0.002392058366224136,
+      "lift_above_30pct": 0.2802281532794865,
+      "lift_above_40pct": 9.482039365039263e-07,
+      "weighted_mean_forward_pct": 5.8655050968422735,
+      "top_10_by_forward_return": [
+        {
+          "analog_idx": 3228,
+          "date": "1998-10-08",
+          "forward_60d_pct": 68.57416200127544,
+          "prob": 1.1534894555110246e-17,
+          "rank_by_prob": 3216
+        },
+        {
+          "analog_idx": 3229,
+          "date": "1998-10-09",
+          "forward_60d_pct": 63.95351749355086,
+          "prob": 1.1991863132748553e-22,
+          "rank_by_prob": 4284
+        },
+        {
+          "analog_idx": 3231,
+          "date": "1998-10-13",
+          "forward_60d_pct": 63.53136133896731,
+          "prob": 5.3524851583604306e-20,
+          "rank_by_prob": 3703
+        },
+        {
+          "analog_idx": 3232,
+          "date": "1998-10-14",
+          "forward_60d_pct": 61.87007858085061,
+          "prob": 3.0570899588240875e-20,
+          "rank_by_prob": 3769
+        },
+        {
+          "analog_idx": 3227,
+          "date": "1998-10-07",
+          "forward_60d_pct": 61.098610881859685,
+          "prob": 4.7034412264493235e-17,
+          "rank_by_prob": 3100
+        },
+        {
+          "analog_idx": 3230,
+          "date": "1998-10-12",
+          "forward_60d_pct": 58.142995013671914,
+          "prob": 4.08981876749732e-24,
+          "rank_by_prob": 4596
+        },
+        {
+          "analog_idx": 3492,
+          "date": "1999-10-26",
+          "forward_60d_pct": 56.09633473889053,
+          "prob": 4.563000621173591e-19,
+          "rank_by_prob": 3491
+        },
+        {
+          "analog_idx": 3226,
+          "date": "1998-10-06",
+          "forward_60d_pct": 54.95847540596181,
+          "prob": 8.886921458205889e-20,
+          "rank_by_prob": 3655
+        },
+        {
+          "analog_idx": 3491,
+          "date": "1999-10-25",
+          "forward_60d_pct": 54.64759136780981,
+          "prob": 1.7557537197884204e-20,
+          "rank_by_prob": 3828
+        },
+        {
+          "analog_idx": 3236,
+          "date": "1998-10-20",
+          "forward_60d_pct": 54.424382222983894,
+          "prob": 3.416448898435942e-22,
+          "rank_by_prob": 4173
+        }
+      ],
+      "top_10_by_probability": [
+        {
+          "analog_idx": 4683,
+          "date": "2004-07-26",
+          "prob": 0.03850544348706378,
+          "forward_60d_pct": 6.194820482636823
+        },
+        {
+          "analog_idx": 8418,
+          "date": "2019-05-24",
+          "prob": 0.0348316505914346,
+          "forward_60d_pct": 4.978934277136306
+        },
+        {
+          "analog_idx": 6458,
+          "date": "2011-08-10",
+          "prob": 0.02627194615278984,
+          "forward_60d_pct": 14.211635770757711
+        },
+        {
+          "analog_idx": 8421,
+          "date": "2019-05-30",
+          "prob": 0.02519887640655427,
+          "forward_60d_pct": 3.030750545173643
+        },
+        {
+          "analog_idx": 5156,
+          "date": "2006-06-09",
+          "prob": 0.02511995951670393,
+          "forward_60d_pct": 3.399163104379669
+        },
+        {
+          "analog_idx": 8419,
+          "date": "2019-05-28",
+          "prob": 0.02502485185149193,
+          "forward_60d_pct": 6.2491928148848155
+        },
+        {
+          "analog_idx": 8417,
+          "date": "2019-05-23",
+          "prob": 0.023697418850197105,
+          "forward_60d_pct": 5.629364265941385
+        },
+        {
+          "analog_idx": 8420,
+          "date": "2019-05-29",
+          "prob": 0.021637513604446885,
+          "forward_60d_pct": 6.797554615165204
+        },
+        {
+          "analog_idx": 7479,
+          "date": "2015-09-01",
+          "prob": 0.01961378399687159,
+          "forward_60d_pct": 12.799839715349728
+        },
+        {
+          "analog_idx": 2148,
+          "date": "1994-07-01",
+          "prob": 0.019231319605638206,
+          "forward_60d_pct": 8.138210704663473
+        }
+      ]
+    },
+    "a2.1_corrwindow_L100": {
+      "n_eligible": 8361,
+      "count_above_30pct": 179,
+      "count_above_40pct": 63,
+      "count_above_50pct": 20,
+      "prob_mass_above_30pct": 0.010207934237081417,
+      "prob_mass_above_40pct": 0.0015777734879985463,
+      "prob_mass_above_50pct": 0.0004188247307051074,
+      "uniform_baseline_above_30pct": 0.021408922377706016,
+      "uniform_baseline_above_40pct": 0.007534983853606028,
+      "uniform_baseline_above_50pct": 0.002392058366224136,
+      "lift_above_30pct": 0.47680747573317167,
+      "lift_above_40pct": 0.2093930814786642,
+      "weighted_mean_forward_pct": 0.8610351866567681,
+      "top_10_by_forward_return": [
+        {
+          "analog_idx": 3228,
+          "date": "1998-10-08",
+          "forward_60d_pct": 68.57416200127544,
+          "prob": 1.5980480487656914e-05,
+          "rank_by_prob": 2830
+        },
+        {
+          "analog_idx": 3229,
+          "date": "1998-10-09",
+          "forward_60d_pct": 63.95351749355086,
+          "prob": 4.13603635055804e-05,
+          "rank_by_prob": 1263
+        },
+        {
+          "analog_idx": 3231,
+          "date": "1998-10-13",
+          "forward_60d_pct": 63.53136133896731,
+          "prob": 3.819864253640822e-06,
+          "rank_by_prob": 7094
+        },
+        {
+          "analog_idx": 3232,
+          "date": "1998-10-14",
+          "forward_60d_pct": 61.87007858085061,
+          "prob": 9.88773372340081e-05,
+          "rank_by_prob": 583
+        },
+        {
+          "analog_idx": 3227,
+          "date": "1998-10-07",
+          "forward_60d_pct": 61.098610881859685,
+          "prob": 2.4477084255878604e-05,
+          "rank_by_prob": 1993
+        },
+        {
+          "analog_idx": 3230,
+          "date": "1998-10-12",
+          "forward_60d_pct": 58.142995013671914,
+          "prob": 5.293234830834992e-05,
+          "rank_by_prob": 1028
+        },
+        {
+          "analog_idx": 3492,
+          "date": "1999-10-26",
+          "forward_60d_pct": 56.09633473889053,
+          "prob": 1.0580874705270374e-05,
+          "rank_by_prob": 3844
+        },
+        {
+          "analog_idx": 3226,
+          "date": "1998-10-06",
+          "forward_60d_pct": 54.95847540596181,
+          "prob": 2.591978185932348e-05,
+          "rank_by_prob": 1920
+        },
+        {
+          "analog_idx": 3491,
+          "date": "1999-10-25",
+          "forward_60d_pct": 54.64759136780981,
+          "prob": 6.841982503389468e-06,
+          "rank_by_prob": 5068
+        },
+        {
+          "analog_idx": 3236,
+          "date": "1998-10-20",
+          "forward_60d_pct": 54.424382222983894,
+          "prob": 2.8027719432123025e-06,
+          "rank_by_prob": 8166
+        }
+      ],
+      "top_10_by_probability": [
+        {
+          "analog_idx": 8274,
+          "date": "2018-10-26",
+          "prob": 0.5066839722937723,
+          "forward_60d_pct": -0.9490105656412837
+        },
+        {
+          "analog_idx": 456,
+          "date": "1987-10-22",
+          "prob": 0.03234045696970554,
+          "forward_60d_pct": 5.347023134875644
+        },
+        {
+          "analog_idx": 7939,
+          "date": "2017-06-29",
+          "prob": 0.030121492504815738,
+          "forward_60d_pct": 3.7914247605706284
+        },
+        {
+          "analog_idx": 5747,
+          "date": "2008-10-14",
+          "prob": 0.012943642110049586,
+          "forward_60d_pct": -10.375277555895849
+        },
+        {
+          "analog_idx": 8266,
+          "date": "2018-10-16",
+          "prob": 0.012025279986136927,
+          "forward_60d_pct": -10.10646704496581
+        },
+        {
+          "analog_idx": 5442,
+          "date": "2007-07-31",
+          "prob": 0.009080136476599276,
+          "forward_60d_pct": 13.277537964659308
+        },
+        {
+          "analog_idx": 453,
+          "date": "1987-10-19",
+          "prob": 0.00868578765734229,
+          "forward_60d_pct": 0.24413748795373424
+        },
+        {
+          "analog_idx": 8092,
+          "date": "2018-02-07",
+          "prob": 0.006466345408708423,
+          "forward_60d_pct": 2.842592395647643
+        },
+        {
+          "analog_idx": 8128,
+          "date": "2018-04-02",
+          "prob": 0.006226755978351689,
+          "forward_60d_pct": 10.598919703826322
+        },
+        {
+          "analog_idx": 5738,
+          "date": "2008-10-01",
+          "prob": 0.0055441388732869286,
+          "forward_60d_pct": -24.194909835017228
+        }
+      ]
+    }
+  }
+}
