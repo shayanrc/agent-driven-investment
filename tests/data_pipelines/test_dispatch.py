@@ -1,0 +1,355 @@
+"""Stage 4 tests: dispatch.fetch() with fake adapters.
+
+Covers the routing matrix: cold cache → seed; small gap → first update;
+big gap → seed; update fail → fallback; all fail → AllProvidersFailed;
+unknown prefix → UnknownDomain.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+from data_pipelines import fetch, fetch_with_meta
+from data_pipelines.adapter import Adapter
+from data_pipelines.domain import DomainRegistry
+from data_pipelines.errors import (
+    AllProvidersFailed,
+    EmptyPayload,
+    ProviderError,
+    UnknownDomain,
+)
+from data_pipelines.raw_store import write_raw_atomic
+
+from .conftest import FakeCalendar, FakeDomain, make_df
+
+
+# ---------------------------------------------------------------------------
+# Test adapters
+# ---------------------------------------------------------------------------
+
+class _ScriptedAdapter(Adapter):
+    """Adapter that returns a pre-set DataFrame for any call.
+
+    Tracks all (identifier, start, end) calls in `.calls` for assertions.
+    """
+
+    def __init__(self, name: str, df: pd.DataFrame, tmp_root: Path,
+                 extra_meta: dict | None = None):
+        self.name = name
+        self._df = df
+        self._tmp_root = tmp_root  # retained for legacy fixture compat; data_root wins
+        self.calls: list[tuple[str, date | None, date | None]] = []
+        self.extra_meta = extra_meta or {}
+        self._counter = 0
+
+    def fetch(self, identifier, start=None, end=None, *, data_root):
+        self.calls.append((identifier, start, end))
+        self._counter += 1
+        ts = datetime(2026, 5, 23, 14, 30, self._counter, tzinfo=timezone.utc)
+        rs = start or date(2020, 1, 1)
+        re_ = end or date(2026, 12, 31)
+        return write_raw_atomic(
+            data_root, self.name, "fake", "FAKE", "X",
+            payload=b"raw", range_start=rs, range_end=re_, ext="csv",
+            timestamp=ts,
+        )
+
+    def parse(self, raw_path):
+        return self._df.copy()
+
+
+class _RaisingAdapter(Adapter):
+    """Adapter that always raises a specified error on fetch."""
+
+    def __init__(self, name: str, exc: Exception):
+        self.name = name
+        self._exc = exc
+        self.calls: list = []
+
+    def fetch(self, identifier, start=None, end=None, *, data_root):
+        self.calls.append((identifier, start, end))
+        raise self._exc
+
+    def parse(self, raw_path):
+        raise NotImplementedError
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def root(tmp_path: Path) -> Path:
+    return tmp_path
+
+
+def _register(*adapters, threshold: int = 10):
+    dom = FakeDomain(adapters=list(adapters), big_gap_threshold=threshold)
+    DomainRegistry.register(dom)
+    return dom
+
+
+# ---------------------------------------------------------------------------
+# Routing matrix
+# ---------------------------------------------------------------------------
+
+class TestColdCache:
+    def test_cold_cache_uses_seed(self, root):
+        seed_df = make_df([date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)],
+                          [1, 2, 3])
+        seed = _ScriptedAdapter("seed", seed_df, root, {"adjustment_quality": "split_only"})
+        upd = _ScriptedAdapter("upd", seed_df, root)
+        _register(seed, upd)
+
+        df, meta = fetch_with_meta("FAKE:X", date(2026, 1, 5), date(2026, 1, 7),
+                                    data_root=root)
+        assert len(seed.calls) == 1
+        assert upd.calls == []
+        assert list(df["value"]) == [1, 2, 3]
+        assert meta.cache_was_cold is True
+        assert meta.gaps_filled[0]["provider"] == "seed"
+
+
+class TestSmallGap:
+    def test_small_gap_uses_update_chain(self, root):
+        # Pre-seed cache with full coverage of an earlier range.
+        seed_df = make_df([date(2026, 1, 5), date(2026, 1, 6)], [1, 2])
+        seed = _ScriptedAdapter("seed", seed_df, root)
+        upd_df = make_df([date(2026, 1, 7), date(2026, 1, 8)], [3, 4])
+        upd = _ScriptedAdapter("upd", upd_df, root)
+        _register(seed, upd, threshold=10)
+
+        # First call: cold → seed pulls [01-05, 01-06]
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6), data_root=root)
+        assert len(seed.calls) == 1 and len(upd.calls) == 0
+
+        # Second call: small gap (2 days) → should call updater, not seed
+        df = fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 8), data_root=root)
+        assert len(seed.calls) == 1  # unchanged
+        assert len(upd.calls) == 1
+        assert list(df["value"]) == [1, 2, 3, 4]
+
+
+class TestBigGap:
+    def test_big_gap_uses_seed_even_with_cache(self, root):
+        seed_df = make_df([date(2026, 1, 5)], [1])
+        seed_full = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+             date(2026, 1, 8), date(2026, 1, 9), date(2026, 1, 12),
+             date(2026, 1, 13), date(2026, 1, 14), date(2026, 1, 15),
+             date(2026, 1, 16), date(2026, 1, 19), date(2026, 1, 20),
+             date(2026, 1, 21), date(2026, 1, 22), date(2026, 1, 23)],
+            list(range(1, 16)),
+        )
+
+        seed = _ScriptedAdapter("seed", seed_df, root)
+        # Updater would also work but should NOT be called for a big gap.
+        upd = _ScriptedAdapter("upd", make_df([], []), root)
+        _register(seed, upd, threshold=3)
+
+        # Cold cache, small range — seed fills.
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 5), data_root=root)
+
+        # Now request a much larger range. Gap is > threshold=3 → seed.
+        seed._df = seed_full
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 23), data_root=root)
+        assert len(seed.calls) == 2
+        assert upd.calls == []
+
+
+class TestFallback:
+    def test_update_failure_falls_through_to_fallback(self, root):
+        seed_df = make_df([date(2026, 1, 5)], [1])
+        seed = _ScriptedAdapter("seed", seed_df, root)
+        broken_upd = _RaisingAdapter(
+            "tiingo", ProviderError("tiingo", "FAKE:X", "HTTP 503")
+        )
+        fb_df = make_df([date(2026, 1, 6), date(2026, 1, 7)], [2, 3])
+        fb = _ScriptedAdapter("yfinance", fb_df, root)
+
+        dom = FakeDomain(adapters=[seed, broken_upd, fb], big_gap_threshold=20)
+        DomainRegistry.register(dom)
+
+        # Seed first to establish cache.
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 5), data_root=root)
+        # Now small gap → update chain [tiingo, yfinance]. Tiingo fails, yfinance succeeds.
+        df, meta = fetch_with_meta("FAKE:X", date(2026, 1, 5), date(2026, 1, 7),
+                                    data_root=root)
+        assert list(df["value"]) == [1, 2, 3]
+        assert len(broken_upd.calls) == 1
+        assert len(fb.calls) == 1
+        # providers_failed records the tiingo failure
+        assert any(p["provider"] == "tiingo" for p in meta.providers_failed)
+
+
+class TestAllFail:
+    def test_chain_exhaustion_raises(self, root):
+        seed = _RaisingAdapter("seed", ProviderError("seed", "FAKE:X", "HTTP 500"))
+        upd = _RaisingAdapter("upd", ProviderError("upd", "FAKE:X", "rate limit"))
+        _register(seed, upd)
+
+        with pytest.raises(AllProvidersFailed) as exc:
+            fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6), data_root=root)
+        assert len(exc.value.failures) == 1  # cold cache → only seed in chain
+        assert exc.value.failures[0].provider == "seed"
+
+    def test_empty_payload_treated_as_failure_cold_cache(self, root):
+        # Cold cache: all-empty truly means the asset doesn't exist → raise.
+        seed = _RaisingAdapter("seed", EmptyPayload("seed", "FAKE:X"))
+        _register(seed)
+        with pytest.raises(AllProvidersFailed):
+            fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6), data_root=root)
+
+
+class TestPreCacheGapClip:
+    """Requesting earlier than the cache's first date is a no-op: dispatch
+    clips effective_start to cache_first_date. Avoids wasteful chain attempts
+    on pre-IPO date ranges where the asset didn't exist.
+    """
+
+    def test_pre_cache_range_skipped(self, root):
+        df_existing = make_df([date(2026, 1, 8), date(2026, 1, 9)], [10, 20])
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        # Update tier MUST NOT be called — clip should prevent any gap.
+        not_called = _RaisingAdapter("upd", EmptyPayload("upd", "FAKE:X"))
+        dom = FakeDomain(adapters=[seed, not_called], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        # Cold fetch populates cache.
+        fetch("FAKE:X", date(2026, 1, 8), date(2026, 1, 9), data_root=root)
+        seed_calls_before = len(seed.calls)
+        upd_calls_before = len(not_called.calls)
+
+        # Re-fetch with start earlier than cache's first date.
+        df = fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 9), data_root=root)
+
+        # No new adapter calls — clip optimization handled it.
+        assert len(seed.calls) == seed_calls_before
+        assert len(not_called.calls) == upd_calls_before
+        assert list(df["value"]) == [10, 20]
+
+
+class TestInternalGapSoftFail:
+    """When a gap is INSIDE the cached date range and providers can't fill it
+    (any EmptyPayload), soft-fail instead of raising — preserve the cache.
+    Typical case: a one-day NYSE closure we don't have in the calendar yet.
+    """
+
+    def test_internal_gap_all_empty_soft_fails(self, root):
+        # Cache covers Mon, Wed (skipping Tue intentionally). Re-fetch with
+        # range that includes Tue — gap is INTERNAL (after first cache row).
+        df_existing = make_df([date(2026, 1, 5), date(2026, 1, 7)], [10, 30])
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        empty_upd = _RaisingAdapter("upd", EmptyPayload("upd", "FAKE:X"))
+        empty_fb = _RaisingAdapter("fb", EmptyPayload("fb", "FAKE:X"))
+        dom = FakeDomain(adapters=[seed, empty_upd, empty_fb], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+        df, meta = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root,
+        )
+        # Cache rows preserved; internal gap (Tue) skipped after soft-fail.
+        assert list(df["value"]) == [10, 30]
+        assert any("unfillable" in p["reason"] for p in meta.providers_failed)
+
+    def test_internal_gap_mixed_failures_still_soft_fails(self, root):
+        # Any EmptyPayload + cache has data → soft fail.
+        df_existing = make_df([date(2026, 1, 5), date(2026, 1, 7)], [10, 30])
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        bad_upd = _RaisingAdapter("upd", ProviderError("upd", "FAKE:X", "HTTP 500"))
+        empty_fb = _RaisingAdapter("fb", EmptyPayload("fb", "FAKE:X"))
+        dom = FakeDomain(adapters=[seed, bad_upd, empty_fb], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+        df, _ = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root,
+        )
+        assert list(df["value"]) == [10, 30]
+
+    def test_internal_gap_no_empty_only_errors_still_raises(self, root):
+        # All-environmental failures (no EmptyPayload) → no authoritative
+        # "no data" signal → hard fail.
+        df_existing = make_df([date(2026, 1, 5), date(2026, 1, 7)], [10, 30])
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        bad_upd = _RaisingAdapter("upd", ProviderError("upd", "FAKE:X", "HTTP 500"))
+        bad_fb = _RaisingAdapter("fb", ProviderError("fb", "FAKE:X", "timeout"))
+        dom = FakeDomain(adapters=[seed, bad_upd, bad_fb], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+        with pytest.raises(AllProvidersFailed):
+            fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+
+
+class TestUnknownDomain:
+    def test_unregistered_prefix_raises(self, root):
+        with pytest.raises(UnknownDomain):
+            fetch("MARS:ROVER", date(2026, 1, 5), date(2026, 1, 6),
+                  data_root=root)
+
+
+class TestCachePersistence:
+    def test_second_call_no_adapter_invocation_when_fully_cached(self, root):
+        seed_df = make_df([date(2026, 1, 5), date(2026, 1, 6)], [1, 2])
+        seed = _ScriptedAdapter("seed", seed_df, root)
+        _register(seed)
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6), data_root=root)
+        assert len(seed.calls) == 1
+
+        # Re-request same range.
+        df, meta = fetch_with_meta("FAKE:X", date(2026, 1, 5), date(2026, 1, 6),
+                                    data_root=root)
+        assert len(seed.calls) == 1  # no new call
+        assert meta.cache_was_cold is False
+        assert meta.gaps_filled == []
+        assert list(df["value"]) == [1, 2]
+
+
+class TestSliceCorrectness:
+    def test_returns_only_requested_range(self, root):
+        seed_df = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+             date(2026, 1, 8), date(2026, 1, 9)],
+            [1, 2, 3, 4, 5],
+        )
+        seed = _ScriptedAdapter("seed", seed_df, root)
+        _register(seed)
+        df = fetch("FAKE:X", date(2026, 1, 6), date(2026, 1, 8),
+                   data_root=root)
+        assert list(df["value"]) == [2, 3, 4]
+
+
+class TestInputValidation:
+    def test_start_after_end_raises(self, root):
+        seed = _ScriptedAdapter("seed", make_df([date(2026, 1, 5)], [1]), root)
+        _register(seed)
+        with pytest.raises(ValueError, match="start.*after end"):
+            fetch("FAKE:X", date(2026, 1, 6), date(2026, 1, 5),
+                  data_root=root)
+
+    def test_non_daily_frequency_rejected(self, root):
+        seed = _ScriptedAdapter("seed", make_df([date(2026, 1, 5)], [1]), root)
+        _register(seed)
+        with pytest.raises(NotImplementedError):
+            fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6),
+                  frequency="1min", data_root=root)
+
+
+class TestExtraMetaPropagation:
+    def test_extra_meta_in_source_record(self, root):
+        seed_df = make_df([date(2026, 1, 5)], [1])
+        seed = _ScriptedAdapter("seed", seed_df, root,
+                                 extra_meta={"adjustment_quality": "split_only"})
+        _register(seed)
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 5), data_root=root)
+
+        # Re-read processed meta to verify extra_meta propagated.
+        from data_pipelines.cache import read_processed
+        _, meta = read_processed(root, DomainRegistry.resolve("FAKE:X"), "FAKE:X")
+        assert meta["sources"][0]["adjustment_quality"] == "split_only"

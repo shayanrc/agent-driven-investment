@@ -53,7 +53,7 @@ The framework supports tiered seed → update → fallback chains per domain. Ea
 
 **Why this US-equities tiering:**
 
-- Stooq is free, keyless, and has multi-decade history — perfect for bulk seed. But its `close` is split-adjusted only (not dividend-adjusted), so it's *wrong* as a daily update source for total-return calculations.
+- Stooq is free and has multi-decade history — perfect for bulk seed. As of v1 smoke testing (2026-05-23) Stooq now requires a free API key (captcha-only registration at https://stooq.com/q/d/?get_apikey) for its CSV endpoint; read from env var `STOOQ_API_KEY`. Its `close` is split-adjusted only (not dividend-adjusted), so it's *wrong* as a daily update source for total-return calculations.
 - Tiingo is reliable, has clean dividend-and-split-adjusted closes, well-documented REST, and a generous free tier (500 req/day). Right for routine updates.
 - yfinance is known-unreliable (frequent endpoint breakage, rate-limit instability, occasionally returns adjusted-as-close), so it earns its slot only as a third-tier emergency fallback.
 
