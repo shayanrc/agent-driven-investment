@@ -2,6 +2,12 @@
 
 This repo will host multiple forecasting/analytics modules. The first is **analog_mc** (analog Monte Carlo price-path forecasting). Treat every module as independently versioned and namespaced.
 
+## Module goal docs (read first)
+
+Before editing any file under a module's directory tree (`src/<module>/`, `tests/<module>/`, `configs/<module>/`, `dashboards/<module>/`, `docs/<module>/`, `results/<module>/`), read `docs/<module>/goal.md` first. It defines what the module is optimizing for and which trade-offs are unacceptable. `IMPLEMENTATION_PLAN.md` / `ALGORITHM.MD` describe *how* the module works; `goal.md` defines the success criteria your change must respect.
+
+For analog_mc: [`docs/analog_mc/goal.md`](docs/analog_mc/goal.md).
+
 ## Module namespacing
 
 Every module-specific directory nests under the module name. The top-level directories are reserved for cross-module concerns (shared launchers, fixtures, etc.).
