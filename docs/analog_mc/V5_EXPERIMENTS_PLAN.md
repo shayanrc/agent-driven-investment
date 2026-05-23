@@ -200,6 +200,29 @@ Synthesis: V5_RESULTS.md with promotion decision.
 
 Conservative interpretation: a candidate must pass BOTH conditions to promote to default. If any candidate passes only the recovery bar OR the regression bar but not both, it remains canonical-only (analyzable but not promoted).
 
+## Refresh the cross-experiment fat-tail comparison
+
+After every V5 canonical run completes, regenerate the cross-experiment fat-tail figures so the comparison panel includes the new run alongside the v4 set. `scripts/render_fat_tail_panel_compare.py` accepts `--experiment LABEL=RUN_DIR` flags (repeatable, `rsplit("=", 1)` so `=` in labels is fine) and assigns colors automatically for unknown labels.
+
+```bash
+# Canonical example (extend after V5.A.2 lands):
+uv run python scripts/render_fat_tail_panel_compare.py --experiment-grid \
+  --experiment "v2.4 baseline (Cell-D-s30)=runs/analog_mc/20260520T045525Z" \
+  --experiment "B1 (Platzer local-linear)=runs/analog_mc/20260520T155220Z" \
+  --experiment "A2.1 (corrwindow L=100)=runs/analog_mc/20260521T061730Z" \
+  --experiment "B5 (joint A2.1 + B1)=runs/analog_mc/20260521T121025Z" \
+  --experiment "V5.A.2 ensemble=runs/analog_mc/<v5_a2_ts>"
+
+# Also refresh the per-experiment 15-anchor panel for the new run:
+uv run python scripts/render_fat_tail_panel.py \
+  --run-dir runs/analog_mc/<v5_a2_ts> \
+  --label "V5.A.2 ensemble" \
+  --out-dir docs/analog_mc/experiments/figs/v5_a2_ensemble_fat_tail \
+  --prefix v5_a2_ensemble
+```
+
+Outputs land in `docs/analog_mc/experiments/figs/fat_tail_compare/` (overlay + per-anchor 2×2 grids + `experiment_grid.png` with 15 forecasts + aggregated PIT per experiment) and `docs/analog_mc/experiments/figs/<exp_id>_fat_tail/` (per-experiment 15-anchor gallery). To lock a canonical color across reruns for a new experiment, add it to `EXP_COLORS` at the top of the script. The figures are not currently embedded in any V5 doc — surface them in `V5_RESULTS.md` / per-experiment narratives as needed.
+
 ## Deliverables manifest
 
 ```

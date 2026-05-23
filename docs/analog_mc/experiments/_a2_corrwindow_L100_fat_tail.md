@@ -36,3 +36,41 @@ Run: `runs/analog_mc/20260521T061730Z` · 15 anchors × 60-day horizon.
 - **Anchors regressing (CRPS up >5%)**: 10/15 (promotion bar: ≤2 without justification).
 - **Failure mean CRPS Δ**: -20.14%.
 - **Control mean CRPS Δ**: +9.98%.
+
+## Charts
+
+15 forecast panels rendered from `runs/analog_mc/20260521T061730Z`. Compare against the [v2.4 baseline panel](_v24_fat_tail_baseline.md#charts); a side-by-side 4-up grid per anchor lives at [`_fat_tail_compare.md`](_fat_tail_compare.md).
+
+### Stratum A.1 — Positive momentum (|z₅₀| > 3)
+
+![1991-03-26](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_19910326.png)
+![2010-04-23](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20100423.png)
+![2010-11-10](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20101110.png)
+![2012-03-14](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20120314.png)
+![2025-07-02](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20250702.png)
+
+### Stratum A.2 — Negative momentum (top 3 most-extreme |z₅₀|)
+
+![1990-09-24](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_19900924.png)
+![2001-04-04](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20010404.png)
+![2001-10-02](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20011002.png)
+
+### Stratum B — Regime-coverage (hand-curated, 7 anchors)
+
+![2000-04-03](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20000403.png)
+![2008-10-03](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20081003.png)
+![2017-06-01](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20170601.png)
+![2018-10-08](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20181008.png)
+![2020-03-16](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20200316.png)
+![2022-03-01](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20220301.png)
+![2026-02-19](figs/a2_corrwindow_L100_fat_tail/a2_corrwindow_L100_20260219.png)
+
+## Reproducing
+
+```bash
+uv run python scripts/render_fat_tail_panel.py \
+    --run-dir runs/analog_mc/20260521T061730Z \
+    --label "A2.1 (corrwindow L=100)" \
+    --out-dir docs/analog_mc/experiments/figs/a2_corrwindow_L100_fat_tail \
+    --prefix a2_corrwindow_L100
+```

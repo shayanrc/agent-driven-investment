@@ -1,6 +1,6 @@
 # analog_mc v4.5 — investigation results and v5 plan inputs
 
-Companion to [`V4_5_INVESTIGATION_PLAN.md`](V4_5_INVESTIGATION_PLAN.md). Captures the seven diagnostic investigations that ran on existing v4 canonical artifacts, and the v5 experiment shortlist they motivate. **No new walk-forward runs.**
+Companion to [`V4_5_INVESTIGATION_PLAN.md`](V4_5_INVESTIGATION_PLAN.md). Captures the nine diagnostic investigations that ran on existing v4 canonical artifacts (five pre-registered, four added during execution), and the v5 experiment shortlist they motivate. **No new walk-forward runs.**
 
 Session: 2026-05-22. ~3h compute (mostly Python analysis on cached run dirs).
 

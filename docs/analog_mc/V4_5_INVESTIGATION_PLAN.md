@@ -1,6 +1,6 @@
 # analog_mc v4.5 — pre-V5 diagnostic investigation plan
 
-Bridge between v4 (closed — [`V4_RESULTS.md`](V4_RESULTS.md)) and v5 (unscoped). Runs five short-compute diagnostics on existing canonical run artifacts to discriminate **why** A2.1's wins and losses split the way they do, so v5 experiment selection is grounded in evidence rather than the heuristic recommendations carried out of V4_RESULTS.
+Bridge between v4 (closed — [`V4_RESULTS.md`](V4_RESULTS.md)) and v5 (unscoped). Runs nine short-compute diagnostics on existing canonical run artifacts — **five pre-registered (V4.5.1–5) plus four added during execution (V4.5.6–9)** as earlier findings surfaced new mechanism hypotheses — to discriminate **why** A2.1's wins and losses split the way they do, so v5 experiment selection is grounded in evidence rather than the heuristic recommendations carried out of V4_RESULTS.
 
 ## Purpose
 
@@ -184,6 +184,68 @@ Listed in priority order — earliest results may obviate or refocus later steps
 
 ---
 
+## Investigations added during execution
+
+V4.5.2's three-mechanism finding (M1 concentration / M2 bimodal / M3 dispersion-deficit) was not anticipated by the pre-registered plan, which framed A2.1 regressions as a single "shape-similar wrong-forward" failure. Once M3 was on the table, V4.5.5's mechanism map could not be closed without confirming the dispersion deficit existed in the cached forecast paths, and V4.5.4's "matcher-addressable, not tail-poor" verdict raised a parallel question — whether the *two* matchers' weaknesses were correlated (one structural gap) or complementary (one ensemble lever). Those two follow-ups (V4.5.6, V4.5.7) then forced an honest preview of the strongest implied lever (V4.5.8 ensemble) and a sanity check on the strongest implied new feature (V4.5.9 drawdown), both of which materially changed the v5 plan.
+
+The four added investigations follow the same format as V4.5.1–5 but are documented here retrospectively. Decision rules were not pre-registered.
+
+### V4.5.6 — A2.1 path-construction inspection (~45 min, post-V4.5.2)
+
+**Trigger.** V4.5.2 identified Mode 3 (8/10 regressions): top-K analog set looks reasonable yet CRPS regresses. The natural mechanism is path dispersion deficit downstream of analog selection — testable directly from cached forecast paths.
+
+**Question.** At Mode-3 regression anchors, do A2.1's cached forecast paths actually converge faster than v2.4's? If yes, the dispersion deficit is a real lever and `conditional_corrwindow` (a V5 candidate) is well-targeted.
+
+**Method.** Load `forecasts.npz` for both canonicals at each Mode-3 anchor + 3 wins as positive controls. Compute the cumulative-log-return std growth ratio `std_cum_logret[59] / std_cum_logret[0]` per path-set; compare against the Brownian baseline (√60 ≈ 7.75).
+
+**Verdict.** Confirmed at 2022-03-01 (A2 ratio 3.56 vs v24 ratio 8.87 — A2 paths converge at 40% of v24's rate) and 2017-06-01 (A2 4.75 vs v24 7.61, ~62%). The inverse pattern holds at A2.1 WIN anchors (2010-04-23, 2001-10-02 — A2 *more* dispersed than v24). Mechanism: `simulate.py:306–309` forces `use_conditional=False` under corrwindow, so blocks 1–5 reuse block-0 distances. Motivates **V5.A.3** (conditional corrwindow re-matching). Does NOT address Mode-1 (concentrated top-K) regressions.
+
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_6_path_construction.md`; `results/analog_mc/data/v4_5_6_path_construction.json`; `scripts/v4_5/path_construction_inspection.py`.
+
+---
+
+### V4.5.7 — Tail-positive selection generality (~30 min, post-V4.5.4)
+
+**Trigger.** V4.5.4 showed both matchers underweight the +30%/60d analogs at 2020-03-16 (lift < 1). Open question: is that COVID-specific or symptomatic across the other 14 fat-tail anchors? Answers whether the v5 lever is matcher-substitution (single best distance) or matcher-blending (ensemble).
+
+**Question.** Per anchor, compute `lift = mass(same-sign-tail with |fwd_60d| ≥ |realized|) / (count_in_tail / n_eligible)` for each of v2.4 and A2.1. Are the two matchers' lift profiles **correlated** (structural feature gap) or **complementary** (ensemble lever)?
+
+**Method.** Reuse V4.5.4's pool-eligibility logic per anchor; compute lift for both matchers across the 15 fat-tail set. Classify into cohorts by which matcher (if any) achieves lift ≥ 1.
+
+**Verdict.** Three cohorts: (1) 10/15 anchors where at least one matcher finds the tail, with v2.4 and A2.1 anti-correlated by anchor (v2.4 lift 6.56 at 2008-10-03 vs A2.1 0.69; A2.1 lift 1.88 at 1991-03-26 vs v2.4 0.42); (2) 5/15 "neither finds it" anchors at extreme |realized| > 13% (2001-04, 2001-10, 2020-03, 2022-03, 2012-03); (3) 1/15 trivial (2017-06-01, realized ≈ 0). Cohort-1 complementarity is the **strongest possible argument for ensemble**, leading to V5.A.2 (path-level ensemble) as the cheapest credible lever; Cohort-2 motivates **V5.B** (drawdown feature) and **V5.C** (delay-coordinate distance) as feature-augmentation candidates.
+
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md`; `results/analog_mc/data/v4_5_7_tail_selection_scan.json`; `scripts/v4_5/tail_selection_scan.py`.
+
+---
+
+### V4.5.8 — V5.A.2 ensemble preview (~1 h, post-V4.5.7)
+
+**Trigger.** V4.5.7 made V5.A.2 (path-level ensemble of v2.4 and A2.1 forecasts) the headline v5 candidate. Before committing the V5 plan around it, preview its promotion-bar performance on cached artifacts — α-mixing two existing path sets is post-processing, not a new walk-forward.
+
+**Question.** Does V5.A.2 pass the v5 promotion bar (≥3/5 failures recovered, ≤2/15 regressions >5% CRPS) at any path-mixing ratio α? If not, what does it cover, and what additional experiments are needed?
+
+**Method.** For each of the 15 anchors, load cached path arrays from both runs' `forecasts.npz`, resample at α ∈ {0, 0.25, 0.5, 0.75, 1.0} (fraction of A2.1 paths), recompute CRPS and 50/90 coverage. Identical realized arrays asserted in code.
+
+**Verdict.** **V5.A.2 alone fails the bar at every α.** Failures recovered plateaus at 2/5; regressions are monotone-increasing in α (0 → 10 from α=0 → α=1). At α=0.5: regressions cut 10→6, 2008-10-03 catastrophe rescued (90-band 7→41), aggregate failure CRPS −12% vs v2.4 with only +13% control penalty. Best-balanced configuration but 2018-10-08 / 2020-03-16 / 2026-02-19 never reach 45/60 coverage even at α=1. **V5.A.2 at α=0.5 is the BASE configuration; the minimum viable stack is V5.A.2 + V5.B.** This invalidates the prior plan-doc framing that an ensemble alone might suffice.
+
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md`; `results/analog_mc/data/v4_5_8_v5a2_preview.json`; `scripts/v4_5/v5_a2_ensemble_preview.py`.
+
+---
+
+### V4.5.9 — Drawdown-feature sanity (~30 min, post-V4.5.8)
+
+**Trigger.** V4.5.8 made V5.B mandatory for the 3 unrescued failure anchors (2018-10-08, 2020-03-16, 2026-02-19) and the Cohort-2 regressions. Before V5.B becomes a P0 plan entry, sanity-check that the proposed `drawdown_60d_norm` feature actually selects the expected V-recovery / capitulation precedents.
+
+**Question.** At each Cohort-2 anchor, do the top-20 historical candidates ranked by `|dd_target − dd_cand|` (drawdown distance alone) include precedents whose forward 60d aligns with the realized?
+
+**Method.** Compute `drawdown_60d_norm = log(close[t] / max(close[t-59:t+1])) / std(log_returns[t-59:t+1])` causally. For each Cohort-2 anchor: top-5 nearest dates, top-20 forward mean/median, top-20 same-sign fraction, year-cluster.
+
+**Verdict.** Feature works at 3/5 Cohort-2 anchors — strong sanity at 2001-04-04 (85% same-sign, all top-20 from 1990 recession-recovery) and 2001-10-02 (75% same-sign), moderate at 2022-03-01 (60%, mean in right direction). Bimodal at 2020-03-16 (55%) — pulls both 1987-style V-recoveries and 2008-style continuations at COVID's extreme drawdown; needs a co-feature. Inert at 2012-03-14 (target dd = 0, so feature has no signal). Motivates **V5.B as P1** with optional **V5.B.2 stretch** (drawdown + vol-regime co-feature) gated on COVID coverage. Also surfaces a feature-formula bug in the V4.5.9 first iteration (linear difference instead of log-ratio normalized by vol) that the V5.B implementation must avoid.
+
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md`; `results/analog_mc/data/v4_5_9_drawdown_sanity.json`; `scripts/v4_5/drawdown_feature_sanity.py`.
+
+---
+
 ## Sequencing and decision tree
 
 Execute in order. Each step may reshape v5 priorities.
@@ -254,18 +316,30 @@ docs/analog_mc/v4.5/_v4_5_2_analog_autopsy.md    # A2.1 analog autopsy
 docs/analog_mc/v4.5/_v4_5_3_b1_beta_autopsy.md   # B1 β autopsy
 docs/analog_mc/v4.5/_v4_5_4_covid_pool.md        # COVID pool sufficiency
 docs/analog_mc/v4.5/_v4_5_5_mechanism_map.md     # cross-experiment mechanism map
+docs/analog_mc/v4.5/_v4_5_6_path_construction.md     # added: A2.1 path-construction
+docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md   # added: tail-positive generality
+docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md          # added: V5.A.2 ensemble preview
+docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md       # added: drawdown-feature sanity
 
 scripts/v4_5/validate_gate_signal.py             # V4.5.1
 scripts/v4_5/analog_autopsy_a2.py                # V4.5.2
 scripts/v4_5/b1_beta_autopsy.py                  # V4.5.3
 scripts/v4_5/covid_pool_sufficiency.py           # V4.5.4
 scripts/v4_5/mechanism_map.py                    # V4.5.5
+scripts/v4_5/path_construction_inspection.py    # V4.5.6 (added)
+scripts/v4_5/tail_selection_scan.py             # V4.5.7 (added)
+scripts/v4_5/v5_a2_ensemble_preview.py          # V4.5.8 (added)
+scripts/v4_5/drawdown_feature_sanity.py         # V4.5.9 (added)
 
 results/analog_mc/data/v4_5_1_gate_signal.json
 results/analog_mc/data/v4_5_2_analog_autopsy.json
 results/analog_mc/data/v4_5_3_b1_beta_autopsy.json
 results/analog_mc/data/v4_5_4_covid_pool.json
 results/analog_mc/data/v4_5_5_mechanism_map.json
+results/analog_mc/data/v4_5_6_path_construction.json
+results/analog_mc/data/v4_5_7_tail_selection_scan.json
+results/analog_mc/data/v4_5_8_v5a2_preview.json
+results/analog_mc/data/v4_5_9_drawdown_sanity.json
 ```
 
 ## Read-first checklist for a fresh session

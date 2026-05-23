@@ -105,6 +105,94 @@ Each entry is the number of days (out of 60) the realized price stayed inside th
 
 The five failures all share a **regime-transition** character that the matcher could not anticipate from its prior 10-day analog blocks.
 
+## v4 cross-experiment comparison
+
+Side-by-side per-anchor view across the v2.4 baseline and the three v4 canonicals (B1 = `b1_local_linear`, A2.1 = `a2_corrwindow_L100`, B5 = `b5_joint`). The per-experiment fat-tail panel docs ([`_a2_corrwindow_L100_fat_tail.md`](experiments/_a2_corrwindow_L100_fat_tail.md), [`_b1_local_linear_fat_tail.md`](experiments/_b1_local_linear_fat_tail.md), [`_b5_joint_fat_tail.md`](experiments/_b5_joint_fat_tail.md)) carry per-anchor 90-band columns only; the 50-band rows below are extracted from the same JSONs to make the dispersion comparison legible in one place.
+
+Source JSONs: `results/analog_mc/data/fat_tail_{baseline_v24, b1_local_linear, a2_corrwindow_L100, b5_joint}.json`. Visual companion: **[`experiments/_fat_tail_compare.md`](experiments/_fat_tail_compare.md)** — 15 side-by-side 2×2 grid PNGs (one per anchor) showing all four experiments at the same y-axis range. Per-experiment single-panel docs also embed their own 15-chart galleries (see the links above).
+
+Strata: **A.1** positive momentum (|z₅₀| > 3, 5 anchors), **A.2** negative momentum (3 anchors), **B** hand-curated regime-coverage (7 anchors). "Failure" / "Control" cohorts from V3.5: failures = {2010-04-23, 2001-10-02, 2018-10-08, 2020-03-16, 2026-02-19}; controls = {1991-03-26, 2010-11-10, 2025-07-02, 2017-06-01, 2000-04-03}.
+
+### Aggregate (mean across the 15-anchor set)
+
+| Cohort | Metric | v2.4 | B1 | A2.1 | B5 |
+|---|---|---:|---:|---:|---:|
+| All 15 | mean CRPS | 0.0611 | 0.0655 | 0.0659 | 0.0690 |
+| All 15 | mean 50/60 | 26.9 | 25.5 | 28.6 | 22.1 |
+| All 15 | mean 90/60 | 49.9 | 47.6 | 44.8 | 43.8 |
+| Failure (5) | mean CRPS | 0.0947 | 0.0884 | 0.0756 | 0.0843 |
+| Failure (5) | mean 50/60 | 10.2 | 10.2 | 17.2 | 16.8 |
+| Failure (5) | mean 90/60 | 36.2 | 38.0 | 33.8 | 32.0 |
+| Control (5) | mean CRPS | 0.0205 | 0.0186 | 0.0226 | 0.0264 |
+| Control (5) | mean 50/60 | 45.0 | 45.4 | 42.0 | 24.8 |
+| Control (5) | mean 90/60 | 58.2 | 59.2 | 55.4 | 54.2 |
+
+### Per-anchor CRPS
+
+| Anchor | Stratum | Realized | v2.4 | B1 | A2.1 | B5 |
+|---|---|---:|---:|---:|---:|---:|
+| 1991-03-26 | A.1 | −1.6% | 0.0234 | 0.0253 | 0.0251 | 0.0253 |
+| 2010-04-23 | A.1 | −10.4% | 0.0708 | 0.0538 | 0.0375 | 0.0431 |
+| 2010-11-10 | A.1 | +7.4% | 0.0154 | 0.0154 | 0.0174 | 0.0256 |
+| 2012-03-14 | A.1 | −5.5% | 0.0340 | 0.0166 | 0.0432 | 0.0292 |
+| 2025-07-02 | A.1 | +8.2% | 0.0174 | 0.0229 | 0.0141 | 0.0289 |
+| 1990-09-24 | A.2 | +12.2% | 0.0417 | 0.1069 | 0.0447 | 0.0598 |
+| 2001-04-04 | A.2 | +33.5% | 0.0774 | 0.1081 | 0.1094 | 0.0973 |
+| 2001-10-02 | A.2 | +38.6% | 0.1140 | 0.0953 | 0.0596 | 0.0498 |
+| 2000-04-03 | B | −7.5% | 0.0794 | 0.0819 | 0.0638 | 0.0617 |
+| 2008-10-03 | B | −18.3% | 0.1008 | 0.1090 | 0.2241 | 0.2065 |
+| 2017-06-01 | B | +0.1% | 0.0123 | 0.0127 | 0.0131 | 0.0228 |
+| 2018-10-08 | B | −12.7% | 0.0620 | 0.0607 | 0.0813 | 0.0761 |
+| 2020-03-16 | B | +43.8% | 0.1788 | 0.1853 | 0.1455 | 0.1622 |
+| 2022-03-01 | B | −14.7% | 0.0411 | 0.0415 | 0.0549 | 0.0566 |
+| 2026-02-19 | B | +17.5% | 0.0480 | 0.0470 | 0.0543 | 0.0902 |
+
+### Per-anchor 50-band coverage (days /60)
+
+Nominal target = 30. Numbers below 25 indicate under-dispersion at the median; above 35 indicates over-dispersion.
+
+| Anchor | Stratum | Realized | v2.4 | B1 | A2.1 | B5 |
+|---|---|---:|---:|---:|---:|---:|
+| 1991-03-26 | A.1 | −1.6% | 48 | 50 | 45 | 43 |
+| 2010-04-23 | A.1 | −10.4% | 3 | 3 | 24 | 27 |
+| 2010-11-10 | A.1 | +7.4% | 47 | 47 | 48 | 22 |
+| 2012-03-14 | A.1 | −5.5% | 28 | 43 | 23 | 29 |
+| 2025-07-02 | A.1 | +8.2% | 59 | 43 | 56 | 9 |
+| 1990-09-24 | A.2 | +12.2% | 28 | 4 | 47 | 34 |
+| 2001-04-04 | A.2 | +33.5% | 30 | 33 | 25 | 27 |
+| 2001-10-02 | A.2 | +38.6% | 6 | 7 | 32 | 40 |
+| 2000-04-03 | B | −7.5% | 33 | 32 | 39 | 41 |
+| 2008-10-03 | B | −18.3% | 7 | 5 | 1 | 1 |
+| 2017-06-01 | B | +0.1% | 43 | 44 | 38 | 21 |
+| 2018-10-08 | B | −12.7% | 4 | 5 | 0 | 0 |
+| 2020-03-16 | B | +43.8% | 6 | 4 | 3 | 3 |
+| 2022-03-01 | B | −14.7% | 29 | 31 | 21 | 21 |
+| 2026-02-19 | B | +17.5% | 32 | 32 | 27 | 14 |
+
+### Per-anchor 90-band coverage (days /60)
+
+Nominal target = 54. The promotion-bar "failure recovery" criterion uses ≥45/60 in this column.
+
+| Anchor | Stratum | Realized | v2.4 | B1 | A2.1 | B5 |
+|---|---|---:|---:|---:|---:|---:|
+| 1991-03-26 | A.1 | −1.6% | 60 | 60 | 60 | 60 |
+| 2010-04-23 | A.1 | −10.4% | 27 | 37 | **57** | **51** |
+| 2010-11-10 | A.1 | +7.4% | 56 | 56 | 57 | 57 |
+| 2012-03-14 | A.1 | −5.5% | 55 | 60 | 41 | 51 |
+| 2025-07-02 | A.1 | +8.2% | 60 | 60 | 60 | 60 |
+| 1990-09-24 | A.2 | +12.2% | 55 | **11** | 60 | 60 |
+| 2001-04-04 | A.2 | +33.5% | 55 | 55 | 53 | 53 |
+| 2001-10-02 | A.2 | +38.6% | 44 | **55** | **53** | **53** |
+| 2000-04-03 | B | −7.5% | 56 | 56 | 59 | 59 |
+| 2008-10-03 | B | −18.3% | 52 | 46 | **7** | **7** |
+| 2017-06-01 | B | +0.1% | 60 | 60 | 59 | 43 |
+| 2018-10-08 | B | −12.7% | 31 | 36 | 10 | 16 |
+| 2020-03-16 | B | +43.8% | 38 | 19 | 11 | 8 |
+| 2022-03-01 | B | −14.7% | 58 | 60 | 47 | 47 |
+| 2026-02-19 | B | +17.5% | 41 | 43 | 38 | 32 |
+
+Bolded cells flag the v4 failure-recovery events (≥45/60 at a V3.5 failure anchor) and the most severe regressions (≤10/60 at any anchor). Note A2.1 and B5 each rescue 2010-04-23 (failure recovered, 27 → 57/51) and 2001-10-02 (44 → 53/53) while sharing the 2008-10-03 catastrophe (52 → 7); B1 recovers 2001-10-02 only but produces the 1990-09-24 catastrophe (55 → 11). The structurally hardest anchors — 2018-10-08, 2020-03-16, 2026-02-19 — are never rescued by any single v4 experiment. This is the empirical foundation for the V4_5 ensemble/feature-augmentation argument in [`V4_5_RESULTS.md`](V4_5_RESULTS.md).
+
 ## Charts
 
 > **v4 reference panel.** A canonical v2.4 baseline panel (15 charts + per-anchor coverage/CRPS table + v3.5 failure/control annotations) lives at [`experiments/_v24_fat_tail_baseline.md`](experiments/_v24_fat_tail_baseline.md). Each v4 experiment compares its own panel against that one. The charts below are the older single-render set retained for in-place context inside this doc.
