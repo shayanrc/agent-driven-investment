@@ -1,16 +1,14 @@
 ---
 name: project-overview
-description: High-level description of the agent-driven-investment repo and the analog_mc module
+description: Repo hosts multiple forecasting modules; analog_mc is the first. Module-specific goal lives in docs/<module>/goal.md.
 metadata:
   type: project
 ---
 
-This repo will host multiple forecasting/analytics modules; `analog_mc` is the first.
+This repo will host multiple forecasting/analytics modules. **analog_mc** is the first and currently only one — analog Monte Carlo probabilistic price-path forecasting.
 
-**analog_mc** is a probabilistic forecasting pipeline. It generates Monte Carlo simulations of forward price paths by finding historical analogs (k-NN in multi-horizon z-score space), sampling forward 10-day blocks of realized returns from those analogs, and rescaling each block to match the current vol regime.
+**For analog_mc specifics (what it optimizes for, what success looks like, eventual deployment shape):** read [`docs/analog_mc/goal.md`](../../docs/analog_mc/goal.md). That document is the authoritative source — don't duplicate its content here.
 
-Asset-agnostic by design — horizons, z-score windows, and clip bounds are config-driven. v1 default config targets a quarterly forecast on a broad equity index (60-day forecast = 6 × 10-day blocks; z-score horizons (20, 50, 200)).
+**For *how* analog_mc works:** `docs/analog_mc/IMPLEMENTATION_PLAN.md` (architecture spec, 6 correctness constraints, 11-stage build order) and `docs/analog_mc/ALGORITHM.MD` (step-by-step math). CLAUDE.md at the repo root has the short rules; the long-form why is in those plan docs.
 
-**Why:** The plan is the output of a long design conversation in `docs/analog_mc/IMPLEMENTATION_PLAN.md`. Architectural decisions there were each made for a reason and should not be silently changed — see [[feedback-implementation-discipline]].
-
-**How to apply:** When implementing or modifying any pipeline component, treat the IMPLEMENTATION_PLAN.md as the source of truth. The 6 critical correctness constraints (C1–C6) and the 11-stage build order are non-negotiable. See [[project-layout]] for where module code lives.
+**How to apply:** When a new module gets added, give it its own `docs/<module>/goal.md` following the same pattern. The CLAUDE.md rule "read `docs/<module>/goal.md` before editing files in that module" applies generically.
