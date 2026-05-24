@@ -140,3 +140,48 @@ These are predictions, not promises — wait for the actual pain before doing th
 When you trip on one of these, write a short note in this file documenting
 *what hurt* and *what minimal change unblocks it* — that's what we'll use to
 inform the framework crystallization decision.
+
+---
+
+## v1.7 follow-up — evidence from the NSE domain build (2026-05-24)
+
+Domain #2 (`nse_equities`) is now landed. This section records what actually plugged in vs the predictions above, and the framework-extraction decisions justified by the new evidence (open question 6 in `V1_IMPLEMENTATION_PLAN.md`).
+
+### What plugged in unchanged
+
+- `Schema` / `SchemaMismatch` / `Schema.normalize` — separate instance, same shape (intentional, per "don't crystallize a shared OHLCV abstraction yet").
+- `DomainRegistry` — added `NSE` / `BSE` / `NIFTY` prefixes alongside `NYSE` / `NASDAQ` / `INDEX`. No collision; no API change.
+- `raw_store.write_raw_atomic` + D8 immutability — three new file extensions (`.json` for jugaad, `.csv` for nselib, `.parquet` for yfinance) flowed through with no code change.
+- `cache.py` SQLite layer — auto-derived `nse_equities_data` / `nse_equities_meta` tables from `domain.schema` on first write. Zero code change.
+- `dispatch.py` cache-clip + soft-fail-on-EmptyPayload — both reused unchanged.
+- `Adapter` ABC + `source_column_map` + `extra_meta` — exactly the right shape; no signature change.
+- CLI — 4-line patch (import the new domain module + add the universe-loader entry in `_load_universe_for_domain`). All subcommands worked.
+
+### What was lifted (already in the v1.7 plan)
+
+- **`src/data_pipelines/retry.py`** (`RetryPolicy` + `call_with_retry`). All three NSE adapters use it. Tiingo retrofit deferred to a follow-up commit.
+
+### Where the predictions held vs missed
+
+| Prediction (v1)                                | Actual (v1.7)                                                |
+|------------------------------------------------|--------------------------------------------------------------|
+| Calendar API may need to grow                  | **No.** `trading_days()` covered NSE fine — different holiday set, same protocol. |
+| `Adapter.fetch()` may need `frequency`         | **No.** All v1.7 data is daily; no pressure to add it.       |
+| `merge_overlap` may need column-level granularity | **Partly.** NSE adopted the same "preserve high-quality adj_close" pattern as us_equities — two domains using identical logic with one provider-name swap. If domain #3 wants the same thing, lift to a small `MergeStrategy` helper. |
+| Identifier parsing may need richer structure   | **No.** `<PREFIX>:<SYMBOL>` worked. The NIFTY: short-alias slug map lives inside `registry.py`, not as a framework concern. |
+
+### New friction surfaced (not in v1's predictions)
+
+1. **~~Chain composition for partial-coverage providers.~~ Lifted.** `Domain.chain_for_gap` now takes an `identifier` arg; domains can return different chains per prefix. us_equities routes `INDEX:*` to `[yfinance, stooq]` (skip dead Tiingo leg); nse_equities routes `NIFTY:*` to `[nselib, yfinance]`, `BSE:*` to `[yfinance]`, and `NSE:*` to `[jugaad, nselib, yfinance]`. Adapter-internal `EmptyPayload` short-circuits stay as defense in depth.
+
+2. **~~Dispatcher stops after partial-fill.~~ Lifted.** After each provider's successful write, dispatch re-detects remaining sub-gaps inside the original top-level gap and asks the next provider in chain to fill them. Bounded: each provider runs at most once per top-level gap. Soft-fail kicks in when the chain is exhausted but at least one provider returned data (or returned authoritative EmptyPayload with existing cache); the residual uncovered range is recorded in `providers_failed[]`. Concrete win measured during the lift: `NIFTY:50` 2020-01-01 → 2025-12-31 went from **422 → 1,488 rows** (99.7% coverage) — nselib supplies true `TRADED_QTY` where available, yfinance backfills the older OHLC.
+
+3. **Concurrency across processes.** Two `seed` processes racing on the same identifier collide on D8 immutability (same-second raw filename) and on the cache's `(ticker, date)` PK. Current contract: seeds are single-process operations per `data_root`. Documented in `V1_IMPLEMENTATION_PLAN.md` §"Concurrency contract".
+
+4. **Provider library quirks live in adapters, not framework.** jugaad returns multi-series rows even when caller passes `series="EQ"`; nselib returns Indian-comma-formatted strings with unicode-rupee suffixes; jugaad's index endpoint is broken upstream. All three correctly handled in the adapter — none warranted framework abstraction. The `parse()` boundary is the right place for this.
+
+5. **Currency / units have no first-class home.** v1.7 stores `currency: "INR"` in `_meta.sources[]`. No consumer in v1.7 needed it. When the first cross-currency consumer appears, lift to `Schema.column_units` or similar.
+
+### Open-question 6 verdict
+
+Two of the five candidate refactors from v1 lit up with concrete evidence during the v1.7 NIFTY 50 work and were lifted (per-identifier chain ordering + dispatcher partial-fill continuation). The other three (currency/units, row-level provenance, shared OHLCV schema) still wait. Hold the line on those until a real consumer produces pressure.

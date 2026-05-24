@@ -341,6 +341,67 @@ class TestInputValidation:
                   frequency="1min", data_root=root)
 
 
+class TestPartialFillContinuation:
+    """Refactor B: when the first provider returns only PART of the requested
+    gap (e.g., nselib NIFTY: caps at ~3 fiscal years), the dispatcher must
+    re-detect the remaining sub-gap and let the next provider in the chain
+    fill it. Cache ends up with the union; both providers appear in sources.
+    """
+
+    def test_partial_then_full_yields_union(self, root):
+        # Request Mon Jan-5 .. Fri Jan-9 (5 trading days). Adapter A only
+        # returns the middle three; adapter B (next in chain) is allowed to
+        # fill the wings.
+        a_df = make_df([date(2026, 1, 6), date(2026, 1, 7), date(2026, 1, 8)],
+                       [20, 30, 40])
+        b_df = make_df([date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+                        date(2026, 1, 8), date(2026, 1, 9)],
+                       [10, 20, 30, 40, 50])
+        a = _ScriptedAdapter("a-partial", a_df, root)
+        b = _ScriptedAdapter("b-full", b_df, root)
+        _register(a, b, threshold=1000)  # cold cache → first adapter only
+        # FakeDomain uses [first] on cold cache; bump so both are in play.
+        # Cleaner: re-register with a custom chain.
+        DomainRegistry._reset()
+        dom = FakeDomain(adapters=[a, b], big_gap_threshold=1)
+        # Override chain_for_gap to return both in order on a single call.
+        dom.chain_for_gap = lambda ident, gap, has_cache: [a, b]
+        DomainRegistry.register(dom)
+
+        df, meta = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 9), data_root=root,
+        )
+        # Union of both providers' rows.
+        assert list(df["date"].dt.date) == [
+            date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+            date(2026, 1, 8), date(2026, 1, 9),
+        ]
+        # Both providers ran; both appear in gaps_filled.
+        providers = [g["provider"] for g in meta.gaps_filled]
+        assert "a-partial" in providers
+        assert "b-full" in providers
+
+    def test_partial_then_empty_soft_fails(self, root):
+        # First adapter fills the middle; second returns empty. Cache keeps
+        # what got filled; soft-fail message records the residual gap.
+        a_df = make_df([date(2026, 1, 6), date(2026, 1, 7), date(2026, 1, 8)],
+                       [20, 30, 40])
+        a = _ScriptedAdapter("a-partial", a_df, root)
+        b = _RaisingAdapter("b-empty", EmptyPayload("b-empty", "FAKE:X"))
+        DomainRegistry._reset()
+        dom = FakeDomain(adapters=[a, b], big_gap_threshold=1)
+        dom.chain_for_gap = lambda ident, gap, has_cache: [a, b]
+        DomainRegistry.register(dom)
+
+        df, meta = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 9), data_root=root,
+        )
+        # Only the three middle rows landed.
+        assert len(df) == 3
+        # Soft-fail recorded — partial fill, residual unfillable.
+        assert any("unfillable" in p["reason"] for p in meta.providers_failed)
+
+
 class TestExtraMetaPropagation:
     def test_extra_meta_in_source_record(self, root):
         seed_df = make_df([date(2026, 1, 5)], [1])

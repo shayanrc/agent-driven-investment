@@ -162,19 +162,27 @@ class TestWireUp:
         assert isinstance(adapters["tiingo"], TiingoAdapter)
         assert isinstance(adapters["yfinance"], YFinanceAdapter)
 
-    def test_chain_for_gap_cold(self, domain):
+    def test_chain_for_gap_cold_equity(self, domain):
         # Cold cache → seed first, then update tiers as fallback (IP-gate hardening).
-        chain = domain.chain_for_gap(gap_size_trading_days=5, has_cache=False)
+        chain = domain.chain_for_gap("NASDAQ:AAPL", gap_size_trading_days=5, has_cache=False)
         assert [a.name for a in chain] == ["stooq", "tiingo", "yfinance"]
 
-    def test_chain_for_gap_small_with_cache(self, domain):
-        chain = domain.chain_for_gap(gap_size_trading_days=5, has_cache=True)
+    def test_chain_for_gap_small_with_cache_equity(self, domain):
+        chain = domain.chain_for_gap("NASDAQ:AAPL", gap_size_trading_days=5, has_cache=True)
         assert [a.name for a in chain] == ["tiingo", "yfinance"]
 
-    def test_chain_for_gap_big_with_cache(self, domain):
+    def test_chain_for_gap_big_with_cache_equity(self, domain):
         # Big gap with cache also tries seed first, falls through to update tiers.
-        chain = domain.chain_for_gap(gap_size_trading_days=100, has_cache=True)
+        chain = domain.chain_for_gap("NASDAQ:AAPL", gap_size_trading_days=100, has_cache=True)
         assert [a.name for a in chain] == ["stooq", "tiingo", "yfinance"]
+
+    def test_chain_for_index_skips_tiingo(self, domain):
+        # INDEX:* gets [yfinance, stooq] — Tiingo doesn't support indices
+        # (explicit ProviderError short-circuit), so it's excluded from the
+        # chain entirely. yfinance first (always-on baseline); stooq as
+        # opportunistic richer-volume backup.
+        chain = domain.chain_for_gap("INDEX:^SPX", gap_size_trading_days=5, has_cache=False)
+        assert [a.name for a in chain] == ["yfinance", "stooq"]
 
     def test_identifier_prefixes_registered(self, domain):
         assert "NYSE" in domain.identifier_prefixes

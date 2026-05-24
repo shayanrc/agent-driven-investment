@@ -3,7 +3,7 @@
 ## Build status
 
 - **v1 (us_equities domain):** shipped (228 tests, 520-ticker S&P 500 + indices seeded).
-- **v1.7 (nse_equities domain):** planned; specification at the end of this document, no code yet.
+- **v1.7 (nse_equities domain):** shipped. Specification, implementation findings, and known limitations are in the "v1.7 — NSE equities (India) domain" section at the end of this document.
 
 For the *why* (what success looks like, anti-goals, deployment intent), see `goal.md`. This document is the *how* — architecture, schema, constraints, stages.
 
@@ -18,7 +18,7 @@ The v1.x revision history below is one continuous series: revisions of the plan,
 - **v1.4** *(2026-05-23)* — **Stooq added an API-key gate** (discovered during v1 online smoke test). The CSV endpoint at `https://stooq.com/q/d/l/?s=<sym>.us&i=d` now returns a "Get your apikey" help page unless `&k=<key>` is appended. Registration is free and captcha-only (`https://stooq.com/q/d/?get_apikey`). Adapter and config updated: `STOOQ_API_KEY` env var, pre-flight `MissingAPIKey` raise if unset, dedicated `_is_apikey_required` payload check raises `ProviderError` if Stooq returns the help page (e.g., invalid key). Stooq's tier role (seed, big-gap fills) is unchanged.
 - **v1.5** *(2026-05-24)* — **Processed-layer storage swapped from parquet to SQLite.** Single global DB at `data/processed.db`. Per-domain tables are auto-created from `domain.schema`: `<domain>_data(ticker, <schema cols>...)` with composite PK `(ticker, <time_column>)` and `<domain>_meta(ticker PK, schema_version, row_count, range_start, range_end, last_fetch_utc, sources_json TEXT)`. Atomicity (D2) is delivered by SQLite's `BEGIN ... COMMIT`; deterministic reads (D3) by `ORDER BY <time_column>` plus dtype-coerced canonical-schema return; the meta row is still the commit marker (D2 read-side). Raw layer is unchanged. New `cache.py` API: `processed_db_path`, `read_processed`, `write_processed_atomic`, `list_cached_identifiers`, `purge_identifier`. One-shot migration script (`scripts/data_pipelines/migrate_parquet_to_sqlite.py`) ports any existing parquet+meta entries into the SQLite cache without re-paying API costs. Motivation: cross-ticker SQL queries (e.g., "all S&P 500 closes on 2025-01-15"), single-file backup/portability, simpler agent-tool surface.
 - **v1.6** *(2026-05-24)* — **Document renamed `V1_IMPLEMENTATION_PLAN.md`.** Single doc for all v1.x revisions and feature increments of the data_pipelines module; future v2 work would get its own `V2_IMPLEMENTATION_PLAN.md`.
-- **v1.7** *(2026-05-24, planned)* — **NSE equities (India) added as domain #2.** Adapter chain `jugaad-data → nselib → yfinance(.NS)` with a new shared retry primitive (exponential backoff + jitter, 3 retries). Triggers the framework-extraction decision flagged in open question 6. Full specification appended as the "v1.7 — NSE equities (India) domain" section at the end of this document; no code shipped yet.
+- **v1.7** *(2026-05-24, shipped)* — **NSE equities (India) added as domain #2.** Adapter chain `jugaad-data → nselib → yfinance(.NS)` with a new shared retry primitive (exponential backoff + jitter, 3 retries) at `src/data_pipelines/retry.py`. NIFTY 50 universe + index seeded end-to-end (51/51 identifiers cached). Framework code unchanged beyond the planned retry lift — the plug-in surface held up cleanly. Triggered open question 6's framework-extraction decision: hold the line on further extraction until domain #3 produces concrete evidence (see `adding_a_domain.md` v1.7 follow-up section). Findings inlined in the v1.7 section below.
 
 ---
 
@@ -750,11 +750,7 @@ Mirror the original 11-stage build order. Skip stages that are pure framework pr
 19. **NSEDomain wire-up** — `__init__.py` instantiates and registers.
 20. **D8 reprocess determinism test** — same shape as `test_reprocess.py` for us_equities.
 21. **CLI integration** — `python -m data_pipelines seed --universe nifty50` just works once the domain is registered. Smoke-test against the cache.
-22. **Cross-source parity audit** — mirror `scripts/data_pipelines/parity_check.py` for nse_equities. Expected findings:
-    - adj_close cross-source agreement (target: < 0.05% rel diff on no-corporate-action tickers).
-    - raw OHLC divergence on split tickers (yfinance silently split-adjusts).
-    - Currency / unit consistency (all three should report INR; flag if any return USD by mistake).
-    Document in `docs/data_pipelines/V1.7_RESULTS.md`.
+22. **Cross-source parity audit** — `scripts/data_pipelines/parity_check_nse.py`. Findings inlined under "Implementation findings" below.
 23. **Documentation update** — README, `adding_a_domain.md` follow-up capturing what *had* to be refactored vs what just plugged in (this is the evidence base for open question 6's framework-extraction decision).
 
 ## Tests
@@ -764,16 +760,64 @@ Mirror the us_equities tests under `tests/data_pipelines/domains/nse_equities/`.
 New shared tests:
 - `tests/data_pipelines/test_retry.py` — retry primitive: backoff timing, jitter spread, max-retries cap, non-retryable propagation.
 
-## Open questions (v1.7)
+## Open questions (resolved during v1.7 build)
 
-These are flagged for the user to decide during implementation. None are blockers; they shape specific stages.
+8. **Universe ordering — Nifty 50 first or skip to Nifty 100/500?** Shipped Nifty 50. Other Nifty universes deferred to v1.7.1 when a consumer asks.
+9. **BSE coverage**: deferred. Parser accepts `BSE:` but jugaad/nselib raise `EmptyPayload` for it (both NSE-only); yfinance `.BO` is parser-routable but not validated.
+10. **jugaad-data + nselib library liveness on Python 3.13**: both work. Pinned `jugaad-data==0.33.1` (Mar 2026), `nselib==2.5.1` (May 2026).
+11. **Currency tag in schema vs. meta?** Omitted from schema; recorded per-source as `currency: "INR"` in `_meta.sources[]`.
+12. **Time zone**: `date` stored as naive midnight UTC. Adapters explicitly convert from IST (jugaad's `2025-04-29 18:30:00` = April 30 IST trade date) before storing. See `domains/nse_equities/calendar.py` for the policy.
+13. **Holiday data source**: using `holidays.financial_holidays('NSE')` — 12–16 holidays/year, properly named. Hand-pinned unscheduled-closure set kept empty pending the first surfaced omission.
 
-8. **Universe ordering — Nifty 50 first or skip to Nifty 100/500?** Recommendation: Nifty 50 — small enough to validate the pipeline, covers ~65% of NSE market cap. Add Nifty 100/200/500 as separate `universe_*.yaml` files in v1.7.1.
-9. **BSE coverage**: ship BSE: alongside NSE: in v1.7, or defer? Recommendation: defer — BSE has poorer library coverage and the universes of interest (Nifty) are NSE listings.
-10. **jugaad-data + nselib library liveness**: both are community-maintained and have churned in the past. v1.7 implementation should pin specific versions in `pyproject.toml`. Verify both work on Python 3.13 before committing to them (similar to the `pandas-datareader` / `pystooq` brokenness discovered in v1).
-11. **Currency tag in schema vs. meta?** Per-row currency makes more sense for FX domains but is overkill here. Recommendation: omit from schema (all NSE rows are INR by definition); add per-source `currency` field in `_meta.sources[]` as an audit hint.
-12. **Time zone**: NSE close is 3:30 PM IST = 10:00 UTC. Per D7 we store `date` as midnight UTC. Confirm this matches downstream consumers' expectations (analog_mc treats date as opaque, so likely fine, but document it).
-13. **Holiday data source**: hand-pin in code vs. `holidays` Python lib. Lib has 17 NSE holidays/year computed; if maintained, prefer.
+## Implementation findings
+
+Substantive things discovered during the v1.7 build that future maintainers and downstream consumers should know. Adapter-source comments cross-reference here.
+
+### Seed validation
+
+End-to-end seed of NIFTY 50 (2020-01-01 → 2025-12-31) succeeded for all 51 identifiers (50 equities + 1 index), 72,273 rows total. Provider mix: jugaad served 50, nselib served the index. Raw audit footprint: ~50 MB.
+
+### Cross-source parity (RELIANCE/TCS/INFY/HDFCBANK, Jan–Apr 2025)
+
+Run `scripts/data_pipelines/parity_check_nse.py` for the table; max-relative-diff headline:
+
+- **Raw OHLC agrees within ~1% jugaad ↔ nselib ↔ yfinance on no-corporate-action tickers.** Both jugaad and nselib pull from NSE bhav; yfinance independently agrees.
+- **HDFCBANK shows 2× divergence yfinance ↔ others** on Jan–Apr 2025 — jugaad/nselib close = 1793.75 on 2025-01-02, yfinance = 896.88. HDFCBANK had a 1:1 bonus issue effective **August 2025**, *after* the query window, and yfinance has forward-applied it. Same D4 trap as us_equities: yfinance's `Close` is silently split-/bonus-adjusted regardless of `auto_adjust=False`. **Use jugaad/nselib for raw traded prices/volumes pre-corporate-action; use yfinance's `adj_close` for total-return.**
+- **adj_close diverges 0.4–5% jugaad ↔ yfinance** as expected. jugaad/nselib have no adjustment (`QUALITY_NONE`, `adj_close = close`); yfinance back-applies dividends (`QUALITY_FULL`). `merge_overlap_nse_equities` preserves `QUALITY_FULL` adj_close over `QUALITY_NONE`.
+- **Single-day volume divergences up to ~50%** between providers exist even when most days agree to the share (RELIANCE 2025-01-02 matches to the last share across all three). Likely cause: one provider missing or post-correcting a single-day adjustment. Not blocking; flag in user-facing dashboards.
+
+### Known upstream limitations
+
+1. **jugaad-data `index_df` was broken upstream; patched in our vendored copy.** The niftyindices.com `/Backpage.aspx/getHistoricaldatatabletoString` endpoint changed contract around mid-2026: it now requires a single `cinfo` parameter holding a JSON-encoded string with `name`/`startDate`/`endDate`/`indexName`. Unmodified upstream sent the three flat fields and got HTTP 500 (`"missing value for parameter: 'cinfo'"`), surfacing as `KeyError: 'd'` in `_index`. Diagnosed and fixed in our git-subtree vendor at `vendor/jugaad-data/jugaad_data/nse/history.py` (search for `LOCAL PATCH`); `jugaad_data.nse.index_df` works again. **`JugaadAdapter` still short-circuits `NIFTY:` identifiers with `EmptyPayload`** because jugaad's index payload provides only OHLC — no VOLUME — and the canonical schema requires non-null int64 volume; nselib's `TRADED_QTY` fills that role. Re-enable jugaad for `NIFTY:` only if nselib breaks or volume is made nullable. Vendor sync instructions: `vendor/README.md`.
+
+2. **nselib index history caps at ~3 fiscal years; resolved via per-identifier chain + partial-fill continuation.** `index_data("NIFTY 50", 2020-01-01, 2025-12-31)` returns ~422 of expected ~1,492 rows — the upstream endpoint silently truncates older chunks. Originally the dispatcher locked the partial coverage in (cache-clip + first-success-wins). **Both framework lifts now done:**
+   - `Domain.chain_for_gap(identifier, gap_size, has_cache)` — per-prefix chain composition.
+   - Dispatcher continues the chain after each successful write, re-detecting remaining sub-gaps and asking the next provider in the chain to fill them.
+
+   NIFTY: now routes through `[nselib, yfinance]`: nselib fills what it can with true `TRADED_QTY`; yfinance backfills the rest. Verified end-to-end: `NIFTY:50` for 2020-01-01 → 2025-12-31 now caches **1,488 rows** (99.7% coverage) — 422 with nselib's authoritative TRADED_QTY, 1,063 with yfinance's smaller ^NSEI volume (recorded as separate sources in meta so consumers can tell which is which).
+
+3. **jugaad returns multi-series rows** (EQ + BL + T0 + …) even when caller passes `series="EQ"` — the library translates `"EQ"` to `"ALL"` upstream. Non-EQ rows would collide on the cache's `(ticker, date)` PK. Fixed in `JugaadAdapter.parse()` by filtering `CH_SERIES == "EQ"`. Regression test added.
+
+4. **yfinance silently bonus/split-adjusts the "raw" OHLC columns regardless of `auto_adjust=False`** *(both domains, all yfinance-sourced rows for tickers with any historical split or bonus issue).* The `auto_adjust=False` flag only controls dividend adjustment; splits and bonus issues are always back-applied internally — there is no way to extract true-raw historical OHLC from yfinance. Concrete instances surfaced during parity audits:
+   - **HDFCBANK** (NSE) — 1:1 bonus effective Aug 2025; yfinance reports half-prices for Jan–Apr 2025 (close 896.88 vs jugaad/nselib 1793.75) and **2x the volume**.
+   - **AAPL** — 2014 7-for-1 + 2020 4-for-1; yfinance pre-split OHLC differs from Tiingo by 7× and 4× respectively.
+   - **RELIANCE** — 2017 1:1 bonus; analogous pattern.
+
+   `adj_close` (`QUALITY_FULL` from yfinance) is *consistent* across sources — divergence is OHLC-only. `merge_overlap` preserves Tiingo/nselib/jugaad OHLC when they overlap with yfinance, so the trap only bites on dates yfinance is the only source for (notably: all 4 US indices and the ~1063 yfinance-backfilled NIFTY:50 dates). **Use `adj_close` for any return / volatility / log-return calculation;** treat yfinance-sourced OHLC for split tickers as cosmetic. Pinned in `domains/us_equities/schema.py` and `domains/nse_equities/schema.py` docstrings.
+
+5. **yfinance index volume is meaningful only loosely.** Two flavors:
+   - US (`^SPX`, `^NDX`, `^DJI`, `^RUT`): yfinance reports a **constituent-volume aggregate** (~2.6B/day for ^SPX) as `Volume`. Not the same metric as a true index-traded volume; useful as a coarse activity proxy, not as a tradeable quantity. All 4 US indices in cache (~9k rows each) are 100% yfinance-sourced and carry these numbers.
+   - NSE (`^NSEI`): yfinance reports a number ~3 orders of magnitude smaller than nselib's `TRADED_QTY` on the same day (~3.1e5 vs ~3.7e8). Origin unclear; possibly index-ETF retail only. For `NIFTY:50`, the cache has 422 rows from nselib (true `TRADED_QTY`) and 1,063 rows backfilled from yfinance (smaller, less-meaningful number). Source is recorded per range in `_meta.sources[]`.
+
+   Mitigation: for NIFTY:50, prefer nselib's volume on the dates it covers (the cache already does this via merge precedence). For US indices, no better source is currently wired — Stooq's index volume is unknown to us (gated on this IP), Tiingo doesn't cover indices. If a downstream consumer needs true-volume metrics, wire a new provider (e.g., a futures-volume feed) and re-route via `chain_for_gap("INDEX:...", ...)`.
+
+### Concurrency contract
+
+**Treat seeds as single-process operations per `data_root`.** Two simultaneous `seed` processes against the same domain collide on D8 immutability (same UTC-second collision in `write_raw_atomic` → `FileExistsError`) and on the cache's `(ticker, date)` PK (overlapping inserts → `UNIQUE constraint failed`). Intra-process concurrency works (SQLite WAL); cross-process does not. If parallelism is needed, partition the universe across workers each with a distinct `--data-root`, or wrap in an external lock.
+
+### Retrofit deferred
+
+Tiingo's bespoke `_request_with_retry` in `domains/us_equities/adapters/tiingo.py` should be replaced with `call_with_retry(...)` so both domains share one code path. The Tiingo circuit breaker stays in place (different concern). Pending separate commit.
 
 ## What not to do (v1.7)
 
@@ -782,14 +826,3 @@ These are flagged for the user to decide during implementation. None are blocker
 - **Don't** add intraday or tick data — same scope discipline as v1.
 - **Don't** add a Streamlit dashboard, fundamentals normalizer, or trading features. Same scope discipline as v1.
 - **Don't** ship without the retry primitive's tests. The retry semantics are the kind of thing that silently regresses if untested.
-
-## Estimated effort
-
-Rough size, for planning, from the v1 build experience:
-- Stage 12 (retry primitive): half-day incl. tests.
-- Stages 13–15 (schema, registry, universe, calendar): half-day.
-- Stages 16–18 (three adapters): 1–1.5 days incl. fixture capture + parity verification.
-- Stages 19–20 (wire-up + D8 test): 2 hours.
-- Stages 21–23 (CLI smoke + parity audit + docs): half-day.
-
-Total: ~3 working days for a clean v1.7.
