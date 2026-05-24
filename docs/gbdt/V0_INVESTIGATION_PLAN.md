@@ -12,6 +12,7 @@ Findings from v0 either confirm or revise design choices in `V1_PLAN.md`. If v0 
 |---|---|---|---|
 | **v0.1** | Rolling-window opportunity scan — NIFTY 50, +10% in {10, 20, 50, 100} days | shipped | `scripts/gbdt/v0_opportunity_scan.py`, `results/gbdt/data/_v0_opportunity_scan_data.json`, `docs/gbdt/_v0_opportunity_scan.md` |
 | **v0.2** | Full grid opportunity scan — NIFTY 50, {up, down} × {5, 10, 20, 30, 50%} × {10, 20, 50, 100} days | shipped | `scripts/gbdt/v0_opportunity_scan_full.py`, `results/gbdt/data/_v0_opportunity_scan_full_data.json`, `docs/gbdt/_v0_opportunity_scan_full.md` |
+| **v0.3** | Drawdown-filtered opportunity scan — same v0.2 grid, exclude events whose path took a half-threshold adverse excursion before target | shipped | `scripts/gbdt/v0_opportunity_scan_filtered.py`, `results/gbdt/data/_v0_opportunity_scan_filtered_data.json`, `docs/gbdt/_v0_opportunity_scan_filtered.md` |
 
 (Add new rows here as v0 tasks are commissioned.)
 
