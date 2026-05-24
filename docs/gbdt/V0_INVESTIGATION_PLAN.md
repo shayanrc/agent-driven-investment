@@ -10,7 +10,8 @@ Findings from v0 either confirm or revise design choices in `V1_PLAN.md`. If v0 
 
 | ID | Task | Status | Deliverables |
 |---|---|---|---|
-| **v0.1** | Rolling-window opportunity scan — NIFTY 50, +10% in {10, 20, 50, 100} days | shipped (this PR) | `scripts/gbdt/v0_opportunity_scan.py`, `results/gbdt/data/_v0_opportunity_scan_data.json`, `docs/gbdt/_v0_opportunity_scan.md` |
+| **v0.1** | Rolling-window opportunity scan — NIFTY 50, +10% in {10, 20, 50, 100} days | shipped | `scripts/gbdt/v0_opportunity_scan.py`, `results/gbdt/data/_v0_opportunity_scan_data.json`, `docs/gbdt/_v0_opportunity_scan.md` |
+| **v0.2** | Full grid opportunity scan — NIFTY 50, {up, down} × {5, 10, 20, 30, 50%} × {10, 20, 50, 100} days | shipped | `scripts/gbdt/v0_opportunity_scan_full.py`, `results/gbdt/data/_v0_opportunity_scan_full_data.json`, `docs/gbdt/_v0_opportunity_scan_full.md` |
 
 (Add new rows here as v0 tasks are commissioned.)
 
