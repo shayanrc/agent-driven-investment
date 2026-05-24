@@ -239,6 +239,38 @@ def _get_weights_and_n_eff(
     return res.weights, float(res.n_eff)
 
 
+def _resolve_data_columns(
+    df: pd.DataFrame,
+    input_dict: dict[str, Any],
+    hp: dict[str, Any],
+) -> tuple[str, str]:
+    """Best-effort lookup for (date_col, close_col) on the input DataFrame.
+
+    Probe order (first pair where BOTH columns are present in df wins):
+      1. Explicit caller override (``input_dict.date_col`` / ``close_col``).
+      2. Canonical data_pipelines schema (``date`` / ``adj_close``).
+      3. FRED-style (``observation_date`` / ``NASDAQ100``).
+      4. Preset-baked hints (``hp.date_col`` / ``hp.close_col``).
+
+    The preset hints come last because they are usually the COLUMNS THE
+    PRESET WAS TUNED ON, not the columns of the new input DataFrame.
+    """
+    candidates: list[tuple[str, str]] = []
+    if "date_col" in input_dict and "close_col" in input_dict:
+        candidates.append((input_dict["date_col"], input_dict["close_col"]))
+    candidates.append(("date", "adj_close"))
+    candidates.append(("observation_date", "NASDAQ100"))
+    if "date_col" in hp and "close_col" in hp:
+        candidates.append((hp["date_col"], hp["close_col"]))
+    for dc, cc in candidates:
+        if dc in df.columns and cc in df.columns:
+            return dc, cc
+    raise ValueError(
+        f"data DataFrame lacks recognizable date/close columns; tried "
+        f"{candidates}; available={list(df.columns)}"
+    )
+
+
 def forecast(input_dict: dict[str, Any]) -> dict[str, Any]:
     """Single-origin price-path forecast.
 
@@ -289,23 +321,15 @@ def forecast(input_dict: dict[str, Any]) -> dict[str, Any]:
     config = _build_config(hp_eff, seed=seed)
 
     # ---- Load close series & log returns --------------------------------
-    # Default to canonical data_pipelines schema (date / adj_close); allow a
-    # preset / caller override via hyperparameters (e.g., for FRED-style
-    # NASDAQ100 CSVs where the close column is "NASDAQ100").
-    date_col = hp.get("date_col", "date")
-    close_col = hp.get("close_col", "adj_close")
-    if date_col not in df.columns or close_col not in df.columns:
-        # Fallback: try ("observation_date", "NASDAQ100") for the NASDAQ100
-        # CSV shape — this lets the canonical preset round-trip on its own
-        # fit data without renaming columns.
-        if "observation_date" in df.columns and "NASDAQ100" in df.columns:
-            date_col, close_col = "observation_date", "NASDAQ100"
-        else:
-            raise ValueError(
-                f"data DataFrame lacks required columns; expected "
-                f"date_col={date_col!r} and close_col={close_col!r}, have "
-                f"{list(df.columns)}"
-            )
+    # Resolve date/close column names against the actual DataFrame columns.
+    # Preset-baked column names are TREATED AS HINTS, not requirements — a
+    # preset tuned on NASDAQ100 (FRED columns) might be applied at forecast
+    # time to a canonical-schema DataFrame from data_pipelines (date /
+    # adj_close), and the preset's column hints would be wrong for the new
+    # input. We probe in order: explicit caller override (input_dict),
+    # canonical (date / adj_close), FRED-style (observation_date / NASDAQ100),
+    # preset hints (hp.date_col / hp.close_col) — falling back through.
+    date_col, close_col = _resolve_data_columns(df, input_dict, hp)
     close = close_series_from_dataframe(df, date_col=date_col, close_col=close_col)
     if len(close) < 2:
         raise ValueError(f"data has < 2 valid rows; cannot compute returns")
@@ -440,16 +464,7 @@ def tune(input_dict: dict[str, Any]) -> dict[str, Any]:
     config = _build_config(hp_eff, seed=seed)
 
     # ---- Load data -------------------------------------------------------
-    date_col = search_config.get("date_col", "date")
-    close_col = search_config.get("close_col", "adj_close")
-    if date_col not in df.columns or close_col not in df.columns:
-        if "observation_date" in df.columns and "NASDAQ100" in df.columns:
-            date_col, close_col = "observation_date", "NASDAQ100"
-        else:
-            raise ValueError(
-                f"data DataFrame lacks required columns; expected "
-                f"date_col={date_col!r} and close_col={close_col!r}"
-            )
+    date_col, close_col = _resolve_data_columns(df, input_dict, search_config)
     close = close_series_from_dataframe(df, date_col=date_col, close_col=close_col)
     returns = log_returns(close)
 

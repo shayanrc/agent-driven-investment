@@ -1,0 +1,81 @@
+name: nifty500-v1
+backend: analog_mc
+schema_version: 1
+hyperparameters:
+  ticker: NASDAQ100
+  data_path: data/NASDAQ100.csv
+  date_col: observation_date
+  close_col: NASDAQ100
+  forecast_horizon: 60
+  block_length: 10
+  n_blocks: 6
+  n_paths: 500
+  zscore_horizons:
+  - 20
+  - 50
+  - 200
+  ewma_halflife: 20
+  train_initial_size: 1000
+  val_size: 60
+  test_size: 60
+  weight_grid_resolution: 0.1
+  n_eff_values:
+  - 15
+  - 30
+  - 50
+  - 80
+  - 150
+  local_refine_top_k: 5
+  nelder_mead_xatol: 0.01
+  nelder_mead_maxiter: 50
+  vol_clip_lower: 0.5
+  vol_clip_upper: 3.0
+  drift_mode: trailing_momentum
+  momentum_lookback: 20
+  momentum_shrinkage: 0.3
+  conditional_block_sampling: true
+  conditional_block_sampling_in_search: false
+  vol_model: ewma
+  local_linear_correction: false
+  matcher_distance: weighted_euclidean
+  corrwindow_length: 20
+  pit_n_bins: 20
+  acf_lags:
+  - 1
+  - 5
+  - 10
+  - 15
+  - 20
+  - 25
+  - 30
+  - 35
+  - 40
+  - 45
+  - 50
+  vol_regime_quantiles:
+  - 0.33
+  - 0.67
+  random_seed: 42
+  runs_dir: runs/analog_mc
+  weights:
+  - 1.0
+  - 0.0
+  - 0.0
+  n_eff: 80.0
+fitted_on:
+  identifier: NIFTY:NIFTY500
+  start: '2020-01-01'
+  end: '2026-02-19'
+  data_hash: sha256:e242f382d24da07c1afe5fa637696b7ccaf9bbc1ad600cd66b9a4f6e4685f065
+  n_observations: 1524
+fitted_at: '2026-05-24T14:55:30Z'
+validation_metrics:
+  crps_mean: 0.028739595545471085
+  n_folds: 4
+  final_fold_val_crps: 0.019301402065081262
+  final_fold_test_crps: 0.015241778838647808
+provenance:
+  source: tuned
+  tune_runtime_seconds: 798.0308842780069
+  run_dir: runs/analog_mc/20260524T144212Z
+  n_folds: 4
