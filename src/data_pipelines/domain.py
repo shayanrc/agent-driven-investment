@@ -13,6 +13,7 @@ us_equities actually needs.
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from datetime import date
 from typing import Iterable, Protocol
@@ -22,6 +23,24 @@ import pandas as pd
 from data_pipelines.adapter import Adapter
 from data_pipelines.errors import UnknownDomain
 from data_pipelines.schema import Schema
+
+# Domain.name, time_column, and schema column names are interpolated into
+# DDL and SQL via f-strings in cache.py (sqlite3 cannot parameterize
+# identifiers). Today every value comes from trusted in-repo code, but a
+# typo or a future domain registering a name like 'x; DROP TABLE' would
+# produce valid injection. Reject anything that isn't a plain SQL
+# identifier at registration time so the unsafe value never reaches a
+# query builder.
+_VALID_SQL_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+
+
+def _validate_sql_ident(value: str, what: str) -> None:
+    if not isinstance(value, str) or not _VALID_SQL_IDENT.match(value):
+        raise ValueError(
+            f"invalid SQL identifier for {what}: {value!r} "
+            f"(must match [A-Za-z_][A-Za-z0-9_]{{0,63}}; this value is "
+            f"interpolated into cache DDL/SQL and cannot be parameterized)"
+        )
 
 
 class Calendar(Protocol):
@@ -144,6 +163,15 @@ class DomainRegistry:
 
     @classmethod
     def register(cls, domain: Domain) -> None:
+        _validate_sql_ident(domain.name, f"{type(domain).__name__}.name")
+        _validate_sql_ident(
+            domain.time_column, f"{type(domain).__name__}.time_column"
+        )
+        for col in domain.schema.columns:
+            _validate_sql_ident(
+                col.name,
+                f"{type(domain).__name__}.schema column {col.name!r}",
+            )
         for prefix in domain.identifier_prefixes:
             if prefix in cls._by_prefix and cls._by_prefix[prefix] is not domain:
                 raise ValueError(

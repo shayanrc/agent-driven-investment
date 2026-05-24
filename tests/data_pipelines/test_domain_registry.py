@@ -95,3 +95,52 @@ def test_registered_prefixes_and_domains():
     DomainRegistry.register(d2)
     assert DomainRegistry.registered_prefixes() == ["FRED", "NASDAQ", "NYSE"]
     assert set(DomainRegistry.registered_domains()) == {d1, d2}
+
+
+# Identifier safety — these values are interpolated into cache.py DDL via
+# f-strings (sqlite3 can't parameterize identifiers). Reject at registration.
+
+@pytest.mark.parametrize("bad_name", [
+    "us; DROP TABLE x",  # injection payload
+    "us-equities",        # hyphen
+    "us equities",        # space
+    "1us_equities",       # leading digit
+    "",                    # empty
+    "a" * 65,              # too long
+    "us`equities",        # backtick
+    "us'equities",        # quote
+])
+def test_register_rejects_unsafe_domain_name(bad_name):
+    with pytest.raises(ValueError, match="invalid SQL identifier"):
+        DomainRegistry.register(_make_domain(bad_name, ("NYSE",)))
+
+
+def test_register_rejects_unsafe_schema_column_name():
+    schema = Schema(columns=(ColumnSpec("date", "datetime64[ns]"),
+                             ColumnSpec("value); DROP TABLE x; --", "float64")))
+
+    class _NullCalendar:
+        def trading_days(self, start, end): return []
+
+    class _D(Domain):
+        @property
+        def name(self): return "us_equities"
+        @property
+        def identifier_prefixes(self): return ("NYSE",)
+        @property
+        def schema(self): return schema
+        @property
+        def calendar(self): return _NullCalendar()
+        def parse_identifier(self, identifier):
+            return identifier.split(":", 1)
+        def chain_for_gap(self, identifier, gap_size_trading_days, has_cache):
+            return []
+
+    with pytest.raises(ValueError, match="invalid SQL identifier.*column"):
+        DomainRegistry.register(_D())
+
+
+def test_register_accepts_valid_names():
+    # Sanity: the validator should pass for normal-looking identifiers.
+    DomainRegistry.register(_make_domain("us_equities", ("NYSE",)))
+    DomainRegistry.register(_make_domain("fred_macro_v2", ("FRED",)))

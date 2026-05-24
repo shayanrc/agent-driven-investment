@@ -177,3 +177,61 @@ through these one at a time.
 - **#10 Currency / units no first-class schema home.** Stored per-source
   in `_meta.sources[].currency`. Lift to `Schema.column_units` or
   similar when the first cross-currency consumer appears.
+
+---
+
+## PR #1 review follow-ups (deferred warnings)
+
+From the PR #1 code review. Criticals (#1, #2) and trivial warnings
+(#7, #8, #9 + goal.md nit) were fixed in the PR. The items below were
+flagged as worth fixing but are non-trivial — parked here.
+
+### `_replace_data` uses `iterrows()` — `cache.py:389`
+
+Row-by-row iteration in the bulk write path. `df.itertuples()` or
+`df.to_sql(if_exists="append")` would be measurably faster on bulk
+seeds (500+ tickers × multi-year ranges). Not correctness; not currently
+a bottleneck per perf observations, but worth a benchmark + swap if the
+benchmark confirms the win. Touch points: `_replace_data` plus the
+SQLite type-coercion (pd.Timestamp → ISO string, numpy scalars →
+Python scalars) currently done inside the loop body — that coercion
+has to land somewhere outside the loop too.
+
+### `merge_overlap` NaN injection — `us_equities/schema.py` + `nse_equities/schema.py`
+
+When `new_quality` is inferior to existing, the merge preserves the
+existing `adj_close` via `resolved["date"].map(existing_indexed)`. For
+any date in `new` not present in `existing`, the `.map()` produces
+`NaN`, which silently survives into the processed layer.
+
+Needs a design decision before fixing:
+- **Raise** if any preserved column would be NaN after merge (strictest,
+  surfaces the inconsistency to the caller).
+- **Forward-fill** from `new`'s lower-quality value (silent fallback).
+- **Forward-fill from the latest known good value** (carry forward, can
+  drift significantly if the gap is large).
+
+Not a 1-line fix — pick the policy first, then implement + test.
+
+### Retry-everywhere pass (combines review #5, #6, and v1.7 known-issue #6)
+
+Three related items, worth handling together as one consistent retry
+hardening pass:
+
+1. **US `YFinanceAdapter` does a bare `yf.Ticker().history()` call** —
+   no retry, no circuit breaker. Asymmetric with `YFinanceNSEAdapter`
+   (NSE) which correctly wraps the call in `call_with_retry`. Lift to
+   `call_with_retry` like the NSE adapter does.
+2. **`TiingoAdapter._consecutive_429s` / `_circuit_open_until` are
+   class-level mutable state** mutated via read-modify-write (`+= 1`).
+   Single-threaded today, latent concurrency bug. Either move to
+   `threading.Lock`-guarded instance state, or replace the whole
+   bespoke retry+circuit-breaker with `call_with_retry` + a small
+   per-instance circuit-breaker helper.
+3. **Tiingo retry retrofit** (already on the v1.7 known-issues list as
+   #6) — replace `TiingoAdapter._request_with_retry` with
+   `data_pipelines.retry.call_with_retry`.
+
+Doing them together avoids touching the same adapters twice and lets
+us pick a consistent retry surface across all 6 adapters
+(stooq / tiingo / yfinance × 2 / jugaad / nselib).

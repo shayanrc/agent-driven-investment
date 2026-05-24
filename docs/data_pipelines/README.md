@@ -36,14 +36,18 @@ uv run python -m data_pipelines health --domain nse_equities
 ```
 data/
 ├── raw/<provider>/<domain>/<exchange>/<ticker>/<UTC_ts>_<start>_<end>.<ext>
-│       # immutable per-fetch audit trail
-└── processed/<domain>/<exchange>/<ticker>/
-    ├── daily.parquet
-    └── _meta.json
+│       # immutable per-fetch audit trail (D8); one file per provider call
+└── processed.db
+        # SQLite (WAL); per-domain tables:
+        #   <domain>_data — canonical rows, PK (ticker, <time_column>)
+        #   <domain>_meta — per-ticker provenance JSON (sources[], range, schema_version)
 ```
 
-Raw is the audit trail and reprocess source — `reprocess` re-derives `processed/`
-from `raw/` without any API call.
+Raw is the audit trail and reprocess source — `reprocess` re-derives the
+`processed.db` rows for a ticker from `raw/` without any API call. The single
+SQLite file replaces the pre-v1.5 per-ticker `daily.parquet` + `_meta.json`
+layout: bulk seeds went from ~6 minutes of fsync churn to <30 seconds, and
+cross-ticker queries are now SQL instead of a directory walk.
 
 ## Provider strategy (us_equities)
 
@@ -87,8 +91,14 @@ filenames or `_meta.json` (D6).
 
 ## Build status
 
-- v1: framework primitives + us_equities domain complete (201 unit tests passing).
-- Online smoke tests gated on `PYTEST_ONLINE=1` (Stooq) and `TIINGO_API_KEY`
-  (Tiingo) — both skipped by default.
-- Next: agent-tool wrapper around `fetch_with_meta`; second domain plug-in
-  (FRED / NSE / commodities) once needed.
+- v1: framework primitives + us_equities domain shipped.
+- v1.5: SQLite processed cache (replaces per-ticker parquet/JSON), Russell 1000 seed.
+- v1.7: nse_equities domain shipped (jugaad + nselib + yfinance; NIFTY 50
+  universe + index; per-prefix chains; vendored jugaad-data subtree with
+  cinfo-shape patch). Two framework lifts triggered by this domain are in:
+  `chain_for_gap(identifier, ...)` per-prefix routing and dispatcher
+  partial-fill continuation.
+- Test suite: 327 data_pipelines tests passing. Online smoke tests gated
+  on `PYTEST_ONLINE=1` (Stooq) and `TIINGO_API_KEY` (Tiingo) — skipped
+  by default.
+- Parking lot for follow-ups: [`V2_TBD.md`](V2_TBD.md).

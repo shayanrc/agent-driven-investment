@@ -46,7 +46,7 @@ from data_pipelines.errors import EmptyPayload, ProviderError
 from data_pipelines.raw_store import write_raw_atomic
 from data_pipelines.retry import RetryPolicy, call_with_retry
 
-DOMAIN_NAME = "nselib"  # used in raw path; actual domain is nse_equities
+DOMAIN_NAME = "nse_equities"
 
 # We rename source columns to the canonical schema names directly in parse(),
 # so source_column_map stays identity here (Schema.normalize is a no-op rename).
@@ -134,7 +134,7 @@ class NSElibAdapter(Adapter):
         return write_raw_atomic(
             data_root,
             provider=self.name,
-            domain="nse_equities",
+            domain=DOMAIN_NAME,
             exchange=prefix,
             ticker=symbol,
             payload=payload,

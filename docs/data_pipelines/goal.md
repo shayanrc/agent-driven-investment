@@ -93,20 +93,11 @@ v1 = framework + exactly one domain.
 - Tests covering the schema invariant per adapter, raw→processed reproducibility, cache hit/miss logic, gap-detection threshold, and provider fallback chain.
 
 **Explicitly deferred to later domains / versions:**
-- NSE (India), LSE (UK), TSE (Japan), and other non-US equity domains.
-- FRED macroeconomic series, US Treasury rates.
+- NSE (India) — shipped in v1.7; LSE (UK), TSE (Japan), and other non-US equity domains still deferred.
+- FRED macroeconomic series, US Treasury rates, BEA series.
 - Commodity prices, FX rates, crypto.
 - Intraday bars (any domain).
-- Corporate actions as separate tables (splits, dividends — adj_close captures what consumers need for v1).
-- Streaming / WebSocket connections.
-- Multi-currency / cross-listings.
-- A Streamlit dashboard.
-
-Explicitly deferred to later versions:
-
-- Interest rates (FRED), macroeconomic series (FRED/BEA), commodities, FX.
-- Intraday bars.
-- Corporate actions as separate tables (splits, dividends, mergers).
+- Corporate actions as separate tables (splits, dividends, mergers — adj_close captures what consumers need for v1).
 - Streaming / WebSocket connections.
 - Multi-currency / cross-listings.
 - A Streamlit dashboard (probably not needed; the CLI + agent-tool surface should suffice).
@@ -135,4 +126,4 @@ When designing new APIs in this module, prefer shapes that wrap cleanly as a too
 
 ## Implementation discipline
 
-The how-it-works specification is `docs/data_pipelines/V1_IMPLEMENTATION_PLAN.md`. The stages and the correctness constraints (D1–D7) defined there are non-negotiable. Don't silently change architectural decisions — surface the deviation and ask first.
+The how-it-works specification is `docs/data_pipelines/V1_IMPLEMENTATION_PLAN.md`. The stages and the correctness constraints (D1–D8) defined there are non-negotiable. Don't silently change architectural decisions — surface the deviation and ask first.

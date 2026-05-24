@@ -64,7 +64,12 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     """Open a connection with WAL + sensible defaults. Caller is responsible
     for close()."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(db_path), isolation_level=None)  # autocommit OFF via explicit BEGIN
+    # isolation_level=None means Python's sqlite3 issues no implicit BEGIN —
+    # the connection runs in SQLite's autocommit mode and *we* drive
+    # transactions with explicit BEGIN / COMMIT / ROLLBACK calls. This is
+    # how we get D2 atomicity: a crash mid-write rolls back cleanly. Do
+    # not remove the explicit BEGIN blocks elsewhere in this module.
+    conn = sqlite3.connect(str(db_path), isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
@@ -73,10 +78,10 @@ def _connect(db_path: Path) -> sqlite3.Connection:
 
 
 def _get_lock(db_path: Path) -> threading.Lock:
-    key = db_path.resolve()
-    if key not in _DB_LOCKS:
-        _DB_LOCKS[key] = threading.Lock()
-    return _DB_LOCKS[key]
+    # setdefault is atomic in CPython (single bytecode op under the GIL);
+    # check-then-set on a plain dict would allow two threads to create two
+    # different Lock objects for the same path, silently defeating the lock.
+    return _DB_LOCKS.setdefault(db_path.resolve(), threading.Lock())
 
 
 # ---------------------------------------------------------------------------
