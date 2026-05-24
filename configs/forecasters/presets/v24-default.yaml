@@ -67,7 +67,11 @@ fitted_on:
   identifier: NASDAQ100
   start: '1986-01-02'
   end: '2026-05-15'
-  data_hash: sha256:bfea0dc2d58848c2a2a05f0a2a70713657030007dc02795f4f67375aa70192d4
+  # Canonical (date, close)-pairs hash via forecasters.data.data_hash() — the
+  # same routine the dispatcher uses for runtime drift comparison. Matches
+  # the NASDAQ100 CSV when read via the FRED-style columns or normalized to
+  # canonical (date, adj_close). NOT the raw-bytes SHA-256.
+  data_hash: sha256:5620be373df02d9560969ce69a0246bb64269422f34b3bc4761163742e4d19b4
   n_observations: 10532
 
 # UTC timestamp of the canonical V5.A.2 promotion commit (the v2.4 designation

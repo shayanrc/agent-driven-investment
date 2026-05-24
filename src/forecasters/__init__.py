@@ -8,6 +8,12 @@ public surface is three skills (``/forecast``, ``/tune-preset``,
 ``/list-presets``) plus two bundled ``data_pipelines``-owned skills.
 """
 
+from forecasters.data import data_hash, prepare_data
+from forecasters.dispatch import (
+    dispatch_forecast,
+    dispatch_tune,
+    known_backends,
+)
 from forecasters.errors import (
     PresetSchemaError,
     ResultContractError,
@@ -27,8 +33,13 @@ __all__ = [
     "ResultContractError",
     "UnknownBackendError",
     "UnknownPresetError",
+    "data_hash",
+    "dispatch_forecast",
+    "dispatch_tune",
+    "known_backends",
     "list_presets",
     "load_preset",
+    "prepare_data",
     "preset_content_hash",
     "resolve_preset_path",
     "validate_preset",
