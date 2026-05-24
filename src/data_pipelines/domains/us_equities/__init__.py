@@ -73,8 +73,27 @@ class USEquitiesDomain(Domain):
         return parse_identifier(identifier)
 
     def chain_for_gap(
-        self, gap_size_trading_days: int, has_cache: bool
+        self, identifier: str, gap_size_trading_days: int, has_cache: bool,
     ) -> list[Adapter]:
+        # INDEX:* gets its own chain. Tiingo's free-tier daily endpoint
+        # short-circuits indices with ProviderError ("does not support
+        # INDEX symbols"); Stooq's bulk CSV is IP-gated for us but may
+        # work elsewhere and (when it works) reports a true index-level
+        # volume. yfinance always succeeds for indices and reports the
+        # constituent-aggregate as Volume (~2.6B/day for ^SPX). Order:
+        # yfinance first (always-on baseline + full coverage), Stooq
+        # opportunistic backup that, IF accessible, might bring a richer
+        # signal. Skip Tiingo entirely for indices to avoid the dead leg.
+        prefix, _ = parse_identifier(identifier)
+        if prefix == "INDEX":
+            chain = []
+            if "yfinance" in self._adapters:
+                chain.append(self._adapters["yfinance"])
+            if "stooq" in self._adapters:
+                chain.append(self._adapters["stooq"])
+            return chain
+
+        # Equity path (NYSE/NASDAQ) — unchanged from the v1 design.
         update_chain = [self._adapters[name] for name in self._config.chain_update
                         if name in self._adapters]
         if not has_cache or gap_size_trading_days > self._config.big_gap_threshold_days:

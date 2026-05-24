@@ -74,10 +74,16 @@ class FakeDomain(Domain):
             return existing
         return new
 
-    def chain_for_gap(self, gap_size_trading_days: int, has_cache: bool):
+    def chain_for_gap(
+        self, identifier: str, gap_size_trading_days: int, has_cache: bool,
+    ):
         """First adapter is treated as seed, rest as update chain.
 
         Triggers seed when: no cache OR gap exceeds threshold.
+
+        `identifier` is accepted to satisfy the post-Refactor-A ABC but the
+        FakeDomain ignores it — per-identifier routing is exercised by the
+        production us_equities / nse_equities tests.
         """
         if not self._adapters:
             return []

@@ -318,27 +318,42 @@ class NSEIndexHistory(NSEHistory):
         return self.r
     
     @ut.cached(APP_NAME + '-index')
-    def _index(self, symbol, from_date, to_date): 
-        params = {'name': symbol,
-                'startDate': from_date.strftime("%d-%b-%Y"),
-                'endDate': to_date.strftime("%d-%b-%Y")
-        }
-        r = self._post_json("index_history", params=params)
+    def _index(self, symbol, from_date, to_date):
+        # LOCAL PATCH (agent-driven-investment vendor): niftyindices.com's
+        # Backpage.aspx endpoint changed shape around mid-2026 — it now
+        # requires a single `cinfo` parameter holding a JSON-encoded string
+        # with name/startDate/endDate/indexName. The pre-patch upstream code
+        # passed the three flat fields and got HTTP 500 ("missing value for
+        # parameter: 'cinfo'"), which surfaced as KeyError: 'd' downstream.
+        # See data_pipelines/V1_IMPLEMENTATION_PLAN.md §"Implementation
+        # findings — Known upstream limitations" for the diagnosis trail.
+        cinfo = json.dumps({
+            'name': symbol,
+            'startDate': from_date.strftime("%d-%b-%Y"),
+            'endDate': to_date.strftime("%d-%b-%Y"),
+            'indexName': symbol,
+        })
+        r = self._post_json("index_history", params={'cinfo': cinfo})
         return json.loads(self.r.json()['d'])
-    
+
     def index_raw(self, symbol, from_date, to_date):
         date_ranges = ut.break_dates(from_date, to_date)
         params = [(symbol, x[0], x[1]) for x in reversed(date_ranges)]
         chunks = ut.pool(self._index, params, max_workers=self.workers)
         return list(itertools.chain.from_iterable(chunks))
-    
+
     @ut.cached(APP_NAME + '-index_pe')
     def _index_pe(self, symbol, from_date, to_date):
-        params = {'name': symbol,
-                'startDate': from_date.strftime("%d-%b-%Y"),
-                'endDate': to_date.strftime("%d-%b-%Y")
-        }
-        r = self._post_json("index_pe_history", params=params)
+        # LOCAL PATCH (agent-driven-investment vendor): same cinfo-shape
+        # change as _index above. The sibling endpoint
+        # getpepbHistoricaldataDBtoString uses identical wrapping.
+        cinfo = json.dumps({
+            'name': symbol,
+            'startDate': from_date.strftime("%d-%b-%Y"),
+            'endDate': to_date.strftime("%d-%b-%Y"),
+            'indexName': symbol,
+        })
+        r = self._post_json("index_pe_history", params={'cinfo': cinfo})
         return json.loads(self.r.json()['d'])
 
     def index_pe_raw(self, symbol, from_date, to_date):

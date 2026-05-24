@@ -33,10 +33,25 @@ from data_pipelines.domain import DomainRegistry
 from data_pipelines.dispatch import fetch_with_meta
 from data_pipelines.raw_store import list_raw
 
-# Importing this triggers the us_equities registration side effect.
+# Importing these triggers the domain registration side effects.
 import data_pipelines.domains.us_equities  # noqa: F401
+import data_pipelines.domains.nse_equities  # noqa: F401
 from data_pipelines.domains.us_equities import get_domain as get_us_equities_domain
-from data_pipelines.domains.us_equities.universe import load_universe
+from data_pipelines.domains.us_equities.universe import (
+    load_universe as load_us_equities_universe,
+)
+from data_pipelines.domains.nse_equities.universe import (
+    load_universe as load_nse_equities_universe,
+)
+
+def _load_universe_for_domain(domain_name: str, universe_name: str) -> list[str]:
+    # Resolved at call time (not at import) so test-time patches of either
+    # loader name on this module attach correctly.
+    if domain_name == "us_equities":
+        return load_us_equities_universe(universe_name)
+    if domain_name == "nse_equities":
+        return load_nse_equities_universe(universe_name)
+    raise ValueError(f"unknown domain {domain_name!r}")
 
 
 def _parse_date(s: str) -> date:
@@ -66,13 +81,14 @@ def _cmd_fetch(args) -> int:
 # ---------------------------------------------------------------------------
 
 def _cmd_seed(args) -> int:
-    if args.domain != "us_equities":
-        print(f"seed: unsupported domain {args.domain!r} in v1 (us_equities only)",
-              file=sys.stderr)
+    try:
+        universe = _load_universe_for_domain(args.domain, args.universe)
+    except ValueError as e:
+        print(f"seed: {e}", file=sys.stderr)
         return 2
 
-    universe = load_universe(args.universe)
-    print(f"seeding {len(universe)} identifiers from universe={args.universe} ...")
+    print(f"seeding {len(universe)} identifiers from domain={args.domain} "
+          f"universe={args.universe} ...")
 
     ok, failed = 0, []
     for ident in universe:
@@ -100,9 +116,6 @@ def _cmd_seed(args) -> int:
 
 def _cmd_reprocess(args) -> int:
     data_root = Path(args.data_root)
-    if args.domain != "us_equities":
-        print(f"reprocess: only us_equities supported in v1", file=sys.stderr)
-        return 2
     domain = _resolve_domain_by_name(args.domain)
     if domain is None:
         print(f"reprocess: domain {args.domain!r} is not registered", file=sys.stderr)
@@ -116,11 +129,12 @@ def _cmd_reprocess(args) -> int:
         print("reprocess: no cached identifiers found")
         return 0
 
+    provider_names = tuple(domain.adapters.keys())
     for ident in identifiers:
         exchange, ticker = domain.parse_identifier(ident)
-        # Walk raw across all providers for this identifier.
+        # Walk raw across all providers this domain knows about.
         raws: list[tuple[str, Path]] = []
-        for provider in ("stooq", "tiingo", "yfinance"):
+        for provider in provider_names:
             for p in list_raw(data_root, provider, domain.name, exchange, ticker):
                 raws.append((provider, p))
         if not raws:

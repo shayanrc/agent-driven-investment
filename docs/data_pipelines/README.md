@@ -1,29 +1,34 @@
 # data_pipelines
 
-Generic time-series ingestion module. v1 ships one domain (us_equities).
+Generic time-series ingestion module. v1 ships two domains: `us_equities` (NYSE / NASDAQ / US indices) and `nse_equities` (NSE India / NIFTY indices).
 
 For the **why**: [`goal.md`](goal.md).
-For the **how** (architecture, stages, correctness constraints): [`V1_IMPLEMENTATION_PLAN.md`](V1_IMPLEMENTATION_PLAN.md).
+For the **how** (architecture, stages, correctness constraints, per-domain implementation findings): [`V1_IMPLEMENTATION_PLAN.md`](V1_IMPLEMENTATION_PLAN.md).
 For **adding a new domain**: [`adding_a_domain.md`](adding_a_domain.md).
 
 ## Quick start
 
 ```python
 from data_pipelines import fetch
-import data_pipelines.domains.us_equities   # register the domain
+import data_pipelines.domains.us_equities   # register us_equities
+import data_pipelines.domains.nse_equities  # register nse_equities
 
 df = fetch("NYSE:AAPL", start="2020-01-01", end="2026-05-01")
+df = fetch("NSE:RELIANCE", start="2020-01-01", end="2025-12-31")
+df = fetch("NIFTY:50",    start="2023-01-01", end="2025-12-31")
 ```
 
 CLI:
 
 ```bash
 uv run python -m data_pipelines fetch NYSE:AAPL --start 2020-01-01 --end 2026-05-01
-uv run python -m data_pipelines seed --universe sp500 --start 2010-01-01 --end 2026-05-22
-uv run python -m data_pipelines reprocess --all
+uv run python -m data_pipelines fetch NSE:RELIANCE --start 2020-01-01 --end 2025-12-31
+uv run python -m data_pipelines seed --domain us_equities  --universe sp500   --start 2010-01-01 --end 2026-05-22
+uv run python -m data_pipelines seed --domain nse_equities --universe nifty50 --start 2020-01-01 --end 2025-12-31
+uv run python -m data_pipelines reprocess --domain us_equities --all
 uv run python -m data_pipelines list-cached
 uv run python -m data_pipelines list-domains
-uv run python -m data_pipelines health --domain us_equities
+uv run python -m data_pipelines health --domain nse_equities
 ```
 
 ## Data layout

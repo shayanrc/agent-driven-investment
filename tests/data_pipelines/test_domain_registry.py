@@ -36,7 +36,7 @@ def _make_domain(name: str, prefixes: tuple[str, ...]) -> Domain:
         def parse_identifier(self, identifier):
             prefix, sym = identifier.split(":", 1)
             return prefix, sym
-        def chain_for_gap(self, gap_size_trading_days, has_cache):
+        def chain_for_gap(self, identifier, gap_size_trading_days, has_cache):
             return []
 
     return _D()

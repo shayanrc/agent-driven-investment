@@ -80,15 +80,24 @@ class Domain(ABC):
     @abstractmethod
     def chain_for_gap(
         self,
+        identifier: str,
         gap_size_trading_days: int,
         has_cache: bool,
     ) -> list[Adapter]:
         """Ordered list of adapters dispatch should try for this gap.
 
-        us_equities returns [stooq] when the cache is cold or the gap exceeds
-        big_gap_threshold_days; otherwise [tiingo, yfinance]. Each adapter is
-        tried in order on transient/typed failures (D5); the first to succeed
-        wins.
+        Domains may route different identifiers through different chains —
+        e.g., us_equities prefers yfinance for INDEX:* (Stooq is gated,
+        Tiingo doesn't cover indices) but [stooq, tiingo, yfinance] for
+        equities. The identifier parameter exists for that case; ignore it
+        if your domain uses one chain for all symbols.
+
+        Each adapter is tried in order on transient/typed failures (D5).
+        Per dispatch's partial-fill semantics: after a provider returns
+        rows, the dispatcher re-detects remaining sub-gaps and continues
+        the chain to fill them. So putting "best quality but partial coverage"
+        first and "weaker quality but full coverage" later is a legitimate
+        and useful pattern (used for NSE NIFTY: → [nselib, yfinance]).
 
         Returning an empty list means "this gap is unfillable" — dispatch
         will raise AllProvidersFailed.

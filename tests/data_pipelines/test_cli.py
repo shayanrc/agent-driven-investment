@@ -191,7 +191,7 @@ class TestSeedCmd:
         )
 
         # Patch the universe loader to look at our tmp config root.
-        with patch("data_pipelines.__main__.load_universe",
+        with patch("data_pipelines.__main__.load_us_equities_universe",
                    side_effect=lambda name: [
                        "NYSE:JPM", "NASDAQ:AAPL", "NYSE:WMT",
                    ] if name == "mini" else []):
