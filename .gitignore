@@ -20,3 +20,9 @@ runs/**
 # OS
 .DS_Store
 
+# Append-only: data_pipelines raw cache (immutable per-fetch downloads)
+data/raw/
+data/processed/
+
+# Local secrets
+.env
