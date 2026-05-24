@@ -50,7 +50,12 @@ def prepare_data(
             )
         # Lazy import: data_pipelines pulls in a domain registry whose import
         # cost is non-trivial. Defer until we actually need it.
+        # Domains are registered as side effects of importing their packages —
+        # `data_pipelines.__init__` does not import them eagerly (per the
+        # data_pipelines design), so we must import each one explicitly here.
         from data_pipelines import fetch
+        import data_pipelines.domains.us_equities  # noqa: F401  (registers NYSE/NASDAQ/INDEX)
+        import data_pipelines.domains.nse_equities  # noqa: F401  (registers NSE/BSE/NIFTY)
         return fetch(identifier, start=start, end=end, data_root=data_root)
 
     # ---- data_path branch -------------------------------------------------
