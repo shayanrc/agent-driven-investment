@@ -1,0 +1,40 @@
+# gbdt — v1 default config
+#
+# Sections marked TBD-Stage<N> are finalized when the named stage of V1_PLAN
+# is implemented. Scaffolding placeholder only — do not consume from code yet.
+
+data:
+  path: data/NASDAQ100.csv
+  date_col: observation_date
+  close_col: NASDAQ100
+
+features:
+  # TBD-Stage2: final list of feature specs + lookback windows.
+  # Each entry will look like: {name: ret_log, kind: rolling_logret, windows: [5, 10, 20, 50, 100]}
+  spec: []
+
+targets:
+  # Hard-coded in v1 — do not edit. See src/gbdt/targets.py for the lattice.
+  directions: [up, down]
+  thresholds_pct: [10, 20, 50]
+  horizons_days: [10, 20, 50]
+
+walk_forward:
+  # TBD-Stage6: train/val/test window sizes and step.
+  train_window_days: null
+  val_window_days: null
+  test_window_days: null
+  step_days: null
+
+model:
+  # TBD-Stage4: library name + hyperparameters (default lean: lightgbm).
+  library: null
+  hyperparameters: {}
+
+calibration:
+  # TBD-Stage5: calibration method (default lean: sklearn IsotonicRegression).
+  method: null
+
+run:
+  seed: 0
+  artifact_root: runs/gbdt
