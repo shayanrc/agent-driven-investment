@@ -1,4 +1,4 @@
-"""us_equities per-domain config (IMPLEMENTATION_PLAN.md §Configuration)."""
+"""us_equities per-domain config (V1_IMPLEMENTATION_PLAN.md §Configuration)."""
 
 from __future__ import annotations
 

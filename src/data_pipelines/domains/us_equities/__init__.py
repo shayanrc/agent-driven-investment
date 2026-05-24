@@ -34,7 +34,7 @@ from data_pipelines.schema import Schema
 class USEquitiesDomain(Domain):
     """The v1 reference domain: NYSE + NASDAQ + INDEX, daily OHLCV.
 
-    Chain logic (per IMPLEMENTATION_PLAN.md §dispatch):
+    Chain logic (per V1_IMPLEMENTATION_PLAN.md §dispatch):
       - Cold cache OR gap > big_gap_threshold_days → [stooq]
       - Smaller gap with cache → [tiingo, yfinance] in order
 

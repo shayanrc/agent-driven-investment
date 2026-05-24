@@ -18,16 +18,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from datetime import date
 from pathlib import Path
 
 from data_pipelines.cache import (
-    PROCESSED_META_NAME,
-    PROCESSED_PARQUET_NAME,
+    list_cached_identifiers,
     merge_cache,
-    processed_dir,
+    purge_identifier,
     read_processed,
     write_processed_atomic,
 )
@@ -202,11 +200,9 @@ def _cmd_purge(args) -> int:
         return 2
     data_root = Path(args.data_root)
     domain = DomainRegistry.resolve(args.identifier)
-    exchange, ticker = domain.parse_identifier(args.identifier)
-    d = processed_dir(data_root, domain.name, exchange, ticker)
-    if d.exists():
-        shutil.rmtree(d)
-        print(f"purged processed/{domain.name}/{exchange}/{ticker}")
+    existed = purge_identifier(data_root, domain, args.identifier)
+    if existed:
+        print(f"purged {args.identifier} from {domain.name} cache")
     else:
         print("nothing to purge")
     return 0
@@ -268,21 +264,11 @@ def _cmd_list_domains(args) -> int:
 # ---------------------------------------------------------------------------
 
 def _cached_identifiers(data_root: Path, domain_name: str) -> list[str]:
-    """Walk data/processed/<domain>/<exchange>/<ticker>/ and infer identifiers."""
-    base = Path(data_root) / "processed" / domain_name
-    if not base.is_dir():
+    """Identifiers with a meta row in the SQLite cache for `domain_name`."""
+    domain = _resolve_domain_by_name(domain_name)
+    if domain is None:
         return []
-    out: list[str] = []
-    for exch_dir in sorted(base.iterdir()):
-        if not exch_dir.is_dir():
-            continue
-        for tick_dir in sorted(exch_dir.iterdir()):
-            if not tick_dir.is_dir():
-                continue
-            if (tick_dir / PROCESSED_PARQUET_NAME).exists() and \
-               (tick_dir / PROCESSED_META_NAME).exists():
-                out.append(f"{exch_dir.name}:{tick_dir.name}")
-    return out
+    return list_cached_identifiers(data_root, domain)
 
 
 # ---------------------------------------------------------------------------

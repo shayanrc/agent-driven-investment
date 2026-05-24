@@ -5,7 +5,7 @@ BEFORE any parsing. If parse/normalize blows up later, the raw bytes are
 preserved on disk so the failure can be reproduced and the fix verified
 without re-hitting the API.
 
-Filename pattern (immutable contract — open question 4 in IMPLEMENTATION_PLAN):
+Filename pattern (immutable contract — open question 4 in V1_IMPLEMENTATION_PLAN.md):
     data/raw/<provider>/<domain>/<exchange>/<ticker>/<UTC_ts>_<start>_<end>.<ext>
 
 Examples:

@@ -1,68 +1,173 @@
-"""Processed-layer cache: read, atomic write, gap detection, merge.
+"""Processed-layer cache: SQLite-backed.
 
-Layout: data/processed/<domain>/<exchange>/<ticker>/{daily.parquet, _meta.json}.
-Both files are written atomically (D2). The parquet lands first; _meta.json
-last — so a half-written cache is detectable (parquet without matching meta).
+Layout: single global DB at ``data/processed.db``.
+For each registered domain, two tables exist (created on first write):
 
-Gap detection is calendar-aware: requested range is expanded to the domain's
-valid time points, then compared against what's already in the cache. The
-output is a list of (start, end) inclusive ranges, where consecutive missing
-trading days are collapsed into one gap.
+    <domain>_data : columns mirror domain.schema, plus a leading `ticker`
+                    column. Primary key (ticker, <time_column>).
+    <domain>_meta : (ticker, schema_version, row_count, range_start,
+                     range_end, last_fetch_utc, sources_json) keyed by ticker.
 
-Merge is two-stage: (1) framework concatenates non-overlapping rows in time
-order; (2) for overlapping rows, the domain's merge_overlap() decides
-precedence. Default = new wins. us_equities will override to preserve
-full-quality adj_close.
+The meta `sources_json` is a TEXT column holding the JSON-serialized
+per-source provenance list (provider, raw_file, covers, adjustment_quality,
+etc.) — same shape as the v1 parquet-era `_meta.json` `sources` array.
+
+D2 atomicity is provided by SQLite transactions: each write_processed_atomic
+opens a single BEGIN..COMMIT, deletes existing rows for the ticker, inserts
+the new rows, and upserts the meta row. Partial writes are impossible — a
+crash mid-commit rolls back.
+
+D3 determinism: reads always ORDER BY <time_column> and return DataFrames
+with canonical schema dtypes (datetime64[ns], float64, int64).
+
+D8 (raw immutability) is unchanged — the raw store still lives in
+data/raw/<provider>/... as immutable per-fetch files.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import tempfile
+import sqlite3
+import threading
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 from data_pipelines.domain import Calendar, Domain
+from data_pipelines.schema import ColumnSpec
 
 META_SCHEMA_VERSION = 1
-PROCESSED_PARQUET_NAME = "daily.parquet"
-PROCESSED_META_NAME = "_meta.json"
+PROCESSED_DB_NAME = "processed.db"
+
+# One lock per DB path; SQLite handles concurrency internally but our
+# multi-statement write transactions benefit from coarse-grained guards in
+# the same process. Threaded usage is uncommon for this module today but
+# trivial to support.
+_DB_LOCKS: dict[Path, threading.Lock] = {}
 
 
-def processed_dir(
+# ---------------------------------------------------------------------------
+# Path / connection helpers
+# ---------------------------------------------------------------------------
+
+def processed_db_path(
     data_root: Path,
-    domain_name: str,
-    exchange: str,
-    ticker: str,
-    processed_subdir: str = "processed",
+    processed_subdir: str = "processed.db",
 ) -> Path:
-    return Path(data_root) / processed_subdir / domain_name / exchange / ticker
+    """Resolved path to the global processed.db SQLite file."""
+    p = Path(data_root) / processed_subdir
+    return p
 
+
+def _connect(db_path: Path) -> sqlite3.Connection:
+    """Open a connection with WAL + sensible defaults. Caller is responsible
+    for close()."""
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path), isolation_level=None)  # autocommit OFF via explicit BEGIN
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA foreign_keys=ON;")
+    return conn
+
+
+def _get_lock(db_path: Path) -> threading.Lock:
+    key = db_path.resolve()
+    if key not in _DB_LOCKS:
+        _DB_LOCKS[key] = threading.Lock()
+    return _DB_LOCKS[key]
+
+
+# ---------------------------------------------------------------------------
+# DDL — derive table schemas from Domain.schema
+# ---------------------------------------------------------------------------
+
+def _sql_type_for(spec: ColumnSpec) -> str:
+    """Map a ColumnSpec dtype to a SQLite affinity. SQLite is dynamically
+    typed — the affinity is advisory but useful for tools that introspect
+    the schema.
+    """
+    dt = spec.dtype
+    if dt.startswith("int") or dt.startswith("uint"):
+        return "INTEGER"
+    if dt.startswith("float"):
+        return "REAL"
+    if dt.startswith("datetime"):
+        return "TIMESTAMP"
+    return "TEXT"
+
+
+def _data_table_name(domain: Domain) -> str:
+    return f"{domain.name}_data"
+
+
+def _meta_table_name(domain: Domain) -> str:
+    return f"{domain.name}_meta"
+
+
+def _ensure_tables(conn: sqlite3.Connection, domain: Domain) -> None:
+    """Create the domain's data + meta tables if absent. Idempotent."""
+    tcol = domain.time_column
+    col_defs = ",\n            ".join(
+        f"{c.name} {_sql_type_for(c)}" for c in domain.schema.columns
+    )
+    data_tbl = _data_table_name(domain)
+    meta_tbl = _meta_table_name(domain)
+    conn.execute(f"""
+        CREATE TABLE IF NOT EXISTS {data_tbl} (
+            ticker TEXT NOT NULL,
+            {col_defs},
+            PRIMARY KEY (ticker, {tcol})
+        )
+    """)
+    conn.execute(f"""
+        CREATE TABLE IF NOT EXISTS {meta_tbl} (
+            ticker TEXT PRIMARY KEY,
+            schema_version INTEGER NOT NULL,
+            row_count INTEGER NOT NULL,
+            range_start TEXT NOT NULL,
+            range_end TEXT NOT NULL,
+            last_fetch_utc TEXT NOT NULL,
+            sources_json TEXT NOT NULL
+        )
+    """)
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 def read_processed(
     data_root: Path,
     domain: Domain,
     identifier: str,
-    processed_subdir: str = "processed",
+    processed_subdir: str = "processed.db",
 ) -> tuple[pd.DataFrame, dict] | tuple[None, None]:
-    """Read the cached processed DataFrame and meta for one identifier.
+    """Read the cached DataFrame and meta for one identifier.
 
-    Returns (None, None) if either file is missing. A parquet without a
-    matching _meta.json is treated as missing (the meta is the commit
-    marker — D2).
+    Returns (None, None) if the DB file or the per-ticker meta row is missing
+    — the meta row is the commit marker, mirroring the parquet-era semantics
+    where the .json file was the marker.
     """
-    exchange, ticker = domain.parse_identifier(identifier)
-    d = processed_dir(data_root, domain.name, exchange, ticker, processed_subdir)
-    parquet = d / PROCESSED_PARQUET_NAME
-    meta = d / PROCESSED_META_NAME
-    if not parquet.is_file() or not meta.is_file():
+    db_path = processed_db_path(data_root, processed_subdir)
+    if not db_path.is_file():
         return None, None
-    df = pd.read_parquet(parquet)
-    meta_obj = json.loads(meta.read_text())
-    return df, meta_obj
+
+    conn = _connect(db_path)
+    try:
+        _ensure_tables(conn, domain)
+        meta_row = conn.execute(
+            f"SELECT * FROM {_meta_table_name(domain)} WHERE ticker = ?",
+            (identifier,),
+        ).fetchone()
+        if meta_row is None:
+            return None, None
+
+        df = _read_data(conn, domain, identifier)
+        return df, _meta_row_to_dict(meta_row, domain.name)
+    finally:
+        conn.close()
 
 
 def write_processed_atomic(
@@ -71,34 +176,96 @@ def write_processed_atomic(
     identifier: str,
     df: pd.DataFrame,
     meta: dict,
-    processed_subdir: str = "processed",
+    processed_subdir: str = "processed.db",
 ) -> Path:
-    """Write the canonical parquet and meta JSON atomically.
+    """Atomic write of df + meta into the SQLite cache for `identifier`.
 
-    Order is load-bearing: parquet temp+fsync+rename FIRST, then meta last.
-    A crash between the two leaves a parquet without meta, which read_processed
-    treats as no cache — re-fetchable, never silently consumed as truth.
+    Wraps DELETE-then-INSERT for the data table and REPLACE for the meta
+    table in a single transaction. Partial writes are impossible per SQLite
+    semantics: if the COMMIT doesn't run, the rollback restores the prior
+    state.
 
-    The DataFrame must already conform to domain.schema (validate at call
-    site, not here — keeps write a simple I/O primitive).
+    Returns the DB file path (for symmetry with the parquet API).
     """
-    exchange, ticker = domain.parse_identifier(identifier)
-    d = processed_dir(data_root, domain.name, exchange, ticker, processed_subdir)
-    d.mkdir(parents=True, exist_ok=True)
+    db_path = processed_db_path(data_root, processed_subdir)
+    lock = _get_lock(db_path)
+    conn = _connect(db_path)
+    try:
+        with lock:
+            _ensure_tables(conn, domain)
+            conn.execute("BEGIN")
+            try:
+                _replace_data(conn, domain, identifier, df)
+                _upsert_meta(conn, domain, identifier, meta)
+                conn.execute("COMMIT")
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+    finally:
+        conn.close()
+    return db_path
 
-    parquet_final = d / PROCESSED_PARQUET_NAME
-    meta_final = d / PROCESSED_META_NAME
 
-    _atomic_write_bytes(
-        parquet_final,
-        _df_to_parquet_bytes(df),
-    )
-    _atomic_write_bytes(
-        meta_final,
-        json.dumps(meta, indent=2, sort_keys=True).encode("utf-8"),
-    )
-    return parquet_final
+def list_cached_identifiers(
+    data_root: Path,
+    domain: Domain,
+    processed_subdir: str = "processed.db",
+) -> list[str]:
+    """All identifiers with a meta row for the given domain."""
+    db_path = processed_db_path(data_root, processed_subdir)
+    if not db_path.is_file():
+        return []
+    conn = _connect(db_path)
+    try:
+        _ensure_tables(conn, domain)
+        rows = conn.execute(
+            f"SELECT ticker FROM {_meta_table_name(domain)} ORDER BY ticker"
+        ).fetchall()
+        return [r["ticker"] for r in rows]
+    finally:
+        conn.close()
 
+
+def purge_identifier(
+    data_root: Path,
+    domain: Domain,
+    identifier: str,
+    processed_subdir: str = "processed.db",
+) -> bool:
+    """Delete all data + meta for one identifier in this domain.
+    Returns True if the meta row existed before purge.
+    """
+    db_path = processed_db_path(data_root, processed_subdir)
+    if not db_path.is_file():
+        return False
+    lock = _get_lock(db_path)
+    conn = _connect(db_path)
+    try:
+        with lock:
+            _ensure_tables(conn, domain)
+            conn.execute("BEGIN")
+            try:
+                conn.execute(
+                    f"DELETE FROM {_data_table_name(domain)} WHERE ticker = ?",
+                    (identifier,),
+                )
+                cur = conn.execute(
+                    f"DELETE FROM {_meta_table_name(domain)} WHERE ticker = ?",
+                    (identifier,),
+                )
+                existed = cur.rowcount > 0
+                conn.execute("COMMIT")
+                return existed
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Gap detection + merge — unchanged from parquet version (pure-DataFrame ops)
+# ---------------------------------------------------------------------------
 
 def detect_gaps(
     cached_df: pd.DataFrame | None,
@@ -107,22 +274,13 @@ def detect_gaps(
     calendar: Calendar,
     time_column: str = "date",
 ) -> list[tuple[date, date]]:
-    """Return inclusive (start, end) ranges of calendar time points missing
-    from the cache for the requested window.
-
-    Cold cache → one gap covering the whole requested range.
-    Cache covers requested exactly → empty list.
-    Internal hole → one gap per contiguous run of missing trading days.
-    """
     valid_days = calendar.trading_days(requested_start, requested_end)
     if not valid_days:
         return []
 
     cached_set: set[date] = set()
     if cached_df is not None and len(cached_df) > 0:
-        cached_set = {
-            _as_date(d) for d in cached_df[time_column].tolist()
-        }
+        cached_set = {_as_date(d) for d in cached_df[time_column].tolist()}
 
     runs: list[list[date]] = []
     current: list[date] | None = None
@@ -138,7 +296,6 @@ def detect_gaps(
                 current[1] = d
     if current is not None:
         runs.append(current)
-
     return [(r[0], r[1]) for r in runs]
 
 
@@ -149,26 +306,12 @@ def merge_cache(
     new_source: dict,
     domain: Domain,
 ) -> tuple[pd.DataFrame, dict]:
-    """Merge new_df into existing_df, dedupe by time_column with domain
-    precedence on overlap, and update meta.
-
-    new_source is the dict appended to meta["sources"] — caller (dispatch)
-    supplies provider name, raw_file basename, covers={start,end},
-    adjustment_quality, etc.
-
-    Returns (merged_df, updated_meta). The DataFrame is sorted ascending by
-    time_column and re-indexed 0..N-1.
-    """
     tcol = domain.time_column
 
     if existing_df is None or len(existing_df) == 0:
         merged = new_df.sort_values(tcol).reset_index(drop=True)
-        meta = _build_meta(
-            existing_meta=None,
-            domain=domain,
-            df=merged,
-            new_source=new_source,
-        )
+        meta = _build_meta(existing_meta=None, domain=domain, df=merged,
+                           new_source=new_source)
         return merged, meta
 
     existing_dates = set(existing_df[tcol])
@@ -179,66 +322,124 @@ def merge_cache(
     non_overlap_new = new_df[~new_df[tcol].isin(overlap)]
 
     if overlap:
-        overlap_existing = existing_df[existing_df[tcol].isin(overlap)].sort_values(tcol).reset_index(drop=True)
-        overlap_new = new_df[new_df[tcol].isin(overlap)].sort_values(tcol).reset_index(drop=True)
+        overlap_existing = (existing_df[existing_df[tcol].isin(overlap)]
+                            .sort_values(tcol).reset_index(drop=True))
+        overlap_new = (new_df[new_df[tcol].isin(overlap)]
+                       .sort_values(tcol).reset_index(drop=True))
         existing_sources = (existing_meta or {}).get("sources", [])
         resolved = domain.merge_overlap(
-            overlap_existing, overlap_new, existing_sources, new_source
+            overlap_existing, overlap_new, existing_sources, new_source,
         )
     else:
         resolved = new_df.iloc[0:0]
 
     merged = pd.concat(
-        [non_overlap_existing, resolved, non_overlap_new],
-        ignore_index=True,
+        [non_overlap_existing, resolved, non_overlap_new], ignore_index=True,
     ).sort_values(tcol).reset_index(drop=True)
 
-    meta = _build_meta(
-        existing_meta=existing_meta,
-        domain=domain,
-        df=merged,
-        new_source=new_source,
-    )
+    meta = _build_meta(existing_meta=existing_meta, domain=domain, df=merged,
+                       new_source=new_source)
     return merged, meta
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# Internal: data table read / write
 # ---------------------------------------------------------------------------
 
-def _atomic_write_bytes(final_path: Path, payload: bytes) -> None:
-    """Temp file in same directory → fsync → os.replace. D2 atomicity.
-
-    Cleans up the temp file if the replace step raises.
-    """
-    final_path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{final_path.name}.", suffix=".tmp", dir=final_path.parent
+def _read_data(
+    conn: sqlite3.Connection, domain: Domain, identifier: str,
+) -> pd.DataFrame:
+    cols = [c.name for c in domain.schema.columns]
+    col_list = ", ".join(cols)
+    tcol = domain.time_column
+    query = (
+        f"SELECT {col_list} FROM {_data_table_name(domain)} "
+        f"WHERE ticker = ? ORDER BY {tcol}"
     )
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(payload)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_name, final_path)
-    except BaseException:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    df = pd.read_sql(query, conn, params=(identifier,))
+    # SQLite returns dates as strings (ISO TEXT); coerce columns back to
+    # canonical dtypes so the round-trip is invariant.
+    for c in domain.schema.columns:
+        if df[c.name].dtype.name == c.dtype:
+            continue
+        if c.dtype.startswith("datetime"):
+            df[c.name] = pd.to_datetime(df[c.name]).astype(c.dtype)
+        else:
+            df[c.name] = df[c.name].astype(c.dtype)
+    return df.reset_index(drop=True)
 
 
-def _df_to_parquet_bytes(df: pd.DataFrame) -> bytes:
-    """In-memory parquet serialization; bytes go through the atomic writer."""
-    import io
-    buf = io.BytesIO()
-    df.to_parquet(buf, engine="pyarrow", index=False)
-    return buf.getvalue()
+def _replace_data(
+    conn: sqlite3.Connection, domain: Domain, identifier: str,
+    df: pd.DataFrame,
+) -> None:
+    conn.execute(
+        f"DELETE FROM {_data_table_name(domain)} WHERE ticker = ?",
+        (identifier,),
+    )
+    if len(df) == 0:
+        return
+    cols = [c.name for c in domain.schema.columns]
+    placeholders = ", ".join(["?"] * (len(cols) + 1))  # +1 for ticker
+    col_names = ", ".join(["ticker", *cols])
+    sql = (
+        f"INSERT INTO {_data_table_name(domain)} ({col_names}) "
+        f"VALUES ({placeholders})"
+    )
+    rows = []
+    for _, row in df.iterrows():
+        values: list = [identifier]
+        for c in cols:
+            v = row[c]
+            # Convert pd.Timestamp/datetime → ISO string for SQLite storage.
+            if isinstance(v, pd.Timestamp):
+                values.append(v.isoformat(sep=" "))
+            elif hasattr(v, "item"):
+                values.append(v.item())
+            else:
+                values.append(v)
+        rows.append(tuple(values))
+    conn.executemany(sql, rows)
 
+
+def _upsert_meta(
+    conn: sqlite3.Connection, domain: Domain, identifier: str, meta: dict,
+) -> None:
+    conn.execute(
+        f"""
+        INSERT OR REPLACE INTO {_meta_table_name(domain)}
+            (ticker, schema_version, row_count, range_start, range_end,
+             last_fetch_utc, sources_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            identifier,
+            int(meta.get("schema_version", META_SCHEMA_VERSION)),
+            int(meta.get("row_count", 0)),
+            meta.get("range", {}).get("start", ""),
+            meta.get("range", {}).get("end", ""),
+            meta.get("last_fetch_utc", ""),
+            json.dumps(meta.get("sources", []), sort_keys=True),
+        ),
+    )
+
+
+def _meta_row_to_dict(row: sqlite3.Row, domain_name: str) -> dict:
+    return {
+        "schema_version": int(row["schema_version"]),
+        "domain": domain_name,
+        "row_count": int(row["row_count"]),
+        "range": {"start": row["range_start"], "end": row["range_end"]},
+        "last_fetch_utc": row["last_fetch_utc"],
+        "sources": json.loads(row["sources_json"]),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
 def _as_date(x) -> date:
-    """Coerce a timestamp / datetime / date scalar to a plain `date`."""
     if isinstance(x, date) and not isinstance(x, datetime):
         return x
     if isinstance(x, datetime):

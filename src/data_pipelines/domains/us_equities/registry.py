@@ -7,7 +7,7 @@ A bare symbol (e.g., 'AAPL' with no prefix) raises ValueError. The framework's
 DomainRegistry never reaches the parser without a prefix (UnknownDomain fires
 first), but the parser still enforces the contract for direct callers.
 
-Open question 7 in IMPLEMENTATION_PLAN.md: prefix maps 1:1 to the cache path
+Open question 7 in V1_IMPLEMENTATION_PLAN.md: prefix maps 1:1 to the cache path
 segment under data/{raw,processed}/us_equities/<prefix>/<symbol>/.
 """
 

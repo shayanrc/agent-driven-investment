@@ -1,10 +1,13 @@
-# data_pipelines — Implementation Plan
+# data_pipelines — V1 Implementation Plan
 
 ## Build status
 
-Plan drafted, no code yet. The first implementation pass should follow the stage order below strictly.
+- **v1 (us_equities domain):** shipped (228 tests, 520-ticker S&P 500 + indices seeded).
+- **v1.7 (nse_equities domain):** planned; specification at the end of this document, no code yet.
 
 For the *why* (what success looks like, anti-goals, deployment intent), see `goal.md`. This document is the *how* — architecture, schema, constraints, stages.
+
+The v1.x revision history below is one continuous series: revisions of the plan, scope changes, hardening fixes, and feature increments all live in the same sequence. v1.7 (NSE) is the next entry — its full specification is appended as a dedicated section at the end of this document.
 
 ## Revision history
 
@@ -13,6 +16,9 @@ For the *why* (what success looks like, anti-goals, deployment intent), see `goa
 - **v1.2** *(2026-05-23)* — Scope explicitly tightened to **US equities only**. Non-US markets (NSE/India, LSE/UK, TSE/Japan, etc.) will be sibling modules following the same architectural pattern (canonical schema, raw/processed split, tiered providers, atomic writes) — replicated, not abstracted. Non-US-equity data types (interest rates, macro, commodities) also become sibling modules pending decision in open question 6. Added open questions about module rename (`data_pipelines` → `us_market_data`) and US-non-equity data-type policy.
 - **v1.3** *(2026-05-23)* — **Architectural reframe: `data_pipelines` is the generic time-series ingestion module, NOT a US-equities-only module.** All data types and markets (US equities, NSE, FRED, commodities, FX, etc.) plug in here as **domains** rather than as sibling modules. The framework provides: schema primitives, raw/processed cache layout, atomic writes, gap detection, adapter ABC, tiered fallback chain logic, reprocess workflow, public `fetch()` dispatch. Each domain provides: schema definition, identifier conventions, universe, adapter set, calendar. v1 still ships only the US-equities domain — building it with clean per-domain seams so domain #2 is a plug-in, not a refactor. Open questions 6 (non-equity policy) and 7 (rename) resolved by this reframe and removed.
 - **v1.4** *(2026-05-23)* — **Stooq added an API-key gate** (discovered during v1 online smoke test). The CSV endpoint at `https://stooq.com/q/d/l/?s=<sym>.us&i=d` now returns a "Get your apikey" help page unless `&k=<key>` is appended. Registration is free and captcha-only (`https://stooq.com/q/d/?get_apikey`). Adapter and config updated: `STOOQ_API_KEY` env var, pre-flight `MissingAPIKey` raise if unset, dedicated `_is_apikey_required` payload check raises `ProviderError` if Stooq returns the help page (e.g., invalid key). Stooq's tier role (seed, big-gap fills) is unchanged.
+- **v1.5** *(2026-05-24)* — **Processed-layer storage swapped from parquet to SQLite.** Single global DB at `data/processed.db`. Per-domain tables are auto-created from `domain.schema`: `<domain>_data(ticker, <schema cols>...)` with composite PK `(ticker, <time_column>)` and `<domain>_meta(ticker PK, schema_version, row_count, range_start, range_end, last_fetch_utc, sources_json TEXT)`. Atomicity (D2) is delivered by SQLite's `BEGIN ... COMMIT`; deterministic reads (D3) by `ORDER BY <time_column>` plus dtype-coerced canonical-schema return; the meta row is still the commit marker (D2 read-side). Raw layer is unchanged. New `cache.py` API: `processed_db_path`, `read_processed`, `write_processed_atomic`, `list_cached_identifiers`, `purge_identifier`. One-shot migration script (`scripts/data_pipelines/migrate_parquet_to_sqlite.py`) ports any existing parquet+meta entries into the SQLite cache without re-paying API costs. Motivation: cross-ticker SQL queries (e.g., "all S&P 500 closes on 2025-01-15"), single-file backup/portability, simpler agent-tool surface.
+- **v1.6** *(2026-05-24)* — **Document renamed `V1_IMPLEMENTATION_PLAN.md`.** Single doc for all v1.x revisions and feature increments of the data_pipelines module; future v2 work would get its own `V2_IMPLEMENTATION_PLAN.md`.
+- **v1.7** *(2026-05-24, planned)* — **NSE equities (India) added as domain #2.** Adapter chain `jugaad-data → nselib → yfinance(.NS)` with a new shared retry primitive (exponential backoff + jitter, 3 retries). Triggers the framework-extraction decision flagged in open question 6. Full specification appended as the "v1.7 — NSE equities (India) domain" section at the end of this document; no code shipped yet.
 
 ---
 
@@ -200,7 +206,7 @@ configs/data_pipelines/
 
 docs/data_pipelines/
 ├── goal.md                  # source of truth for what success means
-└── IMPLEMENTATION_PLAN.md   # this document
+└── V1_IMPLEMENTATION_PLAN.md   # this document
 ```
 
 Top-level `data/` is the canonical storage root, shared across all domains. Layout is keyed on `<domain>` under both `raw/` and `processed/`:
@@ -565,3 +571,225 @@ These are flagged for the user to decide before / during implementation. None ar
 7. **Identifier scheme convention.** `<DOMAIN_PREFIX>:<SYMBOL>` with the domain prefix matching the exchange for equities (`NYSE:AAPL`) and the data source / type for non-equity (`FRED:DGS10`). Edge case: same identifier could be valid in multiple domains in principle (rare). Recommendation: register one domain per prefix; rejection of duplicate registration is a programmer error. Index symbols under `INDEX:` keeps NYSE/NASDAQ for actual exchange listings.
 
 These belong in their own follow-up notes once v1 lands; mentioning here so they aren't forgotten.
+
+---
+
+# v1.7 — NSE equities (India) domain
+
+Status: planned. Not implemented. Branch: TBD (per CLAUDE.md, this v1.7 work gets its own git branch when implementation starts; the plan lives here in the V1 doc).
+
+This section describes what's *added* on top of v1's framework to bring up the NSE (National Stock Exchange of India) domain. Architectural decisions about the framework itself stay in the main body above; this section assumes those decisions.
+
+## Purpose
+
+Add NSE daily equities as the second domain plugged into the framework. This is the first real exercise of the "domain #2 plug-in" abstraction promised by v1.3, and the trigger for the framework-extraction decision in [open question 6](#open-questions).
+
+## What v1.7 ships
+
+- A new `domains/nse_equities/` plug-in: schema, calendar, identifier parser, universe loader, three adapters wired through the existing `Domain` ABC.
+- One new framework primitive: a shared **retry policy** (exponential backoff with jitter, 3 retries) used by all three new adapters. Tiingo in us_equities retrofits onto the same primitive in a follow-up commit (keeps existing semantics; just removes the bespoke retry loop).
+- `configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml` (start with the smallest Nifty universe; broader universes added as separate YAML files when needed).
+- Tests + fixtures per adapter; D8 reprocess-determinism test for nse_equities; one online smoke test gated on `PYTEST_ONLINE=1`.
+
+## Architectural fit
+
+NSE plugs into the same seams us_equities uses — the framework code (`dispatch.py`, `cache.py`, `raw_store.py`, `schema.py`, `adapter.py`, `domain.py`, `env.py`) is **untouched** apart from the retry-utility lift.
+
+```
+data_pipelines/
+├── (framework — unchanged)
+└── domains/
+    ├── us_equities/           # v1 — already shipped
+    └── nse_equities/          # v1.7 — new
+        ├── __init__.py        # registers NSEDomain
+        ├── schema.py          # OHLCV (same shape as us_equities)
+        ├── registry.py        # NSE: / BSE: / NIFTY: parser
+        ├── universe.py        # load Nifty 50/100/200/500
+        ├── calendar.py        # NSE trading calendar
+        ├── config.py          # NSEEquitiesConfig
+        └── adapters/
+            ├── jugaad.py      # primary  — jugaad-data
+            ├── nselib.py      # secondary — nselib
+            └── yfinance.py    # fallback — yf.Ticker("RELIANCE.NS")
+```
+
+The processed-layer SQLite cache (v1.5) sees per-domain tables already; the new `nse_equities_data` and `nse_equities_meta` tables are created on first write — no schema migration needed.
+
+## Schema (nse_equities)
+
+Daily OHLCV — same column shape as us_equities for v1.7:
+
+| Column | dtype | Notes |
+|---|---|---|
+| `date` | `datetime64[ns]` | UTC midnight |
+| `open` | `float64` | INR, unadjusted |
+| `high` | `float64` | INR, unadjusted |
+| `low` | `float64` | INR, unadjusted |
+| `close` | `float64` | INR, unadjusted |
+| `adj_close` | `float64` | Split-and-dividend adjusted (INR) |
+| `volume` | `int64` | Shares traded |
+
+**Currency note.** Values are in INR throughout. There is no FX normalization in v1.7 — consumers that mix INR + USD time series are responsible for the conversion. A future FX-conversion concern is deferred.
+
+**Adjustment semantics (D4 carry-over):**
+- jugaad-data: returns both raw + adjusted series for equities; verify which column is split-vs-full-adjusted against a known split (RELIANCE 2017, INFY 2018) before pinning `adjustment_quality`.
+- nselib: same verification step.
+- yfinance .NS: same caveat as us_equities — `Close` is silently split-adjusted regardless of `auto_adjust`; `adj_close` is the trustworthy one.
+
+The per-source `adjustment_quality` tag (`"full"`, `"split_only"`, `"unknown"`) goes into `_meta.sources[]` as in us_equities.
+
+## Identifier scheme
+
+```
+NSE:RELIANCE      NSE:TCS      NSE:HDFCBANK
+BSE:RELIANCE      BSE:TCS                       (BSE listings, where available)
+NIFTY:NIFTY50     NIFTY:NIFTY100    NIFTY:NIFTY500    NIFTY:BANKNIFTY
+```
+
+- `NSE:`, `BSE:`, `NIFTY:` are the registered prefixes.
+- `BSE:` is supported by the parser but adapters fall through on `BSE:` symbols if the provider doesn't have BSE coverage (jugaad and nselib are NSE-first; yfinance covers both via `.NS` / `.BO` suffixes).
+- Use `NIFTY:` (NOT `INDEX:`) for NSE indices — `INDEX:` is already registered by us_equities and DomainRegistry's invariant is one-prefix-one-domain.
+
+## Universe
+
+Start with **Nifty 50**, pinned in `configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml`. Source (scrape on demand): the NSE constituents page or the index-history page. Hand-maintained YAML, same pattern as `universe_sp500.yaml`.
+
+Expand to Nifty 100, 200, 500 in later versions as needed — each as its own `universe_*.yaml`. Bulk-seed CLI takes `--universe nifty50` exactly as for `sp500`.
+
+## Calendar (NSECalendar)
+
+NSE trading calendar:
+- Trading days: Monday – Friday.
+- Closed: weekends + ~17 published holidays/year. Many Indian holidays (Holi, Diwali, Eid) follow lunar calendars and can't be computed from simple rules — hand-pin them per-year, similar to how unscheduled NYSE closures are pinned in v1.
+
+Implementation note: the `holidays` Python lib has an `IN` package with NSE support. Worth using if it stays maintained; otherwise hand-rolled per year. Treat library choice as an implementation detail (the framework only sees the `Calendar` protocol).
+
+## Adapter chain (per the v1.7 brief)
+
+**jugaad-data → nselib → yfinance**, all three using the new retry primitive (exponential backoff with jitter, 3 retries).
+
+| Tier | Adapter | Library | Role | When invoked |
+|---|---|---|---|---|
+| Primary | `jugaad.py` | [jugaad-data](https://pypi.org/project/jugaad-data/) | seed + update | Default for every gap |
+| Secondary | `nselib.py` | [nselib](https://pypi.org/project/nselib/) | fallback on jugaad fail | jugaad raises ProviderError / EmptyPayload |
+| Fallback | `yfinance.py` | [yfinance](https://pypi.org/project/yfinance/) | last resort | both jugaad + nselib failed |
+
+Both jugaad-data and nselib are range-aware (accept `from_date`/`to_date`), so unlike us_equities there's no "seed=full-history vs update=incremental" distinction — `chain_for_gap` returns the same ordered list `[jugaad, nselib, yfinance]` regardless of gap size or cache state.
+
+The yfinance adapter is largely a shape-shift of the existing us_equities yfinance adapter — same `Ticker(...).history(...)` flow, just with `.NS` symbol-suffix mapping (`RELIANCE` → `RELIANCE.NS`). Keep parallel implementations across the two domains until a third domain needs the same library (avoids premature abstraction).
+
+## Retry policy (new framework primitive)
+
+The v1.7 brief specifies **exponential backoff with jitter, 3 retries** for all NSE adapters. To avoid copy-paste and to set the stage for retrofitting Tiingo in us_equities, this lands as a shared utility:
+
+```
+src/data_pipelines/retry.py
+
+@dataclass(frozen=True)
+class RetryPolicy:
+    max_retries: int = 3
+    base_delay_sec: float = 1.0
+    max_delay_sec: float = 30.0
+    jitter: bool = True
+    retry_on: tuple[type[Exception], ...] = (...)   # e.g., ProviderError
+
+def call_with_retry(
+    fn: Callable[[], T],
+    policy: RetryPolicy,
+    *,
+    provider: str,
+    identifier: str,
+) -> T: ...
+```
+
+Behavior:
+- Attempt `fn()`. If it raises one of `retry_on`, sleep
+  `min(base_delay_sec * 2**attempt, max_delay_sec) + random.uniform(0, base_delay_sec)`
+  if `jitter` else just the exponential value.
+- After `max_retries`, re-raise the last exception.
+- Non-retryable exceptions (e.g., `MissingAPIKey`) propagate immediately.
+
+Jitter rationale: bulk seed across N tickers without jitter creates synchronized retry storms when many tickers hit a transient 429 in the same window. Jitter (uniform in `[0, base_delay_sec]`) spreads the retries.
+
+**Retrofit follow-up** (separate small commit after v1.7 lands): replace Tiingo's bespoke `_request_with_retry` in `domains/us_equities/adapters/tiingo.py` with `call_with_retry(...)` so both domains share the same code path. The Tiingo circuit breaker stays in place (different concern — across-call rate-limit state, not per-call retry).
+
+## Configuration (NSEEquitiesConfig)
+
+```python
+@dataclass(frozen=True)
+class NSEEquitiesConfig:
+    # Dispatch
+    default_universe: str = "nifty50"
+    chain_order: tuple[str, ...] = ("jugaad", "nselib", "yfinance")
+
+    # Retry policy (shared across all three adapters)
+    retry_max_retries: int = 3
+    retry_base_delay_sec: float = 1.0
+    retry_max_delay_sec: float = 30.0
+    retry_jitter: bool = True
+
+    # Library-specific timeouts (provider native HTTP layers respect these)
+    jugaad_timeout_sec: float = 30.0
+    nselib_timeout_sec: float = 30.0
+    yfinance_enabled: bool = True
+```
+
+No API keys for any of the three providers in v1.7 — none of jugaad-data, nselib, or yfinance require one for NSE data. (Some advanced nselib endpoints may need a session/cookie warm-up; treat as adapter internal.)
+
+## Stages (implementation order)
+
+Mirror the original 11-stage build order. Skip stages that are pure framework primitives (already shipped) and add a new stage for the retry utility.
+
+12. **Retry primitive** — `src/data_pipelines/retry.py` + tests. Pure utility, no domain coupling. Land first so adapter stages can rely on it.
+13. **nse_equities schema** — OHLCV schema instance (same shape as us_equities, separate `Schema` object to avoid coupling).
+14. **nse_equities identifier parser + universe** — `parse_identifier("NSE:RELIANCE")`, `load_universe("nifty50")`.
+15. **nse_equities calendar** — `NSECalendar` with hand-pinned holidays per year (or `holidays` library wrapper, whichever proves easier).
+16. **jugaad adapter** — `jugaad-data` wrapper, normalize columns to canonical schema, validate adjustment-quality against a known split event in tests.
+17. **nselib adapter** — `nselib` wrapper, same column-normalization + adjustment-validation.
+18. **yfinance adapter (.NS)** — fork of us_equities yfinance adapter; uses `.NS` symbol suffix; carries same "split-adjusted-disguised-as-raw OHLC" D4 caveat.
+19. **NSEDomain wire-up** — `__init__.py` instantiates and registers.
+20. **D8 reprocess determinism test** — same shape as `test_reprocess.py` for us_equities.
+21. **CLI integration** — `python -m data_pipelines seed --universe nifty50` just works once the domain is registered. Smoke-test against the cache.
+22. **Cross-source parity audit** — mirror `scripts/data_pipelines/parity_check.py` for nse_equities. Expected findings:
+    - adj_close cross-source agreement (target: < 0.05% rel diff on no-corporate-action tickers).
+    - raw OHLC divergence on split tickers (yfinance silently split-adjusts).
+    - Currency / unit consistency (all three should report INR; flag if any return USD by mistake).
+    Document in `docs/data_pipelines/V1.7_RESULTS.md`.
+23. **Documentation update** — README, `adding_a_domain.md` follow-up capturing what *had* to be refactored vs what just plugged in (this is the evidence base for open question 6's framework-extraction decision).
+
+## Tests
+
+Mirror the us_equities tests under `tests/data_pipelines/domains/nse_equities/`. Fixtures: committed raw payload samples per (adapter, ticker) under `tests/data_pipelines/fixtures/nse_equities/{jugaad,nselib,yfinance}/`. Pick RELIANCE (long history, 2017 split), TCS (no recent splits), INFY (long history, NYSE+NSE dual listing — exercises the cross-listing edge case lightly) as canonical fixtures.
+
+New shared tests:
+- `tests/data_pipelines/test_retry.py` — retry primitive: backoff timing, jitter spread, max-retries cap, non-retryable propagation.
+
+## Open questions (v1.7)
+
+These are flagged for the user to decide during implementation. None are blockers; they shape specific stages.
+
+8. **Universe ordering — Nifty 50 first or skip to Nifty 100/500?** Recommendation: Nifty 50 — small enough to validate the pipeline, covers ~65% of NSE market cap. Add Nifty 100/200/500 as separate `universe_*.yaml` files in v1.7.1.
+9. **BSE coverage**: ship BSE: alongside NSE: in v1.7, or defer? Recommendation: defer — BSE has poorer library coverage and the universes of interest (Nifty) are NSE listings.
+10. **jugaad-data + nselib library liveness**: both are community-maintained and have churned in the past. v1.7 implementation should pin specific versions in `pyproject.toml`. Verify both work on Python 3.13 before committing to them (similar to the `pandas-datareader` / `pystooq` brokenness discovered in v1).
+11. **Currency tag in schema vs. meta?** Per-row currency makes more sense for FX domains but is overkill here. Recommendation: omit from schema (all NSE rows are INR by definition); add per-source `currency` field in `_meta.sources[]` as an audit hint.
+12. **Time zone**: NSE close is 3:30 PM IST = 10:00 UTC. Per D7 we store `date` as midnight UTC. Confirm this matches downstream consumers' expectations (analog_mc treats date as opaque, so likely fine, but document it).
+13. **Holiday data source**: hand-pin in code vs. `holidays` Python lib. Lib has 17 NSE holidays/year computed; if maintained, prefer.
+
+## What not to do (v1.7)
+
+- **Don't** crystallize a "shared OHLCV schema" abstraction yet. NSE happens to have the same column set as us_equities; that's coincidental. Other domains (FRED, FX, commodities) will not. Two domains using the same `Schema(...)` instance can be revisited in v2 when there's a real pattern.
+- **Don't** unify the yfinance adapters across us_equities and nse_equities until a third domain needs the same library. Two copies is cheaper than one premature abstraction.
+- **Don't** add intraday or tick data — same scope discipline as v1.
+- **Don't** add a Streamlit dashboard, fundamentals normalizer, or trading features. Same scope discipline as v1.
+- **Don't** ship without the retry primitive's tests. The retry semantics are the kind of thing that silently regresses if untested.
+
+## Estimated effort
+
+Rough size, for planning, from the v1 build experience:
+- Stage 12 (retry primitive): half-day incl. tests.
+- Stages 13–15 (schema, registry, universe, calendar): half-day.
+- Stages 16–18 (three adapters): 1–1.5 days incl. fixture capture + parity verification.
+- Stages 19–20 (wire-up + D8 test): 2 hours.
+- Stages 21–23 (CLI smoke + parity audit + docs): half-day.
+
+Total: ~3 working days for a clean v1.7.

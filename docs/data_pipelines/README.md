@@ -3,7 +3,7 @@
 Generic time-series ingestion module. v1 ships one domain (us_equities).
 
 For the **why**: [`goal.md`](goal.md).
-For the **how** (architecture, stages, correctness constraints): [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+For the **how** (architecture, stages, correctness constraints): [`V1_IMPLEMENTATION_PLAN.md`](V1_IMPLEMENTATION_PLAN.md).
 For **adding a new domain**: [`adding_a_domain.md`](adding_a_domain.md).
 
 ## Quick start
@@ -53,7 +53,7 @@ for Stooq; the quality flag is recorded in `_meta.json` (D4).
 
 ## Correctness constraints (D1–D8)
 
-See [`IMPLEMENTATION_PLAN.md §Critical correctness constraints`](IMPLEMENTATION_PLAN.md#critical-correctness-constraints).
+See [`V1_IMPLEMENTATION_PLAN.md §Critical correctness constraints`](V1_IMPLEMENTATION_PLAN.md#critical-correctness-constraints).
 
 D1 schema invariance, D2 atomic writes, D3 deterministic reads, D4 adjustment
 semantics, D5 typed failure surfaces, D6 API key safety, D7 date/timezone

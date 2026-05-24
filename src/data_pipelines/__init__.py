@@ -1,6 +1,6 @@
 """Generic time-series ingestion module.
 
-See docs/data_pipelines/goal.md and docs/data_pipelines/IMPLEMENTATION_PLAN.md.
+See docs/data_pipelines/goal.md and docs/data_pipelines/V1_IMPLEMENTATION_PLAN.md.
 
 v1 stage: framework primitives only (schema, errors, adapter, domain).
 Public `fetch()` is wired in Stage 4.

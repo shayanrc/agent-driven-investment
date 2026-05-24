@@ -1,5 +1,5 @@
 # S&P 500 — full constituent list scraped from Wikipedia 2026-05-23.
-# Refresh cadence: ad hoc (open question 1 in IMPLEMENTATION_PLAN.md).
+# Refresh cadence: ad hoc (open question 1 in V1_IMPLEMENTATION_PLAN.md).
 # Format: flat YAML list of "<EXCHANGE>:<SYMBOL>" identifiers.
 # Special-character tickers (BRK.B, BF.B) normalized to dash form (BRK-B, BF-B)
 # because that's the canonical form across Tiingo and yfinance.

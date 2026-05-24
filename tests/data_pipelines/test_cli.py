@@ -150,8 +150,13 @@ class TestFetchCmd:
         assert meta["identifier"] == "NYSE:AAPL"
         assert meta["cache_was_cold"] is True
         assert meta["gaps_filled"][0]["provider"] == "stooq"
-        assert (root / "processed" / "us_equities" / "NYSE" / "AAPL"
-                / "daily.parquet").exists()
+        # SQLite cache: a single DB at data/processed.db with rows for AAPL.
+        from data_pipelines.cache import (
+            list_cached_identifiers,
+            processed_db_path,
+        )
+        assert processed_db_path(root).is_file()
+        assert "NYSE:AAPL" in list_cached_identifiers(root, domain)
 
 
 class TestListDomainsCmd:

@@ -128,7 +128,7 @@ class DomainRegistry:
     the corresponding domain, raising UnknownDomain on miss.
 
     Duplicate registration of the same prefix is a programmer error and
-    raises immediately — per open question 7 in IMPLEMENTATION_PLAN.md.
+    raises immediately — per open question 7 in V1_IMPLEMENTATION_PLAN.md.
     """
 
     _by_prefix: dict[str, Domain] = {}

@@ -6,7 +6,7 @@
 
 This document states what `data_pipelines` is optimizing for and what trade-offs are unacceptable. Read it before editing any file under `src/data_pipelines/`, `tests/data_pipelines/`, `configs/data_pipelines/`, or `docs/data_pipelines/`.
 
-For *how* it works (architecture, stages, constraints), see `IMPLEMENTATION_PLAN.md`. This file is the *why* and *what success looks like*.
+For *how* it works (architecture, stages, constraints), see `V1_IMPLEMENTATION_PLAN.md`. This file is the *why* and *what success looks like*.
 
 ---
 
@@ -135,4 +135,4 @@ When designing new APIs in this module, prefer shapes that wrap cleanly as a too
 
 ## Implementation discipline
 
-The how-it-works specification is `docs/data_pipelines/IMPLEMENTATION_PLAN.md`. The stages and the correctness constraints (D1–D7) defined there are non-negotiable. Don't silently change architectural decisions — surface the deviation and ask first.
+The how-it-works specification is `docs/data_pipelines/V1_IMPLEMENTATION_PLAN.md`. The stages and the correctness constraints (D1–D7) defined there are non-negotiable. Don't silently change architectural decisions — surface the deviation and ask first.
