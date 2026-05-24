@@ -57,6 +57,7 @@ EXP_COLORS = {
     "B1 (Platzer local-linear)":  "tab:blue",
     "A2.1 (corrwindow L=100)":    "tab:red",
     "B5 (joint A2.1 + B1)":       "tab:purple",
+    "V5.A.2 ensemble":            "tab:green",
 }
 
 
@@ -175,8 +176,13 @@ def quantiles_for_anchor(
 
 
 def render_comparison(date_str: str, panels: list[tuple[str, dict | None]], out_path: Path) -> None:
-    fig, axes = plt.subplots(2, 2, figsize=(16, 9), sharex=False)
-    axes_flat = axes.flatten()
+    # Auto-size the grid to accommodate N experiments. Default v4 set is 4
+    # (2x2). v5 adds V5.A.2 and beyond; widen to 3 columns once we exceed 4.
+    n = len(panels)
+    ncols = 2 if n <= 4 else 3
+    nrows = (n + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(8 * ncols, 4.5 * nrows), sharex=False)
+    axes_flat = axes.flatten() if hasattr(axes, "flatten") else [axes]
 
     valid = [p for _, p in panels if p is not None]
     if not valid:
@@ -208,6 +214,10 @@ def render_comparison(date_str: str, panels: list[tuple[str, dict | None]], out_
         ax.grid(True, alpha=0.3)
         ax.tick_params(axis="x", labelsize=8)
         ax.tick_params(axis="y", labelsize=8)
+
+    # Hide any leftover axes (e.g., 3x2 grid for 5 experiments has 1 empty).
+    for ax in axes_flat[len(panels):]:
+        ax.axis("off")
 
     axes_flat[0].legend(loc="best", fontsize=8, framealpha=0.95)
     fig.suptitle(
