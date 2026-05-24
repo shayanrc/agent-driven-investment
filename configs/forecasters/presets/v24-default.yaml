@@ -1,0 +1,99 @@
+# Canonical v2.4 preset for the analog_mc backend.
+#
+# This is the saved-model artifact for the v2.4 analog Monte Carlo
+# configuration that was canonicalized on 2026-05-20 (run
+# runs/analog_mc/20260520T045525Z, 76 folds, 66×5 grid, 1000 paths per
+# origin). See configs/analog_mc/default.yaml for the source values and
+# docs/analog_mc/V3_EXPERIMENTS_REPORT.md / docs/analog_mc/_e2_momentum.md
+# for the promotion rationale.
+#
+# Editing this file invalidates any cached forecast keyed off its content
+# hash. Per docs/forecasters/V1_PLAN.md §"Anti-goals", canonical presets are
+# read-only at runtime — `/tune-preset` writes new artifacts to
+# results/forecasters/presets/ instead.
+name: v24-default
+backend: analog_mc
+schema_version: 1
+
+hyperparameters:
+  # ---- Asset / horizons (carried so the backend knows its own defaults) ----
+  forecast_horizon: 60
+  block_length: 10
+  n_blocks: 6
+  n_paths: 1000
+
+  # ---- Feature horizons ----
+  zscore_horizons: [20, 50, 200]
+  ewma_halflife: 20
+
+  # ---- Walk-forward (used by `tune()`, ignored by `forecast()`) ----
+  train_initial_size: 1000
+  val_size: 60
+  test_size: 60
+
+  # ---- Hyperparameter-search grid (used by `tune()`) ----
+  weight_grid_resolution: 0.1
+  n_eff_values: [15, 30, 50, 80, 150]
+  local_refine_top_k: 5
+  nelder_mead_xatol: 0.01
+  nelder_mead_maxiter: 50
+
+  # ---- Volatility scaling ----
+  vol_clip_lower: 0.5
+  vol_clip_upper: 3.0
+
+  # ---- v2.4 canonical (drift + conditional sampling) ----
+  drift_mode: trailing_momentum
+  momentum_lookback: 20
+  momentum_shrinkage: 0.30
+  conditional_block_sampling: true
+  conditional_block_sampling_in_search: false
+
+  # ---- Matcher distance (v2.4 default: weighted_euclidean) ----
+  matcher_distance: weighted_euclidean
+  corrwindow_length: 20
+
+  # ---- v3b / v4 toggles (off in v2.4 canonical) ----
+  vol_model: ewma
+  local_linear_correction: false
+
+  # ---- Diagnostics + reproducibility ----
+  pit_n_bins: 20
+  acf_lags: [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+  vol_regime_quantiles: [0.33, 0.67]
+  random_seed: 42
+
+fitted_on:
+  identifier: NASDAQ100
+  start: '1986-01-02'
+  end: '2026-05-15'
+  data_hash: sha256:bfea0dc2d58848c2a2a05f0a2a70713657030007dc02795f4f67375aa70192d4
+  n_observations: 10532
+
+# UTC timestamp of the canonical V5.A.2 promotion commit (the v2.4 designation
+# and its validation metrics were finalized in commit 25d8d73 on 2026-05-24).
+fitted_at: '2026-05-24T00:00:00Z'
+
+# Headline metrics from the V5.A.2 fat-tail evaluation
+# (results/analog_mc/data/fat_tail_baseline_v24.json — 15 anchors × 60-day
+# horizon over NASDAQ100 1990–2024 walk-forward). These are the numbers a
+# downstream caller can sanity-check the preset against.
+validation_metrics:
+  crps_mean: 0.0611
+  coverage_50_band_days_median: 29.0
+  coverage_90_band_days_median: 55.0
+  coverage_50_band_days_mean: 26.87
+  coverage_90_band_days_mean: 49.87
+  n_anchors: 15
+  horizon_days: 60
+  source_run: runs/analog_mc/20260520T045525Z
+
+provenance:
+  source: curated
+  notes: |
+    Curated from the v2.4 canonical configuration (configs/analog_mc/default.yaml).
+    Validation metrics taken from the V5.A.2 fat-tail evaluation
+    (results/analog_mc/data/fat_tail_baseline_v24.json). The `fitted_at`
+    timestamp marks the V5.A.2 promotion commit rather than the original
+    walk-forward run wall time (the original tune predates this preset
+    artifact).
