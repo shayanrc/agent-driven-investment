@@ -34,6 +34,11 @@ class NSEEquitiesConfig:
     yfinance_index_slugs: dict[str, str] = field(default_factory=lambda: {
         "50": "^NSEI",
         "BANK": "^NSEBANK",
+        # Broad-market index aliases (forecasters v1 acceptance demo). Yahoo
+        # carries CRSLDX (NIFTY 500), CNX100 (NIFTY 100), CNX200 (NIFTY 200).
+        "NIFTY500": "^CRSLDX",
+        "NIFTY100": "^CNX100",
+        "NIFTY200": "^CNX200",
     })
 
     def __post_init__(self):
