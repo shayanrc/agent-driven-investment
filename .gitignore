@@ -24,5 +24,14 @@ runs/**
 data/raw/
 data/processed/
 
+# forecasters: user-tuned presets + cached forecasts (committed via .gitkeep,
+# contents excluded). Specific user-tuned presets that need to be checked in
+# (e.g., the NIFTY 500 acceptance-demo preset) are added explicitly with
+# `git add -f`.
+results/forecasters/presets/*
+!results/forecasters/presets/.gitkeep
+results/forecasters/forecasts/*
+!results/forecasters/forecasts/.gitkeep
+
 # Local secrets
 .env

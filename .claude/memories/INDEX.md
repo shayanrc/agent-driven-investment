@@ -15,3 +15,4 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 ## Workflow feedback
 
 - [feedback-branch-retention.md](feedback-branch-retention.md) — Don't propose deleting merged plan/feature branches; history is wanted
+- [feedback-experiment-agent-loop.md](feedback-experiment-agent-loop.md) — Bake loop-pattern guidance into experiment-agent launch prompts up front; SendMessage isn't available, can't inject mid-flight

@@ -33,6 +33,11 @@ NIFTY_INDEX_SLUGS: dict[str, str] = {
     "IT": "NIFTY IT",
     "MIDCAP100": "NIFTY MIDCAP 100",
     "SMALLCAP100": "NIFTY SMALLCAP 100",
+    # Broad-market indices for the forecasters v1 acceptance demo. nselib's
+    # capital_market.index_data accepts these upstream names directly.
+    "NIFTY500": "NIFTY 500",
+    "NIFTY100": "NIFTY 100",
+    "NIFTY200": "NIFTY 200",
 }
 
 

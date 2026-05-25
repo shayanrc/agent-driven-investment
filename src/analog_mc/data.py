@@ -39,6 +39,42 @@ def load_close_series(
     return series
 
 
+def close_series_from_dataframe(
+    df: pd.DataFrame,
+    date_col: str = "date",
+    close_col: str = "adj_close",
+) -> pd.Series:
+    """Build a close-series from an in-memory DataFrame.
+
+    Mirrors ``load_close_series`` but takes a pre-loaded DataFrame, which is
+    how the ``forecasters`` framework hands data to the analog_mc backend (it
+    fetches via ``data_pipelines.fetch()`` and passes the result through, per
+    docs/forecasters/V1_PLAN.md §"Wire-format contract").
+
+    Defaults track the canonical data_pipelines schema (``date``,
+    ``adj_close``); pass explicit names for FRED-style CSVs.
+
+    The CSV-first contract (``load_close_series``) is the project default per
+    ``[[project-data-source]]``; this is the additive DataFrame path.
+    """
+    if date_col not in df.columns or close_col not in df.columns:
+        raise ValueError(
+            f"DataFrame missing required columns; need date_col={date_col!r} and "
+            f"close_col={close_col!r}, have {list(df.columns)}"
+        )
+    sub = df[[date_col, close_col]].copy()
+    sub[date_col] = pd.to_datetime(sub[date_col])
+    sub = sub.dropna(subset=[date_col, close_col])
+    sub = sub.drop_duplicates(subset=[date_col], keep="last")
+    sub = sub.sort_values(date_col).reset_index(drop=True)
+    series = pd.Series(
+        sub[close_col].to_numpy(),
+        index=pd.DatetimeIndex(sub[date_col]),
+        name="close",
+    )
+    return series
+
+
 def log_returns(close: pd.Series) -> pd.Series:
     """Daily log returns: log(close[t] / close[t-1]).
 
