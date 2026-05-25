@@ -6,8 +6,12 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 
 ## Project facts
 
-- [project-overview.md](project-overview.md) — Repo hosts multiple forecasting modules; pointer to per-module `docs/<module>/goal.md` for module specifics
-- [project-data-source.md](project-data-source.md) — v1 reads from `data/NASDAQ100.csv`; full multi-source loader deferred
+- [project-overview.md](project-overview.md) — Repo hosts multiple modules; analog_mc (forecasting) + data_pipelines (ingestion) shipped; per-module `docs/<module>/goal.md` for specifics
+- [project-data-source.md](project-data-source.md) — analog_mc v1 reads from `data/NASDAQ100.csv`; data_pipelines (the deferred loader) has since landed but analog_mc hasn't switched over
 - [project-streamlit.md](project-streamlit.md) — Local dashboard designed for concurrent runs (per-run lockfile, no global mutex)
 - [project-results-layout.md](project-results-layout.md) — Aggregated experiment JSONs live in `results/<module>/data/`, separated from `docs/<module>/` narratives
 - [project-fat-tail-eval.md](project-fat-tail-eval.md) — Operational how-to for the mandatory 15-anchor fat-tail eval panel (scripts, fig paths, regeneration rules)
+
+## Workflow feedback
+
+- [feedback-branch-retention.md](feedback-branch-retention.md) — Don't propose deleting merged plan/feature branches; history is wanted

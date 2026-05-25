@@ -1,0 +1,2221 @@
+{
+  "scan_spec": {
+    "universe": "nifty50",
+    "universe_path": "configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml",
+    "n_tickers_in_universe": 50,
+    "horizons_trading_days": [
+      10,
+      20,
+      50,
+      100
+    ],
+    "threshold": 0.1,
+    "direction": "up",
+    "price_field": "adj_close",
+    "event_def": "max(adj_close in (t, t+H]) >= (1+threshold) * adj_close[t]"
+  },
+  "n_tickers_with_data": 50,
+  "tickers_no_data": [],
+  "aggregate_per_horizon": {
+    "10": {
+      "horizon": 10,
+      "n_stocks": 50,
+      "pooled_n_origins": 71351,
+      "pooled_n_events": 6000,
+      "pooled_base_rate": 0.08409132317697018,
+      "per_stock_rate_min": 0.018218623481781375,
+      "per_stock_rate_q25": 0.047908232118758436,
+      "per_stock_rate_median": 0.06646423751686908,
+      "per_stock_rate_q75": 0.11740890688259109,
+      "per_stock_rate_max": 0.24592592592592594
+    },
+    "20": {
+      "horizon": 20,
+      "n_stocks": 50,
+      "pooled_n_origins": 70851,
+      "pooled_n_events": 15054,
+      "pooled_base_rate": 0.2124740652919507,
+      "per_stock_rate_min": 0.07336956521739131,
+      "per_stock_rate_q25": 0.15506114130434784,
+      "per_stock_rate_median": 0.19497282608695654,
+      "per_stock_rate_q75": 0.2602297851410316,
+      "per_stock_rate_max": 0.45112781954887216
+    },
+    "50": {
+      "horizon": 50,
+      "n_stocks": 50,
+      "pooled_n_origins": 69351,
+      "pooled_n_events": 32713,
+      "pooled_base_rate": 0.47170192210638634,
+      "per_stock_rate_min": 0.25173370319001387,
+      "per_stock_rate_q25": 0.4134882108183079,
+      "per_stock_rate_median": 0.4667128987517337,
+      "per_stock_rate_q75": 0.5180305131761442,
+      "per_stock_rate_max": 0.7267683772538142
+    },
+    "100": {
+      "horizon": 100,
+      "n_stocks": 50,
+      "pooled_n_origins": 66851,
+      "pooled_n_events": 44206,
+      "pooled_base_rate": 0.6612616116438049,
+      "per_stock_rate_min": 0.4339080459770115,
+      "per_stock_rate_q25": 0.6048850574712643,
+      "per_stock_rate_median": 0.6688218390804598,
+      "per_stock_rate_q75": 0.7088721264367817,
+      "per_stock_rate_max": 0.8756137479541735
+    }
+  },
+  "per_stock": {
+    "NSE:ADANIENT": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 307,
+          "base_rate": 0.20715249662618085,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 569,
+          "base_rate": 0.38654891304347827,
+          "lag_p25": 6.0,
+          "lag_p50": 10.0,
+          "lag_p75": 14.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 918,
+          "base_rate": 0.636615811373093,
+          "lag_p25": 8.0,
+          "lag_p50": 15.0,
+          "lag_p75": 27.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1058,
+          "base_rate": 0.7600574712643678,
+          "lag_p25": 10.0,
+          "lag_p50": 19.0,
+          "lag_p75": 40.0
+        }
+      }
+    },
+    "NSE:ADANIPORTS": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 193,
+          "base_rate": 0.13022941970310392,
+          "lag_p25": 5.0,
+          "lag_p50": 6.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 450,
+          "base_rate": 0.30570652173913043,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 804,
+          "base_rate": 0.5575589459084604,
+          "lag_p25": 11.0,
+          "lag_p50": 18.0,
+          "lag_p75": 30.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1011,
+          "base_rate": 0.7262931034482759,
+          "lag_p25": 13.0,
+          "lag_p50": 23.0,
+          "lag_p75": 46.0
+        }
+      }
+    },
+    "NSE:APOLLOHOSP": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 111,
+          "base_rate": 0.07489878542510121,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 303,
+          "base_rate": 0.20584239130434784,
+          "lag_p25": 8.0,
+          "lag_p50": 13.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 752,
+          "base_rate": 0.521497919556172,
+          "lag_p25": 14.0,
+          "lag_p50": 25.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 987,
+          "base_rate": 0.709051724137931,
+          "lag_p25": 18.0,
+          "lag_p50": 32.0,
+          "lag_p75": 50.0
+        }
+      }
+    },
+    "NSE:ASIANPAINT": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 54,
+          "base_rate": 0.03643724696356275,
+          "lag_p25": 6.0,
+          "lag_p50": 7.5,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 204,
+          "base_rate": 0.13858695652173914,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 552,
+          "base_rate": 0.3828016643550624,
+          "lag_p25": 17.0,
+          "lag_p50": 27.0,
+          "lag_p75": 36.25
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 796,
+          "base_rate": 0.5718390804597702,
+          "lag_p25": 22.0,
+          "lag_p50": 37.0,
+          "lag_p75": 60.0
+        }
+      }
+    },
+    "NSE:AXISBANK": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 137,
+          "base_rate": 0.09244264507422402,
+          "lag_p25": 5.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 307,
+          "base_rate": 0.20855978260869565,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 686,
+          "base_rate": 0.47572815533980584,
+          "lag_p25": 13.0,
+          "lag_p50": 23.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 904,
+          "base_rate": 0.6494252873563219,
+          "lag_p25": 17.0,
+          "lag_p50": 31.5,
+          "lag_p75": 54.0
+        }
+      }
+    },
+    "NSE:BAJAJ-AUTO": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 86,
+          "base_rate": 0.058029689608636977,
+          "lag_p25": 6.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 302,
+          "base_rate": 0.20516304347826086,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 649,
+          "base_rate": 0.4500693481276006,
+          "lag_p25": 14.0,
+          "lag_p50": 21.0,
+          "lag_p75": 32.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 928,
+          "base_rate": 0.6666666666666666,
+          "lag_p25": 18.0,
+          "lag_p50": 31.0,
+          "lag_p75": 56.0
+        }
+      }
+    },
+    "NSE:BAJAJFINSV": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 139,
+          "base_rate": 0.09379217273954116,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 288,
+          "base_rate": 0.1956521739130435,
+          "lag_p25": 6.0,
+          "lag_p50": 11.0,
+          "lag_p75": 15.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 657,
+          "base_rate": 0.45561719833564496,
+          "lag_p25": 12.0,
+          "lag_p50": 23.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 850,
+          "base_rate": 0.610632183908046,
+          "lag_p25": 15.0,
+          "lag_p50": 30.0,
+          "lag_p75": 50.0
+        }
+      }
+    },
+    "NSE:BAJFINANCE": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 158,
+          "base_rate": 0.10661268556005399,
+          "lag_p25": 4.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 374,
+          "base_rate": 0.25407608695652173,
+          "lag_p25": 8.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 720,
+          "base_rate": 0.49930651872399445,
+          "lag_p25": 12.0,
+          "lag_p50": 20.0,
+          "lag_p75": 31.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 897,
+          "base_rate": 0.6443965517241379,
+          "lag_p25": 14.0,
+          "lag_p50": 27.0,
+          "lag_p75": 48.0
+        }
+      }
+    },
+    "NSE:BEL": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 241,
+          "base_rate": 0.16261808367071526,
+          "lag_p25": 5.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 507,
+          "base_rate": 0.344429347826087,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 15.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 929,
+          "base_rate": 0.644244105409154,
+          "lag_p25": 10.0,
+          "lag_p50": 19.0,
+          "lag_p75": 30.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1148,
+          "base_rate": 0.8247126436781609,
+          "lag_p25": 12.0,
+          "lag_p50": 24.0,
+          "lag_p75": 44.25
+        }
+      }
+    },
+    "NSE:BHARTIARTL": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 79,
+          "base_rate": 0.053306342780026994,
+          "lag_p25": 5.5,
+          "lag_p50": 7.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 238,
+          "base_rate": 0.16168478260869565,
+          "lag_p25": 8.25,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 703,
+          "base_rate": 0.48751733703190014,
+          "lag_p25": 17.0,
+          "lag_p50": 26.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1039,
+          "base_rate": 0.7464080459770115,
+          "lag_p25": 22.0,
+          "lag_p50": 38.0,
+          "lag_p75": 62.0
+        }
+      }
+    },
+    "NSE:CIPLA": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 71,
+          "base_rate": 0.047908232118758436,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 177,
+          "base_rate": 0.12024456521739131,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 564,
+          "base_rate": 0.391123439667129,
+          "lag_p25": 18.0,
+          "lag_p50": 27.0,
+          "lag_p75": 38.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 856,
+          "base_rate": 0.6149425287356322,
+          "lag_p25": 23.0,
+          "lag_p50": 39.0,
+          "lag_p75": 61.25
+        }
+      }
+    },
+    "NSE:COALINDIA": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 147,
+          "base_rate": 0.09919028340080972,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 362,
+          "base_rate": 0.24592391304347827,
+          "lag_p25": 8.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 682,
+          "base_rate": 0.47295423023578365,
+          "lag_p25": 11.0,
+          "lag_p50": 20.0,
+          "lag_p75": 31.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 901,
+          "base_rate": 0.6472701149425287,
+          "lag_p25": 14.0,
+          "lag_p50": 26.0,
+          "lag_p75": 50.0
+        }
+      }
+    },
+    "NSE:DRREDDY": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 60,
+          "base_rate": 0.04048582995951417,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 8.25
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 218,
+          "base_rate": 0.1480978260869565,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 18.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 509,
+          "base_rate": 0.35298196948682387,
+          "lag_p25": 15.0,
+          "lag_p50": 23.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 756,
+          "base_rate": 0.5431034482758621,
+          "lag_p25": 19.0,
+          "lag_p50": 34.0,
+          "lag_p75": 57.0
+        }
+      }
+    },
+    "NSE:EICHERMOT": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 121,
+          "base_rate": 0.0816464237516869,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 342,
+          "base_rate": 0.23233695652173914,
+          "lag_p25": 9.0,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 669,
+          "base_rate": 0.46393897364771153,
+          "lag_p25": 13.0,
+          "lag_p50": 20.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 970,
+          "base_rate": 0.6968390804597702,
+          "lag_p25": 17.0,
+          "lag_p50": 33.0,
+          "lag_p75": 59.75
+        }
+      }
+    },
+    "NSE:ETERNAL": {
+      "n_rows": 1103,
+      "date_min": "2021-07-23",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1093,
+          "n_events": 232,
+          "base_rate": 0.21225983531564502,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.25
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1083,
+          "n_events": 445,
+          "base_rate": 0.41089566020313945,
+          "lag_p25": 6.0,
+          "lag_p50": 10.0,
+          "lag_p75": 15.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1053,
+          "n_events": 732,
+          "base_rate": 0.6951566951566952,
+          "lag_p25": 9.0,
+          "lag_p50": 16.5,
+          "lag_p75": 27.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1003,
+          "n_events": 791,
+          "base_rate": 0.7886340977068793,
+          "lag_p25": 9.0,
+          "lag_p50": 18.0,
+          "lag_p75": 32.0
+        }
+      }
+    },
+    "NSE:GRASIM": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 88,
+          "base_rate": 0.059379217273954114,
+          "lag_p25": 6.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 288,
+          "base_rate": 0.1956521739130435,
+          "lag_p25": 10.0,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 665,
+          "base_rate": 0.46116504854368934,
+          "lag_p25": 14.0,
+          "lag_p50": 23.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 972,
+          "base_rate": 0.6982758620689655,
+          "lag_p25": 18.0,
+          "lag_p50": 33.0,
+          "lag_p75": 57.0
+        }
+      }
+    },
+    "NSE:HCLTECH": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 85,
+          "base_rate": 0.05735492577597841,
+          "lag_p25": 6.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 286,
+          "base_rate": 0.19429347826086957,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 691,
+          "base_rate": 0.4791955617198336,
+          "lag_p25": 15.0,
+          "lag_p50": 24.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 898,
+          "base_rate": 0.6451149425287356,
+          "lag_p25": 18.0,
+          "lag_p50": 30.0,
+          "lag_p75": 53.0
+        }
+      }
+    },
+    "NSE:HDFCBANK": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 59,
+          "base_rate": 0.0398110661268556,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 177,
+          "base_rate": 0.12024456521739131,
+          "lag_p25": 9.0,
+          "lag_p50": 14.0,
+          "lag_p75": 18.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 484,
+          "base_rate": 0.3356449375866852,
+          "lag_p25": 17.0,
+          "lag_p50": 25.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 792,
+          "base_rate": 0.5689655172413793,
+          "lag_p25": 22.0,
+          "lag_p50": 41.0,
+          "lag_p75": 64.0
+        }
+      }
+    },
+    "NSE:HDFCLIFE": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 64,
+          "base_rate": 0.043184885290148446,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 225,
+          "base_rate": 0.15285326086956522,
+          "lag_p25": 10.0,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 529,
+          "base_rate": 0.3668515950069348,
+          "lag_p25": 14.0,
+          "lag_p50": 23.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 750,
+          "base_rate": 0.5387931034482759,
+          "lag_p25": 18.0,
+          "lag_p50": 31.0,
+          "lag_p75": 59.0
+        }
+      }
+    },
+    "NSE:HINDALCO": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 232,
+          "base_rate": 0.15654520917678813,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 518,
+          "base_rate": 0.35190217391304346,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 923,
+          "base_rate": 0.6400832177531207,
+          "lag_p25": 10.0,
+          "lag_p50": 18.0,
+          "lag_p75": 30.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1130,
+          "base_rate": 0.8117816091954023,
+          "lag_p25": 12.0,
+          "lag_p50": 23.0,
+          "lag_p75": 47.0
+        }
+      }
+    },
+    "NSE:HINDUNILVR": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 46,
+          "base_rate": 0.0310391363022942,
+          "lag_p25": 5.0,
+          "lag_p50": 7.5,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 159,
+          "base_rate": 0.10801630434782608,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 450,
+          "base_rate": 0.3120665742024965,
+          "lag_p25": 17.0,
+          "lag_p50": 27.0,
+          "lag_p75": 39.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 668,
+          "base_rate": 0.47988505747126436,
+          "lag_p25": 21.0,
+          "lag_p50": 38.0,
+          "lag_p75": 60.0
+        }
+      }
+    },
+    "NSE:ICICIBANK": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 93,
+          "base_rate": 0.06275303643724696,
+          "lag_p25": 4.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 259,
+          "base_rate": 0.17595108695652173,
+          "lag_p25": 8.0,
+          "lag_p50": 13.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 603,
+          "base_rate": 0.41816920943134533,
+          "lag_p25": 14.0,
+          "lag_p50": 24.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 881,
+          "base_rate": 0.6329022988505747,
+          "lag_p25": 18.0,
+          "lag_p50": 36.0,
+          "lag_p75": 58.0
+        }
+      }
+    },
+    "NSE:INDIGO": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 174,
+          "base_rate": 0.11740890688259109,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 420,
+          "base_rate": 0.28532608695652173,
+          "lag_p25": 8.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 846,
+          "base_rate": 0.5866851595006934,
+          "lag_p25": 12.0,
+          "lag_p50": 21.0,
+          "lag_p75": 32.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1100,
+          "base_rate": 0.7902298850574713,
+          "lag_p25": 14.0,
+          "lag_p50": 27.0,
+          "lag_p75": 48.0
+        }
+      }
+    },
+    "NSE:INFY": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 55,
+          "base_rate": 0.037112010796221326,
+          "lag_p25": 6.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 217,
+          "base_rate": 0.14741847826086957,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 620,
+          "base_rate": 0.42995839112343964,
+          "lag_p25": 16.0,
+          "lag_p50": 27.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 840,
+          "base_rate": 0.603448275862069,
+          "lag_p25": 20.0,
+          "lag_p50": 32.0,
+          "lag_p75": 53.0
+        }
+      }
+    },
+    "NSE:ITC": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 88,
+          "base_rate": 0.059379217273954114,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 207,
+          "base_rate": 0.140625,
+          "lag_p25": 8.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.5
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 551,
+          "base_rate": 0.38210818307905686,
+          "lag_p25": 15.0,
+          "lag_p50": 28.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 810,
+          "base_rate": 0.5818965517241379,
+          "lag_p25": 20.0,
+          "lag_p50": 37.0,
+          "lag_p75": 59.0
+        }
+      }
+    },
+    "NSE:JIOFIN": {
+      "n_rows": 578,
+      "date_min": "2023-09-04",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 568,
+          "n_events": 62,
+          "base_rate": 0.10915492957746478,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 558,
+          "n_events": 143,
+          "base_rate": 0.25627240143369173,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.5
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 528,
+          "n_events": 225,
+          "base_rate": 0.42613636363636365,
+          "lag_p25": 10.0,
+          "lag_p50": 17.0,
+          "lag_p75": 24.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 478,
+          "n_events": 260,
+          "base_rate": 0.5439330543933054,
+          "lag_p25": 11.0,
+          "lag_p50": 19.0,
+          "lag_p75": 34.0
+        }
+      }
+    },
+    "NSE:JSWSTEEL": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 132,
+          "base_rate": 0.08906882591093117,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 294,
+          "base_rate": 0.19972826086956522,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 694,
+          "base_rate": 0.4812760055478502,
+          "lag_p25": 13.0,
+          "lag_p50": 24.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 977,
+          "base_rate": 0.701867816091954,
+          "lag_p25": 18.0,
+          "lag_p50": 35.0,
+          "lag_p75": 57.0
+        }
+      }
+    },
+    "NSE:KOTAKBANK": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 77,
+          "base_rate": 0.05195681511470985,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 185,
+          "base_rate": 0.12567934782608695,
+          "lag_p25": 8.0,
+          "lag_p50": 11.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 437,
+          "base_rate": 0.3030513176144244,
+          "lag_p25": 13.0,
+          "lag_p50": 24.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 604,
+          "base_rate": 0.4339080459770115,
+          "lag_p25": 17.0,
+          "lag_p50": 35.0,
+          "lag_p75": 56.0
+        }
+      }
+    },
+    "NSE:LT": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 61,
+          "base_rate": 0.04116059379217274,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 257,
+          "base_rate": 0.17459239130434784,
+          "lag_p25": 11.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 711,
+          "base_rate": 0.4930651872399445,
+          "lag_p25": 17.0,
+          "lag_p50": 25.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 986,
+          "base_rate": 0.7083333333333334,
+          "lag_p25": 20.0,
+          "lag_p50": 35.0,
+          "lag_p75": 57.0
+        }
+      }
+    },
+    "NSE:M&M": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 198,
+          "base_rate": 0.13360323886639677,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 436,
+          "base_rate": 0.296195652173913,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 814,
+          "base_rate": 0.5644937586685159,
+          "lag_p25": 11.0,
+          "lag_p50": 19.0,
+          "lag_p75": 32.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1085,
+          "base_rate": 0.7794540229885057,
+          "lag_p25": 14.0,
+          "lag_p50": 28.0,
+          "lag_p75": 53.0
+        }
+      }
+    },
+    "NSE:MARUTI": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 71,
+          "base_rate": 0.047908232118758436,
+          "lag_p25": 4.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 240,
+          "base_rate": 0.16304347826086957,
+          "lag_p25": 9.75,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 625,
+          "base_rate": 0.4334257975034674,
+          "lag_p25": 15.0,
+          "lag_p50": 24.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 948,
+          "base_rate": 0.6810344827586207,
+          "lag_p25": 21.0,
+          "lag_p50": 35.0,
+          "lag_p75": 62.0
+        }
+      }
+    },
+    "NSE:MAXHEALTH": {
+      "n_rows": 1322,
+      "date_min": "2020-09-04",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1312,
+          "n_events": 243,
+          "base_rate": 0.18521341463414634,
+          "lag_p25": 4.5,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1302,
+          "n_events": 508,
+          "base_rate": 0.3901689708141321,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 15.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1272,
+          "n_events": 857,
+          "base_rate": 0.6737421383647799,
+          "lag_p25": 10.0,
+          "lag_p50": 17.0,
+          "lag_p75": 29.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1222,
+          "n_events": 1070,
+          "base_rate": 0.8756137479541735,
+          "lag_p25": 11.0,
+          "lag_p50": 22.0,
+          "lag_p75": 43.0
+        }
+      }
+    },
+    "NSE:NESTLEIND": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 27,
+          "base_rate": 0.018218623481781375,
+          "lag_p25": 5.5,
+          "lag_p50": 7.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 108,
+          "base_rate": 0.07336956521739131,
+          "lag_p25": 10.75,
+          "lag_p50": 14.5,
+          "lag_p75": 18.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 363,
+          "base_rate": 0.25173370319001387,
+          "lag_p25": 19.0,
+          "lag_p50": 28.0,
+          "lag_p75": 39.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 624,
+          "base_rate": 0.4482758620689655,
+          "lag_p25": 25.0,
+          "lag_p50": 46.0,
+          "lag_p75": 71.0
+        }
+      }
+    },
+    "NSE:NTPC": {
+      "n_rows": 1050,
+      "date_min": "2020-01-16",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1040,
+          "n_events": 139,
+          "base_rate": 0.13365384615384615,
+          "lag_p25": 4.5,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1030,
+          "n_events": 312,
+          "base_rate": 0.3029126213592233,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1000,
+          "n_events": 582,
+          "base_rate": 0.582,
+          "lag_p25": 11.0,
+          "lag_p50": 19.0,
+          "lag_p75": 31.75
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 950,
+          "n_events": 695,
+          "base_rate": 0.7315789473684211,
+          "lag_p25": 13.0,
+          "lag_p50": 23.0,
+          "lag_p75": 43.0
+        }
+      }
+    },
+    "NSE:ONGC": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 181,
+          "base_rate": 0.12213225371120108,
+          "lag_p25": 5.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 312,
+          "base_rate": 0.21195652173913043,
+          "lag_p25": 6.0,
+          "lag_p50": 9.0,
+          "lag_p75": 14.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 651,
+          "base_rate": 0.45145631067961167,
+          "lag_p25": 10.0,
+          "lag_p50": 21.0,
+          "lag_p75": 35.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 981,
+          "base_rate": 0.7047413793103449,
+          "lag_p25": 15.0,
+          "lag_p50": 35.0,
+          "lag_p75": 63.0
+        }
+      }
+    },
+    "NSE:POWERGRID": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 97,
+          "base_rate": 0.06545209176788123,
+          "lag_p25": 6.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 254,
+          "base_rate": 0.17255434782608695,
+          "lag_p25": 9.0,
+          "lag_p50": 13.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 642,
+          "base_rate": 0.44521497919556174,
+          "lag_p25": 15.0,
+          "lag_p50": 24.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 848,
+          "base_rate": 0.6091954022988506,
+          "lag_p25": 18.0,
+          "lag_p50": 32.0,
+          "lag_p75": 50.0
+        }
+      }
+    },
+    "NSE:RELIANCE": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 94,
+          "base_rate": 0.06342780026990553,
+          "lag_p25": 5.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 248,
+          "base_rate": 0.16847826086956522,
+          "lag_p25": 9.0,
+          "lag_p50": 13.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 594,
+          "base_rate": 0.4119278779472954,
+          "lag_p25": 14.0,
+          "lag_p50": 24.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 814,
+          "base_rate": 0.5847701149425287,
+          "lag_p25": 17.0,
+          "lag_p50": 32.5,
+          "lag_p75": 62.0
+        }
+      }
+    },
+    "NSE:SBILIFE": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 65,
+          "base_rate": 0.043859649122807015,
+          "lag_p25": 5.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 218,
+          "base_rate": 0.1480978260869565,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 577,
+          "base_rate": 0.4001386962552011,
+          "lag_p25": 16.0,
+          "lag_p50": 25.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 904,
+          "base_rate": 0.6494252873563219,
+          "lag_p25": 22.0,
+          "lag_p50": 39.5,
+          "lag_p75": 66.0
+        }
+      }
+    },
+    "NSE:SBIN": {
+      "n_rows": 1465,
+      "date_min": "2020-01-08",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1455,
+          "n_events": 110,
+          "base_rate": 0.07560137457044673,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1445,
+          "n_events": 311,
+          "base_rate": 0.21522491349480968,
+          "lag_p25": 8.0,
+          "lag_p50": 13.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1415,
+          "n_events": 674,
+          "base_rate": 0.4763250883392226,
+          "lag_p25": 14.0,
+          "lag_p50": 22.0,
+          "lag_p75": 34.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1365,
+          "n_events": 895,
+          "base_rate": 0.6556776556776557,
+          "lag_p25": 16.0,
+          "lag_p50": 32.0,
+          "lag_p75": 58.0
+        }
+      }
+    },
+    "NSE:SHRIRAMFIN": {
+      "n_rows": 685,
+      "date_min": "2020-01-30",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 675,
+          "n_events": 166,
+          "base_rate": 0.24592592592592594,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 665,
+          "n_events": 300,
+          "base_rate": 0.45112781954887216,
+          "lag_p25": 6.0,
+          "lag_p50": 10.0,
+          "lag_p75": 15.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 635,
+          "n_events": 444,
+          "base_rate": 0.6992125984251969,
+          "lag_p25": 8.0,
+          "lag_p50": 15.5,
+          "lag_p75": 26.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 585,
+          "n_events": 467,
+          "base_rate": 0.7982905982905983,
+          "lag_p25": 9.0,
+          "lag_p50": 18.0,
+          "lag_p75": 33.0
+        }
+      }
+    },
+    "NSE:SUNPHARMA": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 66,
+          "base_rate": 0.044534412955465584,
+          "lag_p25": 4.25,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 214,
+          "base_rate": 0.1453804347826087,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 18.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 636,
+          "base_rate": 0.44105409153952846,
+          "lag_p25": 18.0,
+          "lag_p50": 27.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 957,
+          "base_rate": 0.6875,
+          "lag_p25": 22.0,
+          "lag_p50": 37.0,
+          "lag_p75": 62.0
+        }
+      }
+    },
+    "NSE:TATACONSUM": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 97,
+          "base_rate": 0.06545209176788123,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 270,
+          "base_rate": 0.18342391304347827,
+          "lag_p25": 8.25,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 677,
+          "base_rate": 0.4694868238557559,
+          "lag_p25": 15.0,
+          "lag_p50": 25.0,
+          "lag_p75": 38.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 937,
+          "base_rate": 0.673132183908046,
+          "lag_p25": 19.0,
+          "lag_p50": 36.0,
+          "lag_p75": 57.0
+        }
+      }
+    },
+    "NSE:TATASTEEL": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 174,
+          "base_rate": 0.11740890688259109,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 385,
+          "base_rate": 0.26154891304347827,
+          "lag_p25": 7.0,
+          "lag_p50": 11.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 779,
+          "base_rate": 0.5402219140083218,
+          "lag_p25": 12.0,
+          "lag_p50": 21.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 985,
+          "base_rate": 0.7076149425287356,
+          "lag_p25": 14.0,
+          "lag_p50": 27.0,
+          "lag_p75": 48.0
+        }
+      }
+    },
+    "NSE:TCS": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 32,
+          "base_rate": 0.021592442645074223,
+          "lag_p25": 6.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 158,
+          "base_rate": 0.10733695652173914,
+          "lag_p25": 11.0,
+          "lag_p50": 15.0,
+          "lag_p75": 18.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 462,
+          "base_rate": 0.32038834951456313,
+          "lag_p25": 17.25,
+          "lag_p50": 27.0,
+          "lag_p75": 37.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 712,
+          "base_rate": 0.5114942528735632,
+          "lag_p25": 22.0,
+          "lag_p50": 38.0,
+          "lag_p75": 63.0
+        }
+      }
+    },
+    "NSE:TECHM": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 100,
+          "base_rate": 0.06747638326585695,
+          "lag_p25": 6.0,
+          "lag_p50": 7.5,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 271,
+          "base_rate": 0.18410326086956522,
+          "lag_p25": 9.0,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 720,
+          "base_rate": 0.49930651872399445,
+          "lag_p25": 16.0,
+          "lag_p50": 26.0,
+          "lag_p75": 35.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 934,
+          "base_rate": 0.6709770114942529,
+          "lag_p25": 19.0,
+          "lag_p50": 31.0,
+          "lag_p75": 50.0
+        }
+      }
+    },
+    "NSE:TITAN": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 76,
+          "base_rate": 0.05128205128205128,
+          "lag_p25": 6.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 260,
+          "base_rate": 0.1766304347826087,
+          "lag_p25": 10.0,
+          "lag_p50": 14.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 708,
+          "base_rate": 0.4909847434119279,
+          "lag_p25": 17.0,
+          "lag_p50": 25.0,
+          "lag_p75": 35.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 947,
+          "base_rate": 0.680316091954023,
+          "lag_p25": 20.0,
+          "lag_p50": 32.0,
+          "lag_p75": 54.0
+        }
+      }
+    },
+    "NSE:TMPV": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 198,
+          "base_rate": 0.13360323886639677,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 8.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 458,
+          "base_rate": 0.3111413043478261,
+          "lag_p25": 7.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 732,
+          "base_rate": 0.507628294036061,
+          "lag_p25": 10.0,
+          "lag_p50": 17.0,
+          "lag_p75": 27.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 962,
+          "base_rate": 0.6910919540229885,
+          "lag_p25": 12.0,
+          "lag_p50": 22.0,
+          "lag_p75": 49.0
+        }
+      }
+    },
+    "NSE:TRENT": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 244,
+          "base_rate": 0.16464237516869096,
+          "lag_p25": 4.0,
+          "lag_p50": 6.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 560,
+          "base_rate": 0.3804347826086957,
+          "lag_p25": 7.0,
+          "lag_p50": 11.5,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 1048,
+          "base_rate": 0.7267683772538142,
+          "lag_p25": 11.0,
+          "lag_p50": 19.0,
+          "lag_p75": 29.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 1171,
+          "base_rate": 0.8412356321839081,
+          "lag_p25": 12.0,
+          "lag_p50": 21.0,
+          "lag_p75": 35.0
+        }
+      }
+    },
+    "NSE:ULTRACEMCO": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 70,
+          "base_rate": 0.04723346828609987,
+          "lag_p25": 5.0,
+          "lag_p50": 8.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 244,
+          "base_rate": 0.16576086956521738,
+          "lag_p25": 10.0,
+          "lag_p50": 13.0,
+          "lag_p75": 17.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 561,
+          "base_rate": 0.38904299583911234,
+          "lag_p25": 14.0,
+          "lag_p50": 22.0,
+          "lag_p75": 33.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 915,
+          "base_rate": 0.6573275862068966,
+          "lag_p25": 19.0,
+          "lag_p50": 37.0,
+          "lag_p75": 68.0
+        }
+      }
+    },
+    "NSE:WIPRO": {
+      "n_rows": 1492,
+      "date_min": "2020-01-01",
+      "date_max": "2025-12-31",
+      "horizons": {
+        "10": {
+          "horizon": 10,
+          "n_origins": 1482,
+          "n_events": 100,
+          "base_rate": 0.06747638326585695,
+          "lag_p25": 5.0,
+          "lag_p50": 7.0,
+          "lag_p75": 9.0
+        },
+        "20": {
+          "horizon": 20,
+          "n_origins": 1472,
+          "n_events": 266,
+          "base_rate": 0.18070652173913043,
+          "lag_p25": 8.0,
+          "lag_p50": 12.0,
+          "lag_p75": 16.0
+        },
+        "50": {
+          "horizon": 50,
+          "n_origins": 1442,
+          "n_events": 612,
+          "base_rate": 0.42441054091539526,
+          "lag_p25": 14.0,
+          "lag_p50": 23.0,
+          "lag_p75": 36.0
+        },
+        "100": {
+          "horizon": 100,
+          "n_origins": 1392,
+          "n_events": 795,
+          "base_rate": 0.5711206896551724,
+          "lag_p25": 16.0,
+          "lag_p50": 31.0,
+          "lag_p75": 49.0
+        }
+      }
+    }
+  }
+}
