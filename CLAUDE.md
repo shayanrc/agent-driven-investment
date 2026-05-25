@@ -1,12 +1,17 @@
 # Agent-Driven Investment — Project Conventions
 
-This repo will host multiple forecasting/analytics modules. The first is **analog_mc** (analog Monte Carlo price-path forecasting). Treat every module as independently versioned and namespaced.
+This repo hosts multiple forecasting/analytics modules — each independently versioned and namespaced:
+
+- **analog_mc** — probabilistic price-path forecasting (analog Monte Carlo). [`docs/analog_mc/goal.md`](docs/analog_mc/goal.md)
+- **data_pipelines** — generic time-series ingestion framework; `us_equities` + `nse_equities` domains shipped. [`docs/data_pipelines/goal.md`](docs/data_pipelines/goal.md)
+- **forecasters** — agent-callable forecasting surface; presets as saved-model artifacts; analog_mc wired as backend #1. [`docs/forecasters/goal.md`](docs/forecasters/goal.md)
+- **gbdt** — categorical-outcome GBDT classifiers for probability of `{±10/20/50%}` in `{10/20/50}` days. [`docs/gbdt/goal.md`](docs/gbdt/goal.md)
 
 ## Module goal docs (read first)
 
-Before editing any file under a module's directory tree (`src/<module>/`, `tests/<module>/`, `configs/<module>/`, `dashboards/<module>/`, `docs/<module>/`, `results/<module>/`), read `docs/<module>/goal.md` first. It defines what the module is optimizing for and which trade-offs are unacceptable. `IMPLEMENTATION_PLAN.md` / `ALGORITHM.MD` describe *how* the module works; `goal.md` defines the success criteria your change must respect.
+Before editing any file under a module's directory tree (`src/<module>/`, `tests/<module>/`, `configs/<module>/`, `dashboards/<module>/`, `docs/<module>/`, `results/<module>/`, `scripts/<module>/`), read `docs/<module>/goal.md` first. It defines what the module is optimizing for and which trade-offs are unacceptable. `IMPLEMENTATION_PLAN.md` / `V<N>_PLAN.md` describe *how* the module works; `goal.md` defines the success criteria your change must respect.
 
-For analog_mc: [`docs/analog_mc/goal.md`](docs/analog_mc/goal.md).
+`docs/<module>/V<N>_TBD.md` is the parking lot for follow-ups discovered in a branch but out of scope for it. `docs/<module>/V0_INVESTIGATION_PLAN.md` (where present) frames pre-v1 data-exploration scans whose outputs inform v1 design (see `gbdt` for an example).
 
 ## Module namespacing
 
@@ -14,9 +19,10 @@ Every module-specific directory nests under the module name. The top-level direc
 
 ```
 src/<module>/                  # package code
-docs/<module>/                 # design docs (e.g., IMPLEMENTATION_PLAN.md) + per-experiment reports (_<id>_<name>.md)
+docs/<module>/                 # design docs (V1_PLAN.md, IMPLEMENTATION_PLAN.md) + per-experiment reports (_<id>_<name>.md)
 tests/<module>/                # tests
 configs/<module>/*.yaml        # YAML configs
+scripts/<module>/              # ad-hoc orchestration / aggregation / report-rendering / v0 investigation scripts
 runs/<module>/<timestamp>/     # raw per-fold run artifacts (gitignored)
 results/<module>/data/         # aggregated experiment JSONs (_<id>_data.json) — checked in
 dashboards/<module>/
@@ -25,14 +31,24 @@ dashboards/<module>/
 dashboards/app.py              # thin global launcher
 ```
 
-When adding new module-scoped files, always nest them under `<top>/<module>/`. Never put module-specific code in the top-level `dashboards/`, `tests/`, `configs/`, or `runs/`.
+When adding new module-scoped files, always nest them under `<top>/<module>/`. Never put module-specific code in the top-level `dashboards/`, `tests/`, `configs/`, `scripts/`, or `runs/`.
 
 **Docs vs results.** `docs/<module>/_<id>_<name>.md` holds the experiment narrative (setup, mechanistic reading, decision-rule verdict). `results/<module>/data/_<id>_data.json` holds the machine-readable headline metrics that back the narrative. New aggregate scripts write to `results/<module>/data/` by default.
 
+## Claude Code skills
+
+Agent-callable verbs live at `.claude/skills/<name>/SKILL.md` and are invoked as `/<name>` from any session.
+
+- **One skill = one verb.** Inference, fitting, listing, fetching, health-checking are separate skills.
+- **Skill is module-owned even when bundled in a cross-module PR.** SKILL.md files live in the shared `.claude/skills/` namespace (because that's where Claude Code reads them), but the runner script lives under the owning module (e.g. `/fetch-data` SKILL.md + `scripts/data_pipelines/skill_runner.py`). Ownership tracks the implementation, not the SKILL.md location.
+- **Long-running skills (`/tune-preset` and the like) MUST bake in the loop-pattern guidance** per `.claude/memories/feedback-experiment-agent-loop.md` so sub-agents that invoke them set up properly from launch.
+- **No backend-internal hyperparameter flags** on the public skill surface — overrides via `--config-overrides path.yaml`, never `--n-eff 50`.
+
 ## Data and configs
 
-- v1 reads from a single local CSV at `data/NASDAQ100.csv` (FRED-style: `observation_date`, `NASDAQ100`). No yfinance / multi-source dispatch — that's a deferred loader module.
-- The data loader takes `date_col` and `close_col` from config, not hardcoded — keeps the pipeline asset-agnostic.
+- **analog_mc / gbdt**: read from a local CSV (default `data/NASDAQ100.csv`, FRED-style: `observation_date`, `NASDAQ100`). The loader takes `date_col` and `close_col` from config — asset-agnostic.
+- **`data_pipelines`**: the general-purpose loader has shipped. New modules that need historical price data should use `data_pipelines.fetch(identifier, start, end)`. `analog_mc` and `gbdt` v1 stay on the CSV-first contract per `[[project-data-source]]`; wiring them to `data_pipelines` is a separate per-module plan.
+- **Cache layout**: SQLite at `data/processed.db` (per-domain tables) + immutable per-provider raw downloads at `data/raw/<provider>/...`. Single-writer-per-`data_root` is the contract — concurrent seed processes risk SQLite `BUSY` contention; WAL serializes correctness-wise.
 
 ## Plans and branches
 
@@ -63,8 +79,10 @@ The 6 critical correctness constraints (C1–C6 in the plan) are non-negotiable:
 ## Environment
 
 - Python ≥3.12 via uv. Venv at `.venv/`, lockfile at `uv.lock`.
-- `analog_mc` is installed as an editable package via hatchling — `import analog_mc.foo` works from anywhere.
-- Run things with `uv run <cmd>` (e.g., `uv run pytest`, `uv run streamlit run dashboards/analog_mc/app.py`) or activate `.venv/`.
+- `analog_mc`, `data_pipelines`, `forecasters`, and `gbdt` are all installed as editable packages via hatchling (`pyproject.toml` `[tool.hatch.build.targets.wheel] packages` list) — `import <module>.foo` works from anywhere.
+- Run things with `uv run <cmd>` (e.g., `uv run pytest`, `uv run streamlit run dashboards/analog_mc/app.py`, `uv run python -m data_pipelines fetch ...`, `uv run python -m scripts.gbdt.v0_opportunity_scan`).
+- **gh CLI is installed and authenticated** as `shayanrc` (per per-user memory `gh-cli-installed`). Use `gh pr create / view / diff / comment / review` directly for GitHub ops; no need to surface compare URLs. Merges still happen via user action (no autonomous `gh pr merge`).
+- **Worktree workflow for parallel agents**: when launching long-running sub-agents that need their own working tree, create a sibling worktree (convention: `wt-<scope>/` next to the main checkout) and symlink `data/` + `.env` from the main checkout so the shared cache and secrets carry over. The lockfile is shared via git, so `uv sync --frozen` in the worktree sets up an isolated `.venv/`.
 
 ## Memories
 
@@ -72,7 +90,9 @@ Project-shared facts (architecture decisions, layout conventions, workflow rules
 
 Per-user/per-machine items (personal preferences, role context, machine paths) stay at `~/.claude/projects/<hash>/memory/`. Don't duplicate project facts there — refer to the project memories instead.
 
-## What not to do (analog_mc)
+## What not to do — analog_mc
+
+(Module-specific anti-patterns. Future modules append their own `## What not to do — <module>` sections rather than dumping into a shared list.)
 
 - Don't use scikit-learn's `StandardScaler` — it batch-fits across the array. Implement causal z-scoring directly.
 - Don't swap grid search for BayesOpt — the grid was chosen for diagnostic interpretability.
