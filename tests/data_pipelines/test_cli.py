@@ -115,6 +115,17 @@ class TestParser:
         assert args.cmd == "fetch"
         assert args.identifier == "NYSE:AAPL"
         assert args.start == "2026-01-01"
+        # back_extend defaults to False — existing callers' behaviour preserved.
+        assert args.back_extend is False
+
+    def test_fetch_back_extend_flag(self):
+        parser = build_parser()
+        args = parser.parse_args([
+            "fetch", "NYSE:AAPL",
+            "--start", "2015-01-01", "--end", "2026-01-31",
+            "--back-extend",
+        ])
+        assert args.back_extend is True
 
     def test_seed_defaults_to_sp500(self):
         parser = build_parser()

@@ -68,6 +68,7 @@ def _cmd_fetch(args) -> int:
         start=_parse_date(args.start),
         end=_parse_date(args.end),
         data_root=Path(args.data_root),
+        back_extend=args.back_extend,
     )
     print(json.dumps(meta.to_dict(), indent=2))
     print(f"rows: {len(df)}")
@@ -301,6 +302,11 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--end", required=True)
     f.add_argument("--head", type=int, default=0,
                    help="Print first N rows of the result")
+    f.add_argument("--back-extend", action="store_true",
+                   help="Bypass the cache-first cap so providers get asked "
+                        "for pre-cache history. Use when explicitly "
+                        "extending an existing ticker's history further "
+                        "back than initially seeded.")
     f.set_defaults(func=_cmd_fetch)
 
     s = sub.add_parser("seed", help="Bulk-seed a universe")
