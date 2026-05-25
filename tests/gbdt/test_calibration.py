@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pickle
+
 import numpy as np
 import pytest
 
@@ -108,3 +110,46 @@ def test_spiegelhalter_z_empty_inputs():
 def test_spiegelhalter_z_length_mismatch_raises():
     with pytest.raises(ValueError, match="length mismatch"):
         spiegelhalter_z(np.array([0, 1]), np.array([0.5]))
+
+
+# ---------------------------------------------------------------------------
+# Calibration artifact round-trip (PR #8 review, Minor 2)
+# ---------------------------------------------------------------------------
+
+
+def test_isotonic_pickle_roundtrip_preserves_outputs(tmp_path):
+    """Fit isotonic, pickle.dump → pickle.load, assert outputs match.
+
+    Guards against the plaintext-vs-pickle bug surfaced in PR #8 review:
+    when ``calibration.pkl`` is sometimes a placeholder text file and
+    sometimes a real pickle, ``pickle.load`` raises ``UnpicklingError``.
+    """
+    y, p = _miscal_overconfident(4000, seed=11)
+    iso = fit_isotonic(y, p)
+    out_before = apply_calibrator(p, iso)
+
+    path = tmp_path / "calibration.pkl"
+    with open(path, "wb") as f:
+        pickle.dump(iso, f)
+    with open(path, "rb") as f:
+        loaded = pickle.load(f)
+
+    out_after = apply_calibrator(p, loaded)
+    assert np.allclose(out_before, out_after)
+
+
+def test_none_calibrator_pickle_roundtrip(tmp_path):
+    """Persist ``None`` via pickle (native-pass case) and load it back.
+
+    The artifact emitter unconditionally writes a pickle so downstream
+    ``pickle.load`` works whether or not calibration fired.
+    """
+    path = tmp_path / "calibration.pkl"
+    with open(path, "wb") as f:
+        pickle.dump(None, f)
+    with open(path, "rb") as f:
+        loaded = pickle.load(f)
+    assert loaded is None
+    # And apply_calibrator passes p through unchanged.
+    p = np.array([0.1, 0.5, 0.9])
+    assert np.allclose(apply_calibrator(p, loaded), p)

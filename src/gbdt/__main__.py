@@ -175,13 +175,25 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     print(f"[data] start universe={target['universe']}", flush=True)
     t1 = time.time()
+    data_cfg = spec.get("data", {}) or {}
+    staleness_days = int(data_cfg.get(
+        "staleness_days", gbdt_data.DEFAULT_STALENESS_DAYS,
+    ))
     panel_obj = gbdt_data.load_panel(
         target["universe"],
         start=dr.get("start"),
         end=dr.get("end"),
         min_rows=min_rows,
         repo_root=repo_root,
+        staleness_days=staleness_days,
     )
+    if panel_obj.stale_tickers:
+        print(
+            f"[data] warning: {len(panel_obj.stale_tickers)} stale ticker(s) "
+            f"(cache > {staleness_days}d old): "
+            f"{panel_obj.stale_tickers[:5]}{'...' if len(panel_obj.stale_tickers) > 5 else ''}",
+            flush=True,
+        )
     print(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
            f"tickers_kept={len(panel_obj.tickers_kept)}", flush=True)
 
@@ -246,16 +258,22 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     (out_dir / "spec.yaml").write_text(yaml.safe_dump(spec, sort_keys=False))
 
     result.best_model.save(out_dir / "model.cbm")
-    if result.calibration.calibrator is not None:
-        with open(out_dir / "calibration.pkl", "wb") as f:
-            pickle.dump(result.calibration.calibrator, f)
-    else:
-        (out_dir / "calibration.pkl").write_text("# native: no calibrator\n")
+    # Always write a pickle. When no calibrator is needed (native pass) we
+    # still pickle ``None`` so downstream ``pickle.load`` is uniform — see
+    # PR #8 review (Minor 2): a plaintext-vs-pickle mix produced
+    # ``UnpicklingError: invalid load key, '#'.``
+    with open(out_dir / "calibration.pkl", "wb") as f:
+        pickle.dump(result.calibration.calibrator, f)
 
+    # YAML artifacts are written as explicit top-level-keyed dicts (not
+    # bare collections) so they are self-describing and merge/diff cleanly
+    # in the cross-experiment table — see PR #8 review (Minor 3).
     (out_dir / "features.yaml").write_text(
-        yaml.safe_dump(result.best_features, sort_keys=False)
+        yaml.safe_dump({"features": list(result.best_features)}, sort_keys=False)
     )
-    (out_dir / "hp.yaml").write_text(yaml.safe_dump(result.best_hp, sort_keys=False))
+    (out_dir / "hp.yaml").write_text(
+        yaml.safe_dump({"hp": dict(result.best_hp)}, sort_keys=False)
+    )
 
     with open(out_dir / "iterations.jsonl", "w") as f:
         last_idx = len(result.iterations) - 1
@@ -283,6 +301,20 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             "n_tickers_in_universe": len(panel_obj.statuses),
             "n_tickers_used": len(panel_obj.tickers_kept),
             "tickers_excluded": panel_obj.tickers_excluded,
+            # Cache freshness / NaN-row drop telemetry (PR #8 review, Minor 1+4).
+            "staleness_days_threshold": panel_obj.staleness_days_threshold,
+            "stale_tickers": panel_obj.stale_tickers,
+            "n_tickers_stale": len(panel_obj.stale_tickers),
+            "cache_age_days_by_ticker": {
+                s.ticker: s.cache_age_days
+                for s in panel_obj.statuses
+                if s.kept and s.cache_age_days is not None
+            },
+            "nan_rows_dropped_by_ticker": {
+                s.ticker: s.nan_rows_dropped
+                for s in panel_obj.statuses
+                if s.nan_rows_dropped > 0
+            },
             "n_rows_train": int(len(train_pred)) if train_pred is not None else 0,
             "n_rows_val": int(len(val_pred)) if val_pred is not None else 0,
             "n_rows_eval": int(len(result.predictions.get("eval", pd.DataFrame()))),

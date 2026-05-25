@@ -19,6 +19,7 @@ time order downstream.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -26,6 +27,15 @@ from typing import Iterable
 
 import pandas as pd
 import yaml
+
+logger = logging.getLogger(__name__)
+
+# Default cache-freshness tolerance in *calendar* days. A 14-trading-day
+# threshold ~ 20 calendar days; we keep it slightly tight so a stale cache
+# can't sneak past a long weekend or single holiday. Overridable via the
+# ``staleness_days`` kwarg or the spec's ``data.staleness_days`` key — see
+# PR #8 review (Minor 1).
+DEFAULT_STALENESS_DAYS = 20
 
 # Side effect: register the NSE domain so ``data_pipelines.fetch("NSE:...")``
 # resolves. The us_equities domain is registered too so that an accidental US
@@ -54,6 +64,14 @@ class TickerStatus:
     rows: int
     kept: bool
     reason: str = ""
+    # Cache freshness telemetry. Populated for kept tickers only; ``None``
+    # when the per-domain meta has no range_end and the data table is empty.
+    cache_last_date: str | None = None
+    cache_age_days: int | None = None
+    is_stale: bool = False
+    # Rows dropped at cache read because every OHLCV value was NaN — see
+    # PR #8 review (Minor 4).
+    nan_rows_dropped: int = 0
 
 
 @dataclass
@@ -65,6 +83,9 @@ class UniversePanel:
     index_series: pd.DataFrame           # OHLCV for the index ticker
     annualization_factor: int
     statuses: list[TickerStatus] = field(default_factory=list)
+    # Aggregate freshness/NaN telemetry surfaced to ``metrics.json::data``.
+    stale_tickers: list[str] = field(default_factory=list)
+    staleness_days_threshold: int = DEFAULT_STALENESS_DAYS
 
     @property
     def tickers_kept(self) -> list[str]:
@@ -91,6 +112,7 @@ def register_universe(
     *,
     repo_root: Path | None = None,
     indices: list[str] | None = None,
+    listed_at: str | date | None = None,
 ) -> Path:
     """Write a universe YAML so future calls can ``resolve_universe(name)``.
 
@@ -99,15 +121,21 @@ def register_universe(
     ``configs/gbdt/default.yaml`` (the gbdt loader resolves the universe YAML
     via ``source:`` there) — typically the orchestrator pre-flight does that
     step separately.
+
+    ``listed_at`` is optional. When omitted the field is skipped entirely so
+    that re-registering the same universe is deterministic (no `date.today()`
+    creeping into diffs every regeneration — PR #8 review, Nit 7). Pass an
+    explicit ISO date string (or :class:`datetime.date`) to record one.
     """
     path = _universe_yaml_path(name, repo_root)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "universe": name,
-        "listed_at": str(date.today()),
-        "indices": indices or [],
-        "tickers": list(tickers),
-    }
+    payload: dict = {"universe": name}
+    if listed_at is not None:
+        payload["listed_at"] = (
+            listed_at if isinstance(listed_at, str) else listed_at.isoformat()
+        )
+    payload["indices"] = indices or []
+    payload["tickers"] = list(tickers)
     with open(path, "w") as f:
         yaml.safe_dump(payload, f, sort_keys=False)
     return path
@@ -176,8 +204,11 @@ def ensure_universe_cached(
     *,
     repo_root: Path | None = None,
     cache_only: bool = True,
+    staleness_days: int = DEFAULT_STALENESS_DAYS,
+    reference_date: str | date | None = None,
 ) -> dict[str, TickerStatus]:
-    """For each ticker, verify cache row count meets ``min_rows``.
+    """For each ticker, verify cache row count meets ``min_rows`` and report
+    freshness telemetry.
 
     With ``cache_only=True`` (default) we read directly from the SQLite cache
     — no provider calls. This is what the experiment runner uses: gbdt v1
@@ -188,14 +219,29 @@ def ensure_universe_cached(
     With ``cache_only=False`` we go through ``data_pipelines.fetch()``,
     which will detect and try to fill gaps against the provider chain. Use
     that only when you want a fresh seed.
+
+    ``staleness_days`` (default ``DEFAULT_STALENESS_DAYS`` ≈ 14 trading days)
+    is the calendar-day tolerance for cache freshness. If a kept ticker's
+    cache max-date is older than ``reference_date - staleness_days`` we set
+    ``status.is_stale = True`` and emit a logged warning — we never abort
+    the run on staleness alone (PR #8 review, Minor 1). ``reference_date``
+    defaults to the requested ``end`` (or today when ``end`` is open).
     """
     if start is None:
         start = "1990-01-01"
+
+    ref = reference_date
+    if ref is None:
+        ref = end if end is not None else date.today()
+    ref_d = ref if isinstance(ref, date) else date.fromisoformat(str(ref)[:10])
+
     statuses: dict[str, TickerStatus] = {}
     for ticker in tickers:
         try:
             if cache_only:
-                df = _cache_read(ticker, start, end, repo_root=repo_root)
+                df, nan_dropped = _cache_read(
+                    ticker, start, end, repo_root=repo_root, return_nan_count=True,
+                )
             else:
                 ticker_end = end if end is not None else _cache_last_date(
                     ticker, repo_root=repo_root,
@@ -204,6 +250,7 @@ def ensure_universe_cached(
                     ticker, start, ticker_end,
                     data_root=_data_root(repo_root),
                 )
+                nan_dropped = 0
         except Exception as exc:
             statuses[ticker] = TickerStatus(
                 ticker=ticker, rows=0, kept=False, reason=f"fetch failed: {exc}",
@@ -214,10 +261,36 @@ def ensure_universe_cached(
             statuses[ticker] = TickerStatus(
                 ticker=ticker, rows=n, kept=False,
                 reason=f"only {n} rows; need >= {min_rows}",
+                nan_rows_dropped=int(nan_dropped),
             )
-        else:
-            statuses[ticker] = TickerStatus(ticker=ticker, rows=n, kept=True)
+            continue
+        # Kept: stamp freshness telemetry.
+        last_iso = _cache_last_date(ticker, repo_root=repo_root)
+        age_days: int | None = None
+        is_stale = False
+        if last_iso is not None:
+            try:
+                last_d = date.fromisoformat(last_iso)
+                age_days = (ref_d - last_d).days
+                is_stale = age_days > staleness_days
+            except ValueError:
+                age_days = None
+        if is_stale:
+            logger.warning(
+                "stale cache: %s last_date=%s age=%dd > threshold=%dd",
+                ticker, last_iso, age_days, staleness_days,
+            )
+        statuses[ticker] = TickerStatus(
+            ticker=ticker, rows=n, kept=True,
+            cache_last_date=last_iso,
+            cache_age_days=age_days,
+            is_stale=is_stale,
+            nan_rows_dropped=int(nan_dropped),
+        )
     return statuses
+
+
+_OHLCV_COLS = ("open", "high", "low", "close", "adj_close", "volume")
 
 
 def _cache_read(
@@ -226,10 +299,17 @@ def _cache_read(
     end: str | date | None,
     *,
     repo_root: Path | None = None,
-) -> pd.DataFrame:
+    return_nan_count: bool = False,
+):
     """Read ``ticker`` rows from the SQLite cache directly. Returns the
     canonical OHLCV DataFrame (``date, open, high, low, close, adj_close,
     volume``). Raises if the ticker isn't cached.
+
+    Rows where every OHLCV value is NaN (a known data-pipelines adapter
+    quirk on some NSE tickers — see ``docs/data_pipelines/V2_TBD.md``) are
+    dropped silently here and reported in logs + ticker status. Set
+    ``return_nan_count=True`` to receive ``(df, n_dropped)`` instead of
+    just ``df`` (PR #8 review, Minor 4).
     """
     import sqlite3
     if ticker.startswith(("NSE:", "BSE:", "INDEX:", "NIFTY:")):
@@ -254,6 +334,20 @@ def _cache_read(
     finally:
         con.close()
     df["date"] = pd.to_datetime(df["date"])
+    # Drop all-NaN OHLCV rows. We keep rows with at least one non-null OHLCV
+    # value (a partial row is still informative for the downstream rolling
+    # features, which already use ``min_periods``).
+    n_before = len(df)
+    ohlcv_present = [c for c in _OHLCV_COLS if c in df.columns]
+    if ohlcv_present:
+        df = df.dropna(subset=ohlcv_present, how="all").reset_index(drop=True)
+    n_dropped = n_before - len(df)
+    if n_dropped > 0:
+        logger.warning(
+            "dropped %d all-NaN OHLCV rows from %s cache", n_dropped, ticker,
+        )
+    if return_nan_count:
+        return df, int(n_dropped)
     return df
 
 
@@ -315,6 +409,7 @@ def load_panel(
     min_rows: int = 1600,
     repo_root: Path | None = None,
     cache_only: bool = True,
+    staleness_days: int = DEFAULT_STALENESS_DAYS,
 ) -> UniversePanel:
     """Load a universe's OHLCV panel as a long-format MultiIndex DataFrame.
 
@@ -324,14 +419,19 @@ def load_panel(
     - ``index_series``: a flat-index DataFrame for the index ticker
       (e.g. ``^NSEI``) with one row per date; used by F1/F5/F9/F9b families.
     - ``annualization_factor`` (250 for NIFTY).
-    - per-ticker ``statuses`` documenting kept / excluded outcomes.
+    - per-ticker ``statuses`` documenting kept / excluded outcomes (and
+      cache-age + NaN-row-drop telemetry per PR #8 review).
+    - ``stale_tickers``: subset of kept tickers whose cache max-date is
+      older than ``staleness_days`` (default ≈ 14 trading days). Stale
+      tickers are *not* dropped — the run continues and the staleness is
+      recorded in the artifact for the analyst.
     """
     meta = universe_metadata(universe, repo_root=repo_root)
     tickers = resolve_universe(universe, repo_root=repo_root)
 
     statuses = ensure_universe_cached(
         tickers, start, end, min_rows=min_rows, repo_root=repo_root,
-        cache_only=cache_only,
+        cache_only=cache_only, staleness_days=staleness_days,
     )
 
     kept = [t for t, s in statuses.items() if s.kept]
@@ -368,10 +468,13 @@ def load_panel(
     index_df["date"] = pd.to_datetime(index_df["date"])
     index_df = index_df.sort_values("date").set_index("date")
 
+    stale = [s.ticker for s in statuses.values() if s.kept and s.is_stale]
     return UniversePanel(
         universe=universe,
         panel=panel,
         index_series=index_df,
         annualization_factor=int(meta.get("annualization_factor", 250)),
         statuses=list(statuses.values()),
+        stale_tickers=stale,
+        staleness_days_threshold=staleness_days,
     )

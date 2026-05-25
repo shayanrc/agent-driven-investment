@@ -483,6 +483,14 @@ def _signed_days_outside_band_one(z_values: np.ndarray, sigma: float) -> np.ndar
       - ``-k`` if z has been ``<= -sigma`` for k consecutive rows ending at t
       Resets to 0 the moment z re-enters the band.
     Sign convention is current-side (option A).
+
+    NaN policy: any NaN in ``z_values`` propagates as NaN in the output and
+    resets the internal streak counter and direction to 0 — a missing
+    observation breaks the run. The next valid row therefore starts a fresh
+    streak of length 1 (not a continuation). This is deliberate: a missing
+    bar means we don't know whether the band was breached, so claiming
+    continuity across the gap would overstate the signal (PR #8 review,
+    Low 6).
     """
     out = np.zeros(len(z_values), dtype=float)
     streak = 0
