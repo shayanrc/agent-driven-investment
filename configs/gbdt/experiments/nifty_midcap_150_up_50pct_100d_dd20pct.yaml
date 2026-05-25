@@ -1,0 +1,42 @@
+# Experiment: nifty_midcap_150_up_50pct_100d_dd20pct
+#
+# Hypothesis: on the NIFTY Midcap 150 cohort — a higher-volatility,
+# higher-dispersion universe than large-cap NIFTY 50 — predict a +50%
+# upside breach inside 100 trading days with at most a 20% interim
+# drawdown. This is the "big move on a midcap, but it has to be a clean
+# trend, not a near-blowup recovery" cell.
+#
+# Why interesting: probes a regime where:
+#   - the threshold is large (+50%) so the base rate is meaningfully lower
+#     than the pilot's ~35-45%, exercising the class-imbalance machinery
+#     (auto_class_weights="SqrtBalanced" likely candidate in the FS+HP loop);
+#   - the horizon is long (100 days) so the path-honesty filter is doing
+#     real work — many naive +50% breaches will have a >20% drawdown
+#     somewhere in the path;
+#   - the universe is midcap, which v1's feature pool has not been
+#     pressure-tested on; cross-sectional rank/z signal density differs
+#     materially from large-cap.
+# A different region of the calibration surface than the other three.
+# Triggers the universe self-service flow on first run.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty_midcap_150                  # resolved via universe self-service on first run
+  direction: up
+  threshold_pct: 50
+  horizon_days: 100
+  max_drawdown: 0.20
+
+# date_range omitted - loader takes the max cached range per ticker.
+# split omitted - use default 800+400+200+100 = 1,600 rows/stock.
+# features omitted - start with the full 273-column candidate pool.
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 8
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

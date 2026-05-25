@@ -27,16 +27,17 @@ Examples:
 
 ### `target` (required)
 
-The tuple that defines what this experiment predicts. **No defaults — all four fields required.**
+The tuple that defines what this experiment predicts. **The first four fields are required; `max_drawdown` is optional.**
 
 | Field | Type | Allowed values |
 |---|---|---|
-| `universe` | str | One of the universe presets in `configs/gbdt/default.yaml::universes`. v1 = `nifty50` only. |
+| `universe` | str | A universe preset in `configs/gbdt/default.yaml::universes`. v1 pre-registers `nifty50`; `nifty100`, `nifty_midcap_150`, `nifty500` (and any other valid NSE index) are resolvable on first use via the agent's universe self-service flow — see § "Universe presets". Inline `tickers:` at the spec top level is also supported for one-off ad-hoc universes. |
 | `direction` | str | `up` or `down`. |
 | `threshold_pct` | float | Any positive number. Common: `5`, `10`, `20`, `30`, `50`. |
 | `horizon_days` | int | Any positive integer. Common: `10`, `20`, `50`, `100`. |
+| `max_drawdown` | float (optional) | Fractional path-honesty bound, e.g. `0.05` = "the path must not draw down more than 5% before breaching the threshold." Omit for the simple binary "did breach in horizon" target. |
 
-Example:
+Example (basic binary):
 ```yaml
 target:
   universe: nifty50
@@ -45,9 +46,28 @@ target:
   horizon_days: 20
 ```
 
+Example (with the path-honesty filter):
+```yaml
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 20
+  max_drawdown: 0.05        # positives must not draw down >5% before breaching +10%
+```
+
 Semantics (from `V1_PLAN.md` Stage 3):
+
+**Without `max_drawdown` (default, simple binary):**
 - `direction: up` → label `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
 - `direction: down` → label `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
+
+**With `max_drawdown` set (two-phase path-honesty filter; UP shown — DOWN mirrors with sign flip):**
+1. Find the first index `t_breach` in `(t, t+horizon_days]` where `close[t_breach] ≥ (1 + threshold_pct/100) * close[t]`.
+2. If `t_breach` exists **and** `min(close in (t, t_breach]) > (1 − max_drawdown) * close[t]` → label `1` (positive).
+3. Otherwise → label `0` (negative). Negatives bucket two distinct failure modes: "never breached the threshold in the horizon" and "breached the threshold but drew down too much before getting there."
+
+This is the v0.3 path-honesty filter (`docs/gbdt/_v0_path_honesty_eval.md`) generalized: v0.3 used a hard-wired `max_drawdown = threshold_pct / 200` (half the threshold, as a fraction); v1 makes it an explicit per-experiment parameter. The reading of "positive" is now operator-meaningful: it's not just "the threshold fired at some point" but "the threshold fired without first wiping out the position."
 
 ### `date_range` (optional)
 
@@ -181,7 +201,7 @@ Iteration-0 HP overrides. The agent uses these as the iteration-0 HPs; subsequen
 
 | Field | Type | Default |
 |---|---|---|
-| `hp_starting` | dict | `{}` (use defaults from `default.yaml::backend.hp_defaults`) |
+| `hp_starting` | dict | `{}` (inherit per-key from `default.yaml::backend.hp_starting`) |
 
 The values you can put here are exactly the tunable HPs from `V1_PLAN.md` Stage 4 ("Tunable HPs"): `iterations`, `learning_rate`, `depth`, `l2_leaf_reg`, `min_data_in_leaf`, `rsm`, `bootstrap_type`, `bagging_temperature`, `subsample`, `random_strength`, `auto_class_weights` (or `scale_pos_weight`), `boosting_type`, `early_stopping_rounds`.
 
@@ -312,19 +332,39 @@ The final iteration's row carries `inner_stop_signal` set to one of `"plateau"`,
 
 ## Universe presets
 
-v1 ships one universe: `nifty50`. Defined in `configs/gbdt/default.yaml::universes::nifty50`, which points at the ticker list source:
+v1 pre-registers one universe out of the box: `nifty50`. Other valid NSE universes (`nifty100`, `nifty_midcap_150`, `nifty500`, etc.) are **resolvable on first use** via the agent's universe self-service flow — the agent fetches the official constituent list, writes a universe YAML to `configs/data_pipelines/domains/nse_equities/universe_<name>.yaml`, registers it in `configs/gbdt/default.yaml::universes`, and back-fills any missing tickers via `data_pipelines.fetch()`. See `.claude/skills/gbdt-experiment/SKILL.md` § "Pre-flight" for the orchestration.
+
+The pre-registered `nifty50` block in `configs/gbdt/default.yaml::universes::nifty50` is the worked example:
 
 ```yaml
 universes:
   nifty50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
     index_ticker: "INDEX:^NSEI"     # for F1, F5, F9, F9b families (uses ^NSEI history)
+    ticker_prefix: "NSE:"            # e.g. RELIANCE -> NSE:RELIANCE before data_pipelines.fetch()
     annualization_factor: 250        # √250 for vol families; differs from US's √252
 ```
 
 The loader resolves `source`, reads the ticker list, and prefixes each with `NSE:` (e.g. `RELIANCE` → `NSE:RELIANCE`) before calling `data_pipelines.fetch()` per ticker. `index_ticker` is fetched separately and joined into the panel for the index-relative feature families.
 
-NDX, NIFTY 100, NIFTY total, and other universe presets are all in `V1.1_TBD.md`.
+**Inline tickers (ad-hoc universes).** A spec can declare a one-off universe inline by giving the universe a fresh name and including a top-level `tickers:` list; the agent's pre-flight registers the inline universe before falling through to the cache check. Example:
+
+```yaml
+target:
+  universe: my_5_stock_basket
+  direction: up
+  threshold_pct: 10
+  horizon_days: 20
+
+tickers:
+  - "NSE:RELIANCE"
+  - "NSE:TCS"
+  - "NSE:INFY"
+  - "NSE:HDFCBANK"
+  - "NSE:ICICIBANK"
+```
+
+NDX (US universe, different adapter chain) is in `V1.1_TBD.md`. Wider NIFTY universes are v1-supported via self-service (no entry in V1.1_TBD).
 
 ---
 
@@ -359,7 +399,7 @@ backend:
     plateau_threshold: 0.005                  # default - 0.5% absolute val Brier improvement floor.
     degradation_gate: 0.01                    # default - 1% degrade from best-seen val Brier triggers stop.
 
-  # hp_starting omitted - use the iteration-0 defaults from default.yaml::backend.hp_defaults.
+  # hp_starting omitted - use the iteration-0 values from default.yaml::backend.hp_starting.
   # The agent will explore from there bounded by CATBOOST_HP_REFERENCE.md ranges.
 
 random_seed: 42
@@ -377,6 +417,7 @@ Loading a spec fails fast on:
 - `target.universe` not present in `default.yaml::universes`.
 - `target.direction` not in `{"up", "down"}`.
 - `target.threshold_pct <= 0` or `target.horizon_days <= 0`.
+- `target.max_drawdown` set but not a float in `(0, 1)` (must be a positive fractional bound less than 1).
 - `backend.library` other than `"catboost"`.
 - `backend.calibration_method` not in `{"native", "conditional_isotonic", "isotonic_always", "platt"}`.
 - `backend.fs_hp_loop.max_iterations < 1` or `> 16` (hard ceiling above the default 8 to prevent runaway agent loops).

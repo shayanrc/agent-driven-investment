@@ -1,0 +1,37 @@
+# Experiment: nifty50_up_20pct_50d_dd10pct
+#
+# Hypothesis: on the NIFTY 50 cohort, predicting a clean +20% upside breach
+# inside 50 trading days (with at most a 10% interim drawdown) probes a
+# medium-rarity, medium-horizon cell. Compared to the pilot (+10% / 20d),
+# the longer horizon admits more candidate breach paths, but the 10%
+# drawdown filter discards "got there but only after a nasty pullback"
+# outcomes — closer to what an actual position holder would call a clean win.
+#
+# Why interesting: same universe as the pilot, so cross-experiment
+# comparisons on calibration are apples-to-apples; the path-honesty filter
+# is at a moderate level (half the threshold, mirroring v0.3's hard-wired
+# default of threshold/2). Calibration here vs the pilot tells us how much
+# the drawdown filter changes the cell's predictability.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.10                          # at most 10% interim drawdown before the +20% breach
+
+# date_range omitted - loader takes the max cached range per ticker.
+# split omitted - use default 800 train + 400 val + 200 eval + 100 test = 1,600 rows/stock.
+# features omitted - start with the full 273-column candidate pool; the agent prunes.
+
+backend:
+  calibration_method: conditional_isotonic    # default; Spiegelhalter Z then ship native or isotonic.
+  fs_hp_loop:
+    max_iterations: 8                         # default; hard cap.
+    plateau_threshold: 0.005                  # default.
+    degradation_gate: 0.01                    # default.
+  # hp_starting omitted - use default.yaml::backend.hp_starting at iteration 0.
+
+random_seed: 42

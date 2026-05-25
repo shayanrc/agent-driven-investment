@@ -34,9 +34,14 @@ The CLI atom runs without the per-iteration agent reasoning — it uses default 
 Before launching the loop:
 
 1. **Validate the spec** — `experiment.load_spec(spec_path)` runs the validation rules in `docs/gbdt/EXPERIMENT_SPEC.md` § "Validation rules". Bail with a clear error if any rule fails.
-2. **Check the data cache** — verify `data_pipelines.fetch()` can serve every ticker in the universe over the requested `date_range`. If cold-pull is needed, surface it and let the user decide whether to proceed (a cold pull of 48 NIFTY 50 tickers via the jugaad chain takes minutes, not hours; usually fine).
-3. **Check the artifact path is free** — if `results/gbdt/experiments/<experiment_name>/` already exists, refuse to overwrite without explicit user confirmation. The artifact dir is the unit of currency; silent overwrites lose the prior result.
-4. **Read the references** if unsure on any decision:
+2. **Universe self-service** — if `spec.target.universe` is not one of the pre-registered presets under `configs/gbdt/default.yaml::universes` (v1 ships `nifty50` only), the agent registers it before going further. Two paths:
+   - **Inline tickers:** if the spec carries a top-level `tickers:` list, write a new universe YAML at `configs/data_pipelines/domains/nse_equities/universe_<name>.yaml` with those tickers + a `universes::<name>` block in `configs/gbdt/default.yaml` pointing at it.
+   - **Well-known NSE index** (`nifty100`, `nifty_midcap_150`, `nifty500`, etc.): pull the constituent list via the `data_pipelines` adapter chain (the same chain that resolves `^NSEI` / `NIFTY:NIFTY100` etc.) and persist a universe YAML the same way.
+
+   After registration, fall through to step 3 to ensure each ticker is cached.
+3. **Check the data cache** — verify `data_pipelines.fetch()` can serve every ticker in the universe over the requested `date_range`. For missing tickers, call `data_pipelines.fetch()` per ticker (sequential or limited-parallel — respect the SQLite single-writer contract) to populate the cache. Drop tickers below `spec.split.min_rows_per_ticker` (default 1,600 = sum of 800+400+200+100) with a logged note that lands in `metrics.json::data.tickers_excluded`. If many tickers need a cold pull, surface it and let the user decide whether to proceed; a cold pull of ~50 NIFTY 50 tickers via the jugaad chain takes minutes, but a NIFTY 500 cold pull is materially longer.
+4. **Check the artifact path is free** — if `results/gbdt/experiments/<experiment_name>/` already exists, refuse to overwrite without explicit user confirmation. The artifact dir is the unit of currency; silent overwrites lose the prior result.
+5. **Read the references** if unsure on any decision:
    - `docs/gbdt/V1_PLAN.md` § "Stage breakdown" for the layer-by-layer architecture.
    - `docs/gbdt/CATBOOST_HP_REFERENCE.md` for per-parameter "when to change" rubrics — this is the canonical guide for HP decisions inside the loop.
    - `docs/gbdt/EXPERIMENT_SPEC.md` for the YAML schema and artifact layout.
@@ -48,13 +53,13 @@ Before launching the loop:
 - Load the universe panel via `data.load_universe(spec.target.universe, spec.date_range)`.
 - Drop tickers below `spec.split.min_rows_per_ticker` (default 1,600). Log the exclusion list.
 - Build the candidate feature matrix (`features.build_feature_matrix(panel, spec.features)`) — 273 columns by default.
-- Build the binary target (`targets.compute_target(panel, spec.target)`).
+- Build the binary target (`targets.compute_target(panel, spec.target)`). If `spec.target.max_drawdown` is set, the target builder applies the path-honesty filter described in `EXPERIMENT_SPEC.md` § "target".
 - Carve segments per `spec.split` (train / val / eval / test, in time order).
 
 ### Phase 2 — Iteration 0
 
 - Start with the full candidate feature pool.
-- Use `spec.backend.hp_starting` if provided, else `default.yaml::backend.hp_defaults`.
+- Use `spec.backend.hp_starting` if provided, else `default.yaml::backend.hp_starting`.
 - Fit CatBoost on train, early-stop against val, score val + eval.
 - Generate the diagnostic bundle (`fs_hp_loop.DiagnosticBundle`): train/val Brier, train-val gap, learning curve, early-stop iteration, feature importance, correlation matrix, calibration summary (Spiegelhalter Z on raw val preds), positive-class recall.
 - Log iteration 0 to `iterations.jsonl` with rationale `"iteration 0 — full feature pool, default HPs"`.
@@ -128,6 +133,6 @@ The parent will check in periodically and the auto-completion notification reach
 - `docs/gbdt/CATBOOST_HP_REFERENCE.md` — per-parameter "when to change" rubrics; the canonical guide for HP decisions inside the loop.
 - `docs/gbdt/goal.md` — why the experiment-loop framing exists; per-experiment success criteria.
 - `docs/gbdt/V0_INVESTIGATION_PLAN.md` — v0 base-rate findings that inform cell choice.
-- `docs/gbdt/V1.1_TBD.md` — parked extensions (NDX, wider universes, macro features, multi-target, Optuna HP search).
+- `docs/gbdt/V1.1_TBD.md` — parked extensions (NDX, macro features, multi-target, Optuna HP search).
 - `.claude/memories/feedback-experiment-agent-loop.md` — long-running compute pattern.
 - `.claude/memories/project-overview.md` — module overview.

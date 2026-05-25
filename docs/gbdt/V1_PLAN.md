@@ -113,7 +113,19 @@ The build order is strict — each stage ends with a passing test suite and a co
 - `tests/gbdt/test_data_loader.py` — loads NIFTY 50 panel via `data_pipelines.fetch()` (uses the cache), asserts schema, dtypes, monotonic dates per ticker, no duplicate (date, ticker) pairs, and that 48 of 50 tickers meet `min_rows ≥ 1,600` (JIOFIN and MAXHEALTH excluded by row count).
 - `tests/gbdt/test_leakage_harness.py` — confirms the harness fires on a known leaky function and stays silent on a known causal function.
 
-**Done when:** panel loader works on the real NIFTY 50 cache; 48 tickers pass the row-count gate; harness correctly distinguishes leaky vs causal features on synthetic data.
+**Universe self-service (pre-flight responsibility of the `/gbdt-experiment` skill, not `data.py`).** When a spec names a universe that isn't a registered preset under `configs/gbdt/default.yaml::universes`, the skill is responsible for registering it before the loader runs. The flow:
+
+1. **Detect the gap.** Spec parse fails the universe lookup → don't fall through to `data.load_universe()` yet.
+2. **Resolve the ticker list.** Two paths:
+   - **Inline tickers** — the spec carries a top-level `tickers:` list; the skill writes `configs/data_pipelines/domains/nse_equities/universe_<name>.yaml` with that list (using the same schema as `universe_nifty50.yaml`).
+   - **Well-known NSE index** (`nifty100`, `nifty_midcap_150`, `nifty500`, etc.) — the skill fetches the constituent list via the `data_pipelines` adapter chain (the same chain that already resolves `^NSEI` / `NIFTY:NIFTY100`) and writes the universe YAML.
+3. **Register the universe block.** Append a `universes::<name>` entry to `configs/gbdt/default.yaml` pointing at the new YAML, with `index_ticker`, `ticker_prefix`, and `annualization_factor` inferred from the universe type (NSE indices all use `INDEX:^NSEI` / `NSE:` / `250`; future US universes would differ).
+4. **Back-fill the cache.** Run `data_pipelines.fetch()` per ticker (sequential or limited-parallel — respect the SQLite single-writer contract). Skip tickers already in the cache that meet the spec's `min_rows_per_ticker`.
+5. **Apply the row gate.** Drop any ticker below `spec.split.min_rows_per_ticker` (default 1,600) with a logged note. The note lands in `metrics.json::data.tickers_excluded` once the experiment runs.
+
+This means a new experiment YAML for `nifty500` can run end-to-end on a fresh checkout without the user editing any infrastructure files first. Cold-pull cost is the only real bound (a NIFTY 500 cold pull is materially longer than NIFTY 50). The skill should surface the cold-pull estimate before committing.
+
+**Done when:** panel loader works on the real NIFTY 50 cache; 48 tickers pass the row-count gate; harness correctly distinguishes leaky vs causal features on synthetic data; the universe self-service flow can register a fresh universe end-to-end (validated against `nifty100` as the first additional universe).
 
 ### Stage 2 — Feature implementation (273-column candidate pool)
 
@@ -161,19 +173,26 @@ The build order is strict — each stage ends with a passing test suite and a co
 
 ### Stage 3 — Target builder
 
-**Goal:** binary target derivation from a single `(direction, threshold_pct, horizon_days)` tuple.
+**Goal:** binary target derivation from a `(direction, threshold_pct, horizon_days)` tuple, with an optional `max_drawdown` path-honesty filter.
 
 **Tasks:**
 - `src/gbdt/targets.py`:
   - `compute_target(panel, target_spec) → pd.Series` — returns a `0/1/NaN` series aligned on the `(date, ticker)` MultiIndex.
-  - A target at row `(t, ticker)` is `1` if the threshold is breached at any point in `(t, t+horizon_days]` for that ticker, else `0`. Rows with insufficient forward data are `NaN` (excluded from train/val/eval/test labels; kept as inference rows so predictions can be emitted).
-  - Direction `up`: `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
-  - Direction `down`: `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
-  - The threshold check uses HIGH for up / LOW for down (the most conservative interpretation of "did the threshold ever fire").
-- Unit tests on a synthetic price path with known breach patterns for each direction × threshold × horizon combination.
-- Edge cases tested: target at the last row (no forward data → `NaN`); breach exactly on day `t+horizon_days` (counts); breach on day `t+1` (counts); no breach in window (`0`).
+  - A target at row `(t, ticker)` is `1` if the spec's success criterion is met inside `(t, t+horizon_days]`, else `0`. Rows with insufficient forward data are `NaN` (excluded from train/val/eval/test labels; kept as inference rows so predictions can be emitted).
+  - **Simple binary mode (no `max_drawdown`)** — one-phase check:
+    - Direction `up`: `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
+    - Direction `down`: `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
+    - The threshold check uses HIGH for up / LOW for down (the most conservative interpretation of "did the threshold ever fire").
+  - **Path-honesty mode (`target.max_drawdown` set)** — two-phase check (UP shown; DOWN mirrors with sign flip):
+    1. **Find the breach index.** Scan `(t, t+horizon_days]` for the first index `t_breach` where `close[t_breach] ≥ (1 + threshold_pct/100) * close[t]`. If no such index exists → label `0`.
+    2. **Check the path's max drawdown before breach.** If `min(close in (t, t_breach]) > (1 − max_drawdown) * close[t]` → label `1` (positive). Else → label `0` (the threshold fired, but only after the position would have been wiped out).
+    - This generalizes the v0.3 filter (`docs/gbdt/_v0_path_honesty_eval.md`), which hard-wired `max_drawdown = threshold_pct / 200`. v1 makes the bound an explicit per-experiment parameter.
+    - Negatives in this mode bucket two distinct failure modes (no-breach + breach-after-drawdown); they are aggregated into the single `0` label intentionally — the model learns "would the position have made it cleanly to the threshold," not "did the threshold fire at all."
+    - The drawdown check uses CLOSE (not LOW), since the operator-facing semantics are mark-to-market drawdown a position would have experienced day-over-day. If the spec writer wants the more conservative LOW-based bound (worst intraday excursion), that's a v1.1 follow-up.
+- Unit tests on a synthetic price path with known breach + drawdown patterns for each direction × threshold × horizon × max_drawdown combination.
+- Edge cases tested: target at the last row (no forward data → `NaN`); breach exactly on day `t+horizon_days` (counts); breach on day `t+1` (counts); no breach in window (`0`); breach after deep drawdown with `max_drawdown` set (counts as `0`); shallow drawdown before breach with `max_drawdown` set (counts as `1`).
 
-**Done when:** target builder produces correct labels against the synthetic fixtures; the spec drives the tuple; edge cases pass.
+**Done when:** target builder produces correct labels against the synthetic fixtures in both modes; the spec drives the tuple; edge cases pass.
 
 ### Stage 4 — CatBoost wrapper + model.py
 
@@ -434,7 +453,11 @@ src/gbdt/
 configs/gbdt/
   default.yaml                         # global defaults (lookback windows, split, FS+HP loop, calibration)
   experiments/
-    nifty50_up_10pct_20d_pilot.yaml    # the v1 PR pilot spec (Stage 9)
+    nifty50_up_10pct_20d_pilot.yaml                  # the v1 PR pilot spec (Stage 9)
+    nifty50_up_20pct_50d_dd10pct.yaml                # path-honesty filter cell on the pilot universe
+    nifty100_up_10pct_20d_dd5pct.yaml                # pilot tuple on the wider NIFTY 100 cohort
+    nifty_midcap_150_up_50pct_100d_dd20pct.yaml      # rare cell on a higher-vol midcap cohort
+    nifty500_up_30pct_50d_dd15pct.yaml               # medium-rare cell on the broadest NSE cohort
 
 .claude/skills/gbdt-experiment/
   SKILL.md                             # the agent surface (Stage 9)

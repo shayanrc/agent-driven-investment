@@ -38,7 +38,7 @@ backend:
     plateau_threshold: 0.005                 # default; 0.5% absolute val Brier improvement floor.
     degradation_gate: 0.01                   # default; 1% degrade from best-seen val Brier triggers stop.
 
-  # hp_starting omitted - use default.yaml::backend.hp_defaults at iteration 0.
+  # hp_starting omitted - use default.yaml::backend.hp_starting at iteration 0.
   # The agent explores from there bounded by CATBOOST_HP_REFERENCE.md ranges per parameter.
 
 random_seed: 42                              # default; pinned for reproducibility.

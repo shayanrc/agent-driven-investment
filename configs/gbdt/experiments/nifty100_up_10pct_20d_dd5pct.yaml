@@ -1,0 +1,35 @@
+# Experiment: nifty100_up_10pct_20d_dd5pct
+#
+# Hypothesis: the same cell as the pilot (+10% / 20d) but on the wider
+# NIFTY 100 cohort, with a tight 5% drawdown filter (= threshold/2,
+# matching v0.3's hard-wired default).
+#
+# Why interesting: probes whether the pilot's calibration story holds when
+# the cross-sectional cohort doubles in size — F14's rank/z features see a
+# different signal density across 100 stocks than across 50, and the wider
+# panel adds mid-cap-flavored names that may have different base rates.
+# Same target tuple as the pilot, so calibration on this cell vs the pilot
+# is a clean ablation of "universe size + composition" with everything
+# else fixed. Triggers the universe self-service flow on first run.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty100                          # resolved via universe self-service on first run
+  direction: up
+  threshold_pct: 10
+  horizon_days: 20
+  max_drawdown: 0.05
+
+# date_range omitted - loader takes the max cached range per ticker.
+# split omitted - use default 800+400+200+100 = 1,600 rows/stock.
+# features omitted - start with the full 273-column candidate pool.
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 8
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

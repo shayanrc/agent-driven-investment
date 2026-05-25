@@ -8,8 +8,12 @@
 # HP semantics: docs/gbdt/CATBOOST_HP_REFERENCE.md.
 
 # ---------------------------------------------------------------------------
-# Universe presets. v1 ships only nifty50. NDX, NIFTY 100, NIFTY 500, NIFTY
-# total are all in V1.1_TBD.md.
+# Universe presets. v1 pre-registers nifty50; other NSE universes
+# (nifty100, nifty_midcap_150, nifty500, plus ad-hoc inline baskets)
+# are registered on first use by the /gbdt-experiment skill's universe
+# self-service flow — see docs/gbdt/V1_PLAN.md Stage 1 § "Universe
+# self-service" and .claude/skills/gbdt-experiment/SKILL.md § "Pre-flight".
+# NDX (US adapter chain) stays in V1.1_TBD.md.
 # ---------------------------------------------------------------------------
 universes:
   nifty50:
@@ -58,9 +62,10 @@ backend:
     plateau_threshold: 0.005         # absolute val Brier improvement floor over last 2 iter
     degradation_gate: 0.01           # 1% multiplicative degrade from best-seen val Brier -> stop
 
-  # Iteration-0 HP defaults. The agent starts here and explores bounded by
-  # the ranges in CATBOOST_HP_REFERENCE.md per parameter.
-  hp_defaults:
+  # Iteration-0 HP starting values. The agent starts here and explores
+  # bounded by the ranges in CATBOOST_HP_REFERENCE.md per parameter.
+  # Per-experiment specs override individual keys via backend.hp_starting.
+  hp_starting:
     iterations: 1000
     learning_rate: 0.05              # explicit value; otherwise CatBoost auto-derives
     depth: 6

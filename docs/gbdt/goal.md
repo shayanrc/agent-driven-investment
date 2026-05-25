@@ -111,11 +111,10 @@ v1 ships **the experiment-loop infrastructure + one pilot experiment + one unive
 - Per-iteration train-vs-val gap, learning curve, feature importance ranking, correlation matrix.
 - Per-iteration HP history and prune/keep decisions with the agent's rationale.
 
-**Universe scope:** `nifty50` only in v1. NDX, NIFTY 100, NIFTY total, macro features all in `V1.1_TBD.md`.
+**Universe scope:** `nifty50` is the only pre-registered preset in v1; other NSE universes (`nifty100`, `nifty_midcap_150`, `nifty500`, and any other valid NSE index, plus inline ad-hoc baskets) are resolvable on first use via the `/gbdt-experiment` skill's universe self-service flow. NDX (US universe, different adapter chain), macro features, and other extensions are in `V1.1_TBD.md`.
 
 **Explicitly deferred to v1.1+:**
-- NDX universe preset.
-- Wider NIFTY universes (100, 500, total).
+- NDX universe preset (US adapter chain, different calendar / annualization).
 - Multi-target shared-tree head (deferred from V1_PLAN's original open question #5).
 - Macro features (USD/INR, 10Y yield, oil).
 - Lagged-target features (risky; gated on the Stage 1 leakage harness proving robust on the simpler feature set first).

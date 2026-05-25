@@ -1,0 +1,42 @@
+# Experiment: nifty500_up_30pct_50d_dd15pct
+#
+# Hypothesis: on the broadest NSE cohort (NIFTY 500), predict a +30%
+# upside breach inside 50 trading days with at most a 15% interim
+# drawdown — a medium-large move over a medium horizon on the widest
+# universe v1 supports.
+#
+# Why interesting:
+#   - Cross-sectional density: NIFTY 500 is 10x the NIFTY 50 cohort. F14's
+#     rank/z features compute against a much deeper distribution; the
+#     signal "this stock is the 50th-percentile mover today" carries
+#     genuinely different information than on a 50-stock universe.
+#   - Mid-rare cell: +30% / 50d sits between the pilot's common cell and
+#     the midcap experiment's deep-tail cell. Base rate likely in the
+#     5-15% range across the panel.
+#   - Largest cold-pull cost: this experiment exercises the universe
+#     self-service flow at scale (potentially 400+ tickers to fetch).
+#     The skill's pre-flight should surface the cold-pull estimate before
+#     committing.
+# A different region of the calibration surface than the other three.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty500                          # resolved via universe self-service on first run
+  direction: up
+  threshold_pct: 30
+  horizon_days: 50
+  max_drawdown: 0.15
+
+# date_range omitted - loader takes the max cached range per ticker.
+# split omitted - use default 800+400+200+100 = 1,600 rows/stock.
+# features omitted - start with the full 273-column candidate pool.
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 8
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
