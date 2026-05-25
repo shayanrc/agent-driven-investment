@@ -402,6 +402,126 @@ class TestPartialFillContinuation:
         assert any("unfillable" in p["reason"] for p in meta.providers_failed)
 
 
+class TestBackExtend:
+    """back_extend=True bypasses the cache-first cap so pre-cache dates are
+    requested from providers. Used for deep-history extension after the cache
+    was originally seeded with a shallower range.
+    """
+
+    def test_without_back_extend_clips_pre_cache_range(self, root):
+        # Mirrors TestPreCacheGapClip but asserts the explicit default.
+        df_existing = make_df([date(2026, 1, 8), date(2026, 1, 9)], [10, 20])
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        not_called = _RaisingAdapter("upd", EmptyPayload("upd", "FAKE:X"))
+        dom = FakeDomain(adapters=[seed, not_called], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        # Cold fetch populates cache.
+        fetch("FAKE:X", date(2026, 1, 8), date(2026, 1, 9), data_root=root)
+        seed_calls_before = len(seed.calls)
+        upd_calls_before = len(not_called.calls)
+
+        # Re-fetch earlier than cache_first WITHOUT back_extend → clipped.
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 9), data_root=root)
+        assert len(seed.calls) == seed_calls_before
+        assert len(not_called.calls) == upd_calls_before
+
+    def test_with_back_extend_requests_pre_cache_range(self, root):
+        # First seed installs Jan-8..Jan-9. Then back_extend re-fetch with
+        # start Jan-5 must result in an adapter call covering the Jan-5..Jan-7
+        # pre-cache window.
+        df_existing = make_df([date(2026, 1, 8), date(2026, 1, 9)], [10, 20])
+        df_extended = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)],
+            [5, 6, 7],
+        )
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        _register(seed, threshold=10)
+
+        # Cold seed.
+        fetch("FAKE:X", date(2026, 1, 8), date(2026, 1, 9), data_root=root)
+        assert len(seed.calls) == 1
+
+        # Swap the adapter's canned df so the back-extend call returns the
+        # earlier rows.
+        seed._df = df_extended
+
+        df, meta = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 9),
+            data_root=root, back_extend=True,
+        )
+        # An additional provider call landed.
+        assert len(seed.calls) == 2
+        # The new call's start was earlier than the cache_first (Jan-8).
+        new_call = seed.calls[-1]
+        assert new_call[1] == date(2026, 1, 5)
+        # Cache now spans Jan-5..Jan-9 (existing rows preserved, new rows
+        # merged in).
+        assert list(df["date"].dt.date) == [
+            date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+            date(2026, 1, 8), date(2026, 1, 9),
+        ]
+        assert list(df["value"]) == [5, 6, 7, 10, 20]
+        assert meta.gaps_filled, "expected a gap to be reported as filled"
+
+    def test_back_extend_noop_when_start_at_or_after_cache_first(self, root):
+        # back_extend=True with start >= cache_first must behave exactly like
+        # the default path: no additional pre-cache fetch attempts.
+        df_existing = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)],
+            [10, 20, 30],
+        )
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        _register(seed)
+
+        # Cold seed installs Jan-5..Jan-7.
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+        seed_calls_before = len(seed.calls)
+
+        # Re-request fully-cached range with back_extend=True → no new calls.
+        df, _ = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 7),
+            data_root=root, back_extend=True,
+        )
+        assert len(seed.calls) == seed_calls_before
+        assert list(df["value"]) == [10, 20, 30]
+
+    def test_back_extend_preserves_existing_cached_rows(self, root):
+        # Existing rows must not be corrupted by a back_extend re-fetch even
+        # when the new adapter response happens to cover (with the same
+        # values) the existing cache range. Use existing_wins merge policy
+        # to make the assertion strict: the original values must survive.
+        df_existing = make_df([date(2026, 1, 8), date(2026, 1, 9)], [10, 20])
+        # New adapter payload covers Jan-5..Jan-9 — overlaps the cache.
+        df_overlap = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+             date(2026, 1, 8), date(2026, 1, 9)],
+            [5, 6, 7, 999, 999],  # different values on the overlap dates
+        )
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        # existing_wins policy: overlap rows keep their original values.
+        dom = FakeDomain(
+            adapters=[seed], big_gap_threshold=10,
+            overlap_policy="existing_wins",
+        )
+        DomainRegistry.register(dom)
+
+        fetch("FAKE:X", date(2026, 1, 8), date(2026, 1, 9), data_root=root)
+        seed._df = df_overlap
+
+        df = fetch(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 9),
+            data_root=root, back_extend=True,
+        )
+        # Pre-cache rows added; existing Jan-8/9 values preserved (10, 20),
+        # NOT clobbered by the 999s the new payload carried.
+        assert list(df["date"].dt.date) == [
+            date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+            date(2026, 1, 8), date(2026, 1, 9),
+        ]
+        assert list(df["value"]) == [5, 6, 7, 10, 20]
+
+
 class TestExtraMetaPropagation:
     def test_extra_meta_in_source_record(self, root):
         seed_df = make_df([date(2026, 1, 5)], [1])

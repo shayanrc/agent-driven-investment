@@ -73,11 +73,18 @@ def fetch(
     end: str | date,
     frequency: str = "daily",
     data_root: str | Path = "data",
+    back_extend: bool = False,
 ) -> pd.DataFrame:
     """Public surface. Returns the canonical DataFrame for the requested
     range, populating the cache as needed.
+
+    ``back_extend`` (default False) bypasses the cache-first cap so providers
+    are asked for pre-cache history. See :func:`fetch_with_meta` for the full
+    rationale.
     """
-    df, _ = fetch_with_meta(identifier, start, end, frequency, data_root)
+    df, _ = fetch_with_meta(
+        identifier, start, end, frequency, data_root, back_extend=back_extend,
+    )
     return df
 
 
@@ -87,9 +94,23 @@ def fetch_with_meta(
     end: str | date,
     frequency: str = "daily",
     data_root: str | Path = "data",
+    back_extend: bool = False,
 ) -> tuple[pd.DataFrame, FetchMeta]:
     """fetch() + JSON-serializable FetchMeta. Use this from the CLI and the
     eventual agent-tool wrapper.
+
+    ``back_extend`` (default False): when True, skip the cache-first cap on
+    ``effective_start`` so the dispatcher asks providers for the full
+    requested range, *including dates earlier than the cache's current first
+    row*. Use this for user-initiated deep-history extension after the cache
+    was originally seeded with a shallower start date. The default is False
+    because the cap exists for a reason — re-asking providers for pre-cache
+    dates on every routine refresh is wasteful (the asset's true earliest
+    date is typically already on disk) and a new-vintage answer is suspicious
+    by default. Pass ``back_extend=True`` only when you are deliberately
+    going further back than the existing seed. When the requested ``start``
+    is not earlier than the cache's first row, the flag is a no-op (same
+    behaviour as the default path).
     """
     if frequency != "daily":
         raise NotImplementedError(f"frequency={frequency!r}; v1 supports 'daily' only")
@@ -111,10 +132,16 @@ def fetch_with_meta(
     # that hits providers needlessly (network round trip → empty payload →
     # soft fail) on every re-seed of a post-IPO ticker. If a new vintage
     # source ever exposes pre-cache data, purge that ticker to re-discover.
+    #
+    # back_extend=True is the explicit opt-out: skip the cap so the
+    # dispatcher asks providers for the full requested range, including
+    # dates earlier than cache_first. Use this when deliberately extending
+    # an existing ticker's history further back than initially seeded.
+    # When start_d is already >= cache_first the flag has no effect.
     effective_start = start_d
     if cached_df is not None and len(cached_df) > 0:
         cache_first = _as_date(cached_df[domain.time_column].iloc[0])
-        if effective_start < cache_first:
+        if effective_start < cache_first and not back_extend:
             effective_start = cache_first
     gaps = detect_gaps(
         cached_df, effective_start, end_d, domain.calendar, domain.time_column
