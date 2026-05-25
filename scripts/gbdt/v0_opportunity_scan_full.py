@@ -9,6 +9,10 @@ Event definition:
 
 Output: per-stock cells + pooled-across-stocks per (direction, threshold, horizon).
 Reads ``data/processed.db`` directly. See ``docs/gbdt/V0_INVESTIGATION_PLAN.md``.
+
+Note: this script writes its headline JSON in place; re-running it against a drifted
+cache will silently overwrite the committed snapshot. Back up or rename the prior
+JSON first if you want to compare across runs.
 """
 from __future__ import annotations
 

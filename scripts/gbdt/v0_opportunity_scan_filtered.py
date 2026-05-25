@@ -17,6 +17,10 @@ target without a half-target excursion in the wrong direction first.
 
 Output: per-stock + pooled aggregates with both raw (= v0.2) and clean counts,
 plus the filter ratio (= filtered / raw).
+
+Note: this script writes its headline JSON in place; re-running it against a drifted
+cache will silently overwrite the committed snapshot. Back up or rename the prior
+JSON first if you want to compare across runs.
 """
 from __future__ import annotations
 

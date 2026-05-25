@@ -16,6 +16,8 @@ Findings from v0 either confirm or revise design choices in `V1_PLAN.md`. If v0 
 
 (Add new rows here as v0 tasks are commissioned.)
 
+Each v0 commit is a point-in-time snapshot against whatever NSE cache existed when the script ran. v0.1/v0.2 ran against the pre-backfill cache (data through 2025-12-31, ~1,492 rows per stock); v0.3 ran after the cache extended to 2026-05-22 (~1,500–1,600 rows per stock). The three deliverables are individually internally consistent (each matches its own JSON), but they are *not* a coordinated cache snapshot. Cross-report comparisons should account for the slightly wider universe in v0.3.
+
 ## What v0 outputs inform
 
 - **v0 base rates → v1 calibration baseline.** The bar Brier scores must beat in `V1_PLAN.md` Stage 9 acceptance is "better than predicting the base rate." v0 measures that base rate empirically.
@@ -36,3 +38,4 @@ Findings from v0 either confirm or revise design choices in `V1_PLAN.md`. If v0 
 - Not feature engineering. v0 looks at raw price events, not at features that would predict them.
 - Not model training. v0 is event counting + descriptive stats. v1 trains models.
 - Not strategy backtesting. v0 counts opportunities; what trading would do with them is downstream and out of scope here per the project-wide anti-rule (see `goal.md`'s "What this module is *not*").
+- Not snapshot-stable. v0 scripts re-render their headline JSON in place at `results/gbdt/data/_v0_<name>_data.json`; re-running a v0 script against a changed cache will silently overwrite the committed result. To compare across snapshots, rename or move the prior JSON first (or back it up), and `git status` after a re-run to surface drift.

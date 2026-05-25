@@ -7,6 +7,10 @@ Output: per-stock + pooled-across-stocks base rates + first-breach lag percentil
 Reads directly from ``data/processed.db`` (the data_pipelines NSE cache). Reports
 which tickers in the universe have no cached data so the gap is visible to the seed
 follow-up. See ``docs/gbdt/V0_INVESTIGATION_PLAN.md``.
+
+Note: this script writes its headline JSON in place at the path below; re-running
+it against a drifted cache will silently overwrite the committed snapshot. Back up
+or rename the prior JSON first if you want to compare across runs.
 """
 from __future__ import annotations
 

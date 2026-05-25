@@ -12,7 +12,7 @@ Both flavors of "clean" mean: the path to the first breach never made a half-tar
 
 - Script: [`scripts/gbdt/v0_opportunity_scan_filtered.py`](../../scripts/gbdt/v0_opportunity_scan_filtered.py).
 - JSON: [`results/gbdt/data/_v0_opportunity_scan_filtered_data.json`](../../results/gbdt/data/_v0_opportunity_scan_filtered_data.json).
-- Data window: 2020-01-01 → 2025-12-31 (~1,492 trading rows per stock).
+- Data window: 2020-01-01 → 2026-05-22 (~1,500–1,600 trading rows per stock; NSE cache had been backfilled past 2025-12-31 by the time v0.3 ran, vs v0.1/v0.2 which saw the pre-backfill slice).
 - This is a price-path descriptor, NOT a strategy backtest. No positions, no PnL, no transaction costs (project-wide anti-rule).
 
 ## Raw → clean rate, UP direction
