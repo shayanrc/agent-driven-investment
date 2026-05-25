@@ -18,7 +18,7 @@
 universes:
   nifty50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
-    index_ticker: "INDEX:^NSEI"      # ^NSEI = NIFTY 50 index; used by F1/F5/F9/F9b families.
+    index_ticker: "NIFTY:50"         # NIFTY 50 index in the data_pipelines cache; used by F1/F5/F9/F9b families.
     ticker_prefix: "NSE:"            # e.g. RELIANCE -> NSE:RELIANCE before data_pipelines.fetch().
     annualization_factor: 250        # India uses 250 trading days; US uses 252.
 

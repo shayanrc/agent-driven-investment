@@ -1,0 +1,47 @@
+{
+  "experiment_name": "nifty50_up_10pct_20d_pilot",
+  "spec_hash": "sha256:9d922b051920002eda36c21b1e8c479ca33c6b1c0010231c1a32463e758d3d6d",
+  "data_hash": "sha256:112402994bdfcd8c572170675e575b19c6db4d529330d05cb3f175f88e87f691",
+  "data": {
+    "n_tickers_in_universe": 50,
+    "n_tickers_used": 46,
+    "tickers_excluded": [
+      "NSE:ETERNAL",
+      "NSE:JIOFIN",
+      "NSE:MAXHEALTH",
+      "NSE:SHRIRAMFIN"
+    ],
+    "n_rows_train": 36800,
+    "n_rows_val": 18400,
+    "n_rows_eval": 9200,
+    "n_rows_test": 3680,
+    "positive_prevalence_train": 0.29442934782608693,
+    "positive_prevalence_eval": 0.1341304347826087
+  },
+  "loop": {
+    "n_iterations_run": 3,
+    "best_iteration": 2,
+    "inner_stop_signal": "plateau"
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "native",
+    "spiegelhalter_z": 0.03354450272125883,
+    "spiegelhalter_p": 0.9732403777442804
+  },
+  "headline_eval": {
+    "brier": 0.11411012622811408,
+    "brier_baseline_baserate": 0.11613946124763704,
+    "brier_improvement_vs_baseline": 0.00202933501952296,
+    "log_loss": 0.38884648952345463,
+    "roc_auc": 0.6391476986267813
+  },
+  "headline_test": {
+    "brier": 0.1476068168696039,
+    "brier_baseline_baserate": 0.16561606509924387,
+    "brier_improvement_vs_baseline": 0.01800924822963998,
+    "log_loss": 0.4652289909915793,
+    "roc_auc": 0.7352946421923285
+  },
+  "wall_time_total_sec": 487.24898862838745
+}
