@@ -52,7 +52,7 @@ Before launching the loop:
 
 - Load the universe panel via `data.load_universe(spec.target.universe, spec.date_range)`.
 - Drop tickers below `spec.split.min_rows_per_ticker` (default 1,600). Log the exclusion list.
-- Build the candidate feature matrix (`features.build_feature_matrix(panel, spec.features)`) — 273 columns by default.
+- Build the candidate feature matrix (`features.build_feature_matrix(panel, spec.features)`) — 279 columns by default.
 - Build the binary target (`targets.compute_target(panel, spec.target)`). If `spec.target.max_drawdown` is set, the target builder applies the path-honesty filter described in `EXPERIMENT_SPEC.md` § "target".
 - Carve segments per `spec.split` (train / val / eval / test, in time order).
 
@@ -115,11 +115,11 @@ Each iteration:
 
 ## Long-running pattern
 
-A full pilot experiment (273 cols × 48 tickers × FS+HP loop with up to 8 iterations × Ordered boosting) typically runs in the 30 min – 2 hr range. Specs with `max_iterations: 8` and high feature counts can push past 2 hours. For any compute that may take more than ~30 minutes, do not block your single tool call waiting for it. Instead:
+A full pilot experiment (279 cols × 48 tickers × FS+HP loop with up to 8 iterations × Ordered boosting) typically runs in the 30 min – 2 hr range. Specs with `max_iterations: 8` and high feature counts can push past 2 hours. For any compute that may take more than ~30 minutes, do not block your single tool call waiting for it. Instead:
 
 > 1. Launch the long shell with `Bash run_in_background=true` and a stable log path (e.g. `logs/<experiment_name>_<UTC>.log`).
 > 2. Use `Monitor` with a filtered `tail -f <log> | grep -E --line-buffered "iter=|elapsed|inner_stop|Error|Traceback|completed"` so progress events stream in without flooding context.
-> 3. If the compute will likely outlast your session (rule of thumb: anything ≥2h), use `ScheduleWakeup` to self-pace — schedule a wakeup at 1200–1800s with a self-contained prompt that re-checks progress, decides whether to schedule the next wake, and ends when the job completes.
+> 3. If the compute will likely outlast your session (rule of thumb: anything ≥2h), use the `/schedule` skill (which wraps the underlying ScheduleWakeup capability) to self-pace — schedule a wakeup at 1200–1800s with a self-contained prompt that re-checks progress, decides whether to schedule the next wake, and ends when the job completes.
 > 4. Never block one tool call for hours — that wastes the session and prevents you from being interruptible.
 
 See `.claude/memories/feedback-experiment-agent-loop.md` for the source of this guidance.

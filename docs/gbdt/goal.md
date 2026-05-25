@@ -82,7 +82,7 @@ The pilot cell (`up / +10% / 20 trading days` on NIFTY 50) was chosen because v0
 - **Not a fixed-lattice ship.** The 18-cell lattice was v0 EDA. v1 ships the experiment surface; which cells get run, when, in what order, is per-invocation.
 - **Not a per-stock-only model in v1.** v1 pools training across the NIFTY 50 universe and emits per-stock predictions. Cross-sectional features (rank/z-score across the universe) are first-class.
 - **Not wired into `forecasters` in v1.** The wire-format contract `forecasters` is building around expects continuous path arrays; `gbdt` produces a different output shape. Integrating `gbdt` as a `forecasters` backend requires extending the contract (e.g., a `categorical_predictions` field alongside `paths`) — deferred to a separate plan once `gbdt v1` and `forecasters v1` are both shipped.
-- **Not a feature-engineering library.** Features are an *input* to this module. v1 ships a fixed candidate pool of 273 columns across 16 families (see `V1_PLAN.md` Stage 2 and `EXPERIMENT_SPEC.md` § "Feature pool"). Adding families beyond that pool is a v2 decision; pruning the pool per-experiment is the agent's job inside the FS+HP loop.
+- **Not a feature-engineering library.** Features are an *input* to this module. v1 ships a fixed candidate pool of 279 columns across 16 families (see `V1_PLAN.md` Stage 2 and `EXPERIMENT_SPEC.md` § "Feature pool"). Adding families beyond that pool is a v2 decision; pruning the pool per-experiment is the agent's job inside the FS+HP loop.
 - **Not an HPO framework.** v1 uses an agent-driven synced FS+HP loop bounded by the ranges in `CATBOOST_HP_REFERENCE.md` and capped at 8 iterations. A Bayesian-optimization library (e.g. Optuna) is a v1.1 alternative if the agent loop proves inconsistent — see `V1.1_TBD.md`.
 - **Not a model-selection framework across algorithm families.** v1 uses CatBoost. The library was chosen for ordered boosting (helps small-data, rare-cell training) and native calibration quality. Comparing CatBoost vs LightGBM vs XGBoost is v1.1+ work behind the same experiment-loop contract.
 
@@ -92,7 +92,7 @@ v1 ships **the experiment-loop infrastructure + one pilot experiment + one unive
 
 **Module code (`src/gbdt/`):**
 - `data.py` — loads the universe panel via `data_pipelines.fetch()` per the preset's ticker list (NIFTY 50 v1).
-- `features.py` — the 273-column candidate pool (16 families). Per-stock rolling pipeline + cross-sectional point-in-time pipeline.
+- `features.py` — the 279-column candidate pool (16 families). Per-stock rolling pipeline + cross-sectional point-in-time pipeline.
 - `targets.py` — binary target construction from a single `(direction, threshold_pct, horizon_days)` tuple.
 - `model.py` — thin CatBoost wrapper. `has_time=True` pinned; HPs bounded by `CATBOOST_HP_REFERENCE.md`.
 - `calibration.py` — conditional isotonic with Spiegelhalter Z-test on val; per-experiment decision recorded in artifact.
@@ -152,7 +152,7 @@ When designing new APIs in this module, prefer shapes that wrap cleanly later:
 
 The how-it-works specification is `docs/gbdt/V1_PLAN.md`. The YAML schema is `docs/gbdt/EXPERIMENT_SPEC.md`. The HP reference is `docs/gbdt/CATBOOST_HP_REFERENCE.md`. Parked v1.1 work is in `docs/gbdt/V1.1_TBD.md`. v0 background is in `docs/gbdt/V0_INVESTIGATION_PLAN.md`.
 
-The stages in `V1_PLAN.md` are the build order. **Do not silently change architectural decisions** — surface the deviation and ask first. The library choice (CatBoost), the feature pool (273 columns × 16 families), the split scheme (800+400+200+100), the calibration policy (conditional isotonic gated by Spiegelhalter Z), and the loop budget (8 iter, plateau + degradation inner-stop) are all locked decisions whose rationale is documented in `V1_PLAN.md` § "Decisions log".
+The stages in `V1_PLAN.md` are the build order. **Do not silently change architectural decisions** — surface the deviation and ask first. The library choice (CatBoost), the feature pool (279 columns across 16 families / 18 sub-family rows in the F-table — F6/F6b and F9/F9b are sibling rows), the split scheme (800+400+200+100), the calibration policy (conditional isotonic gated by Spiegelhalter Z), and the loop budget (8 iter, plateau + degradation inner-stop) are all locked decisions whose rationale is documented in `V1_PLAN.md` § "Decisions log".
 
 See also:
 - `[[project-overview]]` — multi-module structure.

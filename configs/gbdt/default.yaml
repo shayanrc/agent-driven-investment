@@ -35,11 +35,11 @@ split:
   min_rows_per_ticker: 1600          # JIOFIN (578) and MAXHEALTH (1322) excluded by this
 
 # ---------------------------------------------------------------------------
-# Features. Pool = all 273 candidate columns across 16 families (see
+# Features. Pool = all 279 candidate columns across 16 families (see
 # V1_PLAN.md Stage 2). The agent prunes per-iteration inside the FS+HP loop.
 # ---------------------------------------------------------------------------
 features:
-  candidates: all                    # "all" = 273 cols across F1..F16
+  candidates: all                    # "all" = 279 cols across F1..F16
   exclude: []                        # spec can list explicit names or globs
   lookback_windows: [5, 10, 20, 50, 100, 200]
 

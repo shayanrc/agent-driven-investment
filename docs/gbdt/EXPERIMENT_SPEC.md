@@ -62,10 +62,17 @@ Semantics (from `V1_PLAN.md` Stage 3):
 - `direction: up` → label `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
 - `direction: down` → label `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
 
-**With `max_drawdown` set (two-phase path-honesty filter; UP shown — DOWN mirrors with sign flip):**
+**With `max_drawdown` set (two-phase path-honesty filter). UP direction:**
 1. Find the first index `t_breach` in `(t, t+horizon_days]` where `close[t_breach] ≥ (1 + threshold_pct/100) * close[t]`.
 2. If `t_breach` exists **and** `min(close in (t, t_breach]) > (1 − max_drawdown) * close[t]` → label `1` (positive).
 3. Otherwise → label `0` (negative). Negatives bucket two distinct failure modes: "never breached the threshold in the horizon" and "breached the threshold but drew down too much before getting there."
+
+**DOWN direction** (symmetric — `max_drawdown` parametrizes the maximum *adverse path excursion*, which for a short position is an upside rally before the down-breach):
+1. Find the first index `t_breach` in `(t, t+horizon_days]` where `close[t_breach] ≤ (1 − threshold_pct/100) * close[t]`.
+2. If `t_breach` exists **and** `max(close in (t, t_breach]) < (1 + max_drawdown) * close[t]` → label `1` (positive).
+3. Otherwise → label `0` (negative). Same two-bucket failure-mode aggregation as UP.
+
+**Breach criterion switches from HIGH/LOW (simple mode) to CLOSE (path-honesty mode), intentionally.** The simple-binary breach uses HIGH (UP) / LOW (DOWN) — the most aggressive intraday move — because traders observe intraday extremes and the question there is "did the threshold ever fire in any interpretation." The path-honesty filter flips *both* legs (breach and drawdown bound) to CLOSE because the operator semantics are mark-to-market: traders allocate against close-price marks, the realistic exit is the close, and the drawdown the position survives is the close-to-close excursion. Consequence: a path-honesty positive can be strictly stricter than a simple-binary positive even with a permissive `max_drawdown`, because the breach now needs CLOSE (not HIGH/LOW) to clear the threshold.
 
 This is the v0.3 path-honesty filter (`docs/gbdt/_v0_path_honesty_eval.md`) generalized: v0.3 used a hard-wired `max_drawdown = threshold_pct / 200` (half the threshold, as a fraction); v1 makes it an explicit per-experiment parameter. The reading of "positive" is now operator-meaningful: it's not just "the threshold fired at some point" but "the threshold fired without first wiping out the position."
 
@@ -110,11 +117,11 @@ Tickers with fewer than `min_rows_per_ticker` rows are dropped from the panel an
 
 ### `features` (optional)
 
-Feature pool overrides. **By default the experiment starts with all 273 candidate columns** (the 16 families in `V1_PLAN.md` Stage 2); the agent prunes per-iteration.
+Feature pool overrides. **By default the experiment starts with all 279 candidate columns** (the 16 families / 18 sub-family rows in `V1_PLAN.md` Stage 2); the agent prunes per-iteration.
 
 | Field | Type | Default |
 |---|---|---|
-| `candidates` | list[str] or `"all"` | `"all"` (the full 273-col pool) |
+| `candidates` | list[str] or `"all"` | `"all"` (the full 279-col pool) |
 | `exclude` | list[str] | `[]` |
 | `lookback_windows` | list[int] | from `default.yaml`: `[5, 10, 20, 50, 100, 200]` |
 
@@ -267,7 +274,7 @@ One JSON object per line, one line per FS+HP iteration:
   "iter": 0,
   "hp": {"iterations": 1000, "depth": 6, "learning_rate": 0.05, ...},
   "features": ["stock_return_20", "realized_vol_20", ...],
-  "n_features": 273,
+  "n_features": 279,
   "rationale": "iteration 0 — full feature pool, default HPs",
   "train_brier": 0.234,
   "val_brier": 0.241,
@@ -389,7 +396,7 @@ target:
 # split omitted - use default 800+400+200+100 from default.yaml.
 # The 4 IPO-bounded tickers below 1,600 rows are excluded by min_rows_per_ticker.
 
-# features omitted - start with all 273 candidates; agent prunes per iteration.
+# features omitted - start with all 279 candidates; agent prunes per iteration.
 
 backend:
   # Default library catboost; only one supported in v1.

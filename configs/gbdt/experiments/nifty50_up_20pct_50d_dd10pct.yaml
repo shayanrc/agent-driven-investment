@@ -24,7 +24,7 @@ target:
 
 # date_range omitted - loader takes the max cached range per ticker.
 # split omitted - use default 800 train + 400 val + 200 eval + 100 test = 1,600 rows/stock.
-# features omitted - start with the full 273-column candidate pool; the agent prunes.
+# features omitted - start with the full 279-column candidate pool; the agent prunes.
 
 backend:
   calibration_method: conditional_isotonic    # default; Spiegelhalter Z then ship native or isotonic.

@@ -3,14 +3,14 @@
 ## Build status
 
 - **v1.0:** scaffolded — module skeleton + v0 EDA shipped on main at `2a62a1c`.
-- **v1.0 spec-lock:** this PR. Locks the experiment-loop architecture, the 273-column feature pool, the CatBoost library choice, the synced FS+HP loop, the 800+400+200+100 walk-forward split, and the conditional-isotonic calibration policy. Stages 1–9 below are pending implementation.
+- **v1.0 spec-lock:** this PR. Locks the experiment-loop architecture, the 279-column feature pool, the CatBoost library choice, the synced FS+HP loop, the 800+400+200+100 walk-forward split, and the conditional-isotonic calibration policy. Stages 1–9 below are pending implementation.
 
 For the *why* (what success looks like, anti-goals, deployment intent), see `goal.md`. The YAML spec contract is in `EXPERIMENT_SPEC.md`. The CatBoost HP reference the per-experiment agent consults is `CATBOOST_HP_REFERENCE.md`. Parked v1.1 follow-ups are in `V1.1_TBD.md`.
 
 ## Revision history
 
 - **v1.0** *(2026-05-24, scaffolded)* — Initial scaffold: directory tree, stub modules, goal doc, plan skeleton. No implementation. Branch `gbdt-v1` from `main` at `9a03a00`. Stages 1–9 spec'd a per-asset 18-classifier lattice build with LightGBM defaults and several open library / fold / feature questions.
-- **v1.0 spec-lock** *(2026-05-26, this PR)* — Long design conversation between the user and the parent agent locked the open questions and shifted the framing from "18-classifier lattice as v1 deliverable" to "experiment-loop infrastructure as v1 deliverable, with one pilot experiment as the merge gate." Library = CatBoost. Universe = NIFTY 50. Feature pool = 273 columns across 16 families. Split = 800+400+200+100. FS+HP = agent-driven synced loop, 8-iter cap, plateau + degradation inner-stop. Calibration = conditional isotonic gated by Spiegelhalter Z. See § "Decisions log" below for the deltas from v1.0's open questions.
+- **v1.0 spec-lock** *(2026-05-26, this PR)* — Long design conversation between the user and the parent agent locked the open questions and shifted the framing from "18-classifier lattice as v1 deliverable" to "experiment-loop infrastructure as v1 deliverable, with one pilot experiment as the merge gate." Library = CatBoost. Universe = NIFTY 50. Feature pool = 279 columns across 16 families (18 sub-family rows in the F-table — F6/F6b and F9/F9b are sibling rows). Split = 800+400+200+100. FS+HP = agent-driven synced loop, 8-iter cap, plateau + degradation inner-stop. Calibration = conditional isotonic gated by Spiegelhalter Z. See § "Decisions log" below for the deltas from v1.0's open questions.
 
 ---
 
@@ -37,7 +37,7 @@ spec.yaml ──▶ experiment.py: orchestrator (CLI + skill)
 ┌──────────────┐                   ┌──────────────┐                    ┌──────────────┐
 │  data.py     │                   │  features.py │                    │  targets.py  │
 │  fetch       │                   │  16 families │                    │  binary      │
-│  universe    │ ─── panel ──▶     │  273 cols    │ ──── X, names ──▶  │  label per   │
+│  universe    │ ─── panel ──▶     │  279 cols    │ ──── X, names ──▶  │  label per   │
 │  panel via   │                   │  per-stock + │                    │  spec target │
 │  data_pipes  │                   │  xs pipes    │                    │  ───── y ──▶ │
 └──────────────┘                   └──────────────┘                    └──────────────┘
@@ -127,13 +127,13 @@ This means a new experiment YAML for `nifty500` can run end-to-end on a fresh ch
 
 **Done when:** panel loader works on the real NIFTY 50 cache; 48 tickers pass the row-count gate; harness correctly distinguishes leaky vs causal features on synthetic data; the universe self-service flow can register a fresh universe end-to-end (validated against `nifty100` as the first additional universe).
 
-### Stage 2 — Feature implementation (273-column candidate pool)
+### Stage 2 — Feature implementation (279-column candidate pool)
 
 **Goal:** implement all 16 feature families enumerated below. The pool is fixed; per-experiment pruning is the agent's job in Stage 6.
 
 **Constraint:** all features are strictly causal at row `(t, ticker)`. Annualization on the NIFTY panel uses `√250` (not `√252`). Lookback windows are exposed in config as `[5, 10, 20, 50, 100, 200]`.
 
-**Feature pool (273 columns across 16 families):**
+**Feature pool (279 columns across 16 families, 18 sub-family rows in the table — F6/F6b and F9/F9b are sibling rows mentally counted as one family each):**
 
 | # | Family | Cols | Notes |
 |---|---|---|---|
@@ -156,7 +156,7 @@ This means a new experiment YAML for `nifty500` can run end-to-end on a fresh ch
 | F15 | calendar | 10 | DOW (sin, cos) + DOM (sin, cos) + MOY (sin, cos) + 4 India binary flags: `fiscal_year_end_week`, `budget_week`, `diwali_week`, `fomc_week` |
 | F16 | signed days outside band | 105 | 12 new underlying z-scores (`stock_return_zscore_N`(6) + `realized_vol_zscore_N`(6)) + signed-days-outside-band meta on the z-scored underlying. Sign = sign of current side of mean (current-side convention, "option A"). Value = 0 inside the band; +k = k consecutive days above +Xσ; −k = k consecutive days below −Xσ. Resets to 0 the moment z re-enters the band. Pool size: 12 underlying + 93 meta = 105 base columns in the candidate pool. |
 
-**Total: 273 columns.**
+**Total: 279 columns.** (Row-wise sum: F1–F6 + F6b + F9 + F9b = 9 × 6 = 54; +F7 = 86; +F8 = 98; +F10 = 104; +F11 = 116; +F12 = 122; +F13 = 140; +F14 = 164; +F15 = 174; +F16 = 279.)
 
 **Tasks:**
 - `src/gbdt/features.py`:
@@ -164,12 +164,12 @@ This means a new experiment YAML for `nifty500` can run end-to-end on a fresh ch
   - Two pipeline modes:
     1. **Per-stock rolling** — F1–F13, F15, F16 (rolling on each ticker's time series).
     2. **Cross-sectional point-in-time** — F14 + F7's `_xs_` columns (compute on each date's cross-section).
-  - A `build_feature_matrix(panel, spec) → pd.DataFrame` orchestrator assembles the matrix per the candidate list in `spec.features.candidates` (default = all 273).
+  - A `build_feature_matrix(panel, spec) → pd.DataFrame` orchestrator assembles the matrix per the candidate list in `spec.features.candidates` (default = all 279).
 - Each feature has a unit test on a small fixture (one synthetic ticker, 30 rows) with at least one hand-computed expected value.
 - Every feature passes the look-ahead-leak harness from Stage 1.
 - `configs/gbdt/default.yaml`'s `lookback_windows` is the source of truth for the windows list.
 
-**Done when:** the 273-column matrix builds end-to-end on the NIFTY 50 panel, every feature has a unit test, the matrix passes the leak harness.
+**Done when:** the 279-column matrix builds end-to-end on the NIFTY 50 panel, every feature has a unit test, the matrix passes the leak harness.
 
 ### Stage 3 — Target builder
 
@@ -183,12 +183,16 @@ This means a new experiment YAML for `nifty500` can run end-to-end on a fresh ch
     - Direction `up`: `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
     - Direction `down`: `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
     - The threshold check uses HIGH for up / LOW for down (the most conservative interpretation of "did the threshold ever fire").
-  - **Path-honesty mode (`target.max_drawdown` set)** — two-phase check (UP shown; DOWN mirrors with sign flip):
+  - **Path-honesty mode (`target.max_drawdown` set)** — two-phase check. **UP direction:**
     1. **Find the breach index.** Scan `(t, t+horizon_days]` for the first index `t_breach` where `close[t_breach] ≥ (1 + threshold_pct/100) * close[t]`. If no such index exists → label `0`.
     2. **Check the path's max drawdown before breach.** If `min(close in (t, t_breach]) > (1 − max_drawdown) * close[t]` → label `1` (positive). Else → label `0` (the threshold fired, but only after the position would have been wiped out).
+  - **Path-honesty mode — DOWN direction** (symmetric; `max_drawdown` denotes the maximum adverse path excursion regardless of direction — for a short, that adverse excursion is an *upside* rally before the down-breach):
+    1. **Find the breach index.** Scan `(t, t+horizon_days]` for the first index `t_breach` where `close[t_breach] ≤ (1 − threshold_pct/100) * close[t]`. If no such index exists → label `0`.
+    2. **Check the path's max adverse excursion before breach.** If `max(close in (t, t_breach]) < (1 + max_drawdown) * close[t]` → label `1` (positive). Else → label `0` (the threshold fired, but only after the short would have been wiped out by an intervening rally).
     - This generalizes the v0.3 filter (`docs/gbdt/_v0_path_honesty_eval.md`), which hard-wired `max_drawdown = threshold_pct / 200`. v1 makes the bound an explicit per-experiment parameter.
     - Negatives in this mode bucket two distinct failure modes (no-breach + breach-after-drawdown); they are aggregated into the single `0` label intentionally — the model learns "would the position have made it cleanly to the threshold," not "did the threshold fire at all."
-    - The drawdown check uses CLOSE (not LOW), since the operator-facing semantics are mark-to-market drawdown a position would have experienced day-over-day. If the spec writer wants the more conservative LOW-based bound (worst intraday excursion), that's a v1.1 follow-up.
+    - **Breach criterion switches from HIGH/LOW (simple mode) to CLOSE (path-honesty mode), intentionally.** The simple-binary mode uses HIGH (UP) / LOW (DOWN) — the most aggressive intraday move ever observed — because the question there is "did the threshold ever fire in *any* interpretation." Path-honesty mode flips both legs to CLOSE because the operator semantics are mark-to-market: the breach is the closing price the operator could realistically exit at, and the drawdown filter is the closing-price excursion the position would have weathered. Consequence: a path-honesty positive can be strictly stricter than a simple-binary positive even with a permissive `max_drawdown`, because the breach must clear on CLOSE rather than HIGH/LOW.
+    - The drawdown check uses CLOSE (not LOW for UP / not HIGH for DOWN), since the operator-facing semantics are mark-to-market drawdown a position would have experienced day-over-day. If the spec writer wants the more conservative intraday-extremum bound (worst HIGH/LOW excursion), that's a v1.1 follow-up.
 - Unit tests on a synthetic price path with known breach + drawdown patterns for each direction × threshold × horizon × max_drawdown combination.
 - Edge cases tested: target at the last row (no forward data → `NaN`); breach exactly on day `t+horizon_days` (counts); breach on day `t+1` (counts); no breach in window (`0`); breach after deep drawdown with `max_drawdown` set (counts as `0`); shallow drawdown before breach with `max_drawdown` set (counts as `1`).
 
@@ -440,7 +444,7 @@ src/gbdt/
   __main__.py                          # invokes experiment.py
   data.py                              # universe loader (Stage 1)
   leakage_harness.py                   # synthetic leak detector (Stage 1)
-  features.py                          # 273-col candidate pool (Stage 2)
+  features.py                          # 279-col candidate pool (Stage 2)
   targets.py                           # single binary target per spec (Stage 3)
   model.py                             # CatBoost wrapper (Stage 4)
   calibration.py                       # conditional isotonic (Stage 5)
@@ -492,7 +496,7 @@ Non-negotiable in v1. Each was a deliberate spec-lock decision; revisit only thr
 3. **No multi-library backends.** v1 is CatBoost only. LightGBM / XGBoost behind the experiment-loop contract is `V1.1_TBD.md` § "Per-experiment library override".
 4. **No algorithmic FS (RFE / importance-threshold) in v1.** The FS step is agent-driven inside the synced loop.
 5. **No HP search libraries (Optuna / Hyperopt) in v1.** Same reasoning. `V1.1_TBD.md` § "Bayesian HP search alternative" is the parking-lot entry.
-6. **No alternative-data features beyond the 273-col pool.** Macro / sentiment / sector joins live in `V1.1_TBD.md`.
+6. **No alternative-data features beyond the 279-col pool.** Macro / sentiment / sector joins live in `V1.1_TBD.md`.
 7. **No PnL / position sizing / transaction costs.** Same anti-rule as `analog_mc`.
 8. **No `Classifier` ABC or library registry.** v1 uses one library.
 9. **No CSV-first data path.** v1 uses `data_pipelines.fetch()` directly — diverges from `analog_mc` v1's CSV-first contract because gbdt v1 needs a panel, not a single asset's CSV.
@@ -523,12 +527,12 @@ Non-negotiable in v1. Each was a deliberate spec-lock decision; revisit only thr
 Per-experiment, single-machine CPU baseline:
 
 - **Data:** ~48 tickers × ~1,600 rows = ~76,800 rows. Panel build via `data_pipelines.fetch()` is cache-served (sub-second after first cold pull).
-- **Feature matrix:** 273 columns × ~76,800 rows = ~21M cells. Per-stock rolling pipelines vectorize well; cross-sectional batch is one groupby per date. Expect <1 min on this hardware.
+- **Feature matrix:** 279 columns × ~76,800 rows = ~21M cells. Per-stock rolling pipelines vectorize well; cross-sectional batch is one groupby per date. Expect <1 min on this hardware.
 - **Per-iteration CatBoost fit:** at default HPs (`iterations=1000`, `depth=6`, `boosting_type=Ordered`), ~2–5 min on this scale per fit. Ordered boosting is 2–3× slower than Plain; budget accordingly.
 - **FS+HP loop:** max 8 iterations × ~2–5 min/iter = 16–40 min of pure fit time per experiment. Plus the agent's per-iteration reasoning wall time (interactive, hard to bound).
 - **Calibration + report:** negligible (<10 sec).
 
-The original v1.0 plan's `<2hr` per-experiment target was tight even at the smaller feature pool. At 273 columns the FS+HP loop's iterative pruning is the main mitigation — after iteration 2–3 the agent typically prunes to ~40–80 features, at which point per-iteration fit time drops by 3–5×. Empirically, expect end-to-end pilot runs in the 30 min – 2 hr range. Multi-fold runs (`split.n_folds > 1`) multiply linearly.
+The original v1.0 plan's `<2hr` per-experiment target was tight even at the smaller feature pool. At 279 columns the FS+HP loop's iterative pruning is the main mitigation — after iteration 2–3 the agent typically prunes to ~40–80 features, at which point per-iteration fit time drops by 3–5×. Empirically, expect end-to-end pilot runs in the 30 min – 2 hr range. Multi-fold runs (`split.n_folds > 1`) multiply linearly.
 
 If wall-clock becomes the binding constraint per experiment, the first lever is `border_count=128` (small quality cost, ~2× faster training; documented in `CATBOOST_HP_REFERENCE.md` § Category 3); the second is `leaf_estimation_iterations=3`; the third is dropping `boosting_type` to `Plain` for cells where Ordered isn't measurably winning. None of these belong in the loop logic — they're agent-level decisions on the cell.
 

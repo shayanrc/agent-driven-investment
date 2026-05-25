@@ -30,7 +30,7 @@ target:
 
 # date_range omitted - loader takes the max cached range per ticker.
 # split omitted - use default 800+400+200+100 = 1,600 rows/stock.
-# features omitted - start with the full 273-column candidate pool.
+# features omitted - start with the full 279-column candidate pool.
 
 backend:
   calibration_method: conditional_isotonic

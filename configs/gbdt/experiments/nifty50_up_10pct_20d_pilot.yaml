@@ -28,7 +28,7 @@ target:
 
 # split omitted - use default 800 train + 400 val + 200 eval + 100 test = 1,600 rows/stock.
 
-# features omitted - start with the full 273-column candidate pool (all 16 families).
+# features omitted - start with the full 279-column candidate pool (all 16 families).
 # The agent prunes per FS+HP iteration; expected end state is ~40-80 features.
 
 backend:
