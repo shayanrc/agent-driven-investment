@@ -1,16 +1,16 @@
 ---
 name: project-overview
-description: Repo hosts multiple forecasting/analytics modules — analog_mc, data_pipelines, forecasters, gbdt. Each has its own docs/<module>/goal.md. State as of 2026-05-25.
+description: Repo hosts multiple forecasting/analytics modules — analog_mc, data_pipelines, forecasters, gbdt. Each has its own docs/<module>/goal.md. State as of 2026-05-26.
 metadata:
   type: project
 ---
 
-This repo hosts multiple forecasting/analytics modules. Four are in flight as of 2026-05-25:
+This repo hosts multiple forecasting/analytics modules. Four are in flight as of 2026-05-26:
 
 - **analog_mc** *(shipped to main; latest experimental work: V5.A.2 ensemble cleanup on `v5-experiments`, not yet merged)* — analog Monte Carlo probabilistic price-path forecasting. First module.
 - **data_pipelines** *(shipped to main via PR #1; v1.7 NSE added; `data-seed-nifty-total` adapter-patch branch open and seed-in-flight)* — generic time-series ingestion framework. Two domains shipped: `us_equities` (S&P 500 + indices via stooq/tiingo/yfinance) and `nse_equities` (NIFTY 50 + index family via jugaad/nselib/yfinance; jugaad vendored at `vendor/jugaad-data`). Public `fetch(identifier, start, end)` dispatches by identifier prefix (e.g. `NYSE:AAPL`, `NSE:RELIANCE`, `INDEX:^SPX`, `NIFTY:NIFTY500`). Cache at `data/processed.db` (SQLite).
 - **forecasters** *(PR #2 open on `v1-skills`)* — agent-callable forecasting surface. Preset = saved-model artifact (`backend + hyperparameters + fitted_on + validation_metrics`). 5 skills ship in the same PR: `/forecast`, `/tune-preset`, `/list-presets` (forecasters-owned) + `/fetch-data`, `/data-health` (`data_pipelines`-owned, bundled). analog_mc wired as backend #1. Wire-format contract is runtime-validated JSON; typed dataclasses / `Forecaster` ABC / registry deferred to backend #2. NIFTY 500 acceptance demo PASS.
-- **gbdt** *(PR open on `gbdt-v1`)* — categorical-outcome GBDT classifiers for probability of `{±10/20/50%}` move in `{10/20/50}` trading days = 18-cell lattice per asset. v1 stages 1-9 still pending; the branch currently carries scaffolding + V0_INVESTIGATION_PLAN (v0.1 NIFTY 50 opportunity scan, v0.2 full direction × threshold × horizon grid, v0.3 drawdown-filtered). Headline = calibration, not accuracy or AUC.
+- **gbdt** *(spec locked on `gbdt-v1-spec-lock`; Stages 1-9 pending implementation)* — categorical-outcome GBDT classifiers. v0 was 18-cell lattice EDA (shipped on main); v1 ships **experiment-loop infrastructure**, not the lattice. Each experiment = one `(universe, direction, threshold, horizon)` tuple driven via the `/gbdt-experiment` skill (single end-to-end orchestrator: data → iter-0 → agent-driven synced FS+HP loop → calibration → artifact). Locked decisions: CatBoost (ordered boosting), NIFTY 50 pooled panel (48/50 tickers post-back-extend), 279-col feature pool across 16 families (18 sub-family rows), 800+400+200+100 walk-forward split, conditional isotonic calibration gated by Spiegelhalter Z, 8-iter loop cap with plateau + degradation inner-stop. Pilot experiment is `nifty50_up_10pct_20d_pilot`; v1 PR merge gate = that experiment runs end-to-end and emits a complete artifact (per-experiment verdict is for the user, not an automated gate). Headline metric = calibration, not accuracy or AUC. References: `docs/gbdt/{goal,V1_PLAN,EXPERIMENT_SPEC,CATBOOST_HP_REFERENCE,V1.1_TBD,V0_INVESTIGATION_PLAN}.md`.
 
 **For module-specific specs:** read `docs/<module>/goal.md` (the why) and `docs/<module>/{IMPLEMENTATION_PLAN,V<N>_PLAN}.md` (the how). CLAUDE.md at the repo root has the short rules; the long-form why is in those plan docs.
 

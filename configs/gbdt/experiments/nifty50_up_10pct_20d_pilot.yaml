@@ -1,0 +1,44 @@
+# The v1 PR pilot experiment — the merge gate for gbdt v1.
+#
+# Cell choice rationale: up / +10% / 20 trading days on NIFTY 50. Base rate
+# from v0.2 (docs/gbdt/_v0_opportunity_scan_full.md) is roughly 35-45% across
+# the universe — common enough that calibration is meaningfully testable, not
+# so extreme that the class-imbalance machinery dominates the run.
+#
+# This spec relies entirely on defaults from configs/gbdt/default.yaml.
+# It is intentionally minimal — a "happy path" run that the v1 infrastructure
+# must complete end-to-end to gate the PR merge. The per-experiment verdict
+# (does the model actually calibrate well on this cell?) is for the user to
+# read from results/gbdt/experiments/nifty50_up_10pct_20d_pilot/report.md;
+# it is NOT an automated PR gate.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 20
+
+# date_range omitted - loader takes the max cached range per ticker.
+# Cache state as of v1 spec-lock: 44/50 tickers have >=2,500 rows; 4 IPO-bounded
+# tickers (ETERNAL, HDFCLIFE, INDIGO, SBILIFE) have 1,700-2,400 rows and stay in.
+# JIOFIN (578) and MAXHEALTH (1,322) fall below split.min_rows_per_ticker=1600
+# and will be excluded; the exclusion is recorded in metrics.json::data.tickers_excluded.
+
+# split omitted - use default 800 train + 400 val + 200 eval + 100 test = 1,600 rows/stock.
+
+# features omitted - start with the full 279-column candidate pool (all 16 families).
+# The agent prunes per FS+HP iteration; expected end state is ~40-80 features.
+
+backend:
+  calibration_method: conditional_isotonic   # default; runs Spiegelhalter Z, ships native or isotonic.
+  fs_hp_loop:
+    max_iterations: 8                        # default; hard cap.
+    plateau_threshold: 0.005                 # default; 0.5% absolute val Brier improvement floor.
+    degradation_gate: 0.01                   # default; 1% degrade from best-seen val Brier triggers stop.
+
+  # hp_starting omitted - use default.yaml::backend.hp_starting at iteration 0.
+  # The agent explores from there bounded by CATBOOST_HP_REFERENCE.md ranges per parameter.
+
+random_seed: 42                              # default; pinned for reproducibility.

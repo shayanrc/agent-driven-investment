@@ -39,3 +39,7 @@ Each v0 commit is a point-in-time snapshot against whatever NSE cache existed wh
 - Not model training. v0 is event counting + descriptive stats. v1 trains models.
 - Not strategy backtesting. v0 counts opportunities; what trading would do with them is downstream and out of scope here per the project-wide anti-rule (see `goal.md`'s "What this module is *not*").
 - Not snapshot-stable. v0 scripts re-render their headline JSON in place at `results/gbdt/data/_v0_<name>_data.json`; re-running a v0 script against a changed cache will silently overwrite the committed result. To compare across snapshots, rename or move the prior JSON first (or back it up), and `git status` after a re-run to surface drift.
+
+## v1 outcome
+
+v0 informed v1's target lattice (3 thresholds × 3 horizons × 2 directions, 18 cells total). v1 ships **experiment-loop infrastructure** — not the lattice itself as the deliverable. Each v1 experiment runs a single (universe, direction, threshold, horizon) tuple via the `/gbdt-experiment` skill; see `docs/gbdt/V1_PLAN.md` and `docs/gbdt/EXPERIMENT_SPEC.md`.
