@@ -5,7 +5,16 @@
 # to avoid contending with the parallel total-market seeder writing to the
 # same data/processed.db. Hard 120s subprocess timeout per ticker so any
 # stuck call cannot block the batch.
-set -u
+#
+# Shell options: -u catches unset vars; -o pipefail propagates failures from
+# the tee side of pipes. No -e: one ticker's failure must NOT abort the seed
+# (the outer loop accumulates per-ticker outcomes into the summary).
+#
+# Log handling: ${LOG_FILE} is timestamp-scoped per invocation, but `tee -a`
+# means a second run that reuses the same file (e.g., a resume pass within
+# the same UTC second) will append rather than truncate. Resume passes in
+# practice get a fresh timestamp; the append semantics are kept defensive.
+set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
@@ -18,8 +27,9 @@ PER_TICKER_TIMEOUT="120"  # seconds; mirrors total-market seeder finding
 
 mkdir -p logs
 
-# Extract tickers (preserve order)
-TICKERS=$(uv run python -c "
+# Extract tickers (preserve order). mapfile -> array so iteration is
+# whitespace-safe even though current ticker names contain none.
+mapfile -t TICKERS < <(uv run python -c "
 import yaml
 with open('${UNIVERSE_YAML}') as f:
     u = yaml.safe_load(f)
@@ -34,7 +44,7 @@ echo "Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a "${LOG_FILE}"
 echo "========================================" | tee -a "${LOG_FILE}"
 
 i=0
-n_total=$(echo "${TICKERS}" | wc -l)
+n_total=${#TICKERS[@]}
 n_ok=0
 n_fail=0
 n_timeout=0
@@ -52,7 +62,7 @@ except Exception:
 " "$1" 2>/dev/null
 }
 
-for T in ${TICKERS}; do
+for T in "${TICKERS[@]}"; do
     i=$((i+1))
     echo "" | tee -a "${LOG_FILE}"
     echo "[${i}/${n_total}] ${T}  $(date -u +%H:%M:%SZ)" | tee -a "${LOG_FILE}"
