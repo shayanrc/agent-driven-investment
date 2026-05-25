@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "arch>=8.0.0",
+    "catboost>=1.2.7",
     "holidays>=0.97",
     # jugaad-data is vendored at vendor/jugaad-data (git subtree) so we can
     # patch the broken niftyindices.com index endpoint that upstream hasn't
@@ -17,6 +18,7 @@ dependencies = [
     "pyarrow>=24.0.0",
     "python-dotenv>=1.2.2",
     "pyyaml>=6.0.3",
+    "scikit-learn>=1.5.0",
     "scipy>=1.17.1",
     "seaborn>=0.13.2",
     "streamlit>=1.57.0",
@@ -34,6 +36,9 @@ packages = ["src/analog_mc", "src/data_pipelines", "src/forecasters", "src/gbdt"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+markers = [
+    "slow: tests that require the real on-disk data_pipelines cache and/or take >5s",
+]
 
 [dependency-groups]
 dev = [
