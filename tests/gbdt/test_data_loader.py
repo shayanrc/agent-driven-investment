@@ -28,7 +28,7 @@ def test_resolve_universe_nifty50_has_50_tickers():
 def test_universe_metadata_nifty50():
     meta = gbdt_data.universe_metadata("nifty50")
     assert meta["annualization_factor"] == 250
-    assert meta["index_ticker"] == "INDEX:^NSEI"
+    assert meta["index_ticker"] == "NIFTY:50"
 
 
 def test_register_universe_round_trip(tmp_path):

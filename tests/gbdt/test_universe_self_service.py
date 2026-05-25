@@ -29,7 +29,7 @@ def test_self_service_universe_defaults_metadata(tmp_path):
     )
     meta = gbdt_data.universe_metadata("no_default_entry", repo_root=tmp_path)
     assert meta["annualization_factor"] == 250
-    assert meta["index_ticker"] == "INDEX:^NSEI"
+    assert meta["index_ticker"] == "NIFTY:50"
 
 
 def test_self_service_overwrites_idempotently(tmp_path):

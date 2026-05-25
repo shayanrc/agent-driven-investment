@@ -157,7 +157,7 @@ def universe_metadata(
         return block
     return {
         "source": str(_DEFAULT_UNIVERSE_DIR / f"universe_{name}.yaml"),
-        "index_ticker": "INDEX:^NSEI",
+        "index_ticker": "NIFTY:50",
         "ticker_prefix": "NSE:",
         "annualization_factor": 250,
     }
@@ -175,21 +175,35 @@ def ensure_universe_cached(
     min_rows: int = 1600,
     *,
     repo_root: Path | None = None,
+    cache_only: bool = True,
 ) -> dict[str, TickerStatus]:
-    """For each ticker, call ``data_pipelines.fetch()`` and verify row count.
+    """For each ticker, verify cache row count meets ``min_rows``.
 
-    Returns a dict ``ticker -> TickerStatus``. Tickers below ``min_rows`` are
-    flagged ``kept=False`` with a descriptive reason; the caller decides what
-    to do (the panel loader drops them, the agent surface logs them).
+    With ``cache_only=True`` (default) we read directly from the SQLite cache
+    — no provider calls. This is what the experiment runner uses: gbdt v1
+    assumes the universe has already been seeded; the data_pipelines
+    refresh flow is a separate concern (the ``/gbdt-experiment`` skill's
+    pre-flight handles a cold-pull when needed).
+
+    With ``cache_only=False`` we go through ``data_pipelines.fetch()``,
+    which will detect and try to fill gaps against the provider chain. Use
+    that only when you want a fresh seed.
     """
     if start is None:
         start = "1990-01-01"
-    if end is None:
-        end = date.today().isoformat()
     statuses: dict[str, TickerStatus] = {}
     for ticker in tickers:
         try:
-            df = _dp_fetch(ticker, start, end, data_root=_data_root(repo_root))
+            if cache_only:
+                df = _cache_read(ticker, start, end, repo_root=repo_root)
+            else:
+                ticker_end = end if end is not None else _cache_last_date(
+                    ticker, repo_root=repo_root,
+                ) or date.today().isoformat()
+                df = _dp_fetch(
+                    ticker, start, ticker_end,
+                    data_root=_data_root(repo_root),
+                )
         except Exception as exc:
             statuses[ticker] = TickerStatus(
                 ticker=ticker, rows=0, kept=False, reason=f"fetch failed: {exc}",
@@ -204,6 +218,83 @@ def ensure_universe_cached(
         else:
             statuses[ticker] = TickerStatus(ticker=ticker, rows=n, kept=True)
     return statuses
+
+
+def _cache_read(
+    ticker: str,
+    start: str | date,
+    end: str | date | None,
+    *,
+    repo_root: Path | None = None,
+) -> pd.DataFrame:
+    """Read ``ticker`` rows from the SQLite cache directly. Returns the
+    canonical OHLCV DataFrame (``date, open, high, low, close, adj_close,
+    volume``). Raises if the ticker isn't cached.
+    """
+    import sqlite3
+    if ticker.startswith(("NSE:", "BSE:", "INDEX:", "NIFTY:")):
+        table = "nse_equities_data"
+    else:
+        table = "us_equities_data"
+    db = Path(_data_root(repo_root)) / "processed.db"
+    if not db.exists():
+        raise FileNotFoundError(f"cache db missing at {db}")
+    start_s = start if isinstance(start, str) else start.isoformat()
+    end_s = (end if isinstance(end, str)
+             else (end.isoformat() if end is not None else "2099-01-01"))
+    con = sqlite3.connect(str(db))
+    try:
+        df = pd.read_sql_query(
+            f"SELECT date, open, high, low, close, adj_close, volume "
+            f"FROM {table} WHERE ticker = ? AND date >= ? AND date <= ? "
+            f"ORDER BY date",
+            con,
+            params=(ticker, start_s, end_s),
+        )
+    finally:
+        con.close()
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
+def _cache_last_date(ticker: str, *, repo_root: Path | None = None) -> str | None:
+    """Look up the last cached trading date for ``ticker`` via the
+    data_pipelines SQLite cache; returns None if not cached.
+
+    Probes ``<domain>_meta.range_end`` first (cheap), falls back to MAX(date)
+    on the per-domain data table. Routes to the right domain table by ticker
+    prefix.
+    """
+    try:
+        import sqlite3
+        db = Path(_data_root(repo_root)) / "processed.db"
+        if not db.exists():
+            return None
+        if ticker.startswith(("NSE:", "BSE:", "INDEX:", "NIFTY:")):
+            domain = "nse_equities"
+        else:
+            domain = "us_equities"
+        con = sqlite3.connect(str(db))
+        try:
+            cur = con.execute(
+                f"SELECT range_end FROM {domain}_meta WHERE ticker = ?",
+                (ticker,),
+            )
+            row = cur.fetchone()
+            if row and row[0]:
+                return str(row[0])[:10]
+            cur = con.execute(
+                f"SELECT MAX(date) FROM {domain}_data WHERE ticker = ?",
+                (ticker,),
+            )
+            row = cur.fetchone()
+            if row and row[0]:
+                return str(row[0])[:10]
+        finally:
+            con.close()
+    except Exception:
+        return None
+    return None
 
 
 def _data_root(repo_root: Path | None) -> str:
@@ -223,6 +314,7 @@ def load_panel(
     *,
     min_rows: int = 1600,
     repo_root: Path | None = None,
+    cache_only: bool = True,
 ) -> UniversePanel:
     """Load a universe's OHLCV panel as a long-format MultiIndex DataFrame.
 
@@ -239,6 +331,7 @@ def load_panel(
 
     statuses = ensure_universe_cached(
         tickers, start, end, min_rows=min_rows, repo_root=repo_root,
+        cache_only=cache_only,
     )
 
     kept = [t for t, s in statuses.items() if s.kept]
@@ -248,14 +341,20 @@ def load_panel(
             f"statuses={statuses}"
         )
 
+    def _load_one(t: str) -> pd.DataFrame:
+        if cache_only:
+            return _cache_read(t, start or "1990-01-01", end, repo_root=repo_root)
+        ticker_end = (end if end is not None
+                      else _cache_last_date(t, repo_root=repo_root)
+                      or date.today().isoformat())
+        return _dp_fetch(
+            t, start or "1990-01-01", ticker_end,
+            data_root=_data_root(repo_root),
+        )
+
     frames: list[pd.DataFrame] = []
     for t in kept:
-        df = _dp_fetch(
-            t,
-            start or "1990-01-01",
-            end or date.today().isoformat(),
-            data_root=_data_root(repo_root),
-        ).copy()
+        df = _load_one(t).copy()
         df["date"] = pd.to_datetime(df["date"])
         df["ticker"] = t
         frames.append(df)
@@ -265,12 +364,7 @@ def load_panel(
     panel = panel.set_index(["date", "ticker"]).sort_index()
 
     idx_ticker = meta.get("index_ticker", "INDEX:^NSEI")
-    index_df = _dp_fetch(
-        idx_ticker,
-        start or "1990-01-01",
-        end or date.today().isoformat(),
-        data_root=_data_root(repo_root),
-    ).copy()
+    index_df = _load_one(idx_ticker).copy()
     index_df["date"] = pd.to_datetime(index_df["date"])
     index_df = index_df.sort_values("date").set_index("date")
 
