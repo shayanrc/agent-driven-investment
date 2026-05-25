@@ -1,4 +1,347 @@
-"""CLI entry point: ``python -m gbdt {train,predict} ...``.
+"""CLI orchestrator: ``python -m gbdt experiment <spec.yaml>``.
 
-Subcommands and arg handling implemented in V1_PLAN Stage 8.
+Loads a spec, builds the universe panel + 279-col feature matrix + binary
+target, runs the walk-forward driver with the default algorithmic FS+HP
+fallback (the ``/gbdt-experiment`` skill overrides this with agent loops),
+applies the calibration policy, and emits the full per-experiment artifact
+directory at ``results/gbdt/experiments/<experiment_name>/``.
 """
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import pickle
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import yaml
+from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
+
+from gbdt import data as gbdt_data
+from gbdt import features as gbdt_features
+from gbdt.report import emit_figures, render_report
+from gbdt.targets import build_target
+from gbdt.train import SplitSpec, walk_forward_train
+
+
+# ---------------------------------------------------------------------------
+# Spec loading + validation
+# ---------------------------------------------------------------------------
+
+
+_VALID_DIRECTIONS = {"up", "down"}
+_VALID_CAL_METHODS = {"native", "conditional_isotonic", "isotonic_always", "platt"}
+
+
+def load_spec(spec_path: Path, default_path: Path | None = None) -> dict:
+    """Load + validate a spec, merging on top of ``default.yaml``."""
+    spec = yaml.safe_load(spec_path.read_text()) or {}
+
+    default_path = default_path or Path("configs/gbdt/default.yaml")
+    defaults = yaml.safe_load(default_path.read_text()) if default_path.exists() else {}
+
+    merged = _deep_merge(defaults, spec)
+    _validate_spec(merged)
+    return merged
+
+
+def _deep_merge(base: dict, over: dict) -> dict:
+    out = dict(base)
+    for k, v in (over or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def _validate_spec(spec: dict) -> None:
+    target = spec.get("target")
+    if not target:
+        raise ValueError("spec.target is required")
+    for k in ("universe", "direction", "threshold_pct", "horizon_days"):
+        if k not in target:
+            raise ValueError(f"spec.target.{k} is required")
+    if target["direction"] not in _VALID_DIRECTIONS:
+        raise ValueError(
+            f"spec.target.direction must be in {_VALID_DIRECTIONS}, got {target['direction']!r}"
+        )
+    if target["threshold_pct"] <= 0:
+        raise ValueError("spec.target.threshold_pct must be > 0")
+    if target["horizon_days"] <= 0:
+        raise ValueError("spec.target.horizon_days must be > 0")
+    md = target.get("max_drawdown")
+    if md is not None and not (0 < md < 1):
+        raise ValueError(f"spec.target.max_drawdown must be in (0, 1), got {md}")
+
+    backend = spec.get("backend", {}) or {}
+    if backend.get("library", "catboost") != "catboost":
+        raise ValueError("v1 supports backend.library='catboost' only")
+    cal = backend.get("calibration_method", "conditional_isotonic")
+    if cal not in _VALID_CAL_METHODS:
+        raise ValueError(f"backend.calibration_method must be in {_VALID_CAL_METHODS}")
+    loop = backend.get("fs_hp_loop", {}) or {}
+    if "max_iterations" in loop and not (1 <= loop["max_iterations"] <= 16):
+        raise ValueError("backend.fs_hp_loop.max_iterations must be in [1, 16]")
+    sp = spec.get("split", {}) or {}
+    if sp:
+        total = (sp.get("train_rows", 0) + sp.get("val_rows", 0)
+                  + sp.get("eval_rows", 0) + sp.get("test_rows", 0))
+        if total > sp.get("min_rows_per_ticker", total):
+            raise ValueError("split sum exceeds min_rows_per_ticker")
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _spec_hash(spec: dict) -> str:
+    return "sha256:" + hashlib.sha256(
+        json.dumps(spec, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
+def _data_hash(panel: pd.DataFrame) -> str:
+    h = hashlib.sha256()
+    h.update(str(panel.shape).encode())
+    h.update(str(panel.index[:5].tolist()).encode())
+    h.update(str(panel.index[-5:].tolist()).encode())
+    return "sha256:" + h.hexdigest()
+
+
+def _compute_headline(pred_df: pd.DataFrame | None) -> dict:
+    if pred_df is None or pred_df.empty:
+        return {}
+    y = pred_df["y_true"].values.astype(int)
+    p = pred_df["p_calibrated"].values
+    base = float(np.mean(y))
+    brier = float(brier_score_loss(y, p))
+    brier_base = float(brier_score_loss(y, np.full_like(y, base, dtype=float)))
+    out = {
+        "brier": brier,
+        "brier_baseline_baserate": brier_base,
+        "brier_improvement_vs_baseline": brier_base - brier,
+        "log_loss": float(log_loss(y, np.clip(p, 1e-7, 1 - 1e-7))),
+    }
+    try:
+        out["roc_auc"] = float(roc_auc_score(y, p))
+    except ValueError:
+        out["roc_auc"] = None
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Run
+# ---------------------------------------------------------------------------
+
+
+def run_experiment(spec_path: Path, *, overwrite: bool = False,
+                    repo_root: Path | None = None) -> Path:
+    """Run the experiment end-to-end. Returns the artifact dir path."""
+    spec_path = Path(spec_path).resolve()
+    repo_root = Path(repo_root) if repo_root is not None else Path.cwd()
+    spec = load_spec(spec_path, default_path=repo_root / "configs/gbdt/default.yaml")
+    name = spec_path.stem
+    out_root = repo_root / spec.get("artifacts", {}).get(
+        "experiment_dir", "results/gbdt/experiments"
+    )
+    out_dir = Path(out_root) / name
+    if out_dir.exists() and any(out_dir.iterdir()) and not overwrite:
+        print(f"[experiment] artifact dir already exists at {out_dir}", file=sys.stderr)
+        print("[experiment] pass --overwrite to replace", file=sys.stderr)
+        sys.exit(2)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[experiment] start spec={spec_path.name} -> {out_dir}", flush=True)
+    t0 = time.time()
+
+    # -------- Phase 1: data --------
+    target = spec["target"]
+    dr = spec.get("date_range", {}) or {}
+    split_d = spec.get("split", {}) or {}
+    split = SplitSpec(
+        train_rows=split_d.get("train_rows", 800),
+        val_rows=split_d.get("val_rows", 400),
+        eval_rows=split_d.get("eval_rows", 200),
+        test_rows=split_d.get("test_rows", 100),
+    )
+    min_rows = split_d.get("min_rows_per_ticker", split.total)
+
+    print(f"[data] start universe={target['universe']}", flush=True)
+    t1 = time.time()
+    panel_obj = gbdt_data.load_panel(
+        target["universe"],
+        start=dr.get("start"),
+        end=dr.get("end"),
+        min_rows=min_rows,
+        repo_root=repo_root,
+    )
+    print(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
+           f"tickers_kept={len(panel_obj.tickers_kept)}", flush=True)
+
+    # -------- Phase 2: features --------
+    print("[features] start", flush=True)
+    t1 = time.time()
+    fcfg = spec.get("features", {}) or {}
+    lookbacks = tuple(fcfg.get("lookback_windows", gbdt_features.DEFAULT_LOOKBACKS))
+    families = fcfg.get("candidates", "all")
+    exclude = fcfg.get("exclude") or []
+    X = gbdt_features.build_feature_matrix(
+        panel_obj.panel, panel_obj.index_series,
+        lookbacks=lookbacks,
+        annualization=panel_obj.annualization_factor,
+        families=families, exclude=exclude,
+    )
+    # Drop all-NaN columns (some features may produce no values on a short-history ticker).
+    X = X.dropna(axis=1, how="all")
+    print(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}", flush=True)
+
+    # -------- Phase 3: target --------
+    print("[target] start", flush=True)
+    t1 = time.time()
+    y = build_target(
+        panel_obj.panel,
+        direction=target["direction"],
+        threshold_pct=target["threshold_pct"],
+        horizon_days=target["horizon_days"],
+        max_drawdown=target.get("max_drawdown"),
+    )
+    print(f"[target] complete in {time.time()-t1:.1f}s "
+           f"positive_prevalence={float(y.dropna().mean()):.3f}", flush=True)
+
+    # -------- Phase 4: walk-forward + FS+HP loop --------
+    backend = spec.get("backend", {}) or {}
+    hp_starting = backend.get("hp_starting", {}) or {}
+    loop_cfg = backend.get("fs_hp_loop", {}) or {}
+    cal_method = backend.get("calibration_method", "conditional_isotonic")
+    cal_z_thr = backend.get("calibration_z_threshold", 2.0)
+    seed = spec.get("random_seed", 42)
+
+    print(f"[loop] start max_iter={loop_cfg.get('max_iterations', 8)}", flush=True)
+    t1 = time.time()
+    result = walk_forward_train(
+        panel=panel_obj.panel, X=X, y=y,
+        features=list(X.columns), hp=dict(hp_starting), split=split,
+        calibration_method=cal_method,
+        calibration_z_threshold=cal_z_thr,
+        max_iterations=loop_cfg.get("max_iterations", 8),
+        plateau_threshold=loop_cfg.get("plateau_threshold", 0.005),
+        degradation_gate=loop_cfg.get("degradation_gate", 0.01),
+        random_seed=seed,
+    )
+    print(f"[loop] complete in {time.time()-t1:.1f}s best_iter={result.best_iteration} "
+           f"val_brier={result.best_val_brier:.4f} signal={result.inner_stop_signal}",
+           flush=True)
+
+    # -------- Phase 5: artifact emit --------
+    print("[artifact] start", flush=True)
+    t1 = time.time()
+
+    (out_dir / "spec.yaml").write_text(yaml.safe_dump(spec, sort_keys=False))
+
+    result.best_model.save(out_dir / "model.cbm")
+    if result.calibration.calibrator is not None:
+        with open(out_dir / "calibration.pkl", "wb") as f:
+            pickle.dump(result.calibration.calibrator, f)
+    else:
+        (out_dir / "calibration.pkl").write_text("# native: no calibrator\n")
+
+    (out_dir / "features.yaml").write_text(
+        yaml.safe_dump(result.best_features, sort_keys=False)
+    )
+    (out_dir / "hp.yaml").write_text(yaml.safe_dump(result.best_hp, sort_keys=False))
+
+    with open(out_dir / "iterations.jsonl", "w") as f:
+        last_idx = len(result.iterations) - 1
+        for i, b in enumerate(result.iterations):
+            d = b.to_dict()
+            d["inner_stop_signal"] = (
+                result.inner_stop_signal if i == last_idx else None
+            )
+            f.write(json.dumps(d, default=str) + "\n")
+
+    pred_dir = out_dir / "predictions"
+    pred_dir.mkdir(exist_ok=True)
+    for seg, df in result.predictions.items():
+        df.to_csv(pred_dir / f"{seg}.csv", index=False)
+
+    headline_eval = _compute_headline(result.predictions.get("eval"))
+    headline_test = _compute_headline(result.predictions.get("test"))
+    train_pred = result.predictions.get("train")
+    val_pred = result.predictions.get("val")
+    metrics = {
+        "experiment_name": name,
+        "spec_hash": _spec_hash(spec),
+        "data_hash": _data_hash(panel_obj.panel),
+        "data": {
+            "n_tickers_in_universe": len(panel_obj.statuses),
+            "n_tickers_used": len(panel_obj.tickers_kept),
+            "tickers_excluded": panel_obj.tickers_excluded,
+            "n_rows_train": int(len(train_pred)) if train_pred is not None else 0,
+            "n_rows_val": int(len(val_pred)) if val_pred is not None else 0,
+            "n_rows_eval": int(len(result.predictions.get("eval", pd.DataFrame()))),
+            "n_rows_test": int(len(result.predictions.get("test", pd.DataFrame()))),
+            "positive_prevalence_train": (
+                float(train_pred["y_true"].mean())
+                if train_pred is not None and len(train_pred) else None
+            ),
+            "positive_prevalence_eval": (
+                float(result.predictions.get("eval", pd.DataFrame({"y_true": []}))["y_true"].mean())
+                if len(result.predictions.get("eval", pd.DataFrame())) else None
+            ),
+        },
+        "loop": {
+            "n_iterations_run": len(result.iterations),
+            "best_iteration": int(result.best_iteration),
+            "inner_stop_signal": result.inner_stop_signal,
+        },
+        "calibration": {
+            "method": cal_method,
+            "decision": result.calibration.method,
+            "spiegelhalter_z": result.calibration.spiegelhalter_z,
+            "spiegelhalter_p": result.calibration.spiegelhalter_p,
+        },
+        "headline_eval": headline_eval,
+        "headline_test": headline_test,
+        "wall_time_total_sec": time.time() - t0,
+    }
+    (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
+
+    emit_figures(out_dir, result.iterations, result.predictions)
+    render_report(out_dir)
+
+    print(f"[artifact] complete in {time.time()-t1:.1f}s -> {out_dir}", flush=True)
+    print(f"[experiment] complete in {time.time()-t0:.1f}s", flush=True)
+    return out_dir
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="python -m gbdt")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_exp = sub.add_parser("experiment", help="Run one gbdt experiment end-to-end")
+    p_exp.add_argument("spec", type=Path, help="Path to spec YAML")
+    p_exp.add_argument("--overwrite", action="store_true",
+                        help="Overwrite an existing non-empty artifact dir")
+
+    args = parser.parse_args(argv)
+    if args.cmd == "experiment":
+        run_experiment(args.spec, overwrite=args.overwrite)
+        return 0
+    parser.print_help()
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
