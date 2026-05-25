@@ -213,6 +213,35 @@ Needs a design decision before fixing:
 
 Not a 1-line fix — pick the policy first, then implement + test.
 
+### `--back-extend` follow-up: IPO empty-payload IndexError
+
+Surfaced during the NIFTY 50 deep-history seed (2015→present, see the
+companion seed PR). When `back_extend=True` and the requested range
+pre-dates the ticker's IPO, the adapter chain returns a normalised
+0-row DataFrame instead of raising `EmptyPayload`. The dispatcher
+treats it as success and crashes inside `_build_source_meta` at
+`df[time_column].iloc[0]` with
+`IndexError: single positional indexer is out-of-bounds`.
+
+Affected tickers in the NIFTY 50 seed: **JIOFIN** (IPO 2023),
+**MAXHEALTH** (IPO 2020-09), and partially **SHRIRAMFIN** (extension
+landed before the crash). Pre-existing latent bug — the `cache_first`
+cap previously hid it for post-IPO tickers; `--back-extend` is what
+makes the chain actually request pre-IPO ranges.
+
+Two candidate fixes (decide before implementing):
+- **Tighten `schema.validate`** to reject 0-row payloads — the adapter
+  contract becomes "raise `EmptyPayload` or return ≥1 row". Surfaces
+  the issue at the adapter boundary, not the dispatcher boundary.
+- **Guard `_build_source_meta`** with `len(df) == 0` → treat as
+  `EmptyPayload` in the dispatcher. Tolerates 0-row adapter returns;
+  may mask other bugs where an adapter silently returns nothing.
+
+Recommend the first: 0-row "success" is almost always an upstream bug.
+
+Add a regression test: pre-IPO range fetch with `back_extend=True`
+should raise `EmptyPayload`, not `IndexError`.
+
 ### Retry-everywhere pass (combines review #5, #6, and v1.7 known-issue #6)
 
 Three related items, worth handling together as one consistent retry
