@@ -104,6 +104,10 @@ def test_health_no_args_json(seeded_db: Path, capsys) -> None:
     assert payload["total_identifiers"] == 1
     assert payload["total_rows"] == 5
     assert "us_equities" in payload["per_domain"]
+    # Seeded DB has exactly one row with last_fetch_utc = 2026-05-24T12:00:00Z,
+    # so oldest and newest must both pin to that timestamp.
+    assert payload["oldest_last_fetch_utc"] == "2026-05-24T12:00:00Z"
+    assert payload["newest_last_fetch_utc"] == "2026-05-24T12:00:00Z"
 
 
 def test_health_identifier_cached(seeded_db: Path, capsys) -> None:

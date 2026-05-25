@@ -32,7 +32,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import shutil
 import subprocess
 import sys
 import time
@@ -51,7 +50,7 @@ import data_pipelines.domains.nse_equities  # noqa: F401
 from data_pipelines import fetch_with_meta
 from data_pipelines.domains.nse_equities.calendar import NSECalendar
 
-from analog_mc.scoring import crps_per_step, crps_sample
+from analog_mc.scoring import crps_per_step
 from forecasters import dispatch_forecast, load_preset, validate_preset
 from forecasters.presets import preset_content_hash
 
@@ -262,6 +261,14 @@ def phase_forecast(args: argparse.Namespace, preset_path: Path) -> dict:
 def _compute_realized(df: pd.DataFrame, origin_iso: str, horizon: int) -> tuple[np.ndarray, np.ndarray, float]:
     """Realized log-returns + cumulative-price path starting at the trading
     day after ``origin_iso``. Returns (log_returns, cum_log_returns, origin_close).
+
+    Canonical-schema only: this helper assumes ``df`` carries the
+    ``data_pipelines`` canonical columns ``date`` and ``adj_close``. The
+    acceptance demo always sources its DataFrame via ``fetch_with_meta`` so
+    this contract is guaranteed at the call sites. A future demo that
+    targets a FRED-style or CSV-style identifier would need either the
+    backend adapter's ``_resolve_data_columns`` probe or an explicit
+    column-rename upstream.
     """
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
