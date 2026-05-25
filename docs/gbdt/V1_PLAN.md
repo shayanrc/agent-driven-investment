@@ -2,224 +2,405 @@
 
 ## Build status
 
-- **v1.0:** scaffolded (this branch — `gbdt-v1`). Stages 1–9 below are pending implementation.
+- **v1.0:** scaffolded — module skeleton + v0 EDA shipped on main at `2a62a1c`.
+- **v1.0 spec-lock:** this PR. Locks the experiment-loop architecture, the 273-column feature pool, the CatBoost library choice, the synced FS+HP loop, the 800+400+200+100 walk-forward split, and the conditional-isotonic calibration policy. Stages 1–9 below are pending implementation.
 
-For the *why* (what success looks like, anti-goals, deployment intent), see `goal.md`. This document is the *how* — architecture, stages, design decisions to make as work proceeds.
+For the *why* (what success looks like, anti-goals, deployment intent), see `goal.md`. The YAML spec contract is in `EXPERIMENT_SPEC.md`. The CatBoost HP reference the per-experiment agent consults is `CATBOOST_HP_REFERENCE.md`. Parked v1.1 follow-ups are in `V1.1_TBD.md`.
 
 ## Revision history
 
-- **v1.0** *(2026-05-24, scaffolded)* — Initial scaffold: directory tree, stub modules, goal doc, plan skeleton. No implementation yet. Branch `gbdt-v1` created from `main` at `9a03a00`. Stages 1–9 specify the build order. Several intentional open questions deferred to specific stages (feature set → Stage 2; library choice → Stage 4; calibration method → Stage 5).
+- **v1.0** *(2026-05-24, scaffolded)* — Initial scaffold: directory tree, stub modules, goal doc, plan skeleton. No implementation. Branch `gbdt-v1` from `main` at `9a03a00`. Stages 1–9 spec'd a per-asset 18-classifier lattice build with LightGBM defaults and several open library / fold / feature questions.
+- **v1.0 spec-lock** *(2026-05-26, this PR)* — Long design conversation between the user and the parent agent locked the open questions and shifted the framing from "18-classifier lattice as v1 deliverable" to "experiment-loop infrastructure as v1 deliverable, with one pilot experiment as the merge gate." Library = CatBoost. Universe = NIFTY 50. Feature pool = 273 columns across 16 families. Split = 800+400+200+100. FS+HP = agent-driven synced loop, 8-iter cap, plateau + degradation inner-stop. Calibration = conditional isotonic gated by Spiegelhalter Z. See § "Decisions log" below for the deltas from v1.0's open questions.
 
 ---
 
 ## Purpose
 
-This is an implementation specification for a **categorical-outcome forecaster** that predicts the probability of fixed-threshold price-move events within fixed horizons. v1 is one asset (NASDAQ100) with the 18-target lattice defined in `goal.md` § "Target structure". The headline metric is **calibration**, not accuracy or AUC.
+This is an implementation specification for a **categorical-outcome forecasting surface** that runs single-tuple experiments end-to-end. Each experiment is `(universe, direction, threshold, horizon)`; the per-experiment artifact is a calibrated CatBoost classifier plus the agent's iteration history. v1's headline per experiment is **calibration**, not accuracy or AUC.
 
-The plan is the output of the design conversation reflected in `goal.md`. Decisions documented here were made for a reason. **Do not silently change architectural decisions.** If implementation reveals a problem with a decision, surface it explicitly and ask before deviating.
+The plan is the output of the design conversations reflected in `goal.md` (v1 framing) and the long spec-lock conversation. Decisions documented here were made for a reason. **Do not silently change architectural decisions.** If implementation reveals a problem with a decision, surface it explicitly and ask before deviating.
 
 ---
 
 ## High-level architecture
 
-Four layers in the design, mirroring `analog_mc`'s separation of concerns:
-
-- **Data layer (`data.py`)** — load `data/NASDAQ100.csv`, return a date-indexed DataFrame with canonical columns. Same CSV-first contract as `analog_mc` per `[[project-data-source]]`.
-- **Feature layer (`features.py`)** — pure functions that derive feature columns from OHLCV history. Strictly causal: each feature at row `t` uses only data from rows `< t`. The feature set is fixed per a config spec; v1's spec is finalized in Stage 2.
-- **Target layer (`targets.py`)** — for each (direction, threshold, horizon) cell, derive a binary column from the close-price path. Targets at row `t` use forward data and are therefore valid only when `t + horizon` exists; rows without sufficient forward data are dropped from training labels (but kept as inference rows).
-- **Model layer (`model.py` + `train.py` + `predict.py`)** — one classifier per (direction, threshold, horizon) target. Walk-forward training; per-fold artifact persistence; calibration as a post-processing step on the held-out scores within each fold's training segment.
+Six layers, each independently testable, composed by `experiment.py`:
 
 ```
-                       ┌──────────────────────────────────┐
-       NASDAQ100.csv ──▶│  data.py: load() → DataFrame    │
-                       └─────────────────┬────────────────┘
-                                         │
-                       ┌─────────────────▼────────────────┐
-                       │  features.py: causal feature     │
-                       │  matrix X (date × features)      │
-                       └─────────────────┬────────────────┘
-                                         │
-                       ┌─────────────────▼────────────────┐
-                       │  targets.py: 18 binary target    │
-                       │  columns Y (date × targets)      │
-                       └─────────────────┬────────────────┘
-                                         │
-                       ┌─────────────────▼────────────────┐
-                       │  train.py: walk-forward loop —   │
-                       │  for each fold:                  │
-                       │    for each of 18 targets:       │
-                       │      fit GBDT on (X_tr, Y_tr)    │
-                       │      calibrate on (X_val, Y_val) │
-                       │      predict on (X_test)         │
-                       │      persist artifact            │
-                       └─────────────────┬────────────────┘
-                                         │
-                       ┌─────────────────▼────────────────┐
-                       │  diagnostics: per-target Brier,  │
-                       │  AUC, reliability diagram,       │
-                       │  base-rate baseline              │
-                       └─────────────────┬────────────────┘
-                                         ▼
-                       results/gbdt/data/_v1_<id>_data.json
-                       docs/gbdt/_v1_acceptance_demo.md
+                          ┌──────────────────────────────────┐
+spec.yaml ──▶ experiment.py: orchestrator (CLI + skill)
+                          └─────────────────┬────────────────┘
+                                            │
+       ┌────────────────────────────────────┼────────────────────────────────────┐
+       │                                    │                                    │
+       ▼                                    ▼                                    ▼
+┌──────────────┐                   ┌──────────────┐                    ┌──────────────┐
+│  data.py     │                   │  features.py │                    │  targets.py  │
+│  fetch       │                   │  16 families │                    │  binary      │
+│  universe    │ ─── panel ──▶     │  273 cols    │ ──── X, names ──▶  │  label per   │
+│  panel via   │                   │  per-stock + │                    │  spec target │
+│  data_pipes  │                   │  xs pipes    │                    │  ───── y ──▶ │
+└──────────────┘                   └──────────────┘                    └──────────────┘
+                                            │
+                                            ▼
+                                  ┌──────────────────┐
+                                  │  fs_hp_loop.py   │  ◀── reads CATBOOST_HP_REFERENCE
+                                  │  diagnostic      │
+                                  │  bundle per      │
+                                  │  iteration; the  │
+                                  │  agent reads     │
+                                  │  the bundle and  │
+                                  │  decides prune + │
+                                  │  HP change       │
+                                  └────────┬─────────┘
+                                           │
+                                           ▼
+                                  ┌──────────────────┐
+                                  │  train.py        │
+                                  │  walk-forward    │
+                                  │  800+400+200+100 │
+                                  │  + model.py      │
+                                  │  CatBoost wrap   │
+                                  └────────┬─────────┘
+                                           │
+                                           ▼
+                                  ┌──────────────────┐
+                                  │  calibration.py  │
+                                  │  Spiegelhalter Z │
+                                  │  → native        │
+                                  │  or isotonic     │
+                                  └────────┬─────────┘
+                                           │
+                                           ▼
+                                  ┌──────────────────┐
+                                  │  report.py       │
+                                  │  → report.md     │
+                                  │  + figs/         │
+                                  └────────┬─────────┘
+                                           │
+                                           ▼
+              results/gbdt/experiments/<experiment_name>/
+                ├── spec.yaml             (echo of input)
+                ├── model.cbm             (CatBoost binary)
+                ├── calibration.pkl       (None or fitted IsotonicRegression)
+                ├── features.yaml         (the final pruned feature list)
+                ├── hp.yaml               (the final HP set)
+                ├── iterations.jsonl      (one row per FS+HP iter)
+                ├── metrics.json          (headline metrics on eval segment)
+                ├── predictions/          (per-stock per-fold CSV)
+                ├── figs/                 (reliability, calibration, learning curves)
+                └── report.md             (human-readable narrative)
 ```
+
+Each layer mirrors `analog_mc`'s separation of concerns: data → features → labels → model → calibration → artifact. The new piece, relative to `analog_mc`, is `fs_hp_loop.py` — the diagnostic-bundle generator that turns the FS+HP search from an algorithmic loop into an **agent-driven loop**. The agent reads the bundle, decides what to prune and what HPs to change, and re-invokes the pipeline. The agent's chain of reasoning is logged into `iterations.jsonl` and narrated in `report.md`.
 
 ---
 
 ## Stage breakdown
 
-The build order is strict — each stage ends with a passing test suite and a commit. Don't skip ahead. As with `analog_mc`'s plan, the diagnostic infrastructure (Stage 7) is what makes the model trustworthy, not the choice of algorithm (Stage 4).
+The build order is strict — each stage ends with a passing test suite and a commit. Don't skip ahead. As with `analog_mc`'s plan, the diagnostic infrastructure (Stage 6) is what makes the experiment trustworthy, not the model wrapper (Stage 4).
 
 ### Stage 1 — Data loader + look-ahead-leak harness
 
-**Goal:** a working CSV loader and the synthetic-data harness that detects causal-feature violations.
+**Goal:** load a universe panel via `data_pipelines.fetch()`, respecting walk-forward boundary discipline, and stand up the synthetic-data harness that detects causal-feature violations.
 
 **Tasks:**
-- `src/gbdt/data.py` — `load_csv(path, date_col, close_col, ...) → pd.DataFrame` with date index, canonical column names. Takes column-name args from config (asset-agnostic, per the `analog_mc` precedent).
-- `src/gbdt/leakage_harness.py` — synthetic OHLCV generator with a known "leak signal" planted at a future row. Any feature that incorporates the leak will achieve perfect AUC on the synthetic data; any causally-correct feature will achieve chance AUC.
-- `tests/gbdt/test_data_loader.py` — loads `data/NASDAQ100.csv`, asserts schema + dtypes + monotonic dates + no duplicate dates.
-- `tests/gbdt/test_leakage_harness.py` — confirms the harness fires when given a known leaky function and stays silent on a known causal function.
+- `src/gbdt/data.py`:
+  - `load_universe(preset_name, start, end) → dict[ticker, pd.DataFrame]` — reads the universe ticker list from the preset YAML (v1 = `configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml`), calls `data_pipelines.fetch()` per ticker, returns the canonical OHLCV panel keyed by ticker. Drops tickers below the spec's `min_rows` (default 1,600).
+  - `align_panel(panel) → pd.DataFrame` — returns a long-format frame with `(date, ticker)` MultiIndex and one row per (date, ticker). This is the input to the feature layer; cross-sectional features operate on cross-sections of this frame.
+  - Walk-forward discipline: feature computation at row `(t, ticker)` uses only data with `date < t` (per-stock for time-series features, per-cross-section for xs features at exactly `t`).
+- `src/gbdt/leakage_harness.py` — synthetic OHLCV generator that plants a known "leak signal" at a future row. Any feature that incorporates the leak achieves perfect AUC on the synthetic data; any causally-correct feature achieves chance AUC.
+- `tests/gbdt/test_data_loader.py` — loads NIFTY 50 panel via `data_pipelines.fetch()` (uses the cache), asserts schema, dtypes, monotonic dates per ticker, no duplicate (date, ticker) pairs, and that 48 of 50 tickers meet `min_rows ≥ 1,600` (JIOFIN and MAXHEALTH excluded by row count).
+- `tests/gbdt/test_leakage_harness.py` — confirms the harness fires on a known leaky function and stays silent on a known causal function.
 
-**Done when:** loader works on the real CSV; harness correctly distinguishes leaky vs causal features on synthetic data.
+**Done when:** panel loader works on the real NIFTY 50 cache; 48 tickers pass the row-count gate; harness correctly distinguishes leaky vs causal features on synthetic data.
 
-### Stage 2 — Feature set (the v1 spec)
+### Stage 2 — Feature implementation (273-column candidate pool)
 
-**Goal:** finalize and implement the v1 feature set. **This stage resolves an open question** (see "Open questions" below); document the resolution in the stage's commit message.
+**Goal:** implement all 16 feature families enumerated below. The pool is fixed; per-experiment pruning is the agent's job in Stage 6.
+
+**Constraint:** all features are strictly causal at row `(t, ticker)`. Annualization on the NIFTY panel uses `√250` (not `√252`). Lookback windows are exposed in config as `[5, 10, 20, 50, 100, 200]`.
+
+**Feature pool (273 columns across 16 families):**
+
+| # | Family | Cols | Notes |
+|---|---|---|---|
+| F1 | `index_return_N` | 6 | `^NSEI close[t] / close[t−N]` − 1 |
+| F2 | `stock_return_N` | 6 | per-stock momentum |
+| F3 | `rel_strength_N` | 6 | F2 − F1 |
+| F4 | `realized_vol_N` | 6 | std(log returns) × √250 |
+| F5 | `index_vol_N` | 6 | ^NSEI realized vol |
+| F6 | `drawdown_N` | 6 | (close[t] / max(high[t−N+1:t])) − 1 — uses HIGH not close |
+| F6b | `runup_N` | 6 | (close[t] / min(low[t−N+1:t])) − 1 — uses LOW |
+| F9 | `index_drawdown_N` | 6 | ^NSEI drawdown using index high |
+| F9b | `index_runup_N` | 6 | ^NSEI runup using index low |
+| F7 | volume family | 32 | `volume_ratio_N`(6) + `obv_N`(6) + `vol_ret_corr_N`(6) + `dollar_move_zscore_N`(6 rolling) + `dollar_move_rank_N`(6 rolling) + `dollar_move_xs_zscore`(1 cross-sectional) + `dollar_move_xs_rank`(1 cross-sectional). NO raw `volume_N` — replaced by ratio + dollar-move family. |
+| F8 | higher moments | 12 | `returns_skew_N`(6) + `returns_kurt_N`(6) |
+| F10 | `beta_N` | 6 | rolling OLS coef of stock returns on ^NSEI returns |
+| F11 | range vol | 12 | `parkinson_N`(6) + `garman_klass_N`(6); NOT Yang-Zhang |
+| F12 | `sma_distance_N` | 6 | (close[t] / mean(close[t−N+1:t])) − 1 |
+| F13 | vol regime | 18 | `vol_change_N`(6) + `vol_of_vol_N`(6) + `vol_pct_N`(6) |
+| F14 | cross-sectional rank+z | 24 | `return_xs_rank_N`(6) + `return_xs_zscore_N`(6) + `vol_xs_rank_N`(6) + `vol_xs_zscore_N`(6) |
+| F15 | calendar | 10 | DOW (sin, cos) + DOM (sin, cos) + MOY (sin, cos) + 4 India binary flags: `fiscal_year_end_week`, `budget_week`, `diwali_week`, `fomc_week` |
+| F16 | signed days outside band | 105 | 12 new underlying z-scores (`stock_return_zscore_N`(6) + `realized_vol_zscore_N`(6)) + signed-days-outside-band meta on the z-scored underlying. Sign = sign of current side of mean (current-side convention, "option A"). Value = 0 inside the band; +k = k consecutive days above +Xσ; −k = k consecutive days below −Xσ. Resets to 0 the moment z re-enters the band. Pool size: 12 underlying + 93 meta = 105 base columns in the candidate pool. |
+
+**Total: 273 columns.**
 
 **Tasks:**
-- Draft the feature spec inline in this plan doc (an "v1 feature set" subsection below this stage). Default candidate set (subject to revision in this stage):
-  - Rolling log-returns over multiple windows (5, 10, 20, 50, 100 days).
-  - Realized volatility (rolling std of log-returns) over the same windows.
-  - Momentum: ratio of close to rolling mean of close over each window.
-  - Drawdown: current drawdown from rolling high over each window.
-  - Distance from rolling high / low (as fraction of price).
-  - Volume-derived: rolling mean volume, current volume / rolling mean.
-- Each feature is a pure function in `src/gbdt/features.py` taking the OHLCV DataFrame and returning a single-column Series aligned on the input index.
-- A `build_feature_matrix(df, spec) → pd.DataFrame` orchestrator reads the spec from config and assembles the matrix.
-- Every feature has a unit test exercising it on a tiny fixture (10–20 rows) with hand-computed expected values for at least one row.
+- `src/gbdt/features.py`:
+  - Each feature function is a pure callable taking the panel DataFrame and returning a Series (per-stock) or DataFrame (cross-sectional batch) aligned on the input MultiIndex.
+  - Two pipeline modes:
+    1. **Per-stock rolling** — F1–F13, F15, F16 (rolling on each ticker's time series).
+    2. **Cross-sectional point-in-time** — F14 + F7's `_xs_` columns (compute on each date's cross-section).
+  - A `build_feature_matrix(panel, spec) → pd.DataFrame` orchestrator assembles the matrix per the candidate list in `spec.features.candidates` (default = all 273).
+- Each feature has a unit test on a small fixture (one synthetic ticker, 30 rows) with at least one hand-computed expected value.
 - Every feature passes the look-ahead-leak harness from Stage 1.
-- Document the final feature list in `configs/gbdt/default.yaml`'s `features:` section.
+- `configs/gbdt/default.yaml`'s `lookback_windows` is the source of truth for the windows list.
 
-**Done when:** the feature matrix builds end-to-end on NASDAQ100, every feature has a passing unit test, the entire matrix passes the look-ahead-leak test.
+**Done when:** the 273-column matrix builds end-to-end on the NIFTY 50 panel, every feature has a unit test, the matrix passes the leak harness.
 
-### Stage 3 — Targets
+### Stage 3 — Target builder
 
-**Goal:** the 18 binary target columns, computed correctly for every row with sufficient forward data.
-
-**Tasks:**
-- `src/gbdt/targets.py` — `compute_targets(df, target_spec) → pd.DataFrame` where the output has 18 columns named like `up_10_h10`, `down_50_h50`, etc. A target at row `t` is `1` if the threshold was breached at any point in `(t, t+horizon]`, else `0`. Rows with insufficient forward data have `NaN` (and are excluded from training labels in Stage 6 but kept in inference rows).
-- The target spec is hard-coded as the 18-cell lattice (per `goal.md`). It is NOT user-configurable in v1.
-- Unit tests on a tiny synthetic price path with known breach patterns for each of the 18 targets.
-- Edge cases tested: target at the last row of the dataset (no forward data → `NaN`); breach exactly on the horizon-end day (counts as breach).
-
-**Done when:** all 18 columns compute correctly against the synthetic fixtures; the spec is hard-coded; the unit tests exercise both breach and no-breach cases per direction.
-
-### Stage 4 — GBDT model wrapper + library choice
-
-**Goal:** wrap the chosen GBDT library behind a stable interface; settle the library choice. **This stage resolves an open question** — document the resolution in the commit.
+**Goal:** binary target derivation from a single `(direction, threshold_pct, horizon_days)` tuple.
 
 **Tasks:**
-- Pick the library. Default lean: **lightgbm** (fastest training, mature, scikit-learn-compatible API, robust to default hyperparameters). Alternatives evaluated: xgboost (classic, slower), catboost (good defaults, slower on this data scale), sklearn GradientBoostingClassifier (slowest, no built-in early stopping). Document the choice + the rejected alternatives in the commit message.
-- Add the dependency to `pyproject.toml`.
-- `src/gbdt/model.py` — `GBDTClassifier` wrapper with a fixed minimal interface: `fit(X_train, y_train, X_val, y_val)`, `predict_proba(X)`, `save(path)`, `load(path)`, plus a `feature_importance()` accessor for diagnostics.
-- Hyperparameter defaults pinned in `configs/gbdt/default.yaml` under `model.hyperparameters`; intentionally conservative (e.g., `n_estimators` ceiling with early-stopping patience, modest `learning_rate`, small `num_leaves`).
-- Unit tests: fit on a trivial synthetic 2-feature dataset where one feature perfectly predicts the target, assert near-perfect train accuracy and the predictable feature has dominant importance.
+- `src/gbdt/targets.py`:
+  - `compute_target(panel, target_spec) → pd.Series` — returns a `0/1/NaN` series aligned on the `(date, ticker)` MultiIndex.
+  - A target at row `(t, ticker)` is `1` if the threshold is breached at any point in `(t, t+horizon_days]` for that ticker, else `0`. Rows with insufficient forward data are `NaN` (excluded from train/val/eval/test labels; kept as inference rows so predictions can be emitted).
+  - Direction `up`: `1` if `max(high[t+1:t+horizon_days]) ≥ close[t] * (1 + threshold_pct/100)`.
+  - Direction `down`: `1` if `min(low[t+1:t+horizon_days]) ≤ close[t] * (1 − threshold_pct/100)`.
+  - The threshold check uses HIGH for up / LOW for down (the most conservative interpretation of "did the threshold ever fire").
+- Unit tests on a synthetic price path with known breach patterns for each direction × threshold × horizon combination.
+- Edge cases tested: target at the last row (no forward data → `NaN`); breach exactly on day `t+horizon_days` (counts); breach on day `t+1` (counts); no breach in window (`0`).
 
-**Done when:** library chosen and added; wrapper is import-clean; trivial fit smoke test green.
+**Done when:** target builder produces correct labels against the synthetic fixtures; the spec drives the tuple; edge cases pass.
+
+### Stage 4 — CatBoost wrapper + model.py
+
+**Goal:** thin CatBoost wrapper exposing a stable interface, with the v1 HP constraints baked in.
+
+**Tasks:**
+- `pyproject.toml` — add `catboost` to dependencies.
+- `src/gbdt/model.py`:
+  - `class GBDTClassifier`:
+    - `fit(X_train, y_train, X_val, y_val, hp_dict)` — instantiates `CatBoostClassifier(**hp_dict)`, fits with `eval_set=(X_val, y_val)`, returns `self`.
+    - `predict_proba(X) → np.ndarray` — returns calibrated probabilities (post-Stage 5) by default.
+    - `raw_predict_proba(X) → np.ndarray` — returns uncalibrated probabilities for diagnostics.
+    - `save(path)` / `load(path)` — persists `.cbm` + calibration map together.
+    - `feature_importance() → dict[name, float]` — for the diagnostic bundle.
+  - **Pinned HPs (never tunable in v1):**
+    - `has_time=True` (mandatory; per `CATBOOST_HP_REFERENCE.md` § "Determinism" — walk-forward + ordered boosting require it)
+    - `loss_function="Logloss"`
+    - `eval_metric="BrierScore"`
+    - `custom_metric=["Logloss", "BrierScore", "AUC"]`
+    - `random_seed=<spec.random_seed>` (default 42)
+  - **Tunable HPs** (bounded by `CATBOOST_HP_REFERENCE.md` per-parameter "Range/values" sections): `iterations`, `learning_rate`, `depth`, `l2_leaf_reg`, `min_data_in_leaf`, `rsm`, `bootstrap_type`, `bagging_temperature`, `subsample`, `random_strength`, `auto_class_weights` (or `scale_pos_weight`), `boosting_type`, `early_stopping_rounds`.
+  - All other CatBoost params are not tuned in v1 (see `CATBOOST_HP_REFERENCE.md` § "Scope" for the explicit exclusion list).
+- Unit tests:
+  - Trivial-fit smoke: 2-feature synthetic dataset where one feature perfectly predicts the target → near-perfect train accuracy + dominant importance for the predictive feature.
+  - `has_time=True` is enforced (wrapper raises if a spec tries to override it).
+  - HP values out of the documented ranges raise on `fit()`.
+
+**Done when:** wrapper is import-clean; smoke test green; HP bounds enforced; `has_time=True` is non-overridable.
 
 ### Stage 5 — Calibration
 
-**Goal:** post-fit probability calibration per target.
+**Goal:** conditional isotonic calibration gated by a Spiegelhalter Z-test on val.
 
 **Tasks:**
-- Pick the calibration method. Default lean: **scikit-learn's `IsotonicRegression`** fit on the validation-fold scores per target. Alternative: `CalibratedClassifierCV` (sigmoid / Platt scaling). Document the choice + reasoning.
-- `src/gbdt/model.py` — extend the wrapper with `calibrate(X_val, y_val)` that fits a calibration map and stores it alongside the model. `predict_proba(X)` returns post-calibration probabilities by default; an `raw_predict_proba(X)` accessor gives uncalibrated scores for diagnostics.
-- Persist the calibration map as part of the saved artifact (same `save(path)` / `load(path)` API).
-- Unit tests: fit a deliberately mis-calibrated model on synthetic data; assert that after calibration, the reliability diagram on a held-out chunk is closer to the diagonal than before.
+- `src/gbdt/calibration.py`:
+  - `spiegelhalter_z(y_true, p_pred) → (z, p_value)` — standard implementation.
+  - `decide_calibration(y_val, p_val_raw, z_threshold=2.0) → "native" | "isotonic"`:
+    - Compute `|z|` from the val segment's raw predictions.
+    - If `|z| < z_threshold`, calibration passes → return `"native"` (ship raw CatBoost outputs).
+    - Else → return `"isotonic"` (fit `sklearn.isotonic.IsotonicRegression(out_of_bounds="clip")` on val and ship the calibrator alongside the model).
+  - `fit_calibrator(y_val, p_val_raw, method)` — returns `None` if `method == "native"`, else the fitted IsotonicRegression.
+  - `apply(p_raw, calibrator) → np.ndarray` — passes through if `calibrator is None`, else `calibrator.predict(p_raw)`.
+  - The decision + Z statistic are recorded in `metrics.json["calibration"] = {"method": ..., "spiegelhalter_z": ..., "spiegelhalter_p": ...}`.
+- Spec overrides via `spec.backend.calibration_method`: `"native"`, `"conditional_isotonic"` (default — runs the test), `"isotonic_always"`, `"platt"` (sklearn `CalibratedClassifierCV(method="sigmoid")`). See `EXPERIMENT_SPEC.md` § "Calibration".
+- Unit tests:
+  - Deliberately miscalibrated synthetic model → Z-test fires → isotonic improves reliability on held-out chunk.
+  - Well-calibrated synthetic model → Z-test passes → no isotonic applied.
+  - `calibrator` round-trips through save / load.
 
-**Done when:** calibration round-trips through save/load; reliability-diagram test confirms post-calibration scores are better-calibrated than pre.
+**Done when:** Spiegelhalter Z computed correctly; conditional branch tested both ways; decision recorded in artifact.
 
-### Stage 6 — Walk-forward training loop
+### Stage 6 — FS+HP loop (the agent's iteration infrastructure)
 
-**Goal:** the production training driver — for each fold, fit and calibrate all 18 classifiers; persist all artifacts.
-
-**Tasks:**
-- `src/gbdt/train.py` — `train_walk_forward(df, config) → list[FoldResult]`.
-- Fold scheme is configurable: train window size, validation window size (carved from the end of the train window), test window size, step. Default scheme finalized in this stage and pinned in config.
-- For each fold and each of the 18 targets:
-  - Build features on the train+val+test rows from data available up to test-start (causal across the fold boundary, mirroring `analog_mc` C6).
-  - Drop rows with `NaN` targets in train+val (insufficient forward data).
-  - Fit the GBDT on (X_train, y_train) with early stopping against (X_val, y_val).
-  - Calibrate on (X_val, y_val).
-  - Score (X_test) — but only on test rows that have valid (non-NaN) y_test, so out-of-sample diagnostics are computable.
-  - Persist artifacts under `runs/gbdt/<UTC_timestamp>/fold_<NN>/<target_name>/` containing: model binary, calibration map, fold metadata JSON, prediction CSV, feature schema.
-- The driver writes a top-level `runs/gbdt/<UTC>/metadata.json` summarizing the run (config hash, fold count, target count, total wall time).
-- A unit test runs a 1-fold, 1-target mini-walk-forward on the synthetic fixture and confirms artifacts land on disk in the expected layout.
-
-**Done when:** walk-forward driver runs end-to-end on a small synthetic dataset; artifact layout matches the spec.
-
-### Stage 7 — Diagnostics + reporting
-
-**Goal:** per-target diagnostics, aggregated across folds, written as machine-readable JSON + human-readable Markdown.
+**Goal:** the diagnostic-bundle generator + inner-stopping logic that the agent uses to drive feature selection and hyperparameter tuning in one synced loop.
 
 **Tasks:**
-- `src/gbdt/diagnostics.py`:
-  - `brier_score(y_true, p_pred) → float`
-  - `reliability_curve(y_true, p_pred, n_bins=10) → DataFrame` (bin_edge, mean_predicted, fraction_observed, count)
-  - `base_rate_brier(y_train, y_test) → float` — Brier from predicting `P = mean(y_train)` on every test sample
-  - `roc_auc(y_true, p_pred) → float`
-  - `log_loss(y_true, p_pred) → float`
-- `scripts/gbdt/aggregate_run.py` — read a `runs/gbdt/<UTC>/` directory, compute per-target metrics aggregated across folds, write `results/gbdt/data/_v1_<run_id>_data.json` with the headline metrics (per `[[project-results-layout]]`).
-- `scripts/gbdt/render_report.py` — read the aggregated JSON, render `docs/gbdt/_v1_<run_id>_report.md` with a per-target metrics table and per-target reliability diagrams saved as PNGs in `docs/gbdt/figs/<run_id>/`.
-- Unit tests: each diagnostic function on a tiny known case (e.g., perfectly-calibrated random predictions → Brier ≈ p(1-p), reliability curve along diagonal).
+- `src/gbdt/fs_hp_loop.py`:
+  - `class DiagnosticBundle`:
+    - `train_brier`, `val_brier`, `eval_brier_provisional` — the headline metric on each split.
+    - `train_val_gap` = `val_brier − train_brier`.
+    - `learning_curve` — per-iteration train/val loss arrays from CatBoost's training log.
+    - `early_stop_iteration` — where CatBoost halted; flag if `iteration_cap_hit` (within 10% of `iterations`).
+    - `feature_importance` — top-K importances from the wrapper.
+    - `feature_correlation` — pairwise correlation matrix of currently-active features.
+    - `calibration_summary` — Spiegelhalter Z + reliability deviation.
+    - `class_imbalance_summary` — positive prevalence, recall at threshold 0.5.
+    - `hp_history` — list of (iteration, hp_dict, rationale) tuples up to and including this iter.
+  - `serialize_bundle(bundle, path)` — writes a JSON the agent can read.
+  - `inner_stop_check(history) → (should_stop, reason)`:
+    - **plateau**: val Brier improvement < `plateau_threshold` (default 0.005 absolute) over the last 2 iterations → stop.
+    - **degradation**: val Brier > `(1 + degradation_gate)` × best-seen val Brier (default `degradation_gate=0.01` → "1% degrade from best") → stop.
+    - **cap**: iteration count ≥ `max_iterations` (default 8) → stop.
+  - `best_checkpoint(history) → iteration_index` — index of the iteration with the lowest val Brier. The artifact emitted at the end of the loop is **the best-Brier checkpoint, not the last iteration**.
+- `iterations.jsonl` schema: one row per iteration with fields `{iter, hp, features, rationale, train_brier, val_brier, train_val_gap, calibration_method, calibration_z, early_stop_iter, wall_time_sec}`.
+- Spec overrides via `spec.backend.fs_hp_loop`: `max_iterations`, `plateau_threshold`, `degradation_gate`. See `EXPERIMENT_SPEC.md` § "FS+HP loop".
+- Unit tests:
+  - Inner-stop fires on a synthetic history that plateaus → returns `("plateau", ...)`.
+  - Inner-stop fires on a synthetic history that degrades → returns `("degradation", ...)`.
+  - Inner-stop fires at the cap.
+  - `best_checkpoint` picks the right iteration on a synthetic history.
 
-**Done when:** an aggregated report can be generated from a completed run; all diagnostic functions have unit tests.
+**Done when:** diagnostic bundle serialization is stable; inner-stop logic tested on all three branches; best-checkpoint selection tested.
 
-### Stage 8 — CLI entry point
+### Stage 7 — Walk-forward driver
 
-**Goal:** `python -m gbdt train` and `python -m gbdt predict` as the run-it surface.
+**Goal:** the train.py orchestrator that runs the 800+400+200+100 fold scheme across the panel.
 
 **Tasks:**
-- `src/gbdt/__main__.py` with two subcommands:
-  - `train --config <path> --output-dir <path>` — runs the walk-forward driver, aggregates, renders the report.
-  - `predict --run-dir <path> --features-csv <path>` — loads the latest fold's models, scores the rows in the features CSV, prints / writes the 18-column probability output.
-- Each subcommand has a smoke test that invokes the CLI against the synthetic fixture and confirms expected stdout / output files.
+- **Walk-forward split:** 800 train + 400 val + 200 eval + 100 test = 1,600 rows total per stock (the global default in `configs/gbdt/default.yaml`; spec-overridable).
+  - **train**: where the model fits.
+  - **val**: where CatBoost early-stops + where calibration is decided (Spiegelhalter Z) + where the FS+HP loop reads its inner-stop signal.
+  - **eval**: held-out segment that the agent never sees during FS+HP iteration. This is the segment whose metrics go into `metrics.json` as the headline.
+  - **test**: a smaller still-held-out segment kept for a final sanity check after the experiment closes. Mirrors `analog_mc`'s nested split discipline.
+- `src/gbdt/train.py`:
+  - `train_fold(panel, target, features, hp, split) → FoldResult` — fits CatBoost on (X_train, y_train) with early stopping against (X_val, y_val), calibrates per Stage 5, scores (X_eval), persists predictions.
+  - **In v1, a single fold is the default** (one 1,600-row slice anchored on the latest available date per stock). Multi-fold walk-forward is supported by the driver but defaults to `n_folds=1` because the per-experiment compute envelope already includes the FS+HP loop. Specs can override `split.n_folds` for multi-fold runs.
+  - Predictions per (date, ticker) saved to `predictions/<segment>.csv` with columns `date, ticker, p_raw, p_calibrated, y_true`.
+- A unit test runs a 1-fold mini-walk-forward on the synthetic Stage 1 fixture and confirms artifacts land on disk in the expected layout.
 
-**Done when:** both CLI subcommands work end-to-end against the synthetic fixture.
+**Done when:** walk-forward driver runs end-to-end on a small synthetic dataset; artifact layout matches `EXPERIMENT_SPEC.md` § "Artifact directory layout".
 
-### Stage 9 — Acceptance demo on NASDAQ100 (PR merge gate)
+### Stage 8 — Report renderer + CLI atom
 
-**Goal:** the concrete bar from `goal.md` § "v1 end-to-end acceptance demo" — full walk-forward run on real NASDAQ100, per-target acceptance check, written report. **This stage gates the PR merge.**
+**Goal:** the human-readable `report.md` + the CLI atom that ties Stages 1–7 together.
 
 **Tasks:**
-- Run `python -m gbdt train --config configs/gbdt/default.yaml --output-dir runs/gbdt/nasdaq100_v1` against the full NASDAQ100 history.
-- Aggregate via `scripts/gbdt/aggregate_run.py`; render via `scripts/gbdt/render_report.py`.
-- Verify the 5 acceptance criteria from `goal.md`:
-  1. All 18 classifiers trained without error.
-  2. Brier score < base-rate baseline on ≥14/18 targets.
-  3. Calibration within ±5pp on ≥14/18 targets across [0.05, 0.95].
-  4. ROC-AUC ≥ 0.55 on ≥14/18 targets.
-  5. Zero leaks per the look-ahead-leak harness across the full feature matrix.
-- Write `docs/gbdt/_v1_acceptance_demo.md` with the per-target table, reliability diagrams, and pass/fail verdict per target. If any target fails its bar, the report's post-mortem section identifies whether the issue is rarity, feature inadequacy, or implementation bug — and the v1 ship/no-ship decision is made on that analysis.
-- Commit the aggregated JSON (`results/gbdt/data/`) and the report. Per the standard pattern, raw per-fold `runs/gbdt/<UTC>/` stays gitignored.
+- `src/gbdt/report.py`:
+  - Reads `spec.yaml`, `metrics.json`, `iterations.jsonl`, the figs in `figs/`.
+  - Renders `report.md` with sections:
+    1. **Spec** — echo of the tuple + universe + key spec overrides.
+    2. **Data** — N rows train/val/eval/test, positive prevalence per segment.
+    3. **Iteration history** — table of the 1–8 iterations: features kept, key HP changes, train Brier, val Brier, train-val gap, agent's rationale, inner-stop signal.
+    4. **Final checkpoint** — which iteration was chosen, why (best val Brier).
+    5. **Calibration** — Spiegelhalter Z + p-value, decision (native vs isotonic), reliability diagram inline.
+    6. **Headline metrics on eval** — Brier vs base-rate baseline, AUC, log-loss, per-stock breakdown (table).
+    7. **Per-experiment verdict (agent recommendation)** — the agent's one-paragraph readout. Explicitly NOT an automatic pass/fail.
+- `src/gbdt/experiment.py` — top-level orchestrator. The `python -m gbdt.experiment <spec.yaml>` CLI atom invokes this.
+  - Phases: load spec → load data → build features → build target → iteration 0 (all features, default HPs) → FS+HP loop (max 8 iter, agent decides each iter) → calibration → emit artifact.
+  - In v1 the "agent decides each iter" phase is the **invocation of the agent** — the orchestrator writes the iteration's diagnostic bundle to a temp path, halts, and waits for the agent (via the `/gbdt-experiment` skill) to read the bundle and write back the next iteration's `(prune_list, hp_changes, rationale)` JSON. The CLI atom is a one-shot interactive runner; the skill is the orchestrator wrapper that drives the per-iteration agent reasoning.
+- CLI smoke test: invokes `python -m gbdt.experiment configs/gbdt/experiments/_test_tiny.yaml` against the synthetic fixture and confirms expected artifact dir on disk.
 
-**Done when:** acceptance demo passes its criteria (or its failures are characterized and ship-decision-able), report is written, results JSON committed.
+**Done when:** CLI atom runs end-to-end on a tiny synthetic fixture; `report.md` renders cleanly; the artifact dir matches the spec.
+
+### Stage 9 — Skill + pilot experiment (PR merge gate)
+
+**Goal:** the `/gbdt-experiment` skill + a green pilot run on the NIFTY 50 panel. **This stage gates the PR merge.**
+
+**Tasks:**
+- `.claude/skills/gbdt-experiment/SKILL.md` — the agent-facing skill, ~150 lines. Sections: Purpose / Invocation / Pre-flight / Phases (data build → iteration 0 → FS+HP loop → calibration → artifact emission) / Long-running pattern reference / References to `V1_PLAN.md`, `CATBOOST_HP_REFERENCE.md`, `EXPERIMENT_SPEC.md`.
+- `configs/gbdt/experiments/nifty50_up_10pct_20d_pilot.yaml` — the pilot spec.
+- Run the pilot end-to-end: `python -m gbdt.experiment configs/gbdt/experiments/nifty50_up_10pct_20d_pilot.yaml` (or via `/gbdt-experiment <spec_path>`).
+- Verify the merge-gate condition (from `goal.md` § "v1 PR merge gate"):
+  - The artifact dir at `results/gbdt/experiments/nifty50_up_10pct_20d_pilot/` exists and contains every file enumerated in `EXPERIMENT_SPEC.md` § "Artifact directory layout".
+  - `report.md` narrates the iteration history with per-iteration rationale.
+  - `metrics.json` is well-formed JSON with the headline calibration + Brier metrics.
+  - The per-experiment verdict in `report.md` is for the user to read — not an automated gate.
+- Commit the artifact (`results/gbdt/experiments/`) and the headline `results/gbdt/data/_v1_<run_id>_data.json` per `[[project-results-layout]]`.
+
+**Done when:** the pilot experiment artifact exists, is complete, and the report is readable. The cell's calibration/Brier outcome itself is information for the user, not a merge blocker.
 
 ---
 
-## Open questions (to resolve during implementation)
+## Decisions log (deltas from the original v1.0 plan)
 
-These are intentional unknowns that should be settled during the stage indicated, with the resolution documented in the stage's commit message. They are NOT blocking for scaffolding.
+The v1.0 plan (2026-05-24) left five intentional open questions to be resolved during implementation. The spec-lock conversation (2026-05-26) resolved all five and introduced several framing changes. The deltas:
 
-1. **Feature set (Stage 2).** The default candidate list above is a starting point. Final set + lookback windows decided when implementing Stage 2 against the synthetic harness and the real data. Constraint: must be small enough that the 18-classifier walk-forward run fits in a single-session compute budget (target: <2 hours wall on this hardware).
+### D1. Library: LightGBM → CatBoost
 
-2. **GBDT library (Stage 4).** Default lean: lightgbm. Decision documented in Stage 4 commit with rejected alternatives. If lightgbm has packaging / install issues on this Python version, fallback is xgboost.
+**Original (v1.0 OQ #2):** "Default lean: **lightgbm**. ... If lightgbm has packaging / install issues on this Python version, fallback is xgboost."
 
-3. **Calibration method (Stage 5).** Default lean: scikit-learn `IsotonicRegression`. Switch to Platt scaling only if isotonic over-fits on small validation folds.
+**Locked:** **CatBoost**.
 
-4. **Walk-forward fold scheme (Stage 6).** Inherit from `analog_mc`'s walk-forward conventions if they apply directly; otherwise pin a v1 scheme in `configs/gbdt/default.yaml` with reasoning in the Stage 6 commit. Constraint: enough fold count for per-target Brier-score stability on the rarer targets (`±50% in 10 days` is rare; needs enough test instances to compute a meaningful Brier).
+**Rationale:**
+- **Ordered boosting** reduces overfit on small rare-cell training data. Per-cell row counts are ~70k pooled (1.6k rows × 48 stocks); for rare cells (e.g. `±50% / 10d` at <2% prevalence), this is the data-scale where ordered boosting's prediction-shift correction measurably pays off.
+- **Native calibration quality.** CatBoost's out-of-the-box probability outputs are better calibrated than LightGBM/XGBoost on similar data shapes. Calibration is the headline metric, so the speed cost (2–3× slower per iteration than LightGBM) is well-spent compute.
+- **`has_time=True`** + per-iteration ordered permutations give correct walk-forward behavior with no extra plumbing.
 
-5. **Multi-target correlation handling (deferred to v2).** v1 trains 18 independent classifiers. If diagnostics reveal that targets are highly correlated AND the independent classifiers have inconsistent calibration on the same underlying event, v2 considers a shared-tree multi-output architecture. Don't pre-engineer for this in v1.
+**Cost:** wall-clock per iteration is higher. Mitigated by the FS+HP loop's hard cap of 8 iterations and the inner-stop gates (plateau, degradation).
+
+### D2. Framing: 18-classifier lattice → experiment-loop infrastructure
+
+**Original (v1.0 § "Purpose"):** "v1 is one asset (NASDAQ100) with the 18-target lattice defined in `goal.md`. ... The headline metric is **calibration**."
+
+**Locked:** v1 ships experiment-loop infrastructure. Each experiment is a single `(universe, direction, threshold, horizon)`. The 18-cell lattice was v0 EDA, not the production deliverable.
+
+**Rationale:**
+- v0's 18-cell scan was an **exploration grid** to characterize base rates and discover which cells are plausibly predictable. Treating it as the production deliverable conflates "scan we ran" with "models we ship."
+- Different downstream consumers will want different cells (an alerting use case wants `±5% / 10d`; a risk-overlay use case wants `±20% / 50d`). A surface that runs any cell on demand is more useful than a fixed bundle of 18 models.
+- A per-experiment artifact directory is auditable in a way that "the 18-model run" isn't — each artifact is self-contained and self-narrating.
+- Removed the "14/18 acceptance" framing — it was tied to the lattice ship and has no analog under the experiment-loop framing. The PR merge gate is now "the pilot experiment runs end-to-end and emits a complete artifact"; the per-experiment verdict is for the user.
+
+### D3. Dataset: NASDAQ100 single asset → NIFTY 50 pooled panel
+
+**Original (v1.0 § "Anti-goals"):** "**No multi-asset training.** One asset (NASDAQ100). Cross-sectional is v2."
+
+**Locked:** **NIFTY 50 pooled panel** as the v1 universe. NDX deferred to v1.1.
+
+**Rationale:**
+- The `data-seed-nifty50-deep` branch (PR #6, merged) brought 44 of 50 NIFTY 50 tickers to ≥2,500 rows of OHLCV history. This is enough for the 800+400+200+100 split scheme on 48 tickers (JIOFIN at 578 rows and MAXHEALTH at 1,322 rows fall below the 1,600 floor and are excluded; the other IPO-bounded tickers — ETERNAL, HDFCLIFE, INDIGO, SBILIFE — all have ≥1,700 rows and stay in).
+- A panel enables **cross-sectional features** (F14: rank/z across the universe), which are first-class signals (`this stock is the 3rd-weakest today`) that single-asset training cannot represent.
+- Pooled training on 48 tickers gives ~70k rows per experiment vs ~2k for single-asset — enough to fit a real model on rare cells without per-stock overfit.
+- The v0 NIFTY 50 opportunity scans (v0.1, v0.2, v0.3) already provide base-rate / regime context for this exact universe.
+
+### D4. FS + HP loop: algorithmic FS + fixed HP grid → agent-driven synced loop
+
+**Original (v1.0 § "Anti-goals"):** "**No HPO framework.** A small fixed hyperparameter grid + early stopping handles tuning."
+
+**Locked:** **Agent-driven synced FS+HP loop**, bounded by `CATBOOST_HP_REFERENCE.md` ranges, capped at 8 iterations with plateau + degradation inner-stop.
+
+**Rationale:**
+- Feature selection and HPs **interact**. The right `depth` depends on how many features are in; the right `l2_leaf_reg` depends on how correlated the surviving features are; the right `auto_class_weights` depends on the prevalence after pruning. Running them as separate sequential phases leaves cross-effects on the table.
+- An algorithmic FS pass (RFE, importance-threshold) makes local decisions; an agent reading a diagnostic bundle can make decisions that account for calibration, train-val gap, dominance patterns, and correlation simultaneously.
+- Bounding the agent to `CATBOOST_HP_REFERENCE.md`'s documented ranges prevents the agent from drifting into pathological regions. The reference doc is per-parameter "when to change" rubrics, not a free-form prompt.
+- The hard cap of 8 iterations + plateau + degradation inner-stop bounds compute. The best-Brier checkpoint (not the last iteration) is what ships, so the loop doesn't penalize itself for exploring slightly-worse iterations.
+- If the agent loop proves inconsistent across runs in practice, the v1.1 fallback (`V1.1_TBD.md` § "Bayesian HP search alternative") swaps the agent reasoning for an Optuna-style optimizer behind the same diagnostic-bundle contract.
+
+### D5. Calibration: isotonic always → conditional isotonic gated by Spiegelhalter Z
+
+**Original (v1.0 OQ #3):** "Default lean: scikit-learn `IsotonicRegression`. Switch to Platt scaling only if isotonic over-fits on small validation folds."
+
+**Locked:** **Conditional isotonic** — run Spiegelhalter Z-test on val; ship raw CatBoost if it passes (|z| < 2), layer isotonic if it fails. Per-experiment decision recorded in artifact.
+
+**Rationale:**
+- CatBoost's native probability outputs are often well-calibrated out of the box. Always-on isotonic adds variance without value when calibration is already good — isotonic on small val segments can over-fit and slightly degrade test-segment calibration.
+- The Spiegelhalter Z-test is a cheap statistical test with a clear decision threshold. Gating isotonic behind it gives the best of both: ship the simpler model when it's calibrated, layer the correction when it isn't.
+- Recording the decision per experiment (`calibration_method` + Z + p-value in `metrics.json`) makes the calibration choice auditable rather than implicit.
+- Specs can override the decision: `spec.backend.calibration_method` accepts `"native"`, `"conditional_isotonic"` (default), `"isotonic_always"`, `"platt"`.
+
+### D6. Walk-forward split: TBD-stage6 → 800 + 400 + 200 + 100
+
+**Original (v1.0 OQ #4):** "Inherit from `analog_mc`'s walk-forward conventions if they apply directly; otherwise pin a v1 scheme in `configs/gbdt/default.yaml` with reasoning in the Stage 6 commit."
+
+**Locked:** **800 train + 400 val + 200 eval + 100 test = 1,600 rows** per stock, single-fold default. Global setting in `configs/gbdt/default.yaml`; spec-overridable via `spec.split`.
+
+**Rationale:**
+- 800-row train fits well within the deepest-history slice for 48 of 50 NIFTY 50 tickers (44 have ≥2,500 rows; the other 4 have 1,700–2,400).
+- 400-row val gives enough samples for both early-stopping signal and a meaningful Spiegelhalter Z-test on the calibration gate.
+- 200-row eval is the segment whose metrics go into `metrics.json` headline. Smaller than val so the Brier numbers are computable without being val-noise-dominated.
+- 100-row test sits beyond eval as a final-sanity-check slice for the user (mirrors `analog_mc`'s nested-holdout discipline).
+- Single-fold default keeps the per-experiment compute envelope manageable. Multi-fold is supported (`spec.split.n_folds`) but not the default — the FS+HP loop already adds an iteration multiplier.
+- JIOFIN (578 rows) and MAXHEALTH (1,322 rows) fall below the 1,600 floor and are excluded by `min_rows=1600`. The Stage 1 loader logs the exclusions.
+
+### D7. Multi-target / shared-tree head — still deferred, now to v1.1
+
+**Original (v1.0 OQ #5):** "v1 trains 18 independent classifiers. ... v2 considers a shared-tree multi-output architecture."
+
+**Locked:** Each experiment is one binary target. Multi-target architectures are deferred to v1.1 (`V1.1_TBD.md` § "Multi-target shared-tree head"). The framing change to "experiment loop" makes this a per-experiment-spec concern rather than a v1 architectural decision.
 
 ---
 
@@ -229,27 +410,34 @@ These are intentional unknowns that should be settled during the stage indicated
 docs/gbdt/
   goal.md                              # done (this PR)
   V1_PLAN.md                           # done (this PR)
-  _v1_acceptance_demo.md               # written in Stage 9
-  figs/<run_id>/                       # reliability diagrams per run
+  EXPERIMENT_SPEC.md                   # done (this PR)
+  CATBOOST_HP_REFERENCE.md             # done (already in tree, untouched in this PR)
+  V0_INVESTIGATION_PLAN.md             # shipped on main; closing note added this PR
+  V1.1_TBD.md                          # done (this PR)
+  _v1_<experiment>_report.md           # one per experiment that's promoted to docs
 
 src/gbdt/
   __init__.py
-  __main__.py                          # CLI (Stage 8)
-  data.py                              # loader (Stage 1)
-  leakage_harness.py                   # synthetic-data leak detector (Stage 1)
-  features.py                          # feature functions (Stage 2)
-  targets.py                           # binary targets (Stage 3)
-  model.py                             # GBDT wrapper + calibration (Stages 4-5)
-  train.py                             # walk-forward driver (Stage 6)
-  predict.py                           # inference (Stages 6 + 8)
-  diagnostics.py                       # Brier / AUC / reliability (Stage 7)
-
-scripts/gbdt/
-  aggregate_run.py                     # runs/ → results/ aggregation (Stage 7)
-  render_report.py                     # results/ → docs/ report (Stage 7)
+  __main__.py                          # invokes experiment.py
+  data.py                              # universe loader (Stage 1)
+  leakage_harness.py                   # synthetic leak detector (Stage 1)
+  features.py                          # 273-col candidate pool (Stage 2)
+  targets.py                           # single binary target per spec (Stage 3)
+  model.py                             # CatBoost wrapper (Stage 4)
+  calibration.py                       # conditional isotonic (Stage 5)
+  fs_hp_loop.py                        # diagnostic bundle + inner-stop (Stage 6)
+  train.py                             # walk-forward driver (Stage 7)
+  predict.py                           # inference against a saved artifact
+  experiment.py                        # top-level orchestrator + CLI (Stage 8)
+  report.py                            # report.md renderer (Stage 8)
 
 configs/gbdt/
-  default.yaml                         # feature spec + model hyperparams + fold scheme
+  default.yaml                         # global defaults (lookback windows, split, FS+HP loop, calibration)
+  experiments/
+    nifty50_up_10pct_20d_pilot.yaml    # the v1 PR pilot spec (Stage 9)
+
+.claude/skills/gbdt-experiment/
+  SKILL.md                             # the agent surface (Stage 9)
 
 tests/gbdt/
   __init__.py
@@ -257,31 +445,36 @@ tests/gbdt/
   test_leakage_harness.py              # Stage 1
   test_features.py                     # Stage 2
   test_targets.py                      # Stage 3
-  test_model.py                        # Stage 4-5
-  test_train.py                        # Stage 6
-  test_diagnostics.py                  # Stage 7
-  test_cli.py                          # Stage 8
+  test_model.py                        # Stage 4
+  test_calibration.py                  # Stage 5
+  test_fs_hp_loop.py                   # Stage 6
+  test_train.py                        # Stage 7
+  test_experiment_cli.py               # Stage 8
 
-runs/gbdt/<UTC>/                       # gitignored raw per-fold artifacts (Stage 6)
-results/gbdt/data/                     # checked-in headline metrics (Stage 7)
+results/gbdt/
+  data/                                # checked-in headline metric JSONs (per [[project-results-layout]])
+  experiments/<experiment_name>/       # checked-in per-experiment artifact dirs (Stage 9)
+
+runs/gbdt/<UTC>/                       # gitignored raw per-iteration tempfiles
 ```
 
 ---
 
 ## Anti-goals (code-level)
 
-These are non-negotiable in v1. Each was a deliberate design choice; revisit only with an explicit deviation discussion.
+Non-negotiable in v1. Each was a deliberate spec-lock decision; revisit only through `V1.1_TBD.md`.
 
-1. **No multi-target / multi-output single model.** 18 independent classifiers. Gated on v1 diagnostic evidence.
-2. **No user-configurable target lattice.** The 18-cell lattice is hard-coded.
-3. **No multi-asset training.** One asset (NASDAQ100). Cross-sectional is v2.
-4. **No HPO framework.** A small fixed hyperparameter grid + early stopping handles tuning.
-5. **No alternative-data features.** OHLCV-derived only in v1.
-6. **No PnL / position sizing / transaction costs.** Same anti-rule as `analog_mc`.
-7. **No `Classifier` ABC or multi-library registry.** v1 uses one library.
-8. **No data-source dispatch.** CSV-first per `[[project-data-source]]`. Wiring to `data_pipelines` is a separate plan.
-9. **No silent look-ahead leaks.** The Stage 1 harness gates every new feature in CI.
-10. **No AI attribution** in commits / PRs / outputs / docstrings.
+1. **No automatic per-experiment PASS/FAIL.** The agent recommends; the user decides.
+2. **No multi-target / multi-output single model.** One binary target per spec.
+3. **No multi-library backends.** v1 is CatBoost only. LightGBM / XGBoost behind the experiment-loop contract is `V1.1_TBD.md` § "Per-experiment library override".
+4. **No algorithmic FS (RFE / importance-threshold) in v1.** The FS step is agent-driven inside the synced loop.
+5. **No HP search libraries (Optuna / Hyperopt) in v1.** Same reasoning. `V1.1_TBD.md` § "Bayesian HP search alternative" is the parking-lot entry.
+6. **No alternative-data features beyond the 273-col pool.** Macro / sentiment / sector joins live in `V1.1_TBD.md`.
+7. **No PnL / position sizing / transaction costs.** Same anti-rule as `analog_mc`.
+8. **No `Classifier` ABC or library registry.** v1 uses one library.
+9. **No CSV-first data path.** v1 uses `data_pipelines.fetch()` directly — diverges from `analog_mc` v1's CSV-first contract because gbdt v1 needs a panel, not a single asset's CSV.
+10. **No silent look-ahead leaks.** The Stage 1 harness gates every new feature in CI.
+11. **No AI attribution** in commits / PRs / outputs / docstrings.
 
 ---
 
@@ -289,28 +482,47 @@ These are non-negotiable in v1. Each was a deliberate design choice; revisit onl
 
 | Layer | What gets tested | Where |
 |---|---|---|
-| Data loader | CSV → DataFrame schema, dtypes, monotonic dates | `tests/gbdt/test_data_loader.py` |
+| Data loader | Panel build via `data_pipelines.fetch()`, ticker exclusion at <1,600 rows | `tests/gbdt/test_data_loader.py` |
 | Leakage harness | Detects leaky features, stays silent on causal ones | `tests/gbdt/test_leakage_harness.py` |
-| Features | Hand-computed values on tiny fixtures + harness-passing | `tests/gbdt/test_features.py` |
-| Targets | Binary correctness on synthetic price paths for all 18 cells | `tests/gbdt/test_targets.py` |
-| Model wrapper | Trivial-fit smoke + calibration round-trip + save/load | `tests/gbdt/test_model.py` |
-| Walk-forward | 1-fold-1-target mini-run produces correct artifact layout | `tests/gbdt/test_train.py` |
-| Diagnostics | Known-value cases for each metric | `tests/gbdt/test_diagnostics.py` |
-| CLI | Both subcommands run on synthetic fixture | `tests/gbdt/test_cli.py` |
-| End-to-end | NASDAQ100 acceptance demo (manual, pre-merge) | Stage 9 |
+| Features | Hand-computed values per family on tiny fixtures + harness-passing | `tests/gbdt/test_features.py` |
+| Targets | Binary correctness on synthetic price paths per direction × threshold × horizon | `tests/gbdt/test_targets.py` |
+| Model wrapper | Trivial-fit smoke + HP-bound enforcement + `has_time=True` pinned | `tests/gbdt/test_model.py` |
+| Calibration | Spiegelhalter Z fires on miscal data; passes on calibrated; isotonic round-trip | `tests/gbdt/test_calibration.py` |
+| FS+HP loop | Inner-stop plateau / degradation / cap; best-checkpoint selection | `tests/gbdt/test_fs_hp_loop.py` |
+| Walk-forward | 1-fold mini-run produces correct artifact layout | `tests/gbdt/test_train.py` |
+| CLI atom | `python -m gbdt.experiment <tiny_spec>` produces artifact dir | `tests/gbdt/test_experiment_cli.py` |
+| End-to-end | Pilot experiment via `/gbdt-experiment` against the NIFTY 50 panel | Stage 9 |
+
+---
+
+## Compute envelope
+
+Per-experiment, single-machine CPU baseline:
+
+- **Data:** ~48 tickers × ~1,600 rows = ~76,800 rows. Panel build via `data_pipelines.fetch()` is cache-served (sub-second after first cold pull).
+- **Feature matrix:** 273 columns × ~76,800 rows = ~21M cells. Per-stock rolling pipelines vectorize well; cross-sectional batch is one groupby per date. Expect <1 min on this hardware.
+- **Per-iteration CatBoost fit:** at default HPs (`iterations=1000`, `depth=6`, `boosting_type=Ordered`), ~2–5 min on this scale per fit. Ordered boosting is 2–3× slower than Plain; budget accordingly.
+- **FS+HP loop:** max 8 iterations × ~2–5 min/iter = 16–40 min of pure fit time per experiment. Plus the agent's per-iteration reasoning wall time (interactive, hard to bound).
+- **Calibration + report:** negligible (<10 sec).
+
+The original v1.0 plan's `<2hr` per-experiment target was tight even at the smaller feature pool. At 273 columns the FS+HP loop's iterative pruning is the main mitigation — after iteration 2–3 the agent typically prunes to ~40–80 features, at which point per-iteration fit time drops by 3–5×. Empirically, expect end-to-end pilot runs in the 30 min – 2 hr range. Multi-fold runs (`split.n_folds > 1`) multiply linearly.
+
+If wall-clock becomes the binding constraint per experiment, the first lever is `border_count=128` (small quality cost, ~2× faster training; documented in `CATBOOST_HP_REFERENCE.md` § Category 3); the second is `leaf_estimation_iterations=3`; the third is dropping `boosting_type` to `Plain` for cells where Ordered isn't measurably winning. None of these belong in the loop logic — they're agent-level decisions on the cell.
 
 ---
 
 ## Branch + PR plan
 
-- This work lives on the `gbdt-v1` branch.
-- Each stage is a logical commit; the PR opens against `main` once Stage 9's acceptance demo is green.
-- **Stage 9 is the PR merge gate.** Stages 1–8 prove the units; Stage 9 proves the system.
-- Per `[[feedback-branch-retention]]`, the branch stays after merge.
+- This work lives on the `gbdt-v1-spec-lock` branch.
+- Each stage in the build (1–9) is a logical commit; the implementation PR opens against `main` once Stage 9's pilot is green.
+- **This (spec-lock) PR is doc-only.** It does not contain Stages 1–9 implementation; it locks the spec the implementation will build to.
+- Per `[[feedback-branch-retention]]`, branches stay after merge.
 - Per `CLAUDE.md`, no AI attribution in commits or PR text.
 
 ---
 
 ## Dependencies (additions expected)
 
-Stage 4 adds the GBDT library (default: `lightgbm`). Stage 5 may add `scikit-learn` if not already present (it's not currently in `pyproject.toml`). These additions go to `pyproject.toml` in the stage that introduces them, with the version constraint pinned to match what's available on Python ≥3.12.
+- Stage 4 adds `catboost` to `pyproject.toml`.
+- Stage 5 may add `scikit-learn` if not already present (for `IsotonicRegression` + `CalibratedClassifierCV`).
+- Stage 1 already depends on `data_pipelines` (in-repo).

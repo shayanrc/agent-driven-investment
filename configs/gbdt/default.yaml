@@ -1,40 +1,96 @@
-# gbdt — v1 default config
+# gbdt — v1 global defaults
 #
-# Sections marked TBD-Stage<N> are finalized when the named stage of V1_PLAN
-# is implemented. Scaffolding placeholder only — do not consume from code yet.
+# Per-experiment specs in configs/gbdt/experiments/<name>.yaml override
+# only what they care about; everything else falls through to this file.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+# Architecture: docs/gbdt/V1_PLAN.md.
+# HP semantics: docs/gbdt/CATBOOST_HP_REFERENCE.md.
 
-data:
-  path: data/NASDAQ100.csv
-  date_col: observation_date
-  close_col: NASDAQ100
+# ---------------------------------------------------------------------------
+# Universe presets. v1 ships only nifty50. NDX, NIFTY 100, NIFTY 500, NIFTY
+# total are all in V1.1_TBD.md.
+# ---------------------------------------------------------------------------
+universes:
+  nifty50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
+    index_ticker: "INDEX:^NSEI"      # ^NSEI = NIFTY 50 index; used by F1/F5/F9/F9b families.
+    ticker_prefix: "NSE:"            # e.g. RELIANCE -> NSE:RELIANCE before data_pipelines.fetch().
+    annualization_factor: 250        # India uses 250 trading days; US uses 252.
 
+# ---------------------------------------------------------------------------
+# Walk-forward split. Per-stock row budget: train + val + eval + test = 1600.
+# Tickers below min_rows_per_ticker are dropped from the panel.
+# ---------------------------------------------------------------------------
+split:
+  train_rows: 800                    # where the model fits
+  val_rows: 400                      # where CatBoost early-stops + where Spiegelhalter Z is run
+  eval_rows: 200                     # held-out segment; headline metrics computed here
+  test_rows: 100                     # final sanity-check segment beyond eval
+  n_folds: 1                         # single-fold default; specs can override
+  min_rows_per_ticker: 1600          # JIOFIN (578) and MAXHEALTH (1322) excluded by this
+
+# ---------------------------------------------------------------------------
+# Features. Pool = all 273 candidate columns across 16 families (see
+# V1_PLAN.md Stage 2). The agent prunes per-iteration inside the FS+HP loop.
+# ---------------------------------------------------------------------------
 features:
-  # TBD-Stage2: final list of feature specs + lookback windows.
-  # Each entry will look like: {name: ret_log, kind: rolling_logret, windows: [5, 10, 20, 50, 100]}
-  spec: []
+  candidates: all                    # "all" = 273 cols across F1..F16
+  exclude: []                        # spec can list explicit names or globs
+  lookback_windows: [5, 10, 20, 50, 100, 200]
 
-targets:
-  # Hard-coded in v1 — do not edit. See src/gbdt/targets.py for the lattice.
-  directions: [up, down]
-  thresholds_pct: [10, 20, 50]
-  horizons_days: [10, 20, 50]
+# ---------------------------------------------------------------------------
+# Backend config. v1 = catboost only.
+# ---------------------------------------------------------------------------
+backend:
+  library: catboost                  # v1.1 may add lightgbm / xgboost behind same contract
 
-walk_forward:
-  # TBD-Stage6: train/val/test window sizes and step.
-  train_window_days: null
-  val_window_days: null
-  test_window_days: null
-  step_days: null
+  # Calibration policy. Default = conditional isotonic gated by Spiegelhalter Z.
+  # Options: native | conditional_isotonic | isotonic_always | platt
+  # (see docs/gbdt/EXPERIMENT_SPEC.md § Calibration).
+  calibration_method: conditional_isotonic
+  calibration_z_threshold: 2.0       # |z| < this -> ship native; else apply isotonic
 
-model:
-  # TBD-Stage4: library name + hyperparameters (default lean: lightgbm).
-  library: null
-  hyperparameters: {}
+  # FS+HP loop config. Agent reads diagnostic bundle per iteration; bounded
+  # by max_iterations; inner-stops on plateau or degradation.
+  fs_hp_loop:
+    max_iterations: 8                # hard cap
+    plateau_threshold: 0.005         # absolute val Brier improvement floor over last 2 iter
+    degradation_gate: 0.01           # 1% multiplicative degrade from best-seen val Brier -> stop
 
-calibration:
-  # TBD-Stage5: calibration method (default lean: sklearn IsotonicRegression).
-  method: null
+  # Iteration-0 HP defaults. The agent starts here and explores bounded by
+  # the ranges in CATBOOST_HP_REFERENCE.md per parameter.
+  hp_defaults:
+    iterations: 1000
+    learning_rate: 0.05              # explicit value; otherwise CatBoost auto-derives
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered           # ordered boosting; ~2-3x slower than Plain but better on small data
+    early_stopping_rounds: 75
+    # auto_class_weights left unset by default; per-cell guidance in CATBOOST_HP_REFERENCE.md § 5
 
-run:
-  seed: 0
-  artifact_root: runs/gbdt
+  # Pinned HPs (never overridable from a spec; see V1_PLAN.md Stage 4).
+  hp_pinned:
+    has_time: true                   # mandatory for walk-forward correctness
+    loss_function: Logloss
+    eval_metric: BrierScore
+    custom_metric: [Logloss, BrierScore, AUC]
+
+# ---------------------------------------------------------------------------
+# Global seed. Pinned across CatBoost, NumPy, and any sampling in the
+# diagnostic bundle generator. Sweep only for explicit seed-variance work.
+# ---------------------------------------------------------------------------
+random_seed: 42
+
+# ---------------------------------------------------------------------------
+# Artifact roots.
+# ---------------------------------------------------------------------------
+artifacts:
+  experiment_dir: results/gbdt/experiments    # checked-in per-experiment artifact dirs
+  runs_dir: runs/gbdt                          # gitignored raw per-iter tempfiles
+  headline_data_dir: results/gbdt/data         # per [[project-results-layout]]
