@@ -1,0 +1,62 @@
+universes:
+  nifty50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
+    index_ticker: NIFTY:50
+    ticker_prefix: 'NSE:'
+    annualization_factor: 250
+split:
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 100
+  n_folds: 1
+  min_rows_per_ticker: 1600
+features:
+  candidates: all
+  exclude: []
+  lookback_windows:
+  - 5
+  - 10
+  - 20
+  - 50
+  - 100
+  - 200
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  calibration_z_threshold: 2.0
+  fs_hp_loop:
+    max_iterations: 8
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+  hp_pinned:
+    has_time: true
+    loss_function: Logloss
+    eval_metric: BrierScore
+    custom_metric:
+    - Logloss
+    - BrierScore
+    - AUC
+random_seed: 42
+artifacts:
+  experiment_dir: results/gbdt/experiments
+  runs_dir: runs/gbdt
+  headline_data_dir: results/gbdt/data
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
