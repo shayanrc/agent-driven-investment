@@ -534,3 +534,93 @@ class TestExtraMetaPropagation:
         from data_pipelines.cache import read_processed
         _, meta = read_processed(root, DomainRegistry.resolve("FAKE:X"), "FAKE:X")
         assert meta["sources"][0]["adjustment_quality"] == "split_only"
+
+
+class TestEmptyPostNormalizeResponse:
+    """Regression: a provider whose parse()+normalize() yields a zero-row
+    DataFrame must NOT raise a bare IndexError out of _build_source_meta.
+
+    Schema.validate() accepts an empty frame whose columns/dtypes match, so
+    the empty payload slips past the validator. Before the fix, dispatch then
+    indexed ``df[time_column].iloc[0]`` to build the source-meta covers range
+    and crashed with IndexError, escaping the chain-fallthrough machinery
+    (which only catches typed ProviderError subclasses). The fix promotes
+    the empty-frame case to EmptyPayload so the existing soft-fail (with
+    cache) / hard-fail (cold cache) logic handles it.
+    """
+
+    def test_empty_post_normalize_treated_as_empty_payload_cold_cache(self, root):
+        # Cold cache + adapter returns a structurally valid but empty frame
+        # → should raise AllProvidersFailed (NOT IndexError).
+        empty_df = make_df([], [])
+        adapter = _ScriptedAdapter("seed", empty_df, root)
+        _register(adapter)
+        with pytest.raises(AllProvidersFailed) as exc:
+            fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 6), data_root=root)
+        # The failure must be typed (EmptyPayload), not a stray IndexError
+        # wrapped or re-raised. The chain captures it as a ProviderError.
+        assert exc.value.failures, "expected at least one captured failure"
+        assert exc.value.failures[0].provider == "seed"
+        assert "empty payload" in exc.value.failures[0].reason
+
+    def test_empty_post_normalize_soft_fails_when_cache_has_data(self, root):
+        # Cache already covers Jan-5..Jan-7. Re-request a range with an
+        # internal gap (Tue) where the adapter returns an empty frame —
+        # soft-fail path engages, cache preserved, no IndexError.
+        existing = make_df([date(2026, 1, 5), date(2026, 1, 7)], [10, 30])
+        seed = _ScriptedAdapter("seed", existing, root)
+        upd = _ScriptedAdapter("upd", make_df([], []), root)
+        dom = FakeDomain(adapters=[seed, upd], big_gap_threshold=10)
+        DomainRegistry.register(dom)
+
+        fetch("FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root)
+        df, meta = fetch_with_meta(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 7), data_root=root,
+        )
+        # Cache preserved; soft-fail recorded for the empty payload.
+        assert list(df["value"]) == [10, 30]
+        assert any("unfillable" in p["reason"] for p in meta.providers_failed)
+
+
+class TestBuildSourceMetaUnit:
+    """Direct unit tests for ``_build_source_meta`` — both branches (empty and
+    non-empty). The happy-path branch is also exercised indirectly by every
+    other dispatch test that successfully fills a gap, but a focused unit
+    test pins the contract.
+    """
+
+    def test_empty_dataframe_raises_empty_payload(self):
+        from data_pipelines.dispatch import _build_source_meta
+
+        class _A:
+            name = "p"
+            extra_meta: dict = {}
+
+        empty_df = make_df([], [])
+        with pytest.raises(EmptyPayload) as exc:
+            _build_source_meta(
+                adapter=_A(), raw_path=Path("ignored.csv"),
+                df=empty_df, time_column="date", identifier="FAKE:X",
+            )
+        assert exc.value.provider == "p"
+        assert exc.value.identifier == "FAKE:X"
+
+    def test_non_empty_dataframe_returns_covers_range(self):
+        from data_pipelines.dispatch import _build_source_meta
+
+        class _A:
+            name = "p"
+            extra_meta = {"adjustment_quality": "split_only"}
+
+        df = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)],
+            [1, 2, 3],
+        )
+        meta = _build_source_meta(
+            adapter=_A(), raw_path=Path("file.csv"),
+            df=df, time_column="date", identifier="FAKE:X",
+        )
+        assert meta["provider"] == "p"
+        assert meta["raw_file"] == "file.csv"
+        assert meta["covers"] == {"start": "2026-01-05", "end": "2026-01-07"}
+        assert meta["adjustment_quality"] == "split_only"
