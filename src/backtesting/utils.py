@@ -8,7 +8,8 @@ This module is extended across stages:
 
 from __future__ import annotations
 
-from typing import Iterable, Literal
+import math
+from typing import Any, Iterable, Literal
 
 import numpy as np
 import pandas as pd
@@ -149,3 +150,189 @@ def slice_window(
             f"would slice below 0"
         )
     return frame.iloc[start : end_step + 1].to_numpy(copy=False)
+
+
+# ---------------------------------------------------------------------------
+# Stage 4 — action parsing + lot snapping
+# ---------------------------------------------------------------------------
+def snap_to_lot(qty: float, lot_size: int) -> float:
+    """Truncate ``qty`` toward zero to the nearest valid lot.
+
+    - ``lot_size == 0`` ⇒ fractional, no rounding (return qty unchanged).
+    - ``lot_size == 1`` ⇒ whole units: truncate toward zero (``2.7 → 2``,
+      ``-2.7 → -2``).
+    - ``lot_size == N`` for any positive int ⇒ ``floor(abs(qty)/N)*N*sign(qty)``.
+
+    Raises ``ValueError`` for negative lot sizes.
+    """
+    if lot_size < 0:
+        raise ValueError(f"lot_size must be >= 0, got {lot_size}")
+    if lot_size == 0:
+        return float(qty)
+    if qty == 0:
+        return 0.0
+    sign = 1.0 if qty > 0 else -1.0
+    magnitude = math.floor(abs(qty) / lot_size) * lot_size
+    return float(sign * magnitude)
+
+
+def _lookup_lot_size(
+    asset: str, lot_sizes: dict[str, int], default_lot_size: int
+) -> int:
+    return lot_sizes.get(asset, default_lot_size)
+
+
+def parse_action(
+    action: dict[str, Any] | None,
+    portfolio,  # backtesting.portfolio.Portfolio
+    data_handler,  # backtesting.data_handler.DataHandler
+    lot_sizes: dict[str, int],
+    default_lot_size: int,
+    price_column: str = "close",
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, float]]]:
+    """Translate an action dict into a list of normalized orders.
+
+    Returns ``(orders, lot_size_audit)`` where ``orders`` is the list to
+    submit to the broker (with ``{asset, qty}`` only — no extra fields,
+    per Q6) and ``lot_size_audit`` is the Q10 dict mapping
+    ``asset → {"requested_qty": float, "filled_qty": int}`` for every
+    asset where the snap changed the requested quantity (including
+    snap-to-zero).
+
+    Action types:
+    - ``None`` ⇒ ``([], {})``. No-op.
+    - ``{"type": "order", "orders": [...]}``: each order has fields
+      ``{asset, qty}`` only (extra fields raise via the broker validator
+      at submit time, not here — this function is shape-permissive on
+      input so callers can also pass typed dicts that we'll trim).
+    - ``{"type": "weight", "target_weights": {...}}``: compute deltas
+      from pre-fill equity / positions, snap to lot, sequence sells
+      before buys. Raises ``ValueError`` if the weights sum > 1.0 (Q1).
+
+    Orders with snapped qty == 0 are dropped (no fill possible) but
+    still recorded in ``lot_size_audit`` with ``filled_qty: 0`` (Q10
+    unified key).
+    """
+    if action is None:
+        return [], {}
+    if not isinstance(action, dict):
+        raise ValueError(f"action must be dict or None, got {type(action).__name__}")
+    action_type = action.get("type")
+    if action_type == "order":
+        return _parse_order_action(action, lot_sizes, default_lot_size)
+    if action_type == "weight":
+        return _parse_weight_action(
+            action,
+            portfolio,
+            data_handler,
+            lot_sizes,
+            default_lot_size,
+            price_column,
+        )
+    raise ValueError(
+        f"action['type'] must be 'order' or 'weight', got {action_type!r}"
+    )
+
+
+def _parse_order_action(
+    action: dict[str, Any],
+    lot_sizes: dict[str, int],
+    default_lot_size: int,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, float]]]:
+    orders_in = action.get("orders")
+    if not isinstance(orders_in, list):
+        raise ValueError("action['orders'] must be a list")
+    out_orders: list[dict[str, Any]] = []
+    audit: dict[str, dict[str, float]] = {}
+    for order in orders_in:
+        if not isinstance(order, dict) or "asset" not in order or "qty" not in order:
+            raise ValueError(f"malformed order entry: {order!r}")
+        # Reject extra fields up front (Q6) — the broker would catch
+        # this too, but failing early gives the caller a cleaner trace.
+        extra = set(order.keys()) - {"asset", "qty"}
+        if extra:
+            raise ValueError(
+                f"order has unexpected fields {sorted(extra)} "
+                f"(v1 schema is {{asset, qty}} only — Q6)"
+            )
+        asset = order["asset"]
+        requested = float(order["qty"])
+        lot = _lookup_lot_size(asset, lot_sizes, default_lot_size)
+        snapped = snap_to_lot(requested, lot)
+        if snapped != requested:
+            audit[asset] = {
+                "requested_qty": requested,
+                "filled_qty": snapped,
+            }
+        if snapped != 0:
+            out_orders.append({"asset": asset, "qty": snapped})
+    return out_orders, audit
+
+
+def _parse_weight_action(
+    action: dict[str, Any],
+    portfolio,
+    data_handler,
+    lot_sizes: dict[str, int],
+    default_lot_size: int,
+    price_column: str,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, float]]]:
+    target_weights = action.get("target_weights")
+    if not isinstance(target_weights, dict):
+        raise ValueError("action['target_weights'] must be a dict")
+    total = sum(target_weights.values())
+    # Q1: raise on over-allocation; caller must normalize.
+    if total > 1.0 + 1e-12:
+        raise ValueError(
+            f"sum(target_weights) = {total} exceeds 1.0; "
+            "caller must normalize (Q1)"
+        )
+
+    # Pre-fill equity using close prices at the current step.
+    positions = dict(portfolio.positions)
+    price_lookup: dict[str, float] = {}
+    relevant = set(target_weights) | set(positions)
+    for asset in relevant:
+        try:
+            price_lookup[asset] = data_handler.get_price(asset, price_column)
+        except KeyError as err:
+            raise ValueError(
+                f"weight action references unknown asset {asset!r}"
+            ) from err
+    # Pre-fill equity = cash + Σ pos * price.
+    equity = portfolio.cash
+    for asset, qty in positions.items():
+        equity += qty * price_lookup[asset]
+
+    audit: dict[str, dict[str, float]] = {}
+    out_orders: list[dict[str, Any]] = []
+
+    # Compute deltas for every asset that's either targeted or currently
+    # held. Assets dropped from target_weights ⇒ target_weight 0 ⇒
+    # sell-to-zero.
+    for asset in relevant:
+        target_w = target_weights.get(asset, 0.0)
+        price = price_lookup[asset]
+        # If price is NaN or 0, can't compute a meaningful target.
+        if price <= 0 or price != price:  # NaN check
+            # Skip silently; broker will reject as untradeable when it
+            # tries to look up the price at fill time.
+            continue
+        target_qty = (target_w * equity) / price
+        current_qty = positions.get(asset, 0.0)
+        delta = target_qty - current_qty
+        lot = _lookup_lot_size(asset, lot_sizes, default_lot_size)
+        snapped = snap_to_lot(delta, lot)
+        if snapped != delta:
+            audit[asset] = {
+                "requested_qty": delta,
+                "filled_qty": snapped,
+            }
+        if snapped != 0:
+            out_orders.append({"asset": asset, "qty": snapped})
+
+    # Sells (qty < 0) before buys (qty > 0) so cash freed by sells funds
+    # subsequent buys (IA5 in V1_PLAN: ordering happens here AND in the
+    # broker — intentional duplication for now).
+    out_orders.sort(key=lambda o: o["qty"] > 0)
+    return out_orders, audit
