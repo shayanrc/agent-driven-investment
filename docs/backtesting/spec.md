@@ -44,7 +44,7 @@ The `DataHandler` establishes a single integer-indexed master timeline driven by
 
 **Rationale:** At every step, the caller must receive a valid, non-null state matrix. Forward-filling is the correct causal operation for slow-updating data: quarterly GDP is genuinely "still the last reported value" until the next release. The master timeline is the single source of truth for "what step are we on?" — all components reference it rather than maintaining independent clocks.
 
-**Master timeline construction:** The highest-frequency feed is determined by the feed with the greatest number of unique dates. The master timeline is the **union** of all dates across all assets within that feed. Assets that start mid-series (e.g., a newly-IPO'd stock) have NaN values before their first observation; these are **not** forward-filled (there is no prior value to fill from). Instead, the asset is marked as untradeable on those dates — orders for it are rejected by the broker, and its columns in the state window are NaN. The caller is responsible for handling NaN in the state (e.g., by not trading assets that haven't started yet). Assets that end mid-series (e.g., delisted) are forward-filled with their last known values and marked as untradeable after their final date.
+**Master timeline construction:** The highest-frequency feed is determined by the feed with the greatest number of unique dates. The master timeline is the **union** of all dates across all assets within that feed. Assets that start mid-series (e.g., a newly-IPO'd stock) have NaN values before their first observation; these are **not** forward-filled (there is no prior value to fill from). Instead, the asset is marked as untradeable on those dates — orders for it are rejected by the broker, and its columns in the state window are NaN. The caller is responsible for handling NaN in the state (e.g., by not trading assets that haven't started yet). Assets that end mid-series (e.g., delisted) are forward-filled with their last known values and marked as untradeable after their final date. The broker rejects **buy** orders for untradeable assets but permits **sell** orders (filled at the last known price) so that existing positions can be closed. Without this, capital would be permanently locked in phantom positions.
 
 ---
 
@@ -163,7 +163,10 @@ class DataHandler:
         that indicate a data gap within an asset's active range."""
 
     def advance_time(self) -> bool:
-        """Increment current_step by 1. Return True if done (past max_steps)."""
+        """Increment current_step by 1. Return True (done) if current_step >= max_steps
+        after the increment, meaning T+1 has no data. The last bar in the dataset
+        (index max_steps - 1) is the final bar that appears in a state; no step
+        can advance past it."""
 
     def get_current_bar(self) -> dict:
         """Return data for exactly the current step. Used by the broker for
@@ -220,7 +223,10 @@ class Portfolio:
 **Design notes:**
 
 - `qty` is float at the `Portfolio` level to keep the ledger simple. Lot-size enforcement happens upstream in `Backtest._parse_action()`, not inside the portfolio.
-- No commission or slippage model inside `Portfolio`. Commissions are handled entirely by the broker: before filling an order, the broker computes `total_cost = abs(qty) * price + commission` and checks that `total_cost <= portfolio.cash` (for buys). If the check passes, the broker calls `portfolio.execute_trade(asset, qty, price)` and then `portfolio.cash -= commission` as a separate deduction. The portfolio itself only sees the market price; the commission is a post-fill cash adjustment. This keeps the ledger simple and testable.
+- No commission or slippage model inside `Portfolio`. Commissions are handled entirely by the broker. The overdraw check is direction-aware:
+  - **Buys** (qty > 0): broker checks `qty * price + commission <= portfolio.cash` before filling. If it passes, calls `portfolio.execute_trade(asset, qty, price)` then `portfolio.cash -= commission`.
+  - **Sells** (qty < 0): broker checks `commission <= portfolio.cash + abs(qty) * price` (i.e., post-fill cash can cover the commission). If it passes, calls `portfolio.execute_trade(asset, qty, price)` then `portfolio.cash -= commission`.
+  - The portfolio itself only sees the market price; the commission is a post-fill cash adjustment. This keeps the ledger simple and testable.
 - Short selling is supported: a negative position is a short. **v1 limitation:** shorts are unconstrained — no margin requirement, no borrow cost, no locate requirement. A short sale increases cash (`cash -= negative_qty * price` = cash inflow), so the cash-negative guard does not limit short exposure. Strategy authors should be aware that unlimited shorting produces unrealistic results. Margin/borrow mechanics are a v2 concern.
 - Cash cannot go negative. `execute_trade` raises if `cash - qty * price < 0`. The caller (broker / action parser) is responsible for sequencing sells before buys and skipping orders that would overdraw.
 
@@ -311,7 +317,7 @@ class Backtest:
                        orders against the current bar's close price.
 
         3. ADVANCE   — data_handler.advance_time(). The time pointer moves
-                       from T to T+1. If done, skip to step 6 (terminal).
+                       from T to T+1. If done, go to terminal path (below).
 
         4. PHASE 2   — broker.process_queue(phase=2). Executes next_open
                        orders against T+1's open price. Evaluates and
@@ -327,9 +333,10 @@ class Backtest:
             report them in info. Return state at T with done=True.
         """
 
-    def reset(self) -> dict:
-        """Reset all components. Return the initial state (at the first valid
-        step, after the lookback window is available)."""
+    def reset(self) -> tuple[dict, bool, dict]:
+        """Reset all components. Return (state, done, info) at the first valid
+        step (after the lookback window is available), with done=False and
+        info={}. Same return shape as step() for a uniform caller loop."""
 
     def _parse_action(self, action: dict) -> list[dict]:
         """Translate action dict into a list of normalized order dicts.
@@ -428,7 +435,7 @@ These are non-negotiable invariants, analogous to analog_mc's C1–C6.
 
 **B1: No look-ahead in state.** `get_window()` returns data up to and including `current_step`. No future data is ever included in the state. Enforced by integer indexing on the master timeline.
 
-**B2: Two-phase execution eliminates look-ahead in fills.** `current_close` orders fill before time advances (the caller has already seen the price). `next_open` and `limit` orders fill after time advances (the caller has not seen the execution price when it submitted the order). No execution mode allows the caller to trade at a price it hasn't yet observed in state and have that fill reflected in the same state observation.
+**B2: Phase-ordered execution.** `current_close` orders fill in Phase 1 (before `advance_time()`); `next_open` and `limit` orders fill in Phase 2 (after `advance_time()`). `current_close` fill prices come from bar T (the bar the caller observed before calling `step()`). `next_open` and `limit` fill prices come from bar T+1 (which the caller had not seen when it submitted the action). The state returned from `step()` reflects T+1 data. **Testable assertion:** for every fill in `info`, verify that `current_close` fills use T's close price and `next_open` fills use T+1's open price.
 
 **B3: Causal forward-fill.** Lower-frequency data is forward-filled from past observations only. No backward-fill, no interpolation, no centering. At step T, macro data reflects the most recent observation at or before T.
 
