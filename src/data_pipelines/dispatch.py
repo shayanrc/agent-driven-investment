@@ -202,6 +202,7 @@ def fetch_with_meta(
                         raw_path=raw_path,
                         df=norm_df,
                         time_column=domain.time_column,
+                        identifier=identifier,
                     )
                     cached_df, cached_meta = merge_cache(
                         cached_df, norm_df, cached_meta, success_source, domain
@@ -293,7 +294,16 @@ def _slice(df: pd.DataFrame | None, start: date, end: date, tcol: str) -> pd.Dat
 
 def _build_source_meta(
     *, adapter, raw_path: Path, df: pd.DataFrame, time_column: str,
+    identifier: str = "<unknown>",
 ) -> dict[str, Any]:
+    # A provider that returned 200 OK with zero post-normalize rows reaches
+    # here as an empty DataFrame (schema.validate accepts empty frames whose
+    # columns/dtypes match). Without this guard, ``df[time_column].iloc[0]``
+    # raises a bare IndexError that escapes the dispatch chain-fallthrough
+    # (which only catches typed ProviderError subclasses). Convert to
+    # EmptyPayload so the existing soft-fail / hard-fail logic handles it.
+    if len(df) == 0:
+        raise EmptyPayload(adapter.name, identifier)
     extra = dict(getattr(adapter, "extra_meta", {}) or {})
     return {
         "provider": adapter.name,
