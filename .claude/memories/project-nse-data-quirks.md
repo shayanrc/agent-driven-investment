@@ -41,7 +41,7 @@ The scratch copy is writable, so new fetches (from universe self-service) write 
 With `nselib` blocked by single-day rejection errors, `data_pipelines.fetch()` on a new NSE ticker takes ~30–80 s per ticker (retry storms on holiday-adjacent dates + delisting placeholders + Yahoo "possibly delisted" warnings). For a 150-stock universe, that's ~2–3 hours sequential. Use per-ticker 120 s hard timeout (mirror `scripts/seed_nifty50_deep.sh` from PR #6).
 
 **5. Shallow-cache silent drop trap.**
-Many tickers in the cache from earlier `data-seed-nifty-total` work were seeded with `start=2019-01-01` (~1500–1588 rows). The default `min_rows=1600` gate in `gbdt.data.load_panel` silently drops them. For wide-universe experiments where many tickers fall in this gap (Exp 2 dropped 53/100 silently), the universe self-service phase should also call `data_pipelines.fetch(..., back_extend=True, start='2015-01-01')` on cached-but-short tickers to push them above the bar.
+Many tickers in the cache from earlier `data-seed-nifty-total` work were seeded with `start=2019-01-01` (~1500–1588 rows). The default `min_rows=1600` gate in `gbdt.data.load_panel` silently drops them. For wide-universe experiments where many tickers fall in this gap (Exp 2 dropped 53/100 silently), the universe self-service phase should also call `data_pipelines.fetch(..., back_extend=True, start='2015-01-01')` on cached-but-short tickers to push them above the bar. The `/gbdt-experiment` skill encodes this as policy: `back_extend=True` is the unconditional default on every per-ticker fetch during Pre-flight § 3 (the library `data_pipelines.fetch()` keeps `back_extend=False` to stay surprise-free for non-gbdt callers — the default flip lives in the skill, not the library).
 
 **How to apply:**
 
