@@ -44,13 +44,17 @@ The `DataHandler` establishes a single integer-indexed master timeline driven by
 
 **Rationale:** At every step, the caller must receive a valid, non-null state matrix. Forward-filling is the correct causal operation for slow-updating data: quarterly GDP is genuinely "still the last reported value" until the next release. The master timeline is the single source of truth for "what step are we on?" — all components reference it rather than maintaining independent clocks.
 
+**Master timeline construction:** The highest-frequency feed is determined by the feed with the greatest number of unique dates. The master timeline is the **union** of all dates across all assets within that feed. Assets that start mid-series (e.g., a newly-IPO'd stock) have NaN values before their first observation; these are **not** forward-filled (there is no prior value to fill from). Instead, the asset is marked as untradeable on those dates — orders for it are rejected by the broker, and its columns in the state window are NaN. The caller is responsible for handling NaN in the state (e.g., by not trading assets that haven't started yet). Assets that end mid-series (e.g., delisted) are forward-filled with their last known values and marked as untradeable after their final date.
+
 ---
 
 ## 3. Data Schemas
 
 ### 3.1 Action Schema (input to `step()`)
 
-The `step()` function accepts an action dictionary. Two action types are supported: `"order"` (absolute quantities) and `"weight"` (target portfolio percentages). The engine translates weight-based actions into order-based actions internally before submitting to the broker.
+The `step()` function accepts an action dictionary or `None`. Two action types are supported: `"order"` (absolute quantities) and `"weight"` (target portfolio percentages). The engine translates weight-based actions into order-based actions internally before submitting to the broker.
+
+**No-op (hold):** passing `action=None` advances time without placing any orders. The engine skips PARSE and proceeds directly to the execution phases (which have nothing to process). This is the canonical way to express "do nothing this bar."
 
 **Order-based action:**
 
@@ -79,13 +83,13 @@ The `step()` function accepts an action dictionary. Two action types are support
 }
 ```
 
-Weight-based actions specify target portfolio allocation percentages (summing to at most 1.0; the remainder stays in cash). The engine calculates the required trades based on current portfolio equity and positions, snaps quantities to each instrument's lot size, then submits the resulting orders to the broker. Sells are sequenced before buys to free up cash; if sell proceeds are insufficient to fund all buys, the engine fills what it can and reports the shortfall in `info`. All orders generated from a weight-based action share the same `execution` timing.
+Weight-based actions specify target portfolio allocation percentages (summing to at most 1.0; the remainder stays in cash). The engine calculates the required trades based on **pre-fill** portfolio equity and positions (the snapshot before any orders execute this step), snaps quantities to each instrument's lot size, then submits the resulting orders to the broker. Because Phase 1 fills may change equity before Phase 2 buys execute, the realized allocation may deviate slightly from the target; this drift is accepted and reported in `info`. Sells are sequenced before buys to free up cash; if sell proceeds are insufficient to fund all buys, the engine fills what it can and reports the shortfall in `info`. All orders generated from a weight-based action share the same `execution` timing.
 
 **Execution modes:**
 
 | Mode | Fill price | When processed |
 |------|-----------|----------------|
-| `current_close` | Close price at time T (the step when the order is submitted) | Phase 1 (before time advances) |
+| `current_close` | Close price at time T (the step when the order is submitted). **Assumption:** the state represents end-of-bar data, so the caller has already observed this price. Valid for daily bars where the state is the completed bar. If the engine is later extended to intrabar resolution, this mode must be re-evaluated. | Phase 1 (before time advances) |
 | `next_open` | Open price at time T+1 | Phase 2 (after time advances) |
 | `limit` | The `limit_price` specified on the order | Phase 2; filled only if T+1 bar's low ≤ limit_price (buy) or high ≥ limit_price (sell). Unfilled limits expire after one bar (good-for-day semantics). |
 
@@ -150,10 +154,13 @@ class DataHandler:
         self.max_steps = ...          # length of master timeline
 
     def _align_and_fill(self, data_feeds: dict) -> dict:
-        """Build the master timeline from the highest-frequency feed's date index.
-        Reindex all feeds to the master timeline. Forward-fill lower-frequency
-        feeds. Raise on any remaining NaNs after fill (indicates data gap, not
-        frequency mismatch)."""
+        """Build the master timeline from the highest-frequency feed (the feed
+        with the most unique dates). The timeline is the union of dates across
+        all assets in that feed. Reindex all feeds to the master timeline.
+        Forward-fill lower-frequency feeds. Assets starting mid-series have
+        NaN before their first observation (not forward-filled). Assets ending
+        mid-series are forward-filled with last known values. Raise on NaNs
+        that indicate a data gap within an asset's active range."""
 
     def advance_time(self) -> bool:
         """Increment current_step by 1. Return True if done (past max_steps)."""
@@ -163,8 +170,10 @@ class DataHandler:
         fill-price lookup."""
 
     def get_window(self) -> dict:
-        """Return the data slice [current_step - lookback, current_step] inclusive.
-        This is the market_data portion of the state."""
+        """Return the data slice [current_step - lookback + 1, current_step] inclusive.
+        This is exactly `lookback` bars ending at the current step.
+        Equivalently: data[current_step - lookback + 1 : current_step + 1] in
+        Python half-open indexing. This is the market_data portion of the state."""
 
     def get_price(self, asset: str, field: str = "close") -> float:
         """Convenience: return a single price field for one asset at current_step."""
@@ -175,7 +184,7 @@ class DataHandler:
 
 **Design notes:**
 
-- The master timeline is derived from the union of all dates in the highest-frequency feed. No synthetic dates are inserted.
+- The master timeline is derived from the union of all dates across all assets in the highest-frequency feed (determined by greatest count of unique dates). No synthetic dates are inserted. Assets that start or end mid-series are handled per D3 (NaN before first observation, forward-fill after last).
 - `current_step` starts at `lookback` (not 0) so that `get_window()` always returns a full-length array from the first call.
 - v1 scope: all feeds share the same trading calendar. Cross-calendar alignment (e.g., US equities vs EU macro with different holidays) is deferred.
 
@@ -211,8 +220,8 @@ class Portfolio:
 **Design notes:**
 
 - `qty` is float at the `Portfolio` level to keep the ledger simple. Lot-size enforcement happens upstream in `Backtest._parse_action()`, not inside the portfolio.
-- No commission or slippage model inside `Portfolio`. Commissions, if configured, are applied by the broker before calling `execute_trade` (the portfolio sees the effective price). This keeps the ledger simple and testable.
-- Short selling is supported: a negative position is a short. Margin requirements are out of scope for v1.
+- No commission or slippage model inside `Portfolio`. Commissions are handled entirely by the broker: before filling an order, the broker computes `total_cost = abs(qty) * price + commission` and checks that `total_cost <= portfolio.cash` (for buys). If the check passes, the broker calls `portfolio.execute_trade(asset, qty, price)` and then `portfolio.cash -= commission` as a separate deduction. The portfolio itself only sees the market price; the commission is a post-fill cash adjustment. This keeps the ledger simple and testable.
+- Short selling is supported: a negative position is a short. **v1 limitation:** shorts are unconstrained — no margin requirement, no borrow cost, no locate requirement. A short sale increases cash (`cash -= negative_qty * price` = cash inflow), so the cash-negative guard does not limit short exposure. Strategy authors should be aware that unlimited shorting produces unrealistic results. Margin/borrow mechanics are a v2 concern.
 - Cash cannot go negative. `execute_trade` raises if `cash - qty * price < 0`. The caller (broker / action parser) is responsible for sequencing sells before buys and skipping orders that would overdraw.
 
 ### 4.3 ExecutionBroker
@@ -276,7 +285,7 @@ class Backtest:
         data_feeds: dict,
         initial_cash: float = 100_000.0,
         lookback: int = 20,
-        lot_sizes: dict[str, int | float] | None = None,
+        lot_sizes: dict[str, int] | None = None,
         default_lot_size: int = 1,
         commission_fn: Callable | None = None,
     ):
@@ -286,29 +295,36 @@ class Backtest:
         self.lot_sizes = lot_sizes or {}
         self.default_lot_size = default_lot_size
 
-    def step(self, action: dict) -> tuple[dict, bool, dict]:
+    def step(self, action: dict | None) -> tuple[dict, bool, dict]:
         """The core progression lifecycle.
 
-        Execution order (5 phases, strictly sequential):
+        Execution order (6 steps, strictly sequential):
 
-        1. PARSE     — Convert action to order list. Weight-based actions are
-                       translated to absolute orders using current portfolio
-                       equity and positions, with quantities snapped to each
-                       instrument's lot size. Sells are sequenced before buys.
-                       Validated orders are submitted to the broker.
+        1. PARSE     — Convert action to order list (or no-op if action is
+                       None). Weight-based actions are translated to absolute
+                       orders using current (pre-fill) portfolio equity and
+                       positions, with quantities snapped to each instrument's
+                       lot size. Sells are sequenced before buys. Validated
+                       orders are submitted to the broker.
 
         2. PHASE 1   — broker.process_queue(phase=1). Executes current_close
                        orders against the current bar's close price.
 
         3. ADVANCE   — data_handler.advance_time(). The time pointer moves
-                       from T to T+1. If done, skip to step 5.
+                       from T to T+1. If done, skip to step 6 (terminal).
 
         4. PHASE 2   — broker.process_queue(phase=2). Executes next_open
                        orders against T+1's open price. Evaluates and
                        fills/expires limit orders against T+1's bar.
-                       portfolio.update_valuations() using T+1's close prices.
 
-        5. RETURN     — Assemble and return (state, done, info).
+        5. MARK      — portfolio.update_valuations() using T+1's close prices.
+
+        6. RETURN    — Assemble and return (state, done, info).
+
+        Terminal step (done=True at step 3):
+            Skip steps 4–5. Mark portfolio to T's close prices (last
+            available). Cancel all pending orders (next_open, limit) and
+            report them in info. Return state at T with done=True.
         """
 
     def reset(self) -> dict:
@@ -323,12 +339,12 @@ class Backtest:
         Sells are placed before buys in the returned list."""
 
     def _snap_to_lot(self, asset: str, qty: float) -> float:
-        """Round qty to the nearest valid lot for the given asset.
+        """Truncate qty to the nearest valid lot toward zero.
         Lot size lookup: self.lot_sizes.get(asset, self.default_lot_size).
         - lot_size == 0: no rounding (fractional).
-        - lot_size == 1: round to nearest integer (whole shares).
-        - lot_size == N: round down to nearest multiple of N (round lots).
-        Always rounds toward zero (truncates) to avoid overshooting cash."""
+        - lot_size == 1: truncate toward zero — int(qty). (2.7 → 2, -2.7 → -2).
+        - lot_size == N: truncate toward zero to nearest multiple of N.
+            floor(abs(qty) / N) * N * sign(qty)."""
 ```
 
 ### 4.5 Lot Size Specification
@@ -337,9 +353,9 @@ Per-instrument lot sizes control the minimum tradeable quantity. Configured via 
 
 | `lot_size` value | Meaning | Rounding behavior |
 |------------------|---------|-------------------|
-| `1` (default) | Whole shares | `qty` rounded to nearest integer, toward zero |
+| `1` (default) | Whole shares | Truncate toward zero: `int(qty)`. `2.7 → 2`, `-2.7 → -2` |
 | `0` | Fractional | No rounding; `qty` used as-is |
-| `N` (any positive int) | Round lots of N | `qty` rounded down to nearest multiple of N |
+| `N` (any positive int) | Round lots of N | Truncate toward zero to nearest multiple of N: `floor(abs(qty)/N)*N*sign(qty)` |
 
 Examples:
 - `lot_sizes={"BTC-USD": 0, "RELIANCE.NS": 1}` — BTC trades fractionally, RELIANCE trades in whole shares.
@@ -366,14 +382,20 @@ Caller calls step(action)           ┃
   2. PHASE 1: fill current_close    ┃
      orders at T's close price      ┃
                                     ┃
-  ─── time pointer advances ────────╋───
+  3. ADVANCE time pointer ──────────╋───
+     (if done → terminal path)      ┃
                                     ┃
-  3. PHASE 2: fill next_open        ┃
+  4. PHASE 2: fill next_open        ┃
      orders at T+1's open price;    ┃
      evaluate limit orders          ┃
      against T+1's bar              ┃
-  4. MARK portfolio to T+1 close    ┃
-  5. Return (state_T+1, done, info) ┃
+  5. MARK portfolio to T+1 close    ┃
+  6. Return (state_T+1, done, info) ┃
+
+Terminal path (done=True at step 3):
+  Skip 4–5. Mark to T's close.
+  Cancel pending orders → info.
+  Return (state_T, done=True, info).
 ```
 
 **Why this order matters:**
@@ -433,7 +455,7 @@ src/backtesting/
 
 docs/backtesting/
 ├── spec.md              # this document
-└── goal.md              # what the module optimizes for (to be written)
+└── goal.md              # what the module optimizes for
 
 tests/backtesting/
 ├── test_data_handler.py
