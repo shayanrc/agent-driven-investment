@@ -5,5 +5,19 @@ design contract. The public entry point is :class:`backtesting.Backtest`.
 """
 
 from backtesting.backtest import Backtest
+from backtesting.strategy import (
+    FixedWeightStrategy,
+    HoldStrategy,
+    ScriptedActionStrategy,
+    Strategy,
+    run_strategy,
+)
 
-__all__ = ["Backtest"]
+__all__ = [
+    "Backtest",
+    "Strategy",
+    "HoldStrategy",
+    "FixedWeightStrategy",
+    "ScriptedActionStrategy",
+    "run_strategy",
+]
