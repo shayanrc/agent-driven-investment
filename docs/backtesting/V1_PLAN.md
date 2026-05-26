@@ -3,7 +3,15 @@
 ## Build status
 
 - **v1.0 spec-lock:** `docs/backtesting/{goal,spec}.md` merged via PR #12 (2026-05-26). Subsequently amended (this PR) to lock the engine-level `fill_mode`, drop limit orders + per-order execution overrides, defer multi-frequency support to v1.1, redefine `advance_time()` as no-mutate-when-done, and introduce a configurable `gap_policy`. Locks the step-loop API, the single-phase execution lifecycle, the single-frequency timeline, the lot-size contract, the asset-class-agnostic stance, and the explicit non-goals (no margin, no rewards, no Gym subclass, no live broker).
-- **v1.0 implementation plan:** this PR. Translates the (amended) spec into a concrete 8-stage build order with critical-correctness constraints, cross-module integration points, resolved questions, and test strategy. Stages 1–8 below are pending implementation.
+- **v1.0 implementation plan:** Translates the (amended) spec into a concrete 8-stage build order with critical-correctness constraints, cross-module integration points, resolved questions, and test strategy. **All 8 stages implemented**:
+  - Stage 1 — `Portfolio` ✅
+  - Stage 2 — `DataHandler` + timeline correctness harness ✅
+  - Stage 3 — `ExecutionBroker` ✅
+  - Stage 4 — `_parse_action` + `_snap_to_lot` + action-validation utility ✅
+  - Stage 5 — `Backtest` orchestrator ✅
+  - Stage 6 — Strategy protocol + run-loop helper ✅ *(scope re-shaped from the original Stage 6 `from_identifiers` convenience — the data-fetch hook is parked in `V1.1_TBD.md`)*
+  - Stage 7 — Result aggregation + info-schema lock validator ✅
+  - Stage 8 — CLI entry point + smoketest config ✅ *(scope re-shaped from the original Stage 8 example-against-real-cache — pure synthetic smoketest only; live-cache example parked in `V1.1_TBD.md`)*
 
 For *what success looks like* (the look-ahead-bias structural-elimination rule, B1–B7, scope limits), see [`goal.md`](goal.md). For the architectural decisions (D1 step-loop, D2 engine-level `fill_mode`, D3 single-frequency timeline with activity masks), the action / state schemas, the component APIs, and the lifecycle walkthrough, see [`spec.md`](spec.md). Parked v1.1 follow-ups are in [`V1.1_TBD.md`](V1.1_TBD.md).
 
