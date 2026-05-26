@@ -25,6 +25,7 @@ import pandas as pd
 import yaml
 
 from gbdt.diagnostics import DiagnosticBundle
+from gbdt import topk_diagnostics
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +266,9 @@ def render_report(experiment_dir: Path) -> Path:
         )
     lines.append("")
 
+    # 6b. Top-K / per-ticker / per-quarter / pred-range diagnostics
+    _render_segment_diagnostics(lines, metrics)
+
     # 7. Verdict
     lines.append("## Per-experiment verdict (algorithmic readout)")
     lines.append("")
@@ -282,6 +286,202 @@ def render_report(experiment_dir: Path) -> Path:
     out = experiment_dir / "report.md"
     out.write_text("\n".join(lines))
     return out
+
+
+def compute_segment_diagnostics(
+    predictions: dict[str, pd.DataFrame],
+    segments: tuple[str, ...] = ("eval", "test"),
+    k_values: tuple[int, ...] = (1, 5, 10),
+    per_ticker_k: int = 5,
+    per_quarter_k: int = 5,
+    low_separation_threshold: float = 0.05,
+) -> dict[str, dict]:
+    """Compute the four post-prediction diagnostics for each requested
+    segment. Returns ``{segment_name: bundle}`` where ``bundle`` is the
+    dict produced by ``topk_diagnostics.compute_all``. Segments missing
+    from ``predictions`` (or empty) yield an empty-shaped bundle.
+
+    This is the surface the runner consumes to populate ``metrics.json``.
+    """
+    out: dict[str, dict] = {}
+    for seg in segments:
+        df = predictions.get(seg) if predictions else None
+        out[seg] = topk_diagnostics.compute_all(
+            df,
+            k_values=k_values,
+            per_ticker_k=per_ticker_k,
+            per_quarter_k=per_quarter_k,
+            low_separation_threshold=low_separation_threshold,
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Segment-diagnostic rendering (top-K / per-ticker / per-quarter / range)
+# ---------------------------------------------------------------------------
+
+
+def _fmt(x, spec=".4f", na="n/a"):
+    if x is None:
+        return na
+    try:
+        return format(x, spec)
+    except (TypeError, ValueError):
+        return na
+
+
+def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
+    """Append the four new diagnostic sections to ``lines``. No-ops the
+    section if ``segment_diagnostics`` is absent or empty."""
+    seg_diag = metrics.get("segment_diagnostics") or {}
+    if not seg_diag:
+        return
+
+    # --- Top-K per-day + global ---
+    lines.append("## Top-K precision (per-day + global)")
+    lines.append("")
+    lines.append(
+        "Per-day: pick the top-K rows by ``p_calibrated`` each date, pool "
+        "across days. Global: top-K by score across the whole segment. "
+        "``base_rate`` = unweighted segment positive prevalence. "
+        "``lift = P@k / base_rate``."
+    )
+    lines.append("")
+    for seg in ("eval", "test"):
+        block = seg_diag.get(seg, {})
+        tk = block.get("top_k_metrics") or {}
+        n_rows = tk.get("n_rows", 0)
+        base = tk.get("base_rate")
+        lines.append(f"### {seg} — n_rows={n_rows}, base_rate={_fmt(base, '.4f')}")
+        lines.append("")
+        if not n_rows:
+            lines.append("_segment empty — no picks._")
+            lines.append("")
+            continue
+        per_day = tk.get("per_day", {})
+        lines.append("Per-day:")
+        lines.append("")
+        lines.append("| k | P@k | lift | n_picks | n_positives | days_full_k / days_total |")
+        lines.append("|---|---|---|---|---|---|")
+        for k, b in sorted(per_day.items(), key=lambda kv: int(kv[0])):
+            lines.append(
+                f"| {k} | {_fmt(b.get('p_at_k'))} | "
+                f"{_fmt(b.get('lift'), '.3f')} | {b.get('n_picks_total')} | "
+                f"{b.get('n_positives_in_picks')} | "
+                f"{b.get('n_days_full_k')} / {b.get('n_days_total')} |"
+            )
+        lines.append("")
+        glb = tk.get("global", {})
+        lines.append("Global (top-K across entire segment):")
+        lines.append("")
+        lines.append("| k | P@k | lift | n_picks | n_positives |")
+        lines.append("|---|---|---|---|---|")
+        for k, b in sorted(glb.items(), key=lambda kv: int(kv[0])):
+            lines.append(
+                f"| {k} | {_fmt(b.get('p_at_k'))} | "
+                f"{_fmt(b.get('lift'), '.3f')} | {b.get('n_picks')} | "
+                f"{b.get('n_positives_in_picks')} |"
+            )
+        lines.append("")
+
+    # --- Per-ticker hit-rate when picked ---
+    lines.append("## Per-ticker hit-rate when picked (k=5)")
+    lines.append("")
+    lines.append(
+        "Aggregates per-day top-5 picks by ticker. Top 10 most-picked + "
+        "bottom 5 most-anti-predictive (when picked at least once) shown; "
+        "the full table is in ``metrics.json::segment_diagnostics."
+        "<seg>.per_ticker_hit_rate.rows``."
+    )
+    lines.append("")
+    for seg in ("eval", "test"):
+        block = (seg_diag.get(seg, {}) or {}).get("per_ticker_hit_rate") or {}
+        rows = block.get("rows") or []
+        lines.append(f"### {seg}")
+        lines.append("")
+        if not rows:
+            lines.append("_no picks._")
+            lines.append("")
+            continue
+        lines.append("Top-10 by n_picks:")
+        lines.append("")
+        lines.append("| ticker | n_picks | n_positives | hit_rate |")
+        lines.append("|---|---|---|---|")
+        for r in rows[:10]:
+            lines.append(
+                f"| {r['ticker']} | {r['n_picks']} | "
+                f"{r['n_positives']} | {_fmt(r['hit_rate'])} |"
+            )
+        lines.append("")
+        # Bottom-5 by hit_rate among tickers with the most picks — to
+        # surface "model picks them often and they're systematically
+        # wrong". Restrict to tickers with at least a few picks.
+        eligible = [r for r in rows if r["n_picks"] >= 5]
+        if eligible:
+            worst = sorted(
+                eligible, key=lambda r: (r["hit_rate"], -r["n_picks"], r["ticker"])
+            )[:5]
+            lines.append("Bottom-5 by hit_rate (n_picks ≥ 5):")
+            lines.append("")
+            lines.append("| ticker | n_picks | n_positives | hit_rate |")
+            lines.append("|---|---|---|---|")
+            for r in worst:
+                lines.append(
+                    f"| {r['ticker']} | {r['n_picks']} | "
+                    f"{r['n_positives']} | {_fmt(r['hit_rate'])} |"
+                )
+            lines.append("")
+
+    # --- Per-quarter stability of P@5 ---
+    lines.append("## Per-quarter P@5 stability")
+    lines.append("")
+    lines.append(
+        "P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide "
+        "positive prevalence (constant across rows); regime-dependent "
+        "collapse shows as a quarter where ``lift`` falls toward 1.0 or "
+        "below."
+    )
+    lines.append("")
+    for seg in ("eval", "test"):
+        block = (seg_diag.get(seg, {}) or {}).get("per_quarter_p_k") or {}
+        rows = block.get("rows") or []
+        lines.append(f"### {seg}")
+        lines.append("")
+        if not rows:
+            lines.append("_no picks._")
+            lines.append("")
+            continue
+        lines.append("| quarter | n_picks | n_positives | P@5 | base_rate | lift |")
+        lines.append("|---|---|---|---|---|---|")
+        for r in rows:
+            lines.append(
+                f"| {r['quarter']} | {r['n_picks']} | {r['n_positives']} | "
+                f"{_fmt(r['p_at_k'])} | {_fmt(r['base_rate'])} | "
+                f"{_fmt(r['lift'], '.3f')} |"
+            )
+        lines.append("")
+
+    # --- Prediction range ---
+    lines.append("## Prediction-range diagnostics")
+    lines.append("")
+    lines.append(
+        "Distribution of ``p_calibrated`` per segment. "
+        "``flag_low_separation = true`` when ``std < "
+        "low_separation_threshold`` — a sign the model's predictions "
+        "cluster so tightly that ranking is noise."
+    )
+    lines.append("")
+    lines.append("| segment | n_rows | min | max | mean | std | flag_low_separation |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for seg in ("eval", "test"):
+        block = (seg_diag.get(seg, {}) or {}).get("prediction_range") or {}
+        lines.append(
+            f"| {seg} | {block.get('n_rows', 0)} | "
+            f"{_fmt(block.get('min'))} | {_fmt(block.get('max'))} | "
+            f"{_fmt(block.get('mean'))} | {_fmt(block.get('std'))} | "
+            f"`{block.get('flag_low_separation', False)}` |"
+        )
+    lines.append("")
 
 
 def _algorithmic_verdict(metrics: dict) -> str:
@@ -308,4 +508,4 @@ def _algorithmic_verdict(metrics: dict) -> str:
     return " ".join(parts)
 
 
-__all__ = ["emit_figures", "render_report"]
+__all__ = ["emit_figures", "render_report", "compute_segment_diagnostics"]
