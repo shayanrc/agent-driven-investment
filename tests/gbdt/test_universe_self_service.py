@@ -20,16 +20,19 @@ def test_register_then_resolve(tmp_path):
     assert out == tickers
 
 
-def test_self_service_universe_defaults_metadata(tmp_path):
+def test_self_service_universe_without_default_block_hard_fails(tmp_path):
     """A universe registered on first use that has no default.yaml entry
-    must still resolve a sensible metadata block (NSE defaults).
+    must hard-fail on ``universe_metadata`` — the old silent NIFTY-default
+    fallback masked the exp-2 benchmark-misalignment bug (see PR #100). The
+    pre-flight orchestrator in ``.claude/skills/gbdt-experiment/SKILL.md``
+    is responsible for appending the ``universes::<name>`` block before the
+    runner consumes the spec.
     """
     gbdt_data.register_universe(
         "no_default_entry", ["NSE:RELIANCE"], repo_root=tmp_path,
     )
-    meta = gbdt_data.universe_metadata("no_default_entry", repo_root=tmp_path)
-    assert meta["annualization_factor"] == 250
-    assert meta["index_ticker"] == "NIFTY:50"
+    with pytest.raises(KeyError, match="no_default_entry"):
+        gbdt_data.universe_metadata("no_default_entry", repo_root=tmp_path)
 
 
 def test_self_service_overwrites_idempotently(tmp_path):

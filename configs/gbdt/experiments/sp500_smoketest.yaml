@@ -1,0 +1,20 @@
+# SP500 universe smoketest — PR #100 (gbdt-runner-fix).
+#
+# Purpose: prove the runner path works end-to-end for a US universe
+# (ticker_prefix=null, mixed NYSE/NASDAQ constituents, INDEX:^SPX
+# benchmark from us_equities cache). This is a SMOKETEST, not a
+# production cell: we want to confirm Stage 1 (panel load) and Stage 2
+# (feature build) succeed against US data — not to ship calibration
+# metrics.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 10
+  horizon_days: 20
+  max_drawdown: 0.05
+
+# date_range omitted - take max cached range per ticker.
+# split, features, backend all default to configs/gbdt/default.yaml.

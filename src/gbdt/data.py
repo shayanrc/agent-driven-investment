@@ -102,6 +102,14 @@ class UniversePanel:
 
 
 def _universe_yaml_path(name: str, repo_root: Path | None = None) -> Path:
+    """Default on-disk path for a universe YAML.
+
+    Used by :func:`register_universe` (write side) and as a *fallback only*
+    when the gbdt default.yaml's ``universes::<name>::source`` is absent.
+    Read-side lookups should go through :func:`universe_metadata` and consult
+    the ``source`` key — US universes live under ``us_equities/``, not
+    ``nse_equities/``.
+    """
     base = Path(repo_root) if repo_root is not None else Path.cwd()
     return base / _DEFAULT_UNIVERSE_DIR / f"universe_{name}.yaml"
 
@@ -141,6 +149,29 @@ def register_universe(
     return path
 
 
+def _resolve_universe_yaml_path(
+    name: str, *, repo_root: Path | None = None
+) -> Path:
+    """Locate the universe YAML for ``name``.
+
+    Resolution order:
+    1. If the gbdt ``universes::<name>::source`` is set, treat it as
+       repo-relative and use it. This is how US universes (which live under
+       ``configs/data_pipelines/domains/us_equities/``) resolve.
+    2. Otherwise fall back to the NSE convention in ``_DEFAULT_UNIVERSE_DIR``
+       (so a freshly-registered NSE basket works before a ``universes::``
+       block is added).
+    """
+    base = Path(repo_root) if repo_root is not None else Path.cwd()
+    cfg = _read_gbdt_default(repo_root)
+    block = (cfg.get("universes") or {}).get(name)
+    if block is not None:
+        source = block.get("source")
+        if source:
+            return base / source
+    return _universe_yaml_path(name, repo_root)
+
+
 def resolve_universe(
     name: str, *, repo_root: Path | None = None
 ) -> list[str]:
@@ -148,7 +179,7 @@ def resolve_universe(
 
     Raises ``FileNotFoundError`` with a hint when the preset isn't registered.
     """
-    path = _universe_yaml_path(name, repo_root)
+    path = _resolve_universe_yaml_path(name, repo_root=repo_root)
     if not path.exists():
         raise FileNotFoundError(
             f"universe {name!r} is not registered "
@@ -176,19 +207,37 @@ def universe_metadata(
 ) -> dict:
     """Return the ``universes::<name>`` block from gbdt default.yaml.
 
-    Falls back to NIFTY-style defaults if the gbdt config doesn't pre-register
-    the preset (typical for self-service universes added on first use).
+    Hard-fails when no block exists — the silent fallback to NIFTY-style
+    defaults was the cause of the exp-2 benchmark-misalignment bug (NIFTY:50
+    used for nifty100 because nifty100 wasn't registered). The pre-flight
+    flow in ``.claude/skills/gbdt-experiment/SKILL.md`` § "Universe
+    self-service" is responsible for registering the block before the runner
+    sees the spec.
+
+    Schema (all keys required except ``ticker_prefix``):
+
+    - ``source``: repo-relative path to the universe YAML (ticker list).
+    - ``index_ticker``: benchmark identifier in the data_pipelines cache
+      (e.g. ``"NIFTY:100"``, ``"INDEX:^SPX"``). Drives all F1/F5/F9/F9b
+      macro features.
+    - ``annualization_factor``: trading days per year (``250`` for NSE,
+      ``252`` for US). Propagated into the feature builder.
+    - ``ticker_prefix`` (optional): when set (e.g. ``"NSE:"``), the
+      framework treats the constituent YAML as carrying *bare* symbols
+      that need prefixing. When omitted or null, the constituents are
+      assumed to be already fully-prefixed (e.g. ``"NASDAQ:AAPL"``,
+      ``"NYSE:JPM"`` for sp500 which spans exchanges).
     """
     cfg = _read_gbdt_default(repo_root)
     block = (cfg.get("universes") or {}).get(name)
-    if block is not None:
-        return block
-    return {
-        "source": str(_DEFAULT_UNIVERSE_DIR / f"universe_{name}.yaml"),
-        "index_ticker": "NIFTY:50",
-        "ticker_prefix": "NSE:",
-        "annualization_factor": 250,
-    }
+    if block is None:
+        raise KeyError(
+            f"Universe {name!r} referenced in spec but no "
+            f"'universes::{name}' block in configs/gbdt/default.yaml. "
+            f"Add one with index_ticker, ticker_prefix (or null), "
+            f"annualization_factor."
+        )
+    return block
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +361,10 @@ def _cache_read(
     just ``df`` (PR #8 review, Minor 4).
     """
     import sqlite3
-    if ticker.startswith(("NSE:", "BSE:", "INDEX:", "NIFTY:")):
+    # Route to per-domain table. NSE domain owns NSE:/BSE:/NIFTY:; us_equities
+    # domain owns NYSE:/NASDAQ:/INDEX: (the latter is for US benchmarks like
+    # INDEX:^SPX — NSE indices use the NIFTY: prefix, not INDEX:).
+    if ticker.startswith(("NSE:", "BSE:", "NIFTY:")):
         table = "nse_equities_data"
     else:
         table = "us_equities_data"
@@ -364,7 +416,8 @@ def _cache_last_date(ticker: str, *, repo_root: Path | None = None) -> str | Non
         db = Path(_data_root(repo_root)) / "processed.db"
         if not db.exists():
             return None
-        if ticker.startswith(("NSE:", "BSE:", "INDEX:", "NIFTY:")):
+        # See _cache_read for the domain ownership map; INDEX: is us_equities.
+        if ticker.startswith(("NSE:", "BSE:", "NIFTY:")):
             domain = "nse_equities"
         else:
             domain = "us_equities"
