@@ -1,7 +1,7 @@
 # SP500 universe smoketest — PR #100 (gbdt-runner-fix).
 #
 # Purpose: prove the runner path works end-to-end for a US universe
-# (ticker_prefix=null, mixed NYSE/NASDAQ constituents, INDEX:^SPX
+# (mixed NYSE/NASDAQ constituents stored fully-prefixed, INDEX:^SPX
 # benchmark from us_equities cache). This is a SMOKETEST, not a
 # production cell: we want to confirm Stage 1 (panel load) and Stage 2
 # (feature build) succeed against US data — not to ship calibration

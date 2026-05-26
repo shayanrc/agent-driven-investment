@@ -387,12 +387,11 @@ The pre-registered `nifty50` block in `configs/gbdt/default.yaml::universes::nif
 universes:
   nifty50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
-    index_ticker: "INDEX:^NSEI"     # for F1, F5, F9, F9b families (uses ^NSEI history)
-    ticker_prefix: "NSE:"            # e.g. RELIANCE -> NSE:RELIANCE before data_pipelines.fetch()
+    index_ticker: "NIFTY:50"         # for F1, F5, F9, F9b families
     annualization_factor: 250        # √250 for vol families; differs from US's √252
 ```
 
-The loader resolves `source`, reads the ticker list, and prefixes each with `NSE:` (e.g. `RELIANCE` → `NSE:RELIANCE`) before calling `data_pipelines.fetch()` per ticker. `index_ticker` is fetched separately and joined into the panel for the index-relative feature families.
+The loader resolves `source`, reads the (fully-prefixed) ticker list, and calls `data_pipelines.fetch()` per ticker. `index_ticker` is fetched separately and joined into the panel for the index-relative feature families. See `docs/data_pipelines/universe_yaml_spec.md` for the full schema (both the standalone YAML and the registry-block contract).
 
 **Inline tickers (ad-hoc universes).** A spec can declare a one-off universe inline by giving the universe a fresh name and including a top-level `tickers:` list; the agent's pre-flight registers the inline universe before falling through to the cache check. Example:
 

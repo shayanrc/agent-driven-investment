@@ -10,9 +10,9 @@ instead of NIFTY:100, because nifty100 wasn't pre-registered in
 2. ``configs/gbdt/default.yaml`` ships the 6 missing universes — 3 NSE
    (nifty100, nifty_midcap_150, nifty500) + 3 US (sp500, nasdaq100,
    russell1000).
-3. ``ticker_prefix`` becomes optional — US universes set it to ``null``
-   because constituents span exchanges (``NASDAQ:AAPL``, ``NYSE:JPM``)
-   and are stored fully-prefixed in the universe YAML.
+3. Constituent YAMLs always store fully-prefixed tickers
+   (``NSE:RELIANCE``, ``NASDAQ:AAPL``, ``NYSE:JPM``); the registry
+   block carries no prefix metadata.
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ _KNOWN_UNIVERSES = _NSE_UNIVERSES + _US_UNIVERSES
 @pytest.mark.parametrize("name", _KNOWN_UNIVERSES)
 def test_each_known_universe_resolves(name):
     """All 7 universes have a complete metadata block with the right
-    annualization factor + ticker_prefix semantics for the asset class.
+    annualization factor + index_ticker shape for the asset class.
     """
     meta = gbdt_data.universe_metadata(name)
     assert isinstance(meta, dict), f"{name}: metadata must be a dict"
@@ -78,27 +78,19 @@ def test_each_known_universe_resolves(name):
 
     if name in _NSE_UNIVERSES:
         assert meta["annualization_factor"] == 250
-        assert meta["ticker_prefix"] == "NSE:", (
-            f"{name}: NSE universes use 'NSE:' prefix; got {meta.get('ticker_prefix')!r}"
-        )
         # All NSE indices are routed via NIFTY: in our cache, never INDEX:.
         assert meta["index_ticker"].startswith("NIFTY:"), (
             f"{name}: NSE index_ticker should use NIFTY: prefix"
         )
     else:  # US
         assert meta["annualization_factor"] == 252
-        assert meta.get("ticker_prefix") is None, (
-            f"{name}: US universes must have ticker_prefix=null because their "
-            f"constituents span NYSE+NASDAQ and are stored pre-prefixed; "
-            f"got {meta.get('ticker_prefix')!r}"
-        )
         assert meta["index_ticker"].startswith("INDEX:"), (
             f"{name}: US index_ticker should use INDEX: prefix"
         )
 
 
 # ---------------------------------------------------------------------------
-# 3. ticker_prefix=null path: pre-prefixed constituents load cleanly.
+# 3. Pre-prefixed constituents load cleanly (NASDAQ:/NYSE:/INDEX: routing).
 # ---------------------------------------------------------------------------
 
 
@@ -128,10 +120,10 @@ def _seed_us_stub_cache(tmp_path: Path, ticker: str, n_rows: int = 20) -> None:
         con.close()
 
 
-def test_null_ticker_prefix_handles_preprefixed_tickers(tmp_path, monkeypatch):
-    """A US-style universe (ticker_prefix=null) with constituents already
-    carrying their exchange prefix (NASDAQ:AAPL, NYSE:JPM) must load cleanly
-    via ``_cache_read`` — no double-prefixing, correct table routing.
+def test_preprefixed_us_tickers_route_to_us_cache(tmp_path, monkeypatch):
+    """A US-style universe with constituents already carrying their
+    exchange prefix (NASDAQ:AAPL, NYSE:JPM) must load cleanly via
+    ``_cache_read`` — correct table routing, no double-prefixing.
 
     Concretely: NYSE:/NASDAQ:/INDEX: tickers must route to the
     ``us_equities_data`` table, not the NSE one. The pre-fix routing
@@ -254,7 +246,6 @@ def test_self_service_requires_default_yaml_block(tmp_path):
             name: {
                 "source": f"configs/data_pipelines/domains/nse_equities/universe_{name}.yaml",
                 "index_ticker": "NIFTY:50",
-                "ticker_prefix": "NSE:",
                 "annualization_factor": 250,
             }
         }
