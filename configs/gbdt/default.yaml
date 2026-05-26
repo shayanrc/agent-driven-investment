@@ -53,6 +53,61 @@ universes:
     index_ticker: "NIFTY:500"
     ticker_prefix: "NSE:"
     annualization_factor: 250
+  nifty_next_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_next_50.yaml
+    index_ticker: "NIFTY:NEXT50"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty200:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty200.yaml
+    index_ticker: "NIFTY:200"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_midcap_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap_50.yaml
+    index_ticker: "NIFTY:MIDCAP50"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_midcap_100:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap_100.yaml
+    index_ticker: "NIFTY:MIDCAP100"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_smallcap_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_50.yaml
+    index_ticker: "NIFTY:SMALLCAP50"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_smallcap_100:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_100.yaml
+    index_ticker: "NIFTY:SMALLCAP100"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_smallcap_250:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_250.yaml
+    index_ticker: "NIFTY:SMALLCAP250"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_microcap_250:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_microcap_250.yaml
+    index_ticker: "NIFTY:MICROCAP250"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_midsmallcap_400:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_midsmallcap_400.yaml
+    index_ticker: "NIFTY:MIDSMALLCAP400"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_largemidcap_250:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_largemidcap_250.yaml
+    index_ticker: "NIFTY:LARGEMIDCAP250"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
+  nifty_total_market:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_total_market.yaml
+    index_ticker: "NIFTY:TOTALMARKET"
+    ticker_prefix: "NSE:"
+    annualization_factor: 250
   sp500:
     source: configs/data_pipelines/domains/us_equities/universe_sp500.yaml
     index_ticker: "INDEX:^SPX"
