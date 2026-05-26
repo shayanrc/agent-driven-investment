@@ -1,0 +1,23 @@
+# NIFTY PSU Bank — public-sector banking (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftypsubanklist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_psu_bank
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:PSUBANK"
+tickers:
+  - "NSE:BANKBARODA"
+  - "NSE:BANKINDIA"
+  - "NSE:CANBK"
+  - "NSE:CENTRALBK"
+  - "NSE:INDIANB"
+  - "NSE:IOB"
+  - "NSE:MAHABANK"
+  - "NSE:PNB"
+  - "NSE:PSB"
+  - "NSE:SBIN"
+  - "NSE:UCOBANK"
+  - "NSE:UNIONBANK"

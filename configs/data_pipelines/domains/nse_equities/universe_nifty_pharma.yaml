@@ -1,0 +1,31 @@
+# NIFTY Pharma — pharmaceutical sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftypharmalist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_pharma
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:PHARMA"
+tickers:
+  - "NSE:ABBOTINDIA"
+  - "NSE:AJANTPHARM"
+  - "NSE:ALKEM"
+  - "NSE:AUROPHARMA"
+  - "NSE:BIOCON"
+  - "NSE:CIPLA"
+  - "NSE:DIVISLAB"
+  - "NSE:DRREDDY"
+  - "NSE:GLAND"
+  - "NSE:GLENMARK"
+  - "NSE:IPCALAB"
+  - "NSE:JBCHEPHARM"
+  - "NSE:LAURUSLABS"
+  - "NSE:LUPIN"
+  - "NSE:MANKIND"
+  - "NSE:PPLPHARMA"
+  - "NSE:SUNPHARMA"
+  - "NSE:TORNTPHARM"
+  - "NSE:WOCKPHARMA"
+  - "NSE:ZYDUSLIFE"

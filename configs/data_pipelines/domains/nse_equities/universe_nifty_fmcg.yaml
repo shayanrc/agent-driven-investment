@@ -1,0 +1,26 @@
+# NIFTY FMCG — fast-moving consumer goods sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyfmcglist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_fmcg
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:FMCG"
+tickers:
+  - "NSE:BRITANNIA"
+  - "NSE:COLPAL"
+  - "NSE:DABUR"
+  - "NSE:EMAMILTD"
+  - "NSE:GODREJCP"
+  - "NSE:HINDUNILVR"
+  - "NSE:ITC"
+  - "NSE:MARICO"
+  - "NSE:NESTLEIND"
+  - "NSE:PATANJALI"
+  - "NSE:RADICO"
+  - "NSE:TATACONSUM"
+  - "NSE:UBL"
+  - "NSE:UNITDSPR"
+  - "NSE:VBL"

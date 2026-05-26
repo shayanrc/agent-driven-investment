@@ -1,0 +1,25 @@
+# NIFTY Bank — banking sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftybanklist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_bank
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:BANK"
+tickers:
+  - "NSE:AUBANK"
+  - "NSE:AXISBANK"
+  - "NSE:BANKBARODA"
+  - "NSE:CANBK"
+  - "NSE:FEDERALBNK"
+  - "NSE:HDFCBANK"
+  - "NSE:ICICIBANK"
+  - "NSE:IDFCFIRSTB"
+  - "NSE:INDUSINDBK"
+  - "NSE:KOTAKBANK"
+  - "NSE:PNB"
+  - "NSE:SBIN"
+  - "NSE:UNIONBANK"
+  - "NSE:YESBANK"

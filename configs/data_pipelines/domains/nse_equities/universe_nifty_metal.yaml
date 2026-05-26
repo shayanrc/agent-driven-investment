@@ -1,0 +1,26 @@
+# NIFTY Metal — metals/mining sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftymetallist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_metal
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:METAL"
+tickers:
+  - "NSE:ADANIENT"
+  - "NSE:APLAPOLLO"
+  - "NSE:HINDALCO"
+  - "NSE:HINDCOPPER"
+  - "NSE:HINDZINC"
+  - "NSE:JINDALSTEL"
+  - "NSE:JSL"
+  - "NSE:JSWSTEEL"
+  - "NSE:LLOYDSME"
+  - "NSE:NATIONALUM"
+  - "NSE:NMDC"
+  - "NSE:SAIL"
+  - "NSE:TATASTEEL"
+  - "NSE:VEDL"
+  - "NSE:WELCORP"

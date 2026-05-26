@@ -1,0 +1,31 @@
+# NIFTY Healthcare — healthcare/hospitals + pharma (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyhealthcarelist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_healthcare
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:HEALTHCARE"
+tickers:
+  - "NSE:ABBOTINDIA"
+  - "NSE:ALKEM"
+  - "NSE:APOLLOHOSP"
+  - "NSE:AUROPHARMA"
+  - "NSE:BIOCON"
+  - "NSE:CIPLA"
+  - "NSE:DIVISLAB"
+  - "NSE:DRREDDY"
+  - "NSE:FORTIS"
+  - "NSE:GLENMARK"
+  - "NSE:IPCALAB"
+  - "NSE:LAURUSLABS"
+  - "NSE:LUPIN"
+  - "NSE:MANKIND"
+  - "NSE:MAXHEALTH"
+  - "NSE:PPLPHARMA"
+  - "NSE:SUNPHARMA"
+  - "NSE:SYNGENE"
+  - "NSE:TORNTPHARM"
+  - "NSE:ZYDUSLIFE"

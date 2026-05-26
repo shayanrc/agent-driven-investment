@@ -88,6 +88,71 @@ universes:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_total_market.yaml
     index_ticker: "NIFTY:TOTALMARKET"
     annualization_factor: 250
+  # --- NSE Sectoral indices (15) -------------------------------------------
+  # Materialized by scripts/data_pipelines/sectoral_fetch.py (PR for task #97).
+  # Constituent CSVs sourced from archives.nseindia.com; benchmark index
+  # tickers track the symbols already cached under nse_equities.
+  nifty_bank:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_bank.yaml
+    index_ticker: "NIFTY:BANK"
+    annualization_factor: 250
+  nifty_it:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_it.yaml
+    index_ticker: "NIFTY:IT"
+    annualization_factor: 250
+  nifty_auto:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_auto.yaml
+    index_ticker: "NIFTY:AUTO"
+    annualization_factor: 250
+  nifty_pharma:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_pharma.yaml
+    index_ticker: "NIFTY:PHARMA"
+    annualization_factor: 250
+  nifty_fmcg:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_fmcg.yaml
+    index_ticker: "NIFTY:FMCG"
+    annualization_factor: 250
+  nifty_metal:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_metal.yaml
+    index_ticker: "NIFTY:METAL"
+    annualization_factor: 250
+  nifty_realty:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_realty.yaml
+    index_ticker: "NIFTY:REALTY"
+    annualization_factor: 250
+  nifty_energy:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_energy.yaml
+    index_ticker: "NIFTY:ENERGY"
+    annualization_factor: 250
+  nifty_media:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_media.yaml
+    index_ticker: "NIFTY:MEDIA"
+    annualization_factor: 250
+  nifty_psu_bank:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_psu_bank.yaml
+    index_ticker: "NIFTY:PSUBANK"
+    annualization_factor: 250
+  nifty_private_bank:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_private_bank.yaml
+    index_ticker: "NIFTY:PVTBANK"
+    annualization_factor: 250
+  nifty_financial_services:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_financial_services.yaml
+    index_ticker: "NIFTY:FINSVC"
+    annualization_factor: 250
+  nifty_healthcare:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_healthcare.yaml
+    index_ticker: "NIFTY:HEALTHCARE"
+    annualization_factor: 250
+  nifty_consumer_durables:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_consumer_durables.yaml
+    index_ticker: "NIFTY:CONSUMERDURABLES"
+    annualization_factor: 250
+  nifty_oil_and_gas:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_oil_and_gas.yaml
+    index_ticker: "NIFTY:OILGAS"
+    annualization_factor: 250
+  # --- US equities ---------------------------------------------------------
   sp500:
     source: configs/data_pipelines/domains/us_equities/universe_sp500.yaml
     index_ticker: "INDEX:^SPX"

@@ -1,0 +1,26 @@
+# NIFTY Oil & Gas — oil & gas sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyoilgaslist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_oil_and_gas
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:OILGAS"
+tickers:
+  - "NSE:AEGISLOG"
+  - "NSE:AEGISVOPAK"
+  - "NSE:ATGL"
+  - "NSE:BPCL"
+  - "NSE:CASTROLIND"
+  - "NSE:CHENNPETRO"
+  - "NSE:GAIL"
+  - "NSE:HINDPETRO"
+  - "NSE:IGL"
+  - "NSE:IOC"
+  - "NSE:MGL"
+  - "NSE:OIL"
+  - "NSE:ONGC"
+  - "NSE:PETRONET"
+  - "NSE:RELIANCE"
