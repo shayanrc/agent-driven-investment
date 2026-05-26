@@ -36,6 +36,7 @@ The tuple that defines what this experiment predicts. **The first four fields ar
 | `threshold_pct` | float | Any positive number. Common: `5`, `10`, `20`, `30`, `50`. |
 | `horizon_days` | int | Any positive integer. Common: `10`, `20`, `50`, `100`. |
 | `max_drawdown` | float (optional) | Fractional path-honesty bound, e.g. `0.05` = "the path must not draw down more than 5% before breaching the threshold." Omit for the simple binary "did breach in horizon" target. |
+| `uniqueness_weighting` | bool (optional) | Apply LdP §4.4 sample-uniqueness weights when training + scoring. Default `true`. Set to `false` to reproduce the pre-uniqueness baseline (every row weight=1.0). See § "Sample-uniqueness weighting" below. |
 
 Example (basic binary):
 ```yaml
@@ -75,6 +76,26 @@ Semantics (from `V1_PLAN.md` Stage 3):
 **Breach criterion switches from HIGH/LOW (simple mode) to CLOSE (path-honesty mode), intentionally.** The simple-binary breach uses HIGH (UP) / LOW (DOWN) — the most aggressive intraday move — because traders observe intraday extremes and the question there is "did the threshold ever fire in any interpretation." The path-honesty filter flips *both* legs (breach and drawdown bound) to CLOSE because the operator semantics are mark-to-market: traders allocate against close-price marks, the realistic exit is the close, and the drawdown the position survives is the close-to-close excursion. Consequence: a path-honesty positive can be strictly stricter than a simple-binary positive even with a permissive `max_drawdown`, because the breach now needs CLOSE (not HIGH/LOW) to clear the threshold.
 
 This is the v0.3 path-honesty filter (`docs/gbdt/_v0_path_honesty_eval.md`) generalized: v0.3 used a hard-wired `max_drawdown = threshold_pct / 200` (half the threshold, as a fraction); v1 makes it an explicit per-experiment parameter. The reading of "positive" is now operator-meaningful: it's not just "the threshold fired at some point" but "the threshold fired without first wiping out the position."
+
+#### Sample-uniqueness weighting (LdP §4.4)
+
+Default: **on**. Each (ticker, date) training row is weighted by an approximation of "fraction of this row's forward window that is unique to this row" — for a contiguous ticker with `N >> H` rows, an interior row's weight is `1 / (2H − 1)` and edge rows ramp up to `1.0`. Implementation in `src/gbdt/uniqueness.py`.
+
+Why this matters: with horizon `H` trading days, two adjacent (ticker, date) rows share `H − 1` of their `H` future bars — so the same outcome event labels `O(H)` neighbors identically. Without down-weighting, the loss is dominated by that overlap and prevalence is inflated. Sweep exp #1 (nasdaq100 +10%/100d/dd5%) observed training prevalence 42.4% vs non-overlapping EDA 19.7% — a 2.15× bias that uniqueness weighting corrects.
+
+The weights enter:
+- CatBoost `Pool(weight=...)` on train + val (gradient + early-stop signal).
+- Weighted Brier / Spiegelhalter Z / AUC on val (via `gbdt.uniqueness.weighted_*`).
+- Weighted Brier / weighted base-rate Brier / weighted log-loss / weighted AUC on the `headline_eval` and `headline_test` blocks; unweighted twins kept side-by-side as `*_unweighted`.
+- `metrics.json::sample_uniqueness.effective_sample_size_per_fold` reports per-segment `(ess_kish, sum_weights, n_rows, overlap_inflation_ratio)`. `sum_weights` is the natural "number of independent forward events" measure (≈ `N / (2H − 1)`); `ess_kish` is `(Σw)² / Σw²` and is the standard variance-effective sample size (insensitive to uniform scaling).
+
+Opt-out (legacy reproduction):
+```yaml
+target:
+  uniqueness_weighting: false
+```
+
+In that mode every row enters with weight `1.0` and the weighted metrics collapse exactly to their unweighted form — useful only for reproducing pre-PR results or measuring the overlap-bias delta directly.
 
 ### `date_range` (optional)
 
@@ -318,12 +339,31 @@ The final iteration's row carries `inner_stop_signal` set to one of `"plateau"`,
     "spiegelhalter_z": 2.84,
     "spiegelhalter_p": 0.0045
   },
+  "sample_uniqueness": {
+    "uniqueness_weighting": true,
+    "horizon_days": 20,
+    "effective_sample_size_per_fold": {
+      "fold_0": {
+        "train": {"ess_kish": 37210.2, "sum_weights": 1042.7, "n_rows": 38400, "overlap_inflation_ratio": 36.83},
+        "val":   {"ess_kish": 18570.1, "sum_weights": 521.3,  "n_rows": 19200, "overlap_inflation_ratio": 36.83},
+        "eval":  {"ess_kish": 9285.4,  "sum_weights": 260.7,  "n_rows": 9600,  "overlap_inflation_ratio": 36.83},
+        "test":  {"ess_kish": 4642.7,  "sum_weights": 130.4,  "n_rows": 4800,  "overlap_inflation_ratio": 36.83}
+      }
+    }
+  },
   "headline_eval": {
     "brier": 0.231,
     "brier_baseline_baserate": 0.239,
     "brier_improvement_vs_baseline": 0.008,
     "log_loss": 0.654,
-    "roc_auc": 0.612
+    "roc_auc": 0.612,
+    "brier_unweighted": 0.244,
+    "brier_baseline_baserate_unweighted": 0.241,
+    "brier_improvement_vs_baseline_unweighted": -0.003,
+    "effective_sample_size_kish": 9285.4,
+    "sum_weights": 260.7,
+    "n_rows": 9600,
+    "weighted_prevalence": 0.187
   },
   "headline_test": {
     "brier": 0.244,

@@ -12,6 +12,7 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 - [project-results-layout.md](project-results-layout.md) — Aggregated experiment JSONs live in `results/<module>/data/`, separated from `docs/<module>/` narratives
 - [project-fat-tail-eval.md](project-fat-tail-eval.md) — Operational how-to for the mandatory 15-anchor fat-tail eval panel (scripts, fig paths, regeneration rules)
 - [project-nse-data-quirks.md](project-nse-data-quirks.md) — NSE fetch quirks: jugaad/nselib blocked → use curl from archives.nseindia.com; filter DUMMY* placeholders; processed.db-wal can corrupt → /tmp/exp_data workaround; per-ticker fetch is 30–80s; cached-but-short tickers need `back_extend=True`
+- [project-gbdt-uniqueness-weights.md](project-gbdt-uniqueness-weights.md) — gbdt applies LdP §4.4 sample-uniqueness weights by default; corrects the 2.15× overlap-prevalence inflation surfaced by sweep exp #1; opt-out via `target.uniqueness_weighting: false`
 
 ## Workflow feedback
 

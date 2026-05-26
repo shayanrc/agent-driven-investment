@@ -184,8 +184,17 @@ class GBDTModel:
         y_val: np.ndarray | pd.Series | None = None,
         *,
         early_stopping_rounds: int | None = None,
+        train_weight: np.ndarray | pd.Series | None = None,
+        val_weight: np.ndarray | pd.Series | None = None,
     ) -> "GBDTModel":
-        """Fit CatBoost with optional early stopping against ``(X_val, y_val)``."""
+        """Fit CatBoost with optional early stopping against ``(X_val, y_val)``.
+
+        ``train_weight`` / ``val_weight`` (optional) are per-row sample
+        weights — typically the LdP §4.4 uniqueness weights produced by
+        :func:`gbdt.uniqueness.compute_uniqueness_weights`. When supplied,
+        CatBoost weights the gradient by ``w_i`` on training and the val
+        loss reported in ``evals_result`` by ``w_i`` on val.
+        """
         feat_names = self._feature_names
         if feat_names is None and isinstance(X_train, pd.DataFrame):
             feat_names = list(X_train.columns)
@@ -195,6 +204,10 @@ class GBDTModel:
             data=_to_2d(X_train),
             label=np.asarray(y_train).ravel(),
             feature_names=feat_names,
+            weight=(
+                np.asarray(train_weight, dtype=float).ravel()
+                if train_weight is not None else None
+            ),
         )
         eval_pool = None
         if X_val is not None and y_val is not None:
@@ -202,6 +215,10 @@ class GBDTModel:
                 data=_to_2d(X_val),
                 label=np.asarray(y_val).ravel(),
                 feature_names=feat_names,
+                weight=(
+                    np.asarray(val_weight, dtype=float).ravel()
+                    if val_weight is not None else None
+                ),
             )
 
         model_hp = dict(self._hp)
