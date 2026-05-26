@@ -2,21 +2,23 @@
 
 ## 1. Purpose
 
-`backtesting` is a configurable, multi-asset backtesting environment that exposes a step-based execution loop compatible with Reinforcement Learning agents (OpenAI Gym interface) and programmatic trading strategies.
+`backtesting` is a configurable, multi-asset backtesting environment that exposes a step-based execution loop for programmatic trading strategies.
 
 **Core capabilities:**
 
 - Consume and align multiple multidimensional time series (e.g., OHLCV equities, macroeconomic indicators) onto a single master timeline.
-- Operate on an iterative `while not done: env.step(action)` loop, producing a `(state, reward, done, info)` tuple at each step.
+- Operate on an iterative `while not done: bt.step(action)` loop, producing a `(state, done, info)` tuple at each step.
 - Output structured state vectors containing both historical data windows (configurable lookback) and current portfolio status.
 - Accept diverse action formats: absolute order quantities and target portfolio weightages.
 - Support configurable order execution timing (Market-on-Close, Market-on-Open, Limit) with structural look-ahead-bias elimination via a two-phase execution lifecycle.
+- Enforce per-instrument lot sizing: whole shares (default), fractional, or round lots.
 
 **What this module is *not*:**
 
 - Not a forecasting engine. Forecasts are upstream (`analog_mc`, `gbdt`); this module consumes signals and simulates their execution.
 - Not an alpha-research tool. It evaluates strategy performance; it does not discover strategies.
 - Not a live-trading gateway. The `ExecutionBroker` simulates fills against historical data; it does not connect to any brokerage API.
+- Not an RL environment. The step-loop design is naturally compatible with RL frameworks, but the engine does not subclass `gymnasium.Env`, compute rewards, or define action/observation spaces. A thin Gym adapter wrapper can be built on top if needed.
 
 ---
 
@@ -24,23 +26,23 @@
 
 Three structural choices shape the entire design. Each was chosen for a specific reason; do not change them without surfacing the deviation and asking first.
 
-### D1: Step-Loop Environment (not event-driven callbacks)
+### D1: Step-Loop Execution (not event-driven callbacks)
 
-The system uses a `while not done: env.step(action)` loop rather than an event-driven callback architecture.
+The system uses a `while not done: bt.step(action)` loop rather than an event-driven callback architecture.
 
-**Rationale:** This maps directly to the Markov Decision Process formulation used in RL. The agent observes a state, selects an action, and passes it back to the engine. The engine never calls the agent — the agent always calls the engine. This provides ultimate control over execution flow, makes state transitions explicit, and allows the same environment to serve both hand-coded strategies and RL training loops without adapter glue.
+**Rationale:** The step loop makes state transitions explicit. The caller observes a state, makes a decision, and passes it back to the engine. The engine never calls the caller — the caller always calls the engine. This provides ultimate control over execution flow and allows the same environment to serve hand-coded strategies, optimization loops, and RL agents without adapter glue.
 
 ### D2: Decoupled Decision and Execution (two-phase order lifecycle)
 
 User actions are routed into an `ExecutionBroker` order queue rather than executed immediately against the `Portfolio`.
 
-**Rationale:** Instant execution can only simulate Market-on-Close (MOC) orders — the agent sees price at time T and trades at price T, which is look-ahead bias when the decision is made intraday. By decoupling, an agent issues an order at time T, and the broker holds it until time T+1 to simulate Market-on-Open (MOO) or evaluates it against T+1 prices for limit fills. The two-phase lifecycle (Phase 1: current-step fills; Phase 2: next-step fills) is the structural mechanism that eliminates look-ahead bias — it makes bias impossible rather than relying on user discipline.
+**Rationale:** Instant execution can only simulate Market-on-Close (MOC) orders — the caller sees price at time T and trades at price T, which is look-ahead bias when the decision is made intraday. By decoupling, a caller issues an order at time T, and the broker holds it until time T+1 to simulate Market-on-Open (MOO) or evaluates it against T+1 prices for limit fills. The two-phase lifecycle (Phase 1: current-step fills; Phase 2: next-step fills) is the structural mechanism that eliminates look-ahead bias — it makes bias impossible rather than relying on user discipline.
 
 ### D3: Master Timeline with Forward-Fill Alignment
 
 The `DataHandler` establishes a single integer-indexed master timeline driven by the highest-frequency data feed (e.g., daily equities). Lower-frequency data (e.g., quarterly GDP) is forward-filled to match.
 
-**Rationale:** At every step, the agent must receive a valid, non-null state matrix. Forward-filling is the correct causal operation for slow-updating data: quarterly GDP is genuinely "still the last reported value" until the next release. The master timeline is the single source of truth for "what step are we on?" — all components reference it rather than maintaining independent clocks.
+**Rationale:** At every step, the caller must receive a valid, non-null state matrix. Forward-filling is the correct causal operation for slow-updating data: quarterly GDP is genuinely "still the last reported value" until the next release. The master timeline is the single source of truth for "what step are we on?" — all components reference it rather than maintaining independent clocks.
 
 ---
 
@@ -77,7 +79,7 @@ The `step()` function accepts an action dictionary. Two action types are support
 }
 ```
 
-Weight-based actions specify target portfolio allocation percentages (summing to at most 1.0; the remainder stays in cash). The engine calculates the required trades based on current portfolio equity and positions, then submits the resulting orders to the broker. All orders generated from a weight-based action share the same `execution` timing.
+Weight-based actions specify target portfolio allocation percentages (summing to at most 1.0; the remainder stays in cash). The engine calculates the required trades based on current portfolio equity and positions, snaps quantities to each instrument's lot size, then submits the resulting orders to the broker. Sells are sequenced before buys to free up cash; if sell proceeds are insufficient to fund all buys, the engine fills what it can and reports the shortfall in `info`. All orders generated from a weight-based action share the same `execution` timing.
 
 **Execution modes:**
 
@@ -89,7 +91,7 @@ Weight-based actions specify target portfolio allocation percentages (summing to
 
 ### 3.2 State Schema (output from `step()`)
 
-`step()` returns a 4-tuple: `(state, reward, done, info)`.
+`step()` returns a 3-tuple: `(state, done, info)`.
 
 **`state`** — the environment observation at the current step:
 
@@ -120,11 +122,9 @@ Weight-based actions specify target portfolio allocation percentages (summing to
 - `step`: integer index on the master timeline.
 - `timestamp`: the calendar date/datetime corresponding to the current step.
 
-**`reward`** — a float. Default: single-step portfolio return `(equity_t - equity_{t-1}) / equity_{t-1}`. Configurable via a reward function passed to `BacktestEnv.__init__()`.
-
 **`done`** — boolean. `True` when the data handler has exhausted all bars.
 
-**`info`** — dictionary of auxiliary diagnostics for the current step (fills executed this step, slippage, rejected orders, etc.). Not part of the RL state; used for logging and debugging.
+**`info`** — dictionary of auxiliary diagnostics for the current step (fills executed this step, slippage, rejected orders, lot-size rounding adjustments, rebalancing shortfalls, etc.). Used for logging and debugging.
 
 ---
 
@@ -194,7 +194,8 @@ class Portfolio:
     def execute_trade(self, asset: str, qty: float, price: float):
         """Update cash and position for a single fill.
         cash -= qty * price (positive qty = buy = cash outflow).
-        Positions track net quantity (positive = long, negative = short)."""
+        Positions track net quantity (positive = long, negative = short).
+        Raises if the trade would make cash negative."""
 
     def update_valuations(self, current_prices: dict[str, float]):
         """Mark all positions to market. Compute equity = cash + sum(pos * price).
@@ -209,13 +210,14 @@ class Portfolio:
 
 **Design notes:**
 
-- `qty` is float to support fractional shares. Whether fractional trading is permitted is a policy decision in `BacktestEnv`, not `Portfolio`.
-- No commission or slippage model inside `Portfolio`. Commissions, if added, are applied by the broker before calling `execute_trade` (the portfolio sees the effective price). This keeps the ledger simple and testable.
+- `qty` is float at the `Portfolio` level to keep the ledger simple. Lot-size enforcement happens upstream in `Backtest._parse_action()`, not inside the portfolio.
+- No commission or slippage model inside `Portfolio`. Commissions, if configured, are applied by the broker before calling `execute_trade` (the portfolio sees the effective price). This keeps the ledger simple and testable.
 - Short selling is supported: a negative position is a short. Margin requirements are out of scope for v1.
+- Cash cannot go negative. `execute_trade` raises if `cash - qty * price < 0`. The caller (broker / action parser) is responsible for sequencing sells before buys and skipping orders that would overdraw.
 
 ### 4.3 ExecutionBroker
 
-The order queue. Sits between the agent's desired actions and the portfolio's ledger. Responsible for fill logic and order lifecycle.
+The order queue. Sits between the caller's desired actions and the portfolio's ledger. Responsible for fill logic and order lifecycle.
 
 ```python
 class ExecutionBroker:
@@ -240,10 +242,13 @@ class ExecutionBroker:
             phase:        1 = pre-advance (current_close fills),
                           2 = post-advance (next_open and limit fills).
 
+        Within each phase, sells are processed before buys to free up cash.
         Fills are routed to portfolio.execute_trade().
         Filled orders are removed from the queue.
         Unfilled limit orders are expired (good-for-day: if phase 2 doesn't
-        fill them, they're dropped)."""
+        fill them, they're dropped).
+        Orders that would overdraw cash are skipped and reported in the
+        returned fill log."""
 
     def get_pending_count(self) -> int:
         """Number of orders still in the queue."""
@@ -258,51 +263,52 @@ class ExecutionBroker:
 - Limit order fill logic: for a buy limit at price P, the order fills if the current bar's low ≤ P (fill at P). For a sell limit at price P, the order fills if the current bar's high ≥ P (fill at P). This is a simplification — real limit fills depend on intrabar sequencing, which daily bars cannot resolve.
 - Limit orders use good-for-day semantics: if not filled in Phase 2 of the step after submission, they are expired and removed. Good-til-cancelled (GTC) is a v2 extension.
 - Partial fills are not supported in v1. An order either fills completely or not at all.
+- Within each phase, sells are processed before buys. This ensures cash freed by liquidations is available for new purchases without ever allowing negative cash.
 
-### 4.4 BacktestEnv
+### 4.4 Backtest
 
-The orchestrator. Manages the two-phase execution lifecycle and routes data between components. This is the class the agent interacts with.
+The orchestrator. Manages the two-phase execution lifecycle and routes data between components. This is the class the caller interacts with.
 
 ```python
-class BacktestEnv:
+class Backtest:
     def __init__(
         self,
         data_feeds: dict,
         initial_cash: float = 100_000.0,
         lookback: int = 20,
-        reward_fn: Callable | None = None,
+        lot_sizes: dict[str, int | float] | None = None,
+        default_lot_size: int = 1,
         commission_fn: Callable | None = None,
     ):
         self.data_handler = DataHandler(data_feeds, lookback)
         self.portfolio = Portfolio(initial_cash)
         self.broker = ExecutionBroker(commission_fn)
-        self.reward_fn = reward_fn or self._default_reward
-        self._prev_equity = initial_cash
+        self.lot_sizes = lot_sizes or {}
+        self.default_lot_size = default_lot_size
 
-    def step(self, action: dict) -> tuple[dict, float, bool, dict]:
+    def step(self, action: dict) -> tuple[dict, bool, dict]:
         """The core progression lifecycle.
 
-        Execution order (6 phases, strictly sequential):
+        Execution order (5 phases, strictly sequential):
 
         1. PARSE     — Convert action to order list. Weight-based actions are
                        translated to absolute orders using current portfolio
-                       equity and positions. Validated orders are submitted to
-                       the broker.
+                       equity and positions, with quantities snapped to each
+                       instrument's lot size. Sells are sequenced before buys.
+                       Validated orders are submitted to the broker.
 
         2. PHASE 1   — broker.process_queue(phase=1). Executes current_close
                        orders against the current bar's close price.
 
         3. ADVANCE   — data_handler.advance_time(). The time pointer moves
-                       from T to T+1. If done, skip to step 6.
+                       from T to T+1. If done, skip to step 5.
 
         4. PHASE 2   — broker.process_queue(phase=2). Executes next_open
                        orders against T+1's open price. Evaluates and
                        fills/expires limit orders against T+1's bar.
+                       portfolio.update_valuations() using T+1's close prices.
 
-        5. MARK      — portfolio.update_valuations() using T+1's close prices.
-                       Compute reward from equity change.
-
-        6. RETURN     — Assemble and return (state, reward, done, info).
+        5. RETURN     — Assemble and return (state, done, info).
         """
 
     def reset(self) -> dict:
@@ -313,26 +319,50 @@ class BacktestEnv:
         """Translate action dict into a list of normalized order dicts.
         For weight-based actions: compute target position for each asset
         from (target_weight * current_equity / current_price), diff against
-        current position, and emit the delta as orders."""
+        current position, snap to lot size, and emit the delta as orders.
+        Sells are placed before buys in the returned list."""
 
-    def _default_reward(self, prev_equity: float, curr_equity: float) -> float:
-        """Default reward: single-step portfolio return."""
-        return (curr_equity - prev_equity) / prev_equity if prev_equity > 0 else 0.0
+    def _snap_to_lot(self, asset: str, qty: float) -> float:
+        """Round qty to the nearest valid lot for the given asset.
+        Lot size lookup: self.lot_sizes.get(asset, self.default_lot_size).
+        - lot_size == 0: no rounding (fractional).
+        - lot_size == 1: round to nearest integer (whole shares).
+        - lot_size == N: round down to nearest multiple of N (round lots).
+        Always rounds toward zero (truncates) to avoid overshooting cash."""
 ```
+
+### 4.5 Lot Size Specification
+
+Per-instrument lot sizes control the minimum tradeable quantity. Configured via the `lot_sizes` dict and `default_lot_size` on `Backtest.__init__()`.
+
+| `lot_size` value | Meaning | Rounding behavior |
+|------------------|---------|-------------------|
+| `1` (default) | Whole shares | `qty` rounded to nearest integer, toward zero |
+| `0` | Fractional | No rounding; `qty` used as-is |
+| `N` (any positive int) | Round lots of N | `qty` rounded down to nearest multiple of N |
+
+Examples:
+- `lot_sizes={"BTC-USD": 0, "RELIANCE.NS": 1}` — BTC trades fractionally, RELIANCE trades in whole shares.
+- `default_lot_size=1` — any instrument not in `lot_sizes` trades in whole shares.
+- `lot_sizes={"NIFTY_FUT": 25}` — NIFTY futures trade in lots of 25.
+
+When a weight-based action produces an ideal fractional quantity, the engine snaps it to the instrument's lot size (rounding toward zero). The residual cash stays in cash. The rounding adjustment is reported in `info` so the caller can see the difference between requested and actual allocation.
 
 ---
 
 ## 5. Step Lifecycle — Detailed Walkthrough
 
-This is the most important section of the spec. The six-phase lifecycle in `BacktestEnv.step()` is the mechanism that makes look-ahead-bias elimination structural rather than conventional.
+This is the most important section of the spec. The lifecycle in `Backtest.step()` is the mechanism that makes look-ahead-bias elimination structural rather than conventional.
 
 ```
 Time:  ──────────── T ──────────────┃──────────── T+1 ────────────────
                                     ┃
-Agent sees state at T               ┃
-Agent calls step(action)            ┃
+Caller sees state at T              ┃
+Caller calls step(action)           ┃
                                     ┃
   1. PARSE action → orders          ┃
+     (snap to lot sizes,            ┃
+      sells before buys)            ┃
   2. PHASE 1: fill current_close    ┃
      orders at T's close price      ┃
                                     ┃
@@ -343,30 +373,29 @@ Agent calls step(action)            ┃
      evaluate limit orders          ┃
      against T+1's bar              ┃
   4. MARK portfolio to T+1 close    ┃
-  5. Compute reward                 ┃
-  6. Return (state_T+1, reward,     ┃
-     done, info)                    ┃
+  5. Return (state_T+1, done, info) ┃
 ```
 
 **Why this order matters:**
 
-- `current_close` orders fill at T's close *before* time advances. The agent has already observed T's close price in the state, so this is not look-ahead — it is "I see the close, I trade at the close" (Market-on-Close).
-- `next_open` orders fill at T+1's open *after* time advances. The agent has not seen T+1's prices when it issues the order — the broker holds it and fills at the next available open. This is the standard "decide today, execute tomorrow" pattern.
+- `current_close` orders fill at T's close *before* time advances. The caller has already observed T's close price in the state, so this is not look-ahead — it is "I see the close, I trade at the close" (Market-on-Close).
+- `next_open` orders fill at T+1's open *after* time advances. The caller has not seen T+1's prices when it issues the order — the broker holds it and fills at the next available open. This is the standard "decide today, execute tomorrow" pattern.
 - Limit orders are evaluated against T+1's full bar (OHLC). This is a simplification of intrabar dynamics but is standard for daily-bar backtesting.
-- Portfolio is marked to market at T+1's close, which is the price the agent will see in the next state.
+- Portfolio is marked to market at T+1's close, which is the price the caller will see in the next state.
 
 ---
 
 ## 6. Configuration
 
-`BacktestEnv` is configured at construction time via explicit arguments. A YAML-driven config layer may be added later but is not part of v1 — construction arguments are the contract.
+`Backtest` is configured at construction time via explicit arguments. A YAML-driven config layer may be added later but is not part of v1 — construction arguments are the contract.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `data_feeds` | `dict` | required | Nested dict of `{feed_name: {asset: DataFrame}}` |
 | `initial_cash` | `float` | `100_000.0` | Starting cash balance |
 | `lookback` | `int` | `20` | Number of historical bars in the state window |
-| `reward_fn` | `Callable` | single-step return | `(prev_equity, curr_equity) -> float` |
+| `lot_sizes` | `dict[str, int]` | `{}` | Per-instrument lot sizes. `0` = fractional, `1` = whole shares, `N` = round lots of N |
+| `default_lot_size` | `int` | `1` | Lot size for instruments not in `lot_sizes` |
 | `commission_fn` | `Callable` | `None` (no commission) | `(asset, qty, price) -> float` |
 
 ---
@@ -377,13 +406,15 @@ These are non-negotiable invariants, analogous to analog_mc's C1–C6.
 
 **B1: No look-ahead in state.** `get_window()` returns data up to and including `current_step`. No future data is ever included in the state. Enforced by integer indexing on the master timeline.
 
-**B2: Two-phase execution eliminates look-ahead in fills.** `current_close` orders fill before time advances (agent has already seen the price). `next_open` and `limit` orders fill after time advances (agent has not seen the execution price when it submitted the order). No execution mode allows the agent to trade at a price it hasn't yet observed in state and have that fill reflected in the same state observation.
+**B2: Two-phase execution eliminates look-ahead in fills.** `current_close` orders fill before time advances (the caller has already seen the price). `next_open` and `limit` orders fill after time advances (the caller has not seen the execution price when it submitted the order). No execution mode allows the caller to trade at a price it hasn't yet observed in state and have that fill reflected in the same state observation.
 
 **B3: Causal forward-fill.** Lower-frequency data is forward-filled from past observations only. No backward-fill, no interpolation, no centering. At step T, macro data reflects the most recent observation at or before T.
 
-**B4: Portfolio consistency.** After every `step()`, `portfolio.equity == portfolio.cash + sum(position_qty * mark_price)` for all positions. This is verified by `update_valuations()` at the end of every step.
+**B4: Portfolio consistency.** After every `step()`, `portfolio.equity == portfolio.cash + sum(position_qty * mark_price)` for all positions. Cash is never negative. These are verified by `update_valuations()` and enforced by `execute_trade()`.
 
-**B5: Deterministic replay.** Same `data_feeds` + same sequence of `action` dicts → identical sequence of `(state, reward, done, info)` tuples. No internal randomness. (RL agents may be stochastic, but the environment is not.)
+**B5: Deterministic replay.** Same `data_feeds` + same sequence of `action` dicts → identical sequence of `(state, done, info)` tuples. No internal randomness.
+
+**B6: Lot-size integrity.** Every filled order quantity is a valid multiple of the instrument's lot size. The engine never fills a fractional quantity for a whole-share instrument, or a non-multiple for a round-lot instrument.
 
 ---
 
@@ -397,8 +428,8 @@ src/backtesting/
 ├── data_handler.py      # DataHandler
 ├── portfolio.py         # Portfolio
 ├── broker.py            # ExecutionBroker
-├── env.py               # BacktestEnv
-└── utils.py             # shared helpers (action validation, schema constants)
+├── backtest.py          # Backtest
+└── utils.py             # shared helpers (action validation, lot-size snapping)
 
 docs/backtesting/
 ├── spec.md              # this document
@@ -408,24 +439,24 @@ tests/backtesting/
 ├── test_data_handler.py
 ├── test_portfolio.py
 ├── test_broker.py
-├── test_env.py
-└── test_correctness.py  # B1–B5 constraint tests
+├── test_backtest.py
+└── test_correctness.py  # B1–B6 constraint tests
 
 configs/backtesting/     # reserved for future YAML-driven configs
 ```
 
 ---
 
-## 9. Open Questions for v1
+## 9. Resolved Design Decisions
 
-These are design decisions that need resolution before or during implementation. They do not block the spec but will shape the implementation plan.
+These questions were resolved during the spec review. Recorded here for traceability.
 
-1. **Data source integration.** Should `BacktestEnv` accept raw DataFrames (as specified above), or should it accept `data_pipelines` identifiers and fetch internally? The current spec keeps it DataFrame-in for maximum flexibility; wiring to `data_pipelines` can be a convenience layer on top.
+1. **Data source integration.** `Backtest` accepts raw DataFrames at the core. A convenience constructor (`Backtest.from_identifiers(...)`) wrapping `data_pipelines.fetch()` can be added later without changing the core contract.
 
-2. **Fractional shares.** `Portfolio.execute_trade` accepts `float` quantities. Should `BacktestEnv` enforce integer-only quantities by default (with a `fractional=True` opt-in), or leave it unconstrained?
+2. **Lot sizing.** Per-instrument via `lot_sizes` dict + `default_lot_size`. Values: `0` = fractional (no rounding), `1` = whole shares (default), `N` = round lots of N. Quantities are snapped toward zero. Rounding adjustments reported in `info`.
 
-3. **Reward function scope.** The default reward is single-step return. RL agents often need shaped rewards (Sharpe ratio over a window, drawdown penalty, etc.). Should the reward function receive the full portfolio history, or just `(prev_equity, curr_equity)`? Richer signatures are more flexible but couple the reward function to internal state.
+3. **Reward function.** Removed. The engine returns `(state, done, info)`. The caller computes whatever performance metrics it needs from the state trajectory. RL reward shaping is the caller's responsibility, not the engine's.
 
-4. **Multi-asset weight rebalancing.** When a weight-based action is parsed into orders, should the engine handle the sequencing of sells-before-buys to free up cash? Or should it assume sufficient cash/margin and let the portfolio go negative on cash temporarily within a step?
+4. **Weight-based rebalancing.** The engine sequences sells before buys to free up cash. Cash is never allowed to go negative. If sell proceeds are insufficient to fund all buys, the engine fills what it can and reports the shortfall in `info`.
 
-5. **Gym compatibility.** Should `BacktestEnv` formally subclass `gymnasium.Env` and implement `observation_space` / `action_space`? This would make it plug-and-play with Stable Baselines, RLlib, etc., but adds a dependency and constrains the state/action shapes.
+5. **Gym compatibility.** No `gymnasium.Env` subclass. The step-loop design is naturally Gym-compatible; a thin `BacktestGymWrapper` adapter can be built on top if needed, without adding `gymnasium` as a dependency.
