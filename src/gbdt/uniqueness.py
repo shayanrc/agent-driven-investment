@@ -73,7 +73,7 @@ def compute_uniqueness_weights(
     pd.Series
         Weight per row, aligned to ``panel.index``. Weights are in
         ``(0, 1]``: an isolated row gets weight 1.0, an interior row in a
-        densely-overlapping region gets weight ``1 / (2H + 1)``.
+        densely-overlapping region gets weight ``1 / (2H - 1)``.
 
     Notes
     -----
