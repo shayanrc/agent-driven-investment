@@ -1,0 +1,28 @@
+# Experiment: russell1000_up_50pct_25d_dd25pct
+#
+# Cell: russell1000 UP 50% in 25 trading days with max drawdown 25%.
+#
+# Historical base rate (non-overlapping blocks from EDA scan 2026-05-26,
+# russell1000 panel, 1990-01-02 to 2026-05-22): 0.429%  (1057 positives
+# / 246169 blocks).  Priority rank: #53 of 57 in the
+# US sweep.
+#
+# Sweep-mode params: fs_hp_loop.max_iterations=3. This is a SCREENING
+# run; cells with meaningful calibration improvement get re-run with
+# the full 8-iter loop later.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 50
+  horizon_days: 25
+  max_drawdown: 0.25
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
