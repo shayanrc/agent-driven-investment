@@ -1,0 +1,101 @@
+{
+  "experiment_name": "nifty50_up_20pct_50d_dd10pct",
+  "spec_hash": "sha256:14cd0d82ba0e0eb46713bac71177977d139526db48fbd88e07edc8ade22c2119",
+  "data_hash": "sha256:872de75cec10b240cb0ee8b1360e858479b81850e5c13156423baaf3e26e4c9c",
+  "data": {
+    "n_tickers_in_universe": 50,
+    "n_tickers_used": 46,
+    "tickers_excluded": [
+      "NSE:ETERNAL",
+      "NSE:JIOFIN",
+      "NSE:MAXHEALTH",
+      "NSE:SHRIRAMFIN"
+    ],
+    "staleness_days_threshold": 20,
+    "stale_tickers": [
+      "NSE:NTPC"
+    ],
+    "n_tickers_stale": 1,
+    "cache_age_days_by_ticker": {
+      "NSE:ADANIENT": 1,
+      "NSE:ADANIPORTS": 1,
+      "NSE:APOLLOHOSP": 1,
+      "NSE:ASIANPAINT": 1,
+      "NSE:AXISBANK": 1,
+      "NSE:BAJAJ-AUTO": 1,
+      "NSE:BAJAJFINSV": 1,
+      "NSE:BAJFINANCE": 1,
+      "NSE:BEL": 1,
+      "NSE:BHARTIARTL": 1,
+      "NSE:CIPLA": 1,
+      "NSE:COALINDIA": 1,
+      "NSE:DRREDDY": 1,
+      "NSE:EICHERMOT": 1,
+      "NSE:GRASIM": 1,
+      "NSE:HCLTECH": 1,
+      "NSE:HDFCBANK": 1,
+      "NSE:HDFCLIFE": 1,
+      "NSE:HINDALCO": 1,
+      "NSE:HINDUNILVR": 1,
+      "NSE:ICICIBANK": 1,
+      "NSE:INDIGO": 1,
+      "NSE:INFY": 1,
+      "NSE:ITC": 1,
+      "NSE:JSWSTEEL": 1,
+      "NSE:KOTAKBANK": 1,
+      "NSE:LT": 1,
+      "NSE:M&M": 1,
+      "NSE:MARUTI": 1,
+      "NSE:NESTLEIND": 1,
+      "NSE:NTPC": 146,
+      "NSE:ONGC": 1,
+      "NSE:POWERGRID": 1,
+      "NSE:RELIANCE": 1,
+      "NSE:SBILIFE": 1,
+      "NSE:SBIN": 1,
+      "NSE:SUNPHARMA": 1,
+      "NSE:TATACONSUM": 1,
+      "NSE:TATASTEEL": 1,
+      "NSE:TCS": 1,
+      "NSE:TECHM": 1,
+      "NSE:TITAN": 1,
+      "NSE:TMPV": 1,
+      "NSE:TRENT": 1,
+      "NSE:ULTRACEMCO": 1,
+      "NSE:WIPRO": 1
+    },
+    "nan_rows_dropped_by_ticker": {},
+    "n_rows_train": 36800,
+    "n_rows_val": 18400,
+    "n_rows_eval": 9200,
+    "n_rows_test": 2300,
+    "positive_prevalence_train": 0.20217391304347826,
+    "positive_prevalence_eval": 0.04771739130434783
+  },
+  "loop": {
+    "n_iterations_run": 3,
+    "best_iteration": 0,
+    "inner_stop_signal": "plateau"
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "native",
+    "spiegelhalter_z": 0.85202450530927,
+    "spiegelhalter_p": 0.39420049115392164
+  },
+  "headline_eval": {
+    "brier": 0.05068034567818052,
+    "brier_baseline_baserate": 0.04544044187145557,
+    "brier_improvement_vs_baseline": -0.005239903806724948,
+    "log_loss": 0.22144653766039432,
+    "roc_auc": 0.5603566645406919
+  },
+  "headline_test": {
+    "brier": 0.02909446437591398,
+    "brier_baseline_baserate": 0.013719470699432886,
+    "brier_improvement_vs_baseline": -0.015374993676481095,
+    "log_loss": 0.16968380551233384,
+    "roc_auc": 0.43519896384479717
+  },
+  "wall_time_total_sec": 347.5307273864746
+}
