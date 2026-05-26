@@ -119,7 +119,7 @@ The build order is strict — each stage ends with a passing test suite and a co
 2. **Resolve the ticker list.** Two paths:
    - **Inline tickers** — the spec carries a top-level `tickers:` list; the skill writes `configs/data_pipelines/domains/nse_equities/universe_<name>.yaml` with that list (using the same schema as `universe_nifty50.yaml`).
    - **Well-known NSE index** (`nifty100`, `nifty_midcap_150`, `nifty500`, etc.) — the skill fetches the constituent list via the `data_pipelines` adapter chain (the same chain that already resolves `^NSEI` / `NIFTY:NIFTY100`) and writes the universe YAML.
-3. **Register the universe block.** Append a `universes::<name>` entry to `configs/gbdt/default.yaml` pointing at the new YAML, with `index_ticker`, `ticker_prefix`, and `annualization_factor` inferred from the universe type (NSE indices all use `INDEX:^NSEI` / `NSE:` / `250`; future US universes would differ).
+3. **Register the universe block.** Append a `universes::<name>` entry to `configs/gbdt/default.yaml` pointing at the new YAML, with `index_ticker` and `annualization_factor` inferred from the universe type (NSE indices use a `NIFTY:` index_ticker and `250`; US universes use an `INDEX:` index_ticker and `252`). Schema is documented in `docs/data_pipelines/universe_yaml_spec.md`.
 4. **Back-fill the cache.** Run `data_pipelines.fetch()` per ticker (sequential or limited-parallel — respect the SQLite single-writer contract). Skip tickers already in the cache that meet the spec's `min_rows_per_ticker`.
 5. **Apply the row gate.** Drop any ticker below `spec.split.min_rows_per_ticker` (default 1,600) with a logged note. The note lands in `metrics.json::data.tickers_excluded` once the experiment runs.
 

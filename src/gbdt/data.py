@@ -214,19 +214,19 @@ def universe_metadata(
     self-service" is responsible for registering the block before the runner
     sees the spec.
 
-    Schema (all keys required except ``ticker_prefix``):
+    Schema (all keys required — see
+    ``docs/data_pipelines/universe_yaml_spec.md`` for the full registry-block
+    contract):
 
     - ``source``: repo-relative path to the universe YAML (ticker list).
+      Constituents in the referenced YAML are always stored fully-prefixed
+      (``"NSE:RELIANCE"``, ``"NASDAQ:AAPL"``, ``"NYSE:JPM"``); the registry
+      block carries no prefix metadata.
     - ``index_ticker``: benchmark identifier in the data_pipelines cache
       (e.g. ``"NIFTY:100"``, ``"INDEX:^SPX"``). Drives all F1/F5/F9/F9b
       macro features.
     - ``annualization_factor``: trading days per year (``250`` for NSE,
       ``252`` for US). Propagated into the feature builder.
-    - ``ticker_prefix`` (optional): when set (e.g. ``"NSE:"``), the
-      framework treats the constituent YAML as carrying *bare* symbols
-      that need prefixing. When omitted or null, the constituents are
-      assumed to be already fully-prefixed (e.g. ``"NASDAQ:AAPL"``,
-      ``"NYSE:JPM"`` for sp500 which spans exchanges).
     """
     cfg = _read_gbdt_default(repo_root)
     block = (cfg.get("universes") or {}).get(name)
@@ -234,7 +234,7 @@ def universe_metadata(
         raise KeyError(
             f"Universe {name!r} referenced in spec but no "
             f"'universes::{name}' block in configs/gbdt/default.yaml. "
-            f"Add one with index_ticker, ticker_prefix (or null), "
+            f"Add one with source, index_ticker, "
             f"annualization_factor."
         )
     return block

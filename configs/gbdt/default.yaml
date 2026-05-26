@@ -20,15 +20,10 @@
 # Exp 2 (nifty100 +10%/20d) computed every macro feature against NIFTY:50
 # instead of NIFTY:100 because the runner masked a missing block.
 #
-# Schema:
+# Schema (see docs/data_pipelines/universe_yaml_spec.md for the full spec):
 #   source                — repo-relative path to the constituent YAML.
 #   index_ticker          — benchmark identifier in the data_pipelines cache;
 #                           drives F1/F5/F9/F9b macro features.
-#   ticker_prefix         — optional. When set (e.g. "NSE:") the constituent
-#                           YAML stores bare symbols. When null/absent the
-#                           constituents are already fully prefixed
-#                           ("NASDAQ:AAPL", "NYSE:JPM"). US universes
-#                           (sp500 etc.) span exchanges so they must be null.
 #   annualization_factor  — trading days per year (NSE=250, US=252);
 #                           propagated into the feature builder.
 # ---------------------------------------------------------------------------
@@ -36,92 +31,74 @@ universes:
   nifty50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty50.yaml
     index_ticker: "NIFTY:50"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty100:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty100.yaml
     index_ticker: "NIFTY:100"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_midcap_150:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap_150.yaml
     index_ticker: "NIFTY:MIDCAP150"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty500:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty500.yaml
     index_ticker: "NIFTY:500"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_next_50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_next_50.yaml
     index_ticker: "NIFTY:NEXT50"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty200:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty200.yaml
     index_ticker: "NIFTY:200"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_midcap_50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap_50.yaml
     index_ticker: "NIFTY:MIDCAP50"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_midcap_100:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap_100.yaml
     index_ticker: "NIFTY:MIDCAP100"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_smallcap_50:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_50.yaml
     index_ticker: "NIFTY:SMALLCAP50"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_smallcap_100:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_100.yaml
     index_ticker: "NIFTY:SMALLCAP100"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_smallcap_250:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_smallcap_250.yaml
     index_ticker: "NIFTY:SMALLCAP250"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_microcap_250:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_microcap_250.yaml
     index_ticker: "NIFTY:MICROCAP250"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_midsmallcap_400:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_midsmallcap_400.yaml
     index_ticker: "NIFTY:MIDSMALLCAP400"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_largemidcap_250:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_largemidcap_250.yaml
     index_ticker: "NIFTY:LARGEMIDCAP250"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   nifty_total_market:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_total_market.yaml
     index_ticker: "NIFTY:TOTALMARKET"
-    ticker_prefix: "NSE:"
     annualization_factor: 250
   sp500:
     source: configs/data_pipelines/domains/us_equities/universe_sp500.yaml
     index_ticker: "INDEX:^SPX"
-    ticker_prefix: null
     annualization_factor: 252
   nasdaq100:
     source: configs/data_pipelines/domains/us_equities/universe_nasdaq100.yaml
     index_ticker: "INDEX:^NDX"
-    ticker_prefix: null
     annualization_factor: 252
   russell1000:
     source: configs/data_pipelines/domains/us_equities/universe_russell1000.yaml
     index_ticker: "INDEX:^RUT"
-    ticker_prefix: null
     annualization_factor: 252
 
 # ---------------------------------------------------------------------------
