@@ -5,7 +5,7 @@ This repo hosts multiple forecasting/analytics modules — each independently ve
 - **analog_mc** — probabilistic price-path forecasting (analog Monte Carlo). [`docs/analog_mc/goal.md`](docs/analog_mc/goal.md)
 - **data_pipelines** — generic time-series ingestion framework; `us_equities` + `nse_equities` domains shipped. [`docs/data_pipelines/goal.md`](docs/data_pipelines/goal.md)
 - **forecasters** — agent-callable forecasting surface; presets as saved-model artifacts; analog_mc wired as backend #1. [`docs/forecasters/goal.md`](docs/forecasters/goal.md)
-- **gbdt** — categorical-outcome GBDT classifiers for probability of `{±10/20/50%}` in `{10/20/50}` days. [`docs/gbdt/goal.md`](docs/gbdt/goal.md)
+- **gbdt** — categorical-outcome GBDT classifiers; v1 ships **experiment-loop infrastructure** (per-experiment YAML spec → CatBoost on pooled panel → calibrated probabilities). [`docs/gbdt/goal.md`](docs/gbdt/goal.md)
 
 ## Module goal docs (read first)
 
@@ -41,14 +41,15 @@ Agent-callable verbs live at `.claude/skills/<name>/SKILL.md` and are invoked as
 
 - **One skill = one verb.** Inference, fitting, listing, fetching, health-checking are separate skills.
 - **Skill is module-owned even when bundled in a cross-module PR.** SKILL.md files live in the shared `.claude/skills/` namespace (because that's where Claude Code reads them), but the runner script lives under the owning module (e.g. `/fetch-data` SKILL.md + `scripts/data_pipelines/skill_runner.py`). Ownership tracks the implementation, not the SKILL.md location.
-- **Long-running skills (`/tune-preset` and the like) MUST bake in the loop-pattern guidance** per `.claude/memories/feedback-experiment-agent-loop.md` so sub-agents that invoke them set up properly from launch.
+- **Long-running skills (`/tune-preset`, `/gbdt-experiment`, and the like) MUST bake in the loop-pattern guidance** per `.claude/memories/feedback-experiment-agent-loop.md` AND the foreground-vs-background split per `.claude/memories/feedback-sub-agent-foreground.md` (sub-30-min runs = foreground with `timeout`; ≥2 h runs = background + Monitor + ScheduleWakeup chain).
 - **No backend-internal hyperparameter flags** on the public skill surface — overrides via `--config-overrides path.yaml`, never `--n-eff 50`.
 
 ## Data and configs
 
-- **analog_mc / gbdt**: read from a local CSV (default `data/NASDAQ100.csv`, FRED-style: `observation_date`, `NASDAQ100`). The loader takes `date_col` and `close_col` from config — asset-agnostic.
-- **`data_pipelines`**: the general-purpose loader has shipped. New modules that need historical price data should use `data_pipelines.fetch(identifier, start, end)`. `analog_mc` and `gbdt` v1 stay on the CSV-first contract per `[[project-data-source]]`; wiring them to `data_pipelines` is a separate per-module plan.
-- **Cache layout**: SQLite at `data/processed.db` (per-domain tables) + immutable per-provider raw downloads at `data/raw/<provider>/...`. Single-writer-per-`data_root` is the contract — concurrent seed processes risk SQLite `BUSY` contention; WAL serializes correctness-wise.
+- **analog_mc**: reads from a local CSV (default `data/NASDAQ100.csv`, FRED-style: `observation_date`, `NASDAQ100`). The loader takes `date_col` and `close_col` from config — asset-agnostic.
+- **gbdt v1**: reads pooled NIFTY 50 panel via `data_pipelines.fetch()` from the SQLite cache; defaults to `cache_only=True` (no provider gap-fill during experiments). Universe self-service in Stage 1 of `/gbdt-experiment` registers new universes (curl from `archives.nseindia.com` is the reliable path; jugaad/nselib often blocked — see `[[project-nse-data-quirks]]`).
+- **`data_pipelines`**: general-purpose loader. New modules that need historical price data should use `data_pipelines.fetch(identifier, start, end, back_extend=False)`. analog_mc stays on the CSV-first contract per `[[project-data-source]]`; wiring it to `data_pipelines` is a separate per-module plan.
+- **Cache layout**: SQLite at `data/processed.db` (per-domain tables) + immutable per-provider raw downloads at `data/raw/<provider>/...`. Single-writer-per-`data_root` is the contract — concurrent seed processes risk SQLite `BUSY` contention; WAL serializes correctness-wise. **If `processed.db-wal` becomes filesystem-corrupted** (I/O error on stat/unlink), copy `processed.db` to a non-corrupted scratch dir and re-symlink — see `[[project-nse-data-quirks]]` for the workaround.
 
 ## Plans and branches
 
@@ -82,7 +83,8 @@ The 6 critical correctness constraints (C1–C6 in the plan) are non-negotiable:
 - `analog_mc`, `data_pipelines`, `forecasters`, and `gbdt` are all installed as editable packages via hatchling (`pyproject.toml` `[tool.hatch.build.targets.wheel] packages` list) — `import <module>.foo` works from anywhere.
 - Run things with `uv run <cmd>` (e.g., `uv run pytest`, `uv run streamlit run dashboards/analog_mc/app.py`, `uv run python -m data_pipelines fetch ...`, `uv run python -m scripts.gbdt.v0_opportunity_scan`).
 - **gh CLI is installed and authenticated** as `shayanrc` (per per-user memory `gh-cli-installed`). Use `gh pr create / view / diff / comment / review` directly for GitHub ops; no need to surface compare URLs. Merges still happen via user action (no autonomous `gh pr merge`).
-- **Worktree workflow for parallel agents**: when launching long-running sub-agents that need their own working tree, create a sibling worktree (convention: `wt-<scope>/` next to the main checkout) and symlink `data/` + `.env` from the main checkout so the shared cache and secrets carry over. The lockfile is shared via git, so `uv sync --frozen` in the worktree sets up an isolated `.venv/`.
+- **Worktree workflow for parallel agents**: when launching long-running sub-agents that need their own working tree, the **parent agent** creates the sibling worktree (sub-agents can't `git worktree add` to sibling paths — sandbox blocks it; see `[[feedback-worktree-symlink-contract]]`). Convention: `wt-<scope>/` next to the main checkout. After `git worktree add`, the parent symlinks `data/` and `.env` from the main checkout so the shared cache and secrets carry over. The symlink commands MUST be `rm -rf data && ln -s <abs-path>/data data` — not `ln -snf`, which creates a nested `data/data` because `data/.gitkeep` is tracked. Verify with `readlink data` returning the absolute path. The lockfile is shared via git, so `uv sync --frozen` in the worktree sets up an isolated `.venv/`.
+- **Disk pre-flight before long-running runs**: the FS hosting the project can wedge when near-full (≥95%) — kernel writes enter D-state, processes become unkillable, cascading. Long-running skills should pre-flight `df --output=avail $(pwd) | tail -1 ≥ 10 G`. See `[[feedback-disk-wedge-pattern]]`.
 
 ## Memories
 
@@ -99,3 +101,12 @@ Per-user/per-machine items (personal preferences, role context, machine paths) s
 - Don't implement v2 features (trailing-momentum drift, conditional block sampling, tail inflation) in v1. They are gated on specific diagnostic findings; premature implementation contaminates the diagnostics that decide whether v2 is needed.
 - Don't report aggregate CRPS as the headline result without PIT and weight-trajectory diagnostics.
 - Don't add transaction costs, position sizing, or PnL to this pipeline. Those belong downstream.
+
+## What not to do — gbdt
+
+- Don't ship the 18-cell lattice as a single deliverable — v1 is the experiment-loop infrastructure; each experiment is one `(universe, direction, threshold, horizon, max_drawdown?)` tuple. The lattice was v0 EDA scope.
+- Don't add per-asset constants in features — v1 features must be **asset-agnostic** (the panel-pooled model has no per-stock metadata). Cross-sectional features (rank/zscore across the panel at each `t`) are explicitly OK.
+- Don't disable `has_time=True` in the CatBoost wrapper — it's mandatory for walk-forward correctness (C6). Pinned in `configs/gbdt/default.yaml::backend.hp_pinned`; never overridable.
+- Don't treat the per-experiment verdict as automated — `report.md` is the agent's one-paragraph readout; the PASS/FAIL judgment is for the user. AUC ∈ [0.45, 0.55] is a **null-signal flag** regardless of calibration (a constant-predictor is perfectly calibrated and has Brier ≈ base-rate variance).
+- Don't introduce lagged-target features without strict masking — they're the classic foot-gun (target's event window overlaps prediction time). v1 covers the "recent event" intuition via the F16 `signed_days_outside_<X>sig` family, which has no leakage trap.
+- Don't add transaction costs, position sizing, or PnL — same as analog_mc; downstream concerns.

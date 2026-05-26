@@ -33,13 +33,19 @@ The CLI atom runs without the per-iteration agent reasoning — it uses default 
 
 Before launching the loop:
 
+0. **Infrastructure checks** (added 2026-05-26 after v1 pilot wedge incident — see `.claude/memories/feedback-disk-wedge-pattern.md`):
+   - **Disk space**: `df --output=avail $(pwd) | tail -1` must show ≥10 G of headroom on the volume hosting the repo. Else refuse to start; list candidate worktrees to prune.
+   - **No competing experiment processes**: `ps -ef | grep "gbdt.experiment" | grep -v grep` must be empty. Don't run parallel experiments against the same SQLite cache (single-writer contract).
+   - **Worktree symlink validation** (if running in a worktree): `readlink data` must return a non-empty absolute path to the shared cache (the main checkout's `data/` or a scratch dir like `~/exp_data`). Empty means `data/` is a real directory with a nested symlink — STOP and report; let the parent fix. See `.claude/memories/feedback-worktree-symlink-contract.md`.
+   - **SQLite WAL integrity**: `sqlite3 data/processed.db 'PRAGMA quick_check' 2>&1` must print `ok`. If it errors with "unable to open database file" the WAL is filesystem-corrupted — STOP and use the scratch-dir workaround per `.claude/memories/project-nse-data-quirks.md`.
 1. **Validate the spec** — `experiment.load_spec(spec_path)` runs the validation rules in `docs/gbdt/EXPERIMENT_SPEC.md` § "Validation rules". Bail with a clear error if any rule fails.
-2. **Universe self-service** — if `spec.target.universe` is not one of the pre-registered presets under `configs/gbdt/default.yaml::universes` (v1 ships `nifty50` only), the agent registers it before going further. Two paths:
+2. **Universe self-service** — if `spec.target.universe` is not one of the pre-registered presets under `configs/gbdt/default.yaml::universes` (v1 ships `nifty50` only), the agent registers it before going further. Three paths (try in this order):
    - **Inline tickers:** if the spec carries a top-level `tickers:` list, write a new universe YAML at `configs/data_pipelines/domains/nse_equities/universe_<name>.yaml` with those tickers + a `universes::<name>` block in `configs/gbdt/default.yaml` pointing at it.
-   - **Well-known NSE index** (`nifty100`, `nifty_midcap_150`, `nifty500`, etc.): pull the constituent list via the `data_pipelines` adapter chain (the same chain that resolves `^NSEI` / `NIFTY:NIFTY100` etc.) and persist a universe YAML the same way.
+   - **curl from archives.nseindia.com** (reliable; preferred for well-known NSE indices): `curl -L -A "Mozilla/5.0" https://archives.nseindia.com/content/indices/ind_<name>list.csv`. Known working: `ind_nifty50list`, `ind_niftynext50list`, `ind_nifty100list`, `ind_niftymidcap150list`, `ind_nifty500list`. **Filter `DUMMY*` placeholder tickers** (Vedanta demerger trick — non-tradeable; would otherwise burn ~80s/each on retry storms).
+   - **`data_pipelines` adapter chain (jugaad/nselib)** — last resort, often blocked by anti-bot/SSL. Don't waste cycles here if curl works.
 
    After registration, fall through to step 3 to ensure each ticker is cached.
-3. **Check the data cache** — verify `data_pipelines.fetch()` can serve every ticker in the universe over the requested `date_range`. For missing tickers, call `data_pipelines.fetch()` per ticker (sequential or limited-parallel — respect the SQLite single-writer contract) to populate the cache. Drop tickers below `spec.split.min_rows_per_ticker` (default 1,600 = sum of 800+400+200+100) with a logged note that lands in `metrics.json::data.tickers_excluded`. If many tickers need a cold pull, surface it and let the user decide whether to proceed; a cold pull of ~50 NIFTY 50 tickers via the jugaad chain takes minutes, but a NIFTY 500 cold pull is materially longer.
+3. **Check the data cache** — verify `data_pipelines.fetch()` can serve every ticker in the universe over the requested `date_range`. For missing tickers, call `data_pipelines.fetch()` per ticker — **sequential** (respect SQLite single-writer) + **per-ticker 120s hard timeout** (mirror `scripts/seed_nifty50_deep.sh` from PR #6 — without it, one stuck ticker blocks the queue). For cached-but-short tickers (rows < `min_rows_per_ticker` but > 1000), call `data_pipelines.fetch(..., back_extend=True, start='2015-01-01')` to push them over the bar; without this, the experiment silently drops them (Exp 2 lost 53/100 tickers this way before lesson learned). Drop tickers still below `spec.split.min_rows_per_ticker` (default 1,600) with a logged note that lands in `metrics.json::data.tickers_excluded`. If many tickers need a cold pull, surface it and let the user decide whether to proceed; cold pulling 150–500 tickers can take 2–8 hours.
 4. **Check the artifact path is free** — if `results/gbdt/experiments/<experiment_name>/` already exists, refuse to overwrite without explicit user confirmation. The artifact dir is the unit of currency; silent overwrites lose the prior result.
 5. **Read the references** if unsure on any decision:
    - `docs/gbdt/V1_PLAN.md` § "Stage breakdown" for the layer-by-layer architecture.
@@ -115,14 +121,23 @@ Each iteration:
 
 ## Long-running pattern
 
-A full pilot experiment (279 cols × 48 tickers × FS+HP loop with up to 8 iterations × Ordered boosting) typically runs in the 30 min – 2 hr range. Specs with `max_iterations: 8` and high feature counts can push past 2 hours. For any compute that may take more than ~30 minutes, do not block your single tool call waiting for it. Instead:
+Pick by **expected wall time of the compute being launched** (not iteration count):
 
+**Sub-30-min runs** (cached-data nifty50 experiments, smoke tests): **foreground with `timeout` as a hard cap**. Do NOT background+Monitor — see `.claude/memories/feedback-sub-agent-foreground.md` for why (agent sessions exit prematurely under Monitor; orphans the run).
+```bash
+timeout 1800 uv run python -m gbdt.experiment <spec.yaml> 2>&1 | tee logs/exp_<name>.log
+```
+Stay in the session until `timeout` returns or the command exits naturally. Then read the artifact and report.
+
+**Sub-2-hour runs** (single-universe self-service for ~100 tickers + experiment): foreground with `timeout 7200`. Still single-shell, agent stays alive.
+
+**≥2-hour runs** (cold-pull universe self-service for 150+ tickers, multi-fold walk-forward tunes): background + Monitor + `ScheduleWakeup` chain. This is the original pattern:
 > 1. Launch the long shell with `Bash run_in_background=true` and a stable log path (e.g. `logs/<experiment_name>_<UTC>.log`).
 > 2. Use `Monitor` with a filtered `tail -f <log> | grep -E --line-buffered "iter=|elapsed|inner_stop|Error|Traceback|completed"` so progress events stream in without flooding context.
-> 3. If the compute will likely outlast your session (rule of thumb: anything ≥2h), use the `/schedule` skill (which wraps the underlying ScheduleWakeup capability) to self-pace — schedule a wakeup at 1200–1800s with a self-contained prompt that re-checks progress, decides whether to schedule the next wake, and ends when the job completes.
+> 3. Use the `/schedule` skill (which wraps the underlying ScheduleWakeup capability) to self-pace — schedule a wakeup at 1200–1800 s with a self-contained prompt that re-checks progress, decides whether to schedule the next wake, **and explicitly chains to the next phase when the background work completes** (the agent that launched the background work may have exited its session; the wakeup is the chain).
 > 4. Never block one tool call for hours — that wastes the session and prevents you from being interruptible.
 
-See `.claude/memories/feedback-experiment-agent-loop.md` for the source of this guidance.
+See `.claude/memories/feedback-experiment-agent-loop.md` for the long-running guidance and `.claude/memories/feedback-sub-agent-foreground.md` for why the sub-30-min case differs.
 
 The parent will check in periodically and the auto-completion notification reaches the parent directly — no need to do anything special to "signal done."
 
