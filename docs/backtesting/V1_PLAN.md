@@ -2,16 +2,16 @@
 
 ## Build status
 
-- **v1.0 spec-lock:** `docs/backtesting/{goal,spec}.md` merged via PR #12 (2026-05-26). Locks the step-loop API, the two-phase execution lifecycle, the master-timeline construction, the lot-size contract, the asset-class-agnostic stance, and the explicit non-goals (no margin, no rewards, no Gym subclass, no live broker).
-- **v1.0 implementation plan:** this PR. Translates the spec into a concrete 8-stage build order with critical-correctness constraints, cross-module integration points, open questions, and test strategy. Stages 1–8 below are pending implementation.
+- **v1.0 spec-lock:** `docs/backtesting/{goal,spec}.md` merged via PR #12 (2026-05-26). Subsequently amended (this PR) to lock the engine-level `fill_mode`, drop limit orders + per-order execution overrides, defer multi-frequency support to v1.1, redefine `advance_time()` as no-mutate-when-done, and introduce a configurable `gap_policy`. Locks the step-loop API, the single-phase execution lifecycle, the single-frequency timeline, the lot-size contract, the asset-class-agnostic stance, and the explicit non-goals (no margin, no rewards, no Gym subclass, no live broker).
+- **v1.0 implementation plan:** this PR. Translates the (amended) spec into a concrete 8-stage build order with critical-correctness constraints, cross-module integration points, resolved questions, and test strategy. Stages 1–8 below are pending implementation.
 
-For *what success looks like* (the look-ahead-bias structural-elimination rule, B1–B6, scope limits), see [`goal.md`](goal.md). For the architectural decisions (D1 step-loop, D2 two-phase lifecycle, D3 master timeline + forward-fill), the action / state schemas, the component APIs, and the lifecycle walkthrough, see [`spec.md`](spec.md). Parked v1.1 follow-ups are in [`V1.1_TBD.md`](V1.1_TBD.md).
+For *what success looks like* (the look-ahead-bias structural-elimination rule, B1–B7, scope limits), see [`goal.md`](goal.md). For the architectural decisions (D1 step-loop, D2 engine-level `fill_mode`, D3 single-frequency timeline with activity masks), the action / state schemas, the component APIs, and the lifecycle walkthrough, see [`spec.md`](spec.md). Parked v1.1 follow-ups are in [`V1.1_TBD.md`](V1.1_TBD.md).
 
 ---
 
 ## Purpose
 
-This is an implementation specification for a **correct, configurable, multi-asset backtesting engine** that simulates order execution against historical data via a step-based loop. v1 ships the four core components (`DataHandler`, `Portfolio`, `ExecutionBroker`, `Backtest`), the structural look-ahead-elimination machinery (two-phase lifecycle + master timeline), and the test infrastructure that verifies the B1–B6 correctness constraints cannot be violated by valid inputs.
+This is an implementation specification for a **correct, configurable, multi-asset backtesting engine** that simulates order execution against historical data via a step-based loop. v1 ships the four core components (`DataHandler`, `Portfolio`, `ExecutionBroker`, `Backtest`), the structural look-ahead-elimination machinery (engine-level `fill_mode` + single-frequency timeline + per-asset activity masks), and the test infrastructure that verifies the B1–B7 correctness constraints cannot be violated by valid inputs.
 
 The plan is the output of the design conversations reflected in `goal.md` and `spec.md`. Decisions documented here were made for a reason. **Do not silently change architectural decisions.** If implementation reveals a problem with a decision, surface it explicitly and ask before deviating. Architectural decisions (D1 / D2 / D3 in `spec.md`) are out of scope for "silent change" — they shaped the entire design and should be re-litigated at the goal/spec level, not in implementation.
 
@@ -23,33 +23,33 @@ This document is the **authoritative v1 implementation spec for the backtesting 
 
 Specifically:
 - The 8-stage build order in § "Stage breakdown" is strict. Diagnostic infrastructure (Stages 2 and 7) is what makes the engine trustworthy, not the orchestrator (Stage 5). Do not skip ahead.
-- The B1–B6 correctness constraints in § "Critical correctness constraints" are non-negotiable. Each constraint has a dedicated test surface in `tests/backtesting/test_correctness.py` (Stage 7). Any change that makes a constraint harder to verify, or any failed test on these constraints, blocks the PR.
+- The B1–B7 correctness constraints in § "Critical correctness constraints" are non-negotiable. Each constraint has a dedicated test surface in `tests/backtesting/test_correctness.py` (Stage 7). Any change that makes a constraint harder to verify, or any failed test on these constraints, blocks the PR.
 - The cross-module dependencies in § "Cross-module dependencies" are the only integration points between `backtesting` and the rest of the project. Adding a new dependency on `analog_mc`, `gbdt`, or `forecasters` requires updating this section first.
-- The architectural decisions in § "Architectural decisions" — and the resolved-design-decisions block in `spec.md` § 9 — together form the locked decision set. The "Open questions" section below lists what is *not* yet decided; everything else should be treated as locked.
+- The architectural decisions in § "Architectural decisions" — and the resolved-design-decisions block in `spec.md` § 9 — together form the locked decision set. The "Resolved questions" section below records the 10 decisions made during plan review; everything in this plan should be treated as locked.
 
 ---
 
 ## Critical correctness constraints
 
-These are non-negotiable invariants for v1, equivalent in role to `analog_mc`'s C1–C6 and `gbdt`'s leakage-harness gate. They map directly onto B1–B6 in `spec.md` § 7 and are reproduced here with the implementation-side test surface attached. Every constraint must hold under all valid input combinations, not just the ones we happened to test.
+These are non-negotiable invariants for v1, equivalent in role to `analog_mc`'s C1–C6 and `gbdt`'s leakage-harness gate. They map directly onto B1–B7 in `spec.md` § 7 and are reproduced here with the implementation-side test surface attached. Every constraint must hold under all valid input combinations, not just the ones we happened to test.
 
 ### B1. No look-ahead in state
 
-`DataHandler.get_window()` returns data with indices `[current_step − lookback + 1, current_step]` inclusive. No row at index `> current_step` is ever included in the returned state, by integer slicing on the master timeline.
+`DataHandler.get_window()` returns data with indices `[current_step − lookback + 1, current_step]` inclusive. No row at index `> current_step` is ever included in the returned state, by integer slicing on the timeline.
 
 **Test surface:** `tests/backtesting/test_correctness.py::test_b1_no_lookahead_in_state` — drive the engine across a synthetic dataset where every value at row `t` equals `t` (a "row-index sentinel"). Assert that every state returned at step `T` contains only sentinel values `≤ T` in every feed.
 
-### B2. Phase-ordered execution
+### B2. Engine-mode-correct execution
 
-`current_close` orders fill in Phase 1 (before `advance_time()`) at bar T's close. `next_open` and `limit` orders fill in Phase 2 (after `advance_time()`) at bar T+1's open / OHLC bar. The state returned from `step()` reflects T+1 data.
+All orders submitted in a given engine fill at the bar selected by the engine's configured `fill_mode`. `fill_mode="current_close"` ⇒ T's close; `fill_mode="next_open"` ⇒ T+1's open. The state returned from `step()` reflects T+1 data (or T if `done=True`).
 
-**Test surface:** `tests/backtesting/test_correctness.py::test_b2_phase_ordered_execution` — drive a synthetic dataset where each bar's prices are a known function of the step index. Submit one order per execution mode. Assert that the recorded fill price in `info["fills"]` for the `current_close` order equals bar-T's close, and the fill price for the `next_open` order equals bar-(T+1)'s open. Assert that the returned `state["step"]` equals `T+1`.
+**Test surface:** `tests/backtesting/test_correctness.py::test_b2_fill_mode_execution` — drive a synthetic dataset where each bar's prices are a known function of the step index. Run the same scripted scenario twice, once with each `fill_mode`. Assert that every recorded `fill_price` in `info["fills"]` equals the bar / field pair implied by the engine's configured `fill_mode`. Assert that the returned `state["step"]` equals `T+1` (non-terminal) or remains parked (terminal).
 
-### B3. Causal forward-fill
+### B3. Causal data access (forward-fill on internal gaps only)
 
-Lower-frequency feeds are forward-filled from past observations only. No backward-fill, no interpolation, no centering. At step T, every cell in `state["market_data"]` for slow-updating data reflects the most recent observation at or before T.
+With `gap_policy="ffill_zero_volume"` (the default), internal date gaps within an asset's active range are forward-filled from the previous bar; volume is zeroed. No backward-fill, no interpolation, no centering. At step T, every cell in `state["market_data"]` reflects either a true observation at or before T or a value carried forward from such an observation. Mid-series-start assets carry NaN before their first observation. Multi-frequency forward-fill across feeds is deferred to v1.1 (see Resolved Questions Q3).
 
-**Test surface:** `tests/backtesting/test_correctness.py::test_b3_causal_forward_fill` — build a daily-equities feed plus a quarterly-macro feed with known release dates. Assert that the macro value visible at every step `T` equals the most recent release at or before T's date. Also assert that **mid-series-start assets** carry NaN before their first observation (no backfill) and are marked untradeable (per D3 in `spec.md`).
+**Test surface:** `tests/backtesting/test_correctness.py::test_b3_causal_data_access` — build a single-frequency feed with a deliberately injected internal gap; assert that the post-gap state's gap row equals the previous bar's price columns with zero volume, and that no future row leaked back. Also assert that **mid-series-start assets** carry NaN before their first observation (no backfill) and are marked untradeable (per D3 in `spec.md`).
 
 ### B4. Portfolio consistency
 
@@ -69,13 +69,11 @@ Every filled order quantity is a valid multiple of the instrument's lot size, pe
 
 **Test surface:** `tests/backtesting/test_correctness.py::test_b6_lot_size_integrity` — drive weight-based actions that produce fractional ideal quantities. Assert every executed fill in `info` satisfies `qty % lot_size == 0` (with `lot_size == 0` treated as the "fractional, no check" case). Cover all three lot-size regimes: `0` (fractional), `1` (whole shares), `N` (round lots of N).
 
-### B7. Terminal-step contract
+### B7. Terminal-step contract (no-mutate-when-done)
 
-When `advance_time()` returns done at Phase 1 → Phase 2 transition, the engine **must not** attempt to fill Phase-2 orders against a nonexistent T+1 bar. Pending `next_open` / `limit` orders are cancelled and reported in `info["cancelled"]`. The returned state reflects T (the last available bar), marked to T's close prices.
+`DataHandler.advance_time()` is no-mutate-when-done — at the terminal bar it returns `True` without incrementing `current_step`. The handler stays parked at `max_steps - 1`; the invariant `current_step ∈ [lookback, max_steps - 1]` holds for the entire engine lifetime. For `fill_mode="next_open"`, any orders still pending when `done=True` are reported under `info["rejected_untradeable"]` (the T+1 bar that would have filled them does not exist).
 
-**Test surface:** `tests/backtesting/test_correctness.py::test_b7_terminal_step_contract` — run the engine to the last bar with a pending `next_open` order. Assert (a) the order is in `info["cancelled"]`, (b) `done == True`, (c) the state's `timestamp` equals the last bar's date, (d) `portfolio.equity` reflects the last bar's close-price mark.
-
-> B7 isn't in `spec.md` § 7's B-list but the terminal-path behavior **is** in `spec.md` § 5's lifecycle walkthrough. We promote it to a constraint here because it's the place a naive implementation will silently produce NaN fills or off-by-one state, and the cost of testing it is low.
+**Test surface:** `tests/backtesting/test_correctness.py::test_b7_terminal_step_contract` — run the engine to the last bar with a pending `next_open` order. Assert (a) the order is in `info["rejected_untradeable"]`, (b) `done == True`, (c) the state's `timestamp` equals the last bar's date, (d) `data_handler.current_step == max_steps - 1` post-done (no off-by-one drift), (e) `portfolio.equity` reflects the last bar's close-price mark. Also assert that a second `step(None)` after done keeps `current_step` at `max_steps - 1` (idempotent terminal state).
 
 ---
 
@@ -90,7 +88,7 @@ Backtesting is a **consumer** of upstream modules' outputs and a **producer** of
 - **Function:** `data_pipelines.fetch(identifier, start, end) → pd.DataFrame` (the canonical OHLCV schema in `src/data_pipelines/schema.py`: `date`, `open`, `high`, `low`, `close`, `adj_close`, `volume`).
 - **Where:** an optional convenience constructor `Backtest.from_identifiers(identifiers, start, end, **kwargs)` that wraps `data_pipelines.fetch()` per identifier and assembles the `data_feeds` dict. The core `Backtest.__init__` continues to accept raw DataFrames — making `data_pipelines` a soft dependency, not a hard one (per `spec.md` § 9 #1 and `goal.md` § "How to apply this").
 - **Cache contract:** `data_pipelines.fetch()` is cache-served on hit (sub-second), cold pull on miss. The convenience constructor respects the cache; no separate cache layer in `backtesting`.
-- **Domain coverage in v1:** `us_equities` + `nse_equities` ship in `data_pipelines`. Macro feeds (FRED-style `(date, value)` series) are a separate domain — not built yet in `data_pipelines`. **Risk:** if v1 wants to demonstrate the master-timeline forward-fill on real macro data (e.g., quarterly GDP), the macro adapter must exist first. See OQ-3 in § "Open questions".
+- **Domain coverage in v1:** `us_equities` + `nse_equities` ship in `data_pipelines`. Macro feeds (FRED-style `(date, value)` series) are a separate domain — not built yet in `data_pipelines`. v1 is single-frequency-per-engine (resolved Q3): the multi-frequency master-timeline + slower-feed forward-fill machinery is deferred to v1.1, removing the macro-adapter dependency from the v1 critical path.
 
 #### `forecasters` (zero v1 dependency; v1.1 hook only)
 
@@ -120,7 +118,7 @@ The asymmetry — rich consumption story, minimal production story — is intent
 
 ## Stage breakdown
 
-The build order is strict. Each stage ends with a passing test suite and a commit. Don't skip ahead. As with `analog_mc`'s plan, the **diagnostic infrastructure (Stage 2: master timeline + leakage harness; Stage 7: B1–B7 constraint suite) is what makes the engine trustworthy**, not the orchestrator (Stage 5: `Backtest`).
+The build order is strict. Each stage ends with a passing test suite and a commit. Don't skip ahead. As with `analog_mc`'s plan, the **diagnostic infrastructure (Stage 2: timeline + sentinel + gap-policy harness; Stage 7: B1–B7 constraint suite) is what makes the engine trustworthy**, not the orchestrator (Stage 5: `Backtest`).
 
 Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
 
@@ -153,83 +151,81 @@ Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
 
 **Done when:** `pytest tests/backtesting/test_portfolio.py` passes; `portfolio.py` is the only file under `src/backtesting/`.
 
-### Stage 2 — `DataHandler` + master-timeline correctness harness (M)
+### Stage 2 — `DataHandler` + timeline correctness harness (M)
 
-**Goal:** ship the timekeeping primitive. This is where D3 (master timeline + forward-fill) lives. Get this right and B1 (no look-ahead) becomes structurally enforced; get it wrong and the engine silently leaks future data into the state.
+**Goal:** ship the timekeeping primitive. This is where D3 (single-frequency timeline + per-asset activity masks) and Q9's `gap_policy` live. Get this right and B1 (no look-ahead) becomes structurally enforced; get it wrong and the engine silently leaks future data into the state.
 
 **Files added:**
 - `src/backtesting/data_handler.py` — `DataHandler` class per `spec.md` § 4.1.
-- `src/backtesting/utils.py` — shared helpers (master-timeline construction, NaN-aware reindex). Created here, extended by later stages.
+- `src/backtesting/utils.py` — shared helpers (timeline construction, NaN-aware reindex, gap detection). Created here, extended by later stages.
 
 **Tasks:**
-- Implement `__init__(data_feeds, lookback)`, `_align_and_fill`, `advance_time()`, `get_current_bar()`, `get_window()`, `get_price(asset, field)`, `reset()`.
-- **Master timeline construction (D3):**
-  - Determine the highest-frequency feed = the feed whose constituent DataFrames have the greatest number of **unique dates** across the union of all assets in that feed.
-  - The master timeline is the **union** of all dates across all assets in the highest-frequency feed.
-  - For every other feed, reindex each asset's DataFrame to the master timeline.
-  - Higher-frequency feeds → no fill needed (they define the timeline).
-  - Lower-frequency feeds → forward-fill (`pandas.DataFrame.ffill()`) per asset.
+- Implement `__init__(data_feeds, lookback, gap_policy)`, `_align`, `advance_time()`, `get_current_bar()`, `get_window()`, `get_price(asset, field)`, `reset()`.
+- **Single-frequency timeline construction (D3):**
+  - The timeline is the **union** of all dates across all assets across all feeds. All feeds share the same trading calendar in v1; cross-frequency forward-fill is deferred to v1.1 per Q3.
+  - For each asset, reindex its DataFrame to the timeline.
   - Mid-series-start assets → NaN before first observation (do NOT backfill); mark untradeable on those dates.
   - Mid-series-end assets → forward-fill last known value; mark untradeable after last date.
+  - Internal-gap handling per `gap_policy` (Q9):
+    - `"raise"` → any missing date within an asset's active range fails construction with a clear error.
+    - `"ffill_zero_volume"` (default) → forward-fill price columns from the previous bar; set the `volume` column to zero. The gap day is then a valid bar with zero traded volume.
   - Untradeable marker → boolean mask stored alongside the panel, queried by the broker in Stage 4.
 - `current_step` starts at `lookback`, not 0 (so `get_window()` always returns a full-length window).
 - `get_window()` returns dict `{feed_name: {asset_name: ndarray of shape (lookback, n_columns)}}`. Half-open Python indexing: `data[step − lookback + 1 : step + 1]`.
-- `advance_time()` returns `True` when the increment would move `current_step` past `max_steps − 1` (no T+1 bar exists).
+- `advance_time()` is **no-mutate-when-done** (Q8): if `current_step + 1 >= max_steps`, return `True` without incrementing. Otherwise increment and return `False`.
 
 **Tests added:**
 - `tests/backtesting/test_data_handler.py`:
-  - Single-feed single-asset construction → master timeline length correct, `current_step` = lookback.
-  - Two feeds different frequencies → forward-fill applied to slower; timeline driven by faster.
+  - Single-feed single-asset construction → timeline length correct, `current_step` = lookback.
+  - Multi-asset same-frequency construction → timeline is union of asset dates; each asset reindexed; untradeable masks correct.
   - Mid-series-start asset → NaN before, untradeable flag asserted.
   - Mid-series-end asset → forward-fill after, untradeable flag asserted.
   - `get_window()` at first valid step → full-length window, no nulls in the active range.
-  - `advance_time()` at last bar → returns `True`.
+  - `advance_time()` at last bar → returns `True`; `current_step` unchanged (Q8 no-mutate).
+  - Repeated `advance_time()` after done → still returns `True`; `current_step` still pinned to `max_steps - 1`.
   - `reset()` → `current_step` back to `lookback`.
+  - **Q9 internal-gap policy:**
+    - `test_internal_gap_raises_when_gap_policy_is_raise` — build a feed with a deliberately-injected missing date inside an asset's active range; assert `DataHandler(..., gap_policy="raise")` raises with a clear error.
+    - `test_internal_gap_ffills_when_gap_policy_is_default` — same input; assert `DataHandler(..., gap_policy="ffill_zero_volume")` constructs cleanly, the gap-day row equals the previous bar's price columns, and the gap-day volume is 0.
 
 **Diagnostic infrastructure (the trustworthiness layer):**
 - `tests/backtesting/test_data_handler.py::test_row_index_sentinel_no_lookahead` — the "row-index sentinel" harness referenced in B1. Build a synthetic feed where every value at row `t` equals `t`. Step through the timeline. Assert that at step `T`, no value in `get_window()` exceeds `T`. This is the canonical look-ahead-leak detector — every later stage that touches data access must keep this test green.
 
-**Done when:** master timeline construction works on synthetic mixed-frequency inputs; the row-index sentinel harness passes; mid-series start/end edge cases are tested in both directions.
+**Done when:** single-frequency timeline construction works on synthetic inputs; the row-index sentinel harness passes; mid-series start/end edge cases are tested in both directions; both `gap_policy` modes are tested; `advance_time()` no-mutate-when-done is asserted (and idempotent under repeated calls).
 
-### Stage 3 — `ExecutionBroker` (M)
+### Stage 3 — `ExecutionBroker` (S)
 
-**Goal:** ship the order-queue primitive. This is where the two-phase lifecycle (D2) is mechanically enforced.
+**Goal:** ship the order-queue primitive. v1's broker is dramatically simpler than the original two-phase design: a single fill path against whatever bar the orchestrator hands in. ~30 LOC of fill logic, not ~150 — the engine-level `fill_mode` (Q6) collapses the per-order branching out of the broker entirely.
 
 **Files added:**
 - `src/backtesting/broker.py` — `ExecutionBroker` per `spec.md` § 4.3.
 
 **Tasks:**
-- Implement `__init__(commission_fn)`, `submit_orders(orders)`, `process_queue(current_data, portfolio, phase)`, `get_pending_count()`, `reset()`.
-- **Order validation in `submit_orders`:** required fields (`asset`, `qty`, `execution`); `qty != 0`; `limit` orders must have `limit_price`; `execution` must be one of `{"current_close", "next_open", "limit"}`. Invalid orders are rejected with details captured for `info`.
-- **Phase 1** (`phase=1`): process only `execution == "current_close"` orders against the current bar's close.
-- **Phase 2** (`phase=2`): process `execution == "next_open"` orders against the current bar's open; process `execution == "limit"` orders against the current bar's OHLC (buy limit fills if low ≤ limit_price; sell limit fills if high ≥ limit_price; fill at limit_price).
-- **Within each phase, sells before buys.** Stable sort by `qty` sign (negative first).
+- Implement `__init__(commission_fn)`, `submit_orders(orders)`, `process_queue(current_data, portfolio)`, `get_pending_count()`, `reset()`.
+- **Order validation in `submit_orders`:** exactly the two required fields `{asset: str, qty: float}`; `qty != 0`; `asset` is a known instrument. Unknown fields (`execution`, `limit_price`, `time_in_force`) are rejected with details captured for `info["rejected_invalid"]`. The strict schema is intentional — it forces v1.1 to make a deliberate API extension when those fields come back.
+- **`process_queue`** is fill_mode-agnostic. The orchestrator decides which bar to hand in (T's bar for `current_close`, T+1's bar for `next_open`); the broker fills all pending orders against whatever is provided. No phase argument, no per-order branching, no limit-price evaluation.
+- **Sells before buys.** Stable sort by `qty` sign (negative first) before processing. Cash freed by sells funds subsequent buys.
 - **Direction-aware overdraw guard** (per `spec.md` § 4.2):
   - Buys: `qty * price + commission <= cash` before filling.
   - Sells: `commission <= cash + abs(qty) * price` (post-fill cash covers commission).
   - Orders that fail the guard are skipped, recorded in the returned fill log under `rejected_overdraw`.
-- **Untradeable assets** (from Stage 2): broker rejects buys for untradeable assets, permits sells (filled at last-known price). Captured under `rejected_untradeable`.
-- **Limit-order expiry:** unfilled limit orders after Phase 2 are removed and recorded under `expired_limits`.
+- **Untradeable assets** (from Stage 2): broker rejects buys for untradeable assets, permits sells (filled at last-known price). Captured under `rejected_untradeable`. In `fill_mode="next_open"`, when the engine is done and no T+1 bar exists, every still-pending order is reported under `rejected_untradeable` by the orchestrator (the broker itself just doesn't run).
 - **No partial fills in v1** — order either fills completely or not at all.
-- `process_queue` returns a fill log: `{filled: [...], rejected_overdraw: [...], rejected_untradeable: [...], rejected_invalid: [...], expired_limits: [...]}`. This becomes part of `info` in `Backtest.step()`.
+- `process_queue` returns a fill log: `{filled: [...], rejected_overdraw: [...], rejected_untradeable: [...], rejected_invalid: [...]}`. This becomes the spine of `info` in `Backtest.step()`.
 
 **Tests added:**
 - `tests/backtesting/test_broker.py`:
-  - `submit_orders` validates and rejects malformed orders.
-  - Phase 1 fills `current_close` order; Phase 2 leaves it alone.
-  - Phase 2 fills `next_open` and `limit` orders; Phase 1 leaves them alone.
-  - Buy limit at price P fills when bar's low ≤ P; doesn't fill otherwise.
-  - Sell limit at price P fills when bar's high ≥ P; doesn't fill otherwise.
-  - Unfilled limit after Phase 2 expires (good-for-day).
-  - Sells process before buys within a phase: scenario with cash-funding dependency demonstrates this.
+  - `submit_orders` validates and rejects malformed orders (missing `asset`, missing `qty`, `qty == 0`, extra fields like `execution` / `limit_price`).
+  - `process_queue` against a known bar → fill prices match the bar's relevant column (close or open depending on what the caller hands in).
+  - Sells process before buys: scenario with cash-funding dependency demonstrates this.
   - Buy overdraw → order rejected, cash unchanged, no exception.
   - Sell of untradeable (delisted) asset → permitted at last-known price.
   - Buy of untradeable asset → rejected.
   - `commission_fn` applied to each fill; cash deducted post-trade.
 
-**Diagnostic infrastructure:** order-log schema is itself the diagnostic — every fill / rejection / expiry must be traceable to the bar that produced it. Add a `tests/backtesting/test_broker.py::test_fill_log_audit_trail` that runs a multi-order scenario and asserts every order ID appears exactly once in the union of `filled`, `rejected_*`, and `expired_limits` lists.
+**Diagnostic infrastructure:** order-log schema is itself the diagnostic — every fill / rejection must be traceable to the bar that produced it. Add a `tests/backtesting/test_broker.py::test_fill_log_audit_trail` that runs a multi-order scenario and asserts every submitted order ID appears exactly once in the union of `filled` and `rejected_*` lists.
 
-**Done when:** all execution modes fill at their spec'd prices in their spec'd phases; sells-before-buys within phase tested; direction-aware overdraw guard tested; untradeable handling tested; commission application tested; audit-trail invariant holds.
+**Done when:** the single-phase fill path is tested; sells-before-buys tested; direction-aware overdraw guard tested; untradeable handling tested; commission application tested; audit-trail invariant holds. The whole file should fit on one screen.
 
 ### Stage 4 — `_parse_action` + `_snap_to_lot` + action-validation utility (M)
 
@@ -245,14 +241,15 @@ Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
   - `lot_size == N` → `floor(abs(qty) / N) * N * sign(qty)`.
 - `parse_action`:
   - `action is None` → return `[]` (no-op).
-  - `action["type"] == "order"` → validate each order, snap qty to lot, drop orders with snapped qty == 0 (with `info["lot_size_zeroed"]` audit record), return list.
+  - `action["type"] == "order"` → validate each order has exactly `{asset, qty}` (Q6 — no `execution`, no `limit_price`), snap qty to lot, record `lot_size_audit[asset] = {"requested_qty": original_qty, "filled_qty": snapped_qty}` for every order where the snap changed the value (including snap-to-zero, per Q10's unified key), drop orders with snapped qty == 0, return list.
   - `action["type"] == "weight"`:
-    - Compute current pre-fill equity from `portfolio.cash + Σ pos * current_close_price`.
+    - Validate `sum(target_weights.values()) <= 1.0` (Q1) — raise `ValueError` on over-allocation.
+    - Compute current pre-fill equity from `portfolio.cash + Σ pos * current_close_price` (close is hard-coded per Q4).
     - For each asset in `target_weights`:
       - Target position = `target_weight * equity / current_close_price`.
       - Delta = target_position − current_position.
-      - Snap delta to lot.
-      - If delta != 0 after snap, emit an order with `qty = delta` and the shared `execution` mode.
+      - Snap delta to lot; record in `lot_size_audit` if snap changed it.
+      - If snapped delta != 0, emit an order `{asset, qty: snapped_delta}` (no `execution` field — engine `fill_mode` decides at fill time).
     - For assets in `positions` but NOT in `target_weights`: their target weight is 0 → emit a sell-to-zero order.
     - Sequence: sells first (qty < 0), then buys.
 - Validation errors raise `ValueError` with the offending field. The caller is responsible for catching; the engine does NOT silently drop malformed actions.
@@ -261,55 +258,58 @@ Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
 - `tests/backtesting/test_utils.py`:
   - `snap_to_lot` for the three lot regimes (0, 1, N) with positive + negative + fractional inputs.
   - `parse_action` with `None` → empty list.
-  - `parse_action` with order-type action → orders pass through, qty snapped.
+  - `parse_action` with order-type action → orders pass through, qty snapped, `lot_size_audit` populated for snapped-or-zeroed entries only.
+  - `parse_action` with order containing `execution` field → `ValueError` (extra-field rejection per Q6).
   - `parse_action` with weight-type action against known portfolio + prices → emitted orders math out by hand.
   - Weight-type action drops asset from previous positions → sell-to-zero emitted.
-  - Weight-type action with target sum > 1.0 → either validation raises OR the engine fills what fits (decide per OQ-1 below).
-  - Order with snapped qty == 0 → audit record in returned info, order not emitted.
+  - Weight-type action with `sum(target_weights) > 1.0` → `ValueError` raised (Q1).
+  - Order with snapped qty == 0 → entry in `lot_size_audit` with `filled_qty: 0`, order not emitted (Q10 unified key).
 
-**Diagnostic infrastructure:** the lot-size audit (`info["lot_size_adjustments"]`) — every difference between requested and actual qty is logged. This is what makes B6 visible to the caller, not just enforced internally.
+**Diagnostic infrastructure:** the `lot_size_audit` payload (Q10) — every difference between requested and actual qty is logged under one key. This is what makes B6 visible to the caller, not just enforced internally.
 
-**Done when:** `parse_action` covers all three action variants (None, order, weight); lot snapping covers all three lot regimes; audit records exist for every quantity adjustment; weight-action sells-before-buys preserved.
+**Done when:** `parse_action` covers all three action variants (None, order, weight); lot snapping covers all three lot regimes; `lot_size_audit` records exist for every quantity adjustment (rounding or zeroing); weight-action sells-before-buys preserved; over-allocation raises per Q1; extra fields on orders are rejected per Q6.
 
-### Stage 5 — `Backtest` orchestrator (L)
+### Stage 5 — `Backtest` orchestrator (M)
 
-**Goal:** the 6-step `step()` lifecycle that wires Stages 1–4 together. This is the public API.
+**Goal:** the single-phase `step()` lifecycle that wires Stages 1–4 together. This is the public API. The engine's `fill_mode` (Q6) selects which of two near-identical paths runs — there is no per-order branching anywhere in the orchestrator.
 
 **Files added:**
 - `src/backtesting/backtest.py` — `Backtest` per `spec.md` § 4.4.
 
 **Tasks:**
-- Implement `__init__(data_feeds, initial_cash, lookback, lot_sizes, default_lot_size, commission_fn)`. Construct internal `DataHandler`, `Portfolio`, `ExecutionBroker`.
+- Implement `__init__(data_feeds, initial_cash, lookback, lot_sizes, default_lot_size, commission_fn, fill_mode, gap_policy)`. Construct internal `DataHandler` (passing `gap_policy`), `Portfolio`, `ExecutionBroker`. Store `fill_mode` and validate it's one of `{"current_close", "next_open"}` at construction time.
 - Implement `reset() → (state, done, info)`. Reset all three components; return state at the first valid step; `done=False`, `info={}`.
 - Implement `step(action) → (state, done, info)`:
-  1. **PARSE** — `orders = parse_action(action, self.portfolio, self.data_handler, ...)`. Submit to broker.
-  2. **PHASE 1** — `phase1_log = broker.process_queue(data_handler.get_current_bar(), portfolio, phase=1)`.
-  3. **ADVANCE** — `done = data_handler.advance_time()`. If `done`, take the terminal path (below).
-  4. **PHASE 2** — `phase2_log = broker.process_queue(data_handler.get_current_bar(), portfolio, phase=2)`.
-  5. **MARK** — `portfolio.update_valuations(current_close_prices_at_T+1)`.
-  6. **RETURN** — assemble state from `data_handler.get_window()` + `portfolio.get_state()` + step index + timestamp; pack `info` with phase1/phase2 logs + parse-time adjustments; return `(state, done=False, info)`.
-- **Terminal path** (done=True at step 3):
-  - Skip Phases 2 and 5 (no T+1 bar to fill against).
-  - `portfolio.update_valuations(close_prices_at_T)` (mark to T's close; T+1 doesn't exist).
-  - Cancel all pending broker orders; append to `info["cancelled_at_terminal"]`.
-  - Build state from `data_handler.get_window()` (last full window at T).
-  - Return `(state, done=True, info)`.
+  - **PARSE** — `orders, parse_audit = parse_action(action, self.portfolio, self.data_handler, ...)`. Submit valid orders to broker.
+  - Branch on `fill_mode`:
+    - `"current_close"`:
+      1. **FILL** — `fill_log = broker.process_queue(data_handler.get_current_bar(), portfolio)`. Fills against T's close.
+      2. **ADVANCE** — `done = data_handler.advance_time()`. T → T+1, or pinned at T if done (Q8 no-mutate).
+      3. **MARK** — `portfolio.update_valuations(close_prices_at_current_step)`.
+    - `"next_open"`:
+      1. **ADVANCE** — `done = data_handler.advance_time()`. T → T+1, or pinned at T if done.
+      2. **FILL** — if not done, `fill_log = broker.process_queue(data_handler.get_current_bar(), portfolio)`. If done, all pending orders are routed to `fill_log["rejected_untradeable"]` (the T+1 bar that would have filled them does not exist); broker is not invoked.
+      3. **MARK** — `portfolio.update_valuations(close_prices_at_current_step)`.
+  - **RETURN** — assemble state from `data_handler.get_window()` + `portfolio.get_state()` + step index + timestamp; pack `info` from `parse_audit` + `fill_log` using the locked Q10 key names (omit any key whose payload is empty / all-zero); return `(state, done, info)`.
 - State assembly: build the dict shape from `spec.md` § 3.2 exactly. Include `step`, `timestamp` (ISO string from data_handler's current date), `market_data`, `portfolio` (cash, equity, positions, pending_orders).
+- **Weight-drift accounting:** after MARK, compute realized weights from `positions * close_price / equity`; compare to the action's `target_weights` (if any); populate `info["weight_drift"]` per Q10 (omit assets where drift is zero).
 
 **Tests added:**
 - `tests/backtesting/test_backtest.py`:
   - `reset()` produces valid state at first step.
   - `step(None)` advances time, no orders placed.
-  - `step({"type": "order", ...})` with `current_close` fills in Phase 1.
-  - `step({"type": "order", ...})` with `next_open` fills in Phase 2.
-  - `step({"type": "weight", ...})` rebalances correctly given known prices.
-  - Terminal step: pending order is cancelled, `done=True`, last state returned.
+  - `step({"type": "order", ...})` with `fill_mode="current_close"` fills at T's close.
+  - `step({"type": "order", ...})` with `fill_mode="next_open"` fills at T+1's open.
+  - `step({"type": "weight", ...})` rebalances correctly given known prices; `info["weight_drift"]` populated only for non-zero drifts.
+  - **Terminal step (Q8 no-mutate):** at the last bar, `done=True`, `data_handler.current_step == max_steps - 1`; a second `step(None)` after done keeps `current_step` pinned.
+  - **Terminal step (next_open):** pending order at terminal step appears in `info["rejected_untradeable"]`, last state returned, equity reflects last close.
   - State schema matches spec (keys present, types correct).
+  - `info` keys are emitted only when non-empty (Q10).
   - Multi-step scenario (e.g., 50 steps with mixed orders) executes without exception.
 
-**Diagnostic infrastructure:** the `info` payload is the diagnostic — every observable side-effect of the step lands in `info`. Add `tests/backtesting/test_backtest.py::test_info_completeness` — run a scenario with at least one of every side-effect (fill, rejection, lot-zero, terminal cancel) and assert each appears in the corresponding `info` key.
+**Diagnostic infrastructure:** the `info` payload is the diagnostic — every observable side-effect of the step lands in `info` under the locked Q10 key names. Add `tests/backtesting/test_backtest.py::test_info_completeness` — run a scenario with at least one of every side-effect (fill, rejection, lot-zero, weight-drift, rebalance-shortfall, terminal-untradeable) and assert each appears in the corresponding `info` key.
 
-**Done when:** all 6 lifecycle steps execute in order; terminal path tested; state schema matches spec; multi-step scenarios run clean.
+**Done when:** both `fill_mode` paths execute correctly; Q8 no-mutate terminal-path tested in both directions (single-step and repeated); state schema matches spec; Q10 info-key emission rules respected; multi-step scenarios run clean.
 
 ### Stage 6 — `Backtest.from_identifiers` convenience constructor (S)
 
@@ -342,12 +342,14 @@ Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
 - `src/backtesting/leakage_harness.py` — synthetic-data builders for B1 / B2 / B3 stress tests.
 
 **Tasks:**
-- Implement `leakage_harness.row_index_sentinel_feed(n_dates, n_assets, n_columns)` — produces a multi-feed dataset where every value at row `t` equals `t` (the canonical B1 test substrate).
+- Implement `leakage_harness.row_index_sentinel_feed(n_dates, n_assets, n_columns)` — produces a dataset where every value at row `t` equals `t` (the canonical B1 test substrate).
 - Implement `leakage_harness.step_function_price_feed(...)` — produces a feed where bar T's open/close/high/low are known deterministic functions of T (the B2 test substrate).
-- Implement `leakage_harness.macro_release_feed(release_dates, release_values, master_dates)` — produces a slow-frequency feed aligned to known release dates, for the B3 forward-fill test.
-- Implement `leakage_harness.random_action_stream(n_steps, n_assets, seed)` — produces a reproducible random action sequence for the B4 / B5 stress tests.
+- Implement `leakage_harness.internal_gap_feed(...)` — produces a single-frequency feed with a deliberately-injected missing date inside an asset's active range, for the B3 forward-fill / gap-policy test.
+- Implement `leakage_harness.random_action_stream(n_steps, n_assets, seed)` — produces a reproducible random action sequence (order-type and weight-type, no `execution` field — Q6) for the B4 / B5 stress tests.
 - Each of B1–B7 has at least one dedicated test (as enumerated in § "Critical correctness constraints" above) plus one randomized stress test driven by the harness.
+- The B2 test runs the same scripted scenario twice (once per `fill_mode`) and asserts every fill price matches the engine's configured phase.
 - The B5 deterministic-replay test runs the same scripted scenario **twice** and compares every step's output element-wise.
+- The B7 test asserts `current_step ∈ [lookback, max_steps - 1]` at every step (including post-done), driven by the random-action stress harness.
 
 **Tests added:** the B1–B7 suite in `test_correctness.py` — one test function per constraint per harness substrate.
 
@@ -379,7 +381,7 @@ Effort sizing: S = <1 day, M = 1–2 days, L = 3–5 days, XL = >1 week.
 
 ## Architectural decisions
 
-The three locked-in decisions live in `spec.md` § 2 (D1 step-loop, D2 two-phase lifecycle, D3 master timeline). The decisions below are **implementation-side** choices that follow from those three but warrant explicit defense.
+The three locked-in decisions live in `spec.md` § 2 (D1 step-loop, D2 engine-level `fill_mode`, D3 single-frequency timeline with activity masks). The decisions below are **implementation-side** choices that follow from those three but warrant explicit defense.
 
 ### IA1. Components are concrete classes, not protocols / ABCs
 
@@ -407,7 +409,7 @@ The engine returns Python objects per step. It does not write any files. There i
 
 ### IA5. Sells-before-buys is sequenced inside both `_parse_action` and `process_queue`
 
-The ordering happens twice: once when weight-actions are converted into orders, once when the broker processes each phase's queue.
+The ordering happens twice: once when weight-actions are converted into orders, once when the broker processes the pending queue.
 
 **Why not the alternative:** A single sort point (broker-only) would be simpler. But weight-action translation needs the ordering to compute correct deltas (so the sell of asset A frees cash to compute the buy of asset B against post-sell equity). And the broker needs the ordering to actually fund the buys. Both points are real; consolidating them is a v1.1 refactor candidate once the patterns stabilize.
 
@@ -417,68 +419,35 @@ The convenience constructor that depends on `data_pipelines` sits next to the co
 
 **Why not the alternative:** A separate `loaders.py` would isolate the optional dependency. But it would scatter the public surface across two files. Keeping it in `backtest.py` and lazy-importing `data_pipelines` inside the method body achieves the same isolation without splitting the API.
 
+### IA7. `gap_policy` is engine-level, not per-feed
+
+`gap_policy` is a single `Backtest.__init__` arg (`"raise"` or `"ffill_zero_volume"`, default the latter), applied uniformly across every asset in every feed. Per-feed overrides (e.g., one policy for equities, another for an FX feed) are deferred to v1.1.
+
+**Why not the alternative:** A per-feed override dict (`gap_policy_per_feed: dict[str, str]`) would be ergonomically nicer for mixed portfolios but requires the multi-frequency machinery to be useful — and Q3 deferred that to v1.1. Until there are multiple genuinely-different feed types in scope, a single engine-level knob captures every real use case. Once v1.1's multi-frequency support lands, promoting the knob to per-feed is a backward-compatible extension (the engine-level value becomes the per-feed default).
+
 ---
 
-## Open questions
+## Resolved questions
 
-These are points where `spec.md` is genuinely ambiguous or silent and where implementation requires a user-level decision. They are NOT items the implementer should silently resolve.
+The 10 plan-review questions are now closed. Decisions below are the locked v1 contract; everything follows from them. Items that turned into spec amendments are noted; the four amendments together are recorded in the footer of `spec.md` § 6.
 
-### OQ-1. Weight-action over-allocation handling
+| # | Question | Decision | Spec impact |
+|---|---|---|---|
+| Q1 | Weight-action over-allocation: raise vs accept-and-skip? | **Raise** on `sum(target_weights.values()) > 1.0`. Caller must normalize. | `spec.md` § 3.1 amended. |
+| Q2 | Staggered-history `wait_for_all_active` knob? | **No knob.** Keep spec-default NaN/untradeable per D3 — caller handles NaN columns for not-yet-started assets. | None (already in D3). |
+| Q3 | Macro feed in v1? | **Defer multi-frequency entirely to v1.1.** v1 is single-frequency-per-engine; the master-timeline + cross-frequency forward-fill machinery moves to v1.1, gated on a `data_pipelines` macro domain. | Spec amendment: D3 rewritten, §3.2 macro example removed, §4.1 single-frequency. |
+| Q4 | `close` vs `adj_close` as trading price? | **Hard-code `close` (raw)** in v1. Per-feed knob with `adj_close` option deferred to v1.1. | `spec.md` § 6 notes the hard-code. |
+| Q5 | Commission signature? | **Ship `(asset, qty, price) → float`** as spec'd. The plan's recommendation to expand to `(order_dict, fill_price)` is rejected. | None (matches existing spec). |
+| Q6 | MOC vs MOO per-order semantics? | **Engine-level `fill_mode: Literal["current_close", "next_open"] = "next_open"`** constructor arg. Not per-order. LIMIT orders DROPPED entirely from v1. Order schema is just `{asset, qty}` — no `execution`, no `limit_price`, no time-in-force. | Spec amendment: §3.1, §4.3, §4.4, §5, §6, B2, B7 all rewritten. |
+| Q7 | Per-feed default lot sizes? | **Ship spec as-is.** `lot_sizes: dict[str, int]` overrides + `default_lot_size: int = 1` global fallback. No per-feed default in v1. | None (matches existing spec). |
+| Q8 | `advance_time()` at terminal step: mutate or no-mutate? | **No-mutate-when-done.** `advance_time()` checks if `current_step + 1 >= max_steps`; if so returns `done=True` WITHOUT incrementing. Invariant: `current_step ∈ [lookback, max_steps - 1]` for the entire engine lifetime. | Spec amendment: §4.1, B7. |
+| Q9 | Internal-gap policy? | **Configurable `gap_policy: Literal["raise", "ffill_zero_volume"] = "ffill_zero_volume"`** constructor arg. Default forward-fills price columns + zeros volume (treats gap day as "no trading happened"). Strict mode opts into raise. | Spec amendment: D3, §4.1, §6, B3. |
+| Q10 | `info` schema key names? | Locked 3 keys: `weight_drift: dict[asset, float]` (realized − target, omit if zero); `rebalance_shortfall: dict[asset, float]` (per-asset shortfall, omit if zero); `lot_size_audit: dict[asset, {"requested_qty": float, "filled_qty": int}]` (unified key for rounding + zeroing, omit if requested == filled). | Spec amendment: §3.2. |
 
-`spec.md` § 3.1 says target_weights sum to "at most 1.0; the remainder stays in cash." But it does not specify what happens when target_weights sum to **more than 1.0** (e.g., a leveraged target). Two options:
-
-- **(a)** Validate and raise — the caller must normalize before submitting.
-- **(b)** Accept the action and let the per-asset overdraw guards kick in (some buys will be skipped; the realized weights will diverge from target).
-
-Recommendation: **(a)** — fail loudly. Silent over-allocation followed by per-asset skipping is a debugging nightmare. But this needs user confirmation since (b) is closer to the spec's "engine fills what it can and reports the shortfall" pattern for the legal-but-cash-short case.
-
-### OQ-2. Multi-asset state when assets have different lookback availabilities
-
-If asset A has 1,000 days of history and asset B has 500 days, and `lookback=200`, then steps 200–699 have B's full window but A's; steps 700+ have both. `DataHandler.current_step` starts at `lookback` — does that mean step 200 (when A is the only tradeable asset), or does it mean "first step where every asset has lookback bars"?
-
-The spec implies the former (B is "marked untradeable" before its first observation, but the engine still steps). But the consequence is that the state at step 200 has NaN columns for B in its market_data window — and the caller must handle NaN. Confirm this is the intended behavior.
-
-### OQ-3. Macro feed support in v1
-
-`spec.md` § 3.2's example state shape includes a `macro` feed with `GDP`. D3 (master timeline + forward-fill) is designed for the multi-frequency case. But `data_pipelines` v1 ships `us_equities` + `nse_equities` domains only — no macro domain.
-
-Options:
-- **(a)** v1 demonstrates the multi-frequency case using synthetic macro data only (the leakage harness's `macro_release_feed`); real macro support is gated on `data_pipelines` adding a FRED-like domain.
-- **(b)** Ship a minimal `macro` domain in `data_pipelines` as part of this PR (scope creep).
-- **(c)** Defer multi-frequency real-data support entirely to v1.1; v1 ships single-frequency equities only.
-
-Recommendation: **(a)** — the engine code handles multi-frequency, but the v1 demonstration uses synthetic macro. Real macro is unblocked the moment `data_pipelines` ships the domain.
-
-### OQ-4. Adjusted-close vs raw-close as the trading price
-
-`data_pipelines` schema includes both `close` and `adj_close`. Splits and dividends are baked into `adj_close`. For backtests:
-
-- Using `close` produces fills at the "real" historical prices but introduces gap-down artifacts on ex-dividend days that the strategy didn't actually pay.
-- Using `adj_close` produces dividend-and-split-clean fills but inflates historical prices to today's basis (every fill in 2010 is at a 2026-adjusted price).
-
-Spec says nothing on this. Strategy-by-strategy choice? Engine-level config? Recommendation: per-feed config knob (default `adj_close` for equities) with a one-time documented warning when switching.
-
-### OQ-5. Commission function signature
-
-`spec.md` § 6 specifies `commission_fn: (asset, qty, price) → float`. But many commission models depend on **trade direction** (e.g., short-sale-only fees) or **trade time-of-day** (intraday commissions vs MOC). The current signature can't express these.
-
-Options:
-- **(a)** Ship the spec'd 3-arg signature; flexible commission models are v1.1.
-- **(b)** Expand to `(order_dict, fill_price) → float` — the entire order dict + actual fill price are passed, giving the commission function access to everything.
-
-Recommendation: **(b)** — costs almost nothing and unblocks a broader class of commission models without an API break later.
-
-### OQ-6. Should `step()` return the state from before or after `MARK`?
-
-Step 5 (MARK) updates `portfolio.equity` using T+1's close. Step 6 (RETURN) builds the state. So the returned state's `portfolio.equity` reflects T+1's close. But the returned state's `market_data` window also includes T+1's close as the most-recent value. This is **consistent** (state at step T+1 reflects bar T+1) but means the caller's next action is decided against T+1's close already visible in the state — and if the next action's `execution == "current_close"`, it fills at T+1's close (the close the caller saw in this state).
-
-This is what `current_close` is **designed** to do (MOC: see close, trade at close). But it's worth a confirmatory check that this is intended and not a subtle off-by-one. Recommendation: keep as designed; document the MOC semantics explicitly in the example notebook (Stage 8) so callers internalize it.
-
-### OQ-7. Lot-size lookup for assets not in `lot_sizes` but with non-default needs
-
-`default_lot_size=1` (whole shares) is the default. But a portfolio mixing crypto (`lot_size=0`) and equities (`lot_size=1`) would need every crypto asset enumerated in `lot_sizes` even if there are dozens. Is per-feed default (`feed_default_lot_sizes={"crypto": 0, "equities": 1}`) worth adding to v1, or is the per-asset dict sufficient?
-
-Recommendation: per-asset dict in v1; per-feed default is a v1.1 ergonomics improvement.
+Notes:
+- Q3 and Q6 are load-bearing simplifications: they remove ~50% of v1's Stage-3 broker complexity and ~30% of Stage-2 DataHandler complexity by deferring features that are not on any near-term consumer's critical path.
+- Q5 (rejected expansion) and Q7 (rejected per-feed default) are conservative choices — they hold the v1 API surface area down so v1.1 is free to extend without breaking callers.
+- The four spec amendments (Q3 / Q6 / Q8 / Q9) are noted in a footer in `spec.md` § 6.
 
 ---
 
@@ -511,12 +480,16 @@ v1 explicitly ships **the four core components + the structural correctness mach
 
 **In v1:**
 - `Portfolio`, `DataHandler`, `ExecutionBroker`, `Backtest` per `spec.md` §§ 4.1–4.4.
-- The two-phase execution lifecycle per `spec.md` § 5.
-- Master timeline + forward-fill per D3.
-- Order, weight, and None action types per `spec.md` § 3.1.
-- `current_close`, `next_open`, `limit` execution modes per `spec.md` § 3.1.
+- The single-phase execution lifecycle with engine-level `fill_mode` (Q6) per `spec.md` § 5.
+- Single-frequency timeline + per-asset activity masks per D3.
+- Order (schema `{asset, qty}` only) and weight and None action types per `spec.md` § 3.1.
 - Per-instrument lot sizes (`0`, `1`, `N`) per `spec.md` § 4.5.
-- Commission function hook per `spec.md` § 6.
+- Commission function hook with signature `(asset, qty, price) → float` (Q5) per `spec.md` § 6.
+- Configurable `gap_policy` (Q9) per `spec.md` § 4.1.
+- Hard-coded `close` (raw) as the fill price column (Q4).
+- `advance_time()` no-mutate-when-done semantics (Q8).
+- Locked `info` schema (Q10): `fills`, `rejected_overdraw`, `rejected_untradeable`, `rejected_invalid`, `weight_drift`, `rebalance_shortfall`, `lot_size_audit`.
+- Weight-action over-allocation raises (Q1).
 - Untradeable-asset handling (mid-series start, delisted, etc.) per D3.
 - B1–B7 correctness test suite + leakage harness.
 - Convenience constructor wrapping `data_pipelines.fetch()`.
@@ -525,9 +498,15 @@ v1 explicitly ships **the four core components + the structural correctness mach
 **Deferred to v1.1+ (in `V1.1_TBD.md`):**
 - Margin requirements, borrow costs, locate requirements (short selling stays unconstrained in v1 per `spec.md` § 4.2 design note).
 - Partial fills.
-- Limit-order GTC semantics (v1 is good-for-day only).
+- Limit orders, per-order `execution` override, time-in-force (GFD / GTC / GTD / IOC / FOK) (Q6).
 - Slippage model.
 - YAML-driven config layer (v1 is constructor-args-only per `spec.md` § 6).
+- Multi-frequency feeds (master-timeline-driven slower-feed forward-fill) (Q3).
+- Macro domain (FRED-style `(date, value)`) in `data_pipelines` (Q3 dependency).
+- `adj_close` price-column knob (Q4).
+- Per-feed default lot sizes (Q7).
+- Per-feed `gap_policy` overrides (Q9).
+- Expanded commission signature `(order_dict, fill_price) → float` for maker/taker/tiered models (Q5).
 - Intrabar / multi-resolution data (v1 is single-frequency-per-feed).
 - Cross-calendar alignment (v1 assumes all feeds share trading calendar; D3 design note).
 - Trade-ledger / equity-curve persistence.
