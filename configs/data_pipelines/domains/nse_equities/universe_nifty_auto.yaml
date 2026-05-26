@@ -1,0 +1,26 @@
+# NIFTY Auto — automotive sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyautolist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_auto
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:AUTO"
+tickers:
+  - "NSE:ASHOKLEY"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BHARATFORG"
+  - "NSE:BOSCHLTD"
+  - "NSE:EICHERMOT"
+  - "NSE:EXIDEIND"
+  - "NSE:HEROMOTOCO"
+  - "NSE:M&M"
+  - "NSE:MARUTI"
+  - "NSE:MOTHERSON"
+  - "NSE:SONACOMS"
+  - "NSE:TIINDIA"
+  - "NSE:TMPV"
+  - "NSE:TVSMOTOR"
+  - "NSE:UNOMINDA"

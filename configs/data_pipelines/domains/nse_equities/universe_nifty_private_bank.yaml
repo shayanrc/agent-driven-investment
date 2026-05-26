@@ -1,0 +1,21 @@
+# NIFTY Private Bank — private-sector banking (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_nifty_privatebanklist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_private_bank
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:PVTBANK"
+tickers:
+  - "NSE:AXISBANK"
+  - "NSE:BANDHANBNK"
+  - "NSE:FEDERALBNK"
+  - "NSE:HDFCBANK"
+  - "NSE:ICICIBANK"
+  - "NSE:IDFCFIRSTB"
+  - "NSE:INDUSINDBK"
+  - "NSE:KOTAKBANK"
+  - "NSE:RBLBANK"
+  - "NSE:YESBANK"

@@ -1,0 +1,51 @@
+# NIFTY Energy — energy (oil/gas/power) sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyenergylist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_energy
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:ENERGY"
+tickers:
+  - "NSE:ABB"
+  - "NSE:ADANIENSOL"
+  - "NSE:ADANIGREEN"
+  - "NSE:ADANIPOWER"
+  - "NSE:AEGISLOG"
+  - "NSE:ATGL"
+  - "NSE:BHEL"
+  - "NSE:BPCL"
+  - "NSE:CASTROLIND"
+  - "NSE:CESC"
+  - "NSE:CGPOWER"
+  - "NSE:COALINDIA"
+  - "NSE:ENRIN"
+  - "NSE:GAIL"
+  - "NSE:GVT&D"
+  - "NSE:HINDPETRO"
+  - "NSE:IGL"
+  - "NSE:INOXWIND"
+  - "NSE:IOC"
+  - "NSE:JPPOWER"
+  - "NSE:JSWENERGY"
+  - "NSE:MGL"
+  - "NSE:NAVA"
+  - "NSE:NHPC"
+  - "NSE:NLCINDIA"
+  - "NSE:NTPC"
+  - "NSE:NTPCGREEN"
+  - "NSE:OIL"
+  - "NSE:ONGC"
+  - "NSE:PETRONET"
+  - "NSE:POWERGRID"
+  - "NSE:POWERINDIA"
+  - "NSE:RELIANCE"
+  - "NSE:RPOWER"
+  - "NSE:SIEMENS"
+  - "NSE:SJVN"
+  - "NSE:SUZLON"
+  - "NSE:TATAPOWER"
+  - "NSE:THERMAX"
+  - "NSE:TORNTPOWER"

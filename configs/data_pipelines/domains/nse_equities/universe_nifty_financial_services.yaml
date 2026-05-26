@@ -1,0 +1,31 @@
+# NIFTY Financial Services — banks + NBFCs + insurance + capital markets (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyfinancelist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_financial_services
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:FINSVC"
+tickers:
+  - "NSE:AXISBANK"
+  - "NSE:BAJAJFINSV"
+  - "NSE:BAJFINANCE"
+  - "NSE:BSE"
+  - "NSE:CHOLAFIN"
+  - "NSE:HDFCBANK"
+  - "NSE:HDFCLIFE"
+  - "NSE:ICICIBANK"
+  - "NSE:ICICIGI"
+  - "NSE:JIOFIN"
+  - "NSE:KOTAKBANK"
+  - "NSE:LICHSGFIN"
+  - "NSE:MFSL"
+  - "NSE:MUTHOOTFIN"
+  - "NSE:PFC"
+  - "NSE:RECLTD"
+  - "NSE:SBICARD"
+  - "NSE:SBILIFE"
+  - "NSE:SBIN"
+  - "NSE:SHRIRAMFIN"

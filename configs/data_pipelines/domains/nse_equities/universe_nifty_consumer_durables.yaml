@@ -1,0 +1,24 @@
+# NIFTY Consumer Durables — consumer durables sector (as of 2026-05-26).
+# Source: https://archives.nseindia.com/content/indices/ind_niftyconsumerdurableslist.csv
+# Refresh by re-running scripts/data_pipelines/sectoral_fetch.py --write-yamls;
+# NSE rebalances sectoral indices semi-annually.
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_consumer_durables
+listed_at: 2026-05-26
+indices:
+  - "NIFTY:CONSUMERDURABLES"
+tickers:
+  - "NSE:AMBER"
+  - "NSE:BATAINDIA"
+  - "NSE:BLUESTARCO"
+  - "NSE:CROMPTON"
+  - "NSE:DIXON"
+  - "NSE:HAVELLS"
+  - "NSE:KAJARIACER"
+  - "NSE:KALYANKJIL"
+  - "NSE:LGEINDIA"
+  - "NSE:PGEL"
+  - "NSE:TITAN"
+  - "NSE:VOLTAS"
+  - "NSE:WHIRLPOOL"
