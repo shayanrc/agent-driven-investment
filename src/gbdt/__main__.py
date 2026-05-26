@@ -24,7 +24,7 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
 from gbdt import data as gbdt_data
 from gbdt import features as gbdt_features
-from gbdt.report import emit_figures, render_report
+from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
 from gbdt.uniqueness import (
@@ -451,6 +451,11 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         "sample_uniqueness": ess_summary,
         "headline_eval": headline_eval,
         "headline_test": headline_test,
+        # Per-segment top-K + per-ticker + per-quarter + pred-range
+        # diagnostics. Operate on the same (date, ticker, p_calibrated,
+        # y_true) row schema the headline metrics consume; covers eval
+        # and test segments (empty-shaped block for missing/empty).
+        "segment_diagnostics": compute_segment_diagnostics(result.predictions),
         "wall_time_total_sec": time.time() - t0,
     }
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
