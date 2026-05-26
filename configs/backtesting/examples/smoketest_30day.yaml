@@ -1,0 +1,35 @@
+# 30-day smoketest config for `python -m backtesting`.
+#
+# Drives the engine on synthetic in-memory OHLCV (no `data_pipelines`
+# cache I/O) so the CLI can be exercised on any machine with no
+# external dependencies. The YAML schema is documented in
+# `src/backtesting/cli.py`; per spec.md § 6, a real YAML config layer is
+# deferred to v1.1 — this file is a smoketest convenience, not a public
+# configuration contract.
+backtest:
+  initial_cash: 100000.0
+  lookback: 5
+  fill_mode: current_close
+  gap_policy: ffill_zero_volume
+  lot_sizes:
+    AAPL: 0    # fractional — exercises the lot_size=0 path
+    MSFT: 1    # whole shares — exercises the snap-to-int path
+  default_lot_size: 1
+
+synthetic_feed:
+  feed_name: equities
+  start_date: 2024-01-01
+  n_days: 30
+  freq: B
+  assets:
+    - {name: AAPL, start_price: 100.0}
+    - {name: MSFT, start_price: 200.0}
+
+strategy:
+  type: fixed_weight
+  weights:
+    AAPL: 0.3
+    MSFT: 0.3
+
+run:
+  max_steps: null     # run to natural termination
