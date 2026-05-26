@@ -102,9 +102,16 @@ def _gather_segment(
     X: pd.DataFrame,
     y: pd.Series,
     idx: dict[str, np.ndarray],
-) -> tuple[pd.DataFrame, np.ndarray, pd.MultiIndex]:
-    """Return (X_seg, y_seg, multi_idx) for a segment defined by per-ticker
-    positional indices, with NaN-target rows dropped."""
+    weights: pd.Series | None = None,
+) -> tuple[pd.DataFrame, np.ndarray, pd.MultiIndex, np.ndarray | None]:
+    """Return (X_seg, y_seg, multi_idx, w_seg) for a segment defined by
+    per-ticker positional indices, with NaN-target rows dropped.
+
+    ``weights`` (optional) is a per-(date, ticker) sample-weight Series
+    (the LdP §4.4 uniqueness weights). When provided, the returned
+    ``w_seg`` is the aligned, mask-filtered weight vector. ``None``
+    propagates through as ``None`` so unweighted call sites keep working.
+    """
     keys = []
     for ticker, positions in idx.items():
         sub_dates = panel.xs(ticker, level="ticker").sort_index().index[positions]
@@ -114,7 +121,10 @@ def _gather_segment(
     y_seg = y.reindex(mi)
     # Drop rows where target is NaN
     mask = ~y_seg.isna()
-    return X_seg.loc[mask], y_seg.loc[mask].values.astype(int), mi[mask]
+    w_seg = None
+    if weights is not None:
+        w_seg = weights.reindex(mi).loc[mask].values.astype(float)
+    return X_seg.loc[mask], y_seg.loc[mask].values.astype(int), mi[mask], w_seg
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +197,7 @@ class WalkForwardResult:
 def _carve_X_y(
     X_full: pd.DataFrame, y_full: pd.Series, panel: pd.DataFrame,
     split: SplitSpec, features: list[str],
+    weights: pd.Series | None = None,
 ):
     fold = carve_single_fold(panel, split)
     X_use = X_full[features]
@@ -197,8 +208,8 @@ def _carve_X_y(
         ("eval", fold.eval_idx),
         ("test", fold.test_idx),
     ):
-        Xs, ys, mi = _gather_segment(panel, X_use, y_full, idx)
-        parts[name] = (Xs, ys, mi)
+        Xs, ys, mi, ws = _gather_segment(panel, X_use, y_full, idx, weights)
+        parts[name] = (Xs, ys, mi, ws)
     return parts
 
 
@@ -217,6 +228,7 @@ def walk_forward_train(
     degradation_gate: float = 0.01,
     fs_hp_callback: Optional[Callable] = None,
     random_seed: int = 42,
+    sample_weights: pd.Series | None = None,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -239,10 +251,10 @@ def walk_forward_train(
 
     iter_idx = 0
     while True:
-        parts = _carve_X_y(X, y, panel, split, current_features)
-        X_tr, y_tr, _ = parts["train"]
-        X_val, y_val, _ = parts["val"]
-        X_ev, y_ev, _ = parts["eval"]
+        parts = _carve_X_y(X, y, panel, split, current_features, sample_weights)
+        X_tr, y_tr, _, w_tr = parts["train"]
+        X_val, y_val, _, w_val = parts["val"]
+        X_ev, y_ev, _, w_ev = parts["eval"]
 
         # Sanity: enough training rows
         if len(y_tr) == 0:
@@ -251,7 +263,10 @@ def walk_forward_train(
         t0 = time.time()
         model = GBDTModel(current_hp, feature_names=current_features,
                           random_seed=random_seed)
-        model.fit(X_tr, y_tr, X_val, y_val)
+        model.fit(
+            X_tr, y_tr, X_val, y_val,
+            train_weight=w_tr, val_weight=w_val,
+        )
         wall = time.time() - t0
 
         hp_history.append({"iter": iter_idx, "hp": dict(current_hp)})
@@ -265,6 +280,7 @@ def walk_forward_train(
             X_train=X_tr, y_train=y_tr,
             X_val=X_val, y_val=y_val,
             X_eval=X_ev, y_eval=y_ev,
+            w_train=w_tr, w_val=w_val, w_eval=w_ev,
             hp_history=hp_history,
             rationale=rationale,
             wall_time_sec=wall,
@@ -303,11 +319,11 @@ def walk_forward_train(
     best_hp = hp_lists[best_i]
 
     # Score the best checkpoint and apply calibration
-    best_parts = _carve_X_y(X, y, panel, split, best_features)
-    X_tr, y_tr, mi_tr = best_parts["train"]
-    X_val, y_val, mi_val = best_parts["val"]
-    X_ev, y_ev, mi_ev = best_parts["eval"]
-    X_te, y_te, mi_te = best_parts["test"]
+    best_parts = _carve_X_y(X, y, panel, split, best_features, sample_weights)
+    X_tr, y_tr, mi_tr, w_tr = best_parts["train"]
+    X_val, y_val, mi_val, w_val = best_parts["val"]
+    X_ev, y_ev, mi_ev, w_ev = best_parts["eval"]
+    X_te, y_te, mi_te, w_te = best_parts["test"]
 
     p_val_raw = best_model.predict_proba(X_val)
     if calibration_method == "native":
@@ -327,15 +343,16 @@ def walk_forward_train(
         raise NotImplementedError(f"calibration_method={calibration_method!r}")
 
     predictions = {}
-    for name, (Xs, ys, mi) in (
-        ("train", (X_tr, y_tr, mi_tr)),
-        ("val", (X_val, y_val, mi_val)),
-        ("eval", (X_ev, y_ev, mi_ev)),
-        ("test", (X_te, y_te, mi_te)),
+    for name, (Xs, ys, mi, ws) in (
+        ("train", (X_tr, y_tr, mi_tr, w_tr)),
+        ("val", (X_val, y_val, mi_val, w_val)),
+        ("eval", (X_ev, y_ev, mi_ev, w_ev)),
+        ("test", (X_te, y_te, mi_te, w_te)),
     ):
         if len(Xs) == 0:
             predictions[name] = pd.DataFrame(
-                columns=["date", "ticker", "p_raw", "p_calibrated", "y_true"]
+                columns=["date", "ticker", "p_raw", "p_calibrated", "y_true",
+                         "sample_weight"]
             )
             continue
         p_raw = best_model.predict_proba(Xs)
@@ -346,6 +363,14 @@ def walk_forward_train(
             "p_raw": p_raw,
             "p_calibrated": p_cal,
             "y_true": ys,
+            # Always-present column. When weights weren't supplied the
+            # column is all-1.0 so downstream weighted-metric code is
+            # uniform; with uniform weights weighted metrics collapse to
+            # unweighted ones.
+            "sample_weight": (
+                ws if ws is not None
+                else np.ones(len(ys), dtype=float)
+            ),
         })
         predictions[name] = df
 

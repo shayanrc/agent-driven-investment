@@ -172,10 +172,32 @@ def render_report(experiment_dir: Path) -> Path:
     excl = data.get("tickers_excluded") or []
     if excl:
         lines.append(f"- tickers excluded: {', '.join(excl)}")
+    # Effective sample size table (LdP §4.4 — sample uniqueness). When
+    # the spec disables uniqueness weighting, ESS == row count and the
+    # inflation ratio is 1.0.
+    su = metrics.get("sample_uniqueness", {})
+    per_fold = (su.get("effective_sample_size_per_fold") or {}).get("fold_0") or {}
     for seg in ("train", "val", "eval", "test"):
         k = f"n_rows_{seg}"
-        if k in data:
-            lines.append(f"- {seg} rows: {data[k]}")
+        n = data.get(k)
+        ess_block = per_fold.get(seg) or {}
+        sumw = ess_block.get("sum_weights")
+        ratio = ess_block.get("overlap_inflation_ratio")
+        if n is None:
+            continue
+        if sumw is not None and ratio is not None:
+            lines.append(
+                f"- {seg} rows: {n} (independent events ≈ {sumw:.1f}; "
+                f"overlap-inflation {ratio:.2f}×)"
+            )
+        else:
+            lines.append(f"- {seg} rows: {n}")
+    if su:
+        lines.append(
+            f"- sample uniqueness weighting: "
+            f"`{'on' if su.get('uniqueness_weighting') else 'off'}` "
+            f"(horizon_days={su.get('horizon_days')})"
+        )
     if "positive_prevalence_train" in data:
         lines.append(f"- positive prevalence (train): {data['positive_prevalence_train']:.3f}")
     if "positive_prevalence_eval" in data:

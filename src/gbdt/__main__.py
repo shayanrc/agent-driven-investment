@@ -27,6 +27,12 @@ from gbdt import features as gbdt_features
 from gbdt.report import emit_figures, render_report
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
+from gbdt.uniqueness import (
+    compute_uniqueness_weights,
+    effective_sample_size,
+    weighted_auc,
+    weighted_brier,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +84,11 @@ def _validate_spec(spec: dict) -> None:
     md = target.get("max_drawdown")
     if md is not None and not (0 < md < 1):
         raise ValueError(f"spec.target.max_drawdown must be in (0, 1), got {md}")
+    uw = target.get("uniqueness_weighting", True)
+    if not isinstance(uw, bool):
+        raise ValueError(
+            f"spec.target.uniqueness_weighting must be bool, got {uw!r}"
+        )
 
     backend = spec.get("backend", {}) or {}
     if backend.get("library", "catboost") != "catboost":
@@ -116,23 +127,47 @@ def _data_hash(panel: pd.DataFrame) -> str:
 
 
 def _compute_headline(pred_df: pd.DataFrame | None) -> dict:
+    """Headline metrics on a prediction segment.
+
+    Uses LdP §4.4 sample weights from the ``sample_weight`` column when
+    present (uniform-1.0 fallback collapses to unweighted metrics so
+    legacy callers and the opt-out path produce numerically-identical
+    outputs).
+    """
     if pred_df is None or pred_df.empty:
         return {}
     y = pred_df["y_true"].values.astype(int)
     p = pred_df["p_calibrated"].values
-    base = float(np.mean(y))
-    brier = float(brier_score_loss(y, p))
-    brier_base = float(brier_score_loss(y, np.full_like(y, base, dtype=float)))
+    if "sample_weight" in pred_df.columns:
+        w = pred_df["sample_weight"].values.astype(float)
+    else:
+        w = np.ones_like(y, dtype=float)
+
+    total_w = float(w.sum())
+    base = float(np.sum(w * y) / total_w) if total_w > 0 else float(np.mean(y))
+    brier = weighted_brier(y, p, w)
+    brier_base = weighted_brier(y, np.full_like(y, base, dtype=float), w)
+    # Unweighted variants kept for backward-compat / cross-check.
+    brier_unw = float(brier_score_loss(y, p))
+    brier_base_unw = float(brier_score_loss(
+        y, np.full_like(y, float(np.mean(y)), dtype=float),
+    ))
+    # log_loss has a sample_weight kwarg.
+    ll = float(log_loss(y, np.clip(p, 1e-7, 1 - 1e-7), sample_weight=w))
     out = {
-        "brier": brier,
-        "brier_baseline_baserate": brier_base,
-        "brier_improvement_vs_baseline": brier_base - brier,
-        "log_loss": float(log_loss(y, np.clip(p, 1e-7, 1 - 1e-7))),
+        "brier": float(brier),
+        "brier_baseline_baserate": float(brier_base),
+        "brier_improvement_vs_baseline": float(brier_base - brier),
+        "log_loss": ll,
+        "brier_unweighted": brier_unw,
+        "brier_baseline_baserate_unweighted": brier_base_unw,
+        "brier_improvement_vs_baseline_unweighted": brier_base_unw - brier_unw,
+        "effective_sample_size_kish": float(effective_sample_size(w)),
+        "sum_weights": float(w.sum()),
+        "n_rows": int(len(y)),
+        "weighted_prevalence": base,
     }
-    try:
-        out["roc_auc"] = float(roc_auc_score(y, p))
-    except ValueError:
-        out["roc_auc"] = None
+    out["roc_auc"] = weighted_auc(y, p, w)
     return out
 
 
@@ -227,6 +262,30 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     print(f"[target] complete in {time.time()-t1:.1f}s "
            f"positive_prevalence={float(y.dropna().mean()):.3f}", flush=True)
 
+    # -------- Phase 3b: sample-uniqueness weights (LdP §4.4) --------
+    # ON by default. Opt-out reproduces the legacy (biased) behavior
+    # where every row enters the loss with weight 1.0 — useful only for
+    # reproducing pre-PR results / measuring the overlap-bias delta.
+    uniqueness_on = bool(target.get("uniqueness_weighting", True))
+    if uniqueness_on:
+        print("[uniqueness] start", flush=True)
+        t1 = time.time()
+        sample_weights = compute_uniqueness_weights(
+            panel_obj.panel, horizon=int(target["horizon_days"]),
+        )
+        # Effective-sample-size summary across the full panel (pre-segment)
+        ess_full = float(effective_sample_size(sample_weights.values))
+        print(
+            f"[uniqueness] complete in {time.time()-t1:.1f}s "
+            f"horizon={target['horizon_days']} rows={len(sample_weights)} "
+            f"ESS={ess_full:.0f} inflation={len(sample_weights)/max(ess_full,1):.2f}x",
+            flush=True,
+        )
+    else:
+        sample_weights = None
+        print("[uniqueness] disabled by spec (target.uniqueness_weighting=false)",
+              flush=True)
+
     # -------- Phase 4: walk-forward + FS+HP loop --------
     backend = spec.get("backend", {}) or {}
     hp_starting = backend.get("hp_starting", {}) or {}
@@ -246,6 +305,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         plateau_threshold=loop_cfg.get("plateau_threshold", 0.005),
         degradation_gate=loop_cfg.get("degradation_gate", 0.01),
         random_seed=seed,
+        sample_weights=sample_weights,
     )
     print(f"[loop] complete in {time.time()-t1:.1f}s best_iter={result.best_iteration} "
            f"val_brier={result.best_val_brier:.4f} signal={result.inner_stop_signal}",
@@ -293,6 +353,55 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     headline_test = _compute_headline(result.predictions.get("test"))
     train_pred = result.predictions.get("train")
     val_pred = result.predictions.get("val")
+
+    # Per-fold ESS — single-fold for v1 (carve_single_fold), so this is a
+    # one-entry dict keyed by ``"fold_0"``. Multi-fold mode (V1.1_TBD)
+    # will populate one entry per fold.
+    #
+    # We report two distinct quantities and they answer different questions:
+    #   ess_kish (Kish):           (Σw)² / Σw² — variance-effective sample
+    #                              size; reduces to ``n`` for uniform
+    #                              weights regardless of scale. Use for
+    #                              confidence intervals on weighted means.
+    #   sum_weights (independent): Σw — approximate count of *independent*
+    #                              forward events the panel encodes. For
+    #                              uniqueness weights this is ≈ n/(2H-1)
+    #                              when n >> H. Use for "how much
+    #                              information is actually here".
+    def _seg_ess(seg: str) -> dict[str, float | int | None]:
+        df = result.predictions.get(seg)
+        if df is None or df.empty:
+            return {
+                "ess_kish": None,
+                "sum_weights": None,
+                "n_rows": 0,
+                "overlap_inflation_ratio": None,
+            }
+        w = df["sample_weight"].values.astype(float) if "sample_weight" in df.columns \
+            else np.ones(len(df), dtype=float)
+        ess_kish = float(effective_sample_size(w))
+        s = float(w.sum())
+        n = int(len(df))
+        ratio = float(n / max(s, 1.0))
+        return {
+            "ess_kish": ess_kish,
+            "sum_weights": s,
+            "n_rows": n,
+            "overlap_inflation_ratio": ratio,
+        }
+
+    ess_summary = {
+        "uniqueness_weighting": uniqueness_on,
+        "horizon_days": int(target["horizon_days"]),
+        "effective_sample_size_per_fold": {
+            "fold_0": {
+                "train": _seg_ess("train"),
+                "val": _seg_ess("val"),
+                "eval": _seg_ess("eval"),
+                "test": _seg_ess("test"),
+            },
+        },
+    }
     metrics = {
         "experiment_name": name,
         "spec_hash": _spec_hash(spec),
@@ -339,6 +448,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             "spiegelhalter_z": result.calibration.spiegelhalter_z,
             "spiegelhalter_p": result.calibration.spiegelhalter_p,
         },
+        "sample_uniqueness": ess_summary,
         "headline_eval": headline_eval,
         "headline_test": headline_test,
         "wall_time_total_sec": time.time() - t0,
