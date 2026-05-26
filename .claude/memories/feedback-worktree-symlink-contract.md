@@ -1,11 +1,11 @@
 ---
 name: feedback-worktree-symlink-contract
-description: Sub-agents can't `git worktree add` to sibling paths (sandbox blocks). Parent must pre-create worktrees. Symlink for data/ must `rm -rf data && ln -s` because `ln -snf` creates a nested `data/data` when `data/` exists as a real dir (with `.gitkeep`).
+description: Sub-agents can't `git worktree add` to sibling paths (sandbox blocks). Parent must pre-create worktrees. Symlink for data/ must `rm -rf data && ln -s` because `ln -snf` creates a nested `data/data` when `data/` exists as a real dir (with `.gitkeep`). After symlinking, run `git update-index --skip-worktree data/.gitkeep` so the shadowed tracked file doesn't show as a phantom modification and break `git rebase --autostash` / `git checkout`.
 metadata:
   type: feedback
 ---
 
-Two related foot-guns surfaced during the GBDT v1 pilot experiment launches (2026-05-26):
+Three related foot-guns surfaced during the GBDT v1 pilot experiment launches (2026-05-26):
 
 **1. Sub-agent worktree creation is sandboxed.**
 
@@ -25,14 +25,25 @@ The repo has `data/.gitkeep` tracked. When `git worktree add` checks out, `data/
 
 **Validation:** after symlink, `readlink data` should print the ABSOLUTE PATH to the target, not empty. If empty → wrong (data/ is still a directory). Sub-agents should pre-flight validate this before any `uv run` step.
 
-**Why both:** observed 2026-05-26 across multiple experiment relaunches. The first issue caused immediate abort at step 1. The second was hit by an agent that debugged inline (+5 min) and by another that correctly stopped + reported. Pattern: parent pre-creates + symlinks correctly + verifies, then launches sub-agent.
+**3. `data/.gitkeep` phantom modification after symlinking.**
+
+Once `data/` is replaced with a symlink (per foot-gun #2), the tracked `data/.gitkeep` path resolves through the symlink to the main checkout's `.gitkeep` — which still exists, but git compares index-vs-worktree per the worktree's own index, and the symlink-traversal makes it look modified/missing depending on git version. The visible failure is `git rebase --autostash` or `git checkout <branch>` aborting with "Your local changes to the following files would be overwritten" on `data/.gitkeep`. Stashing doesn't help (re-applies the phantom diff); reverting the file does nothing (symlink shadows the write).
+
+**Fix:** in the new worktree, run once:
+```bash
+git update-index --skip-worktree data/.gitkeep
+```
+This tells git's index to stop comparing the worktree copy of `data/.gitkeep` — exactly what we want, since the symlink target's `.gitkeep` is the same tracked content. It's a per-worktree index flag (not a tree-wide config), so it must be re-run for each new worktree. The main checkout is unaffected.
+
+**Why all three:** observed 2026-05-26 across multiple experiment relaunches. Foot-gun #1 caused immediate abort at step 1. Foot-gun #2 was hit by an agent that debugged inline (+5 min) and by another that correctly stopped + reported. Foot-gun #3 surfaced later when sub-agents tried to rebase their worktree branches onto updated main and got blocked by the phantom `data/.gitkeep` diff. Pattern: parent pre-creates + symlinks correctly + runs skip-worktree + verifies, then launches sub-agent.
 
 **How to apply:**
 
 1. Parent agent does worktree creation + symlink setup for every long-running experiment (or any task that needs filesystem isolation).
 2. Symlink command MUST be `rm -rf data && ln -s <abs-path>/data data`, not `ln -snf`.
-3. Parent verifies with `readlink data` returning the absolute target path before launching sub-agent.
-4. Sub-agent prompt explicitly tells the agent: "Worktree pre-created; symlinks verified; do NOT touch the symlinks; if `readlink data` returns empty, STOP and report — don't try to fix."
+3. Immediately after the symlink, run `git update-index --skip-worktree data/.gitkeep` in the worktree (once per new worktree).
+4. Parent verifies with `readlink data` returning the absolute target path before launching sub-agent.
+5. Sub-agent prompt explicitly tells the agent: "Worktree pre-created; symlinks verified; skip-worktree applied; do NOT touch the symlinks; if `readlink data` returns empty, STOP and report — don't try to fix."
 
 **Don't apply when:** the sub-agent doesn't need a separate worktree (single-file edits, doc updates, etc.). Use the main checkout directly.
 
