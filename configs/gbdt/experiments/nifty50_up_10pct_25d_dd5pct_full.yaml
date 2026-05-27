@@ -1,0 +1,90 @@
+# Full agent-driven HP run on the nifty50 +10% / 25d / dd5% cell
+# (memo #138's "Cell C"). The screening run
+# (configs/gbdt/experiments/nifty50_up_10pct_25d_dd5pct.yaml, the 3-iter
+# CLI-atom spec) confirmed signal: test AUC 0.7327, weighted R-precision
+# 0.416 (2.12x lift), Brier vs base-rate +0.0088, Spiegelhalter z +5.93
+# (isotonic fired). Best checkpoint was iter 0 with the full 279-column
+# pool; loop terminated on `degradation` after the algorithmic FS
+# pruned aggressively (279->62->43).
+#
+# This spec re-runs the same cell under the canonical 8-iteration budget
+# with a tightened iteration-0 HP starting point and a longer
+# early_stopping window so the loop has the headroom to discover whether
+# HP tuning + a real FS pass can:
+#   (a) improve weighted R-precision lift above 2.12x, and
+#   (b) bring Spiegelhalter |z| closer to 2 (reducing isotonic dependence).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+# HP rubric: docs/gbdt/CATBOOST_HP_REFERENCE.md.
+# Cross-market context: docs/gbdt/_138_h25_cross_market_combined.md.
+# Design rationale: docs/gbdt/V2_nifty50_full_agent_hp_plan.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+  uniqueness_weighting: true        # default; explicit so post-hoc readers see it
+
+# date_range omitted - take max cached range per ticker (deepest history each).
+
+# split omitted - 800+400+200+100 default; ETERNAL/JIOFIN/MAXHEALTH/SHRIRAMFIN
+# excluded by min_rows_per_ticker (4 of 50 in the screening run).
+
+# features omitted - start with all 279 candidates; the loop prunes.
+
+backend:
+  calibration_method: conditional_isotonic
+  calibration_z_threshold: 2.0      # default; isotonic fires when |z| >= 2
+
+  fs_hp_loop:
+    max_iterations: 8               # canonical full budget; gates hp_search_active=true
+    plateau_threshold: 0.005        # default
+    degradation_gate: 0.01          # default
+
+  # Iteration-0 HP starting point. The screening run used the global
+  # defaults verbatim (depth=6, lr=0.05, l2=3.0, iter=1000) and best_iter
+  # came in at iter 0; we keep depth/lr/l2 at defaults so the agent has a
+  # comparable starting point against the screening, but extend the
+  # boosting budget so the cap-hit early-stop heuristic in
+  # CATBOOST_HP_REFERENCE.md has room to apply, and switch bootstrap to
+  # MVS so the iteration-1+ tuning can use `subsample` directly (Bayesian
+  # default ignores `subsample`).
+  hp_starting:
+    iterations: 2000                # raised from 1000 default; screening's
+                                    # early_stop fired well inside this in 26s
+                                    # at iter 0, so we have headroom for
+                                    # iter 1+ with lower lr / more depth.
+    learning_rate: 0.05             # default; paired with iterations=2000
+                                    # this is roughly 2x screening's capacity.
+    depth: 6                        # default; agent may raise/lower per
+                                    # CATBOOST_HP_REFERENCE.md.
+    l2_leaf_reg: 3.0                # default; agent's first overfit lever.
+    min_data_in_leaf: 1             # default; agent raises on overfit
+                                    # second-line per CATBOOST_HP_REFERENCE.md.
+    rsm: 1.0                        # default; agent lowers to 0.7-0.9 when
+                                    # one feature dominates importance.
+    bootstrap_type: MVS             # switched from Bayesian default.
+                                    # MVS exposes `subsample` as a tunable
+                                    # (Bayesian ignores it), giving the agent
+                                    # more knobs from iter 1 onward.
+    subsample: 0.8                  # MVS's recommended starting value.
+    random_strength: 1.0            # default; agent raises to 2-5 if one
+                                    # feature wins >50% of trees and val
+                                    # Brier is plateaued.
+    boosting_type: Ordered          # default; ~70k row pooled training is
+                                    # exactly where Ordered's prediction-shift
+                                    # correction pays off (small-data regime).
+    early_stopping_rounds: 150      # raised from 75 default; lower lr or
+                                    # noisier per-iter learning curves on
+                                    # rare-cell folds benefit from a longer
+                                    # patience window.
+    # auto_class_weights left unset -- test prevalence 0.179, training 0.280
+    # (post-uniqueness-weighting). Both are well above the 5% threshold below
+    # which CATBOOST_HP_REFERENCE.md recommends class weights. If the agent
+    # sees recall@0.5 collapse on a later iteration, it may turn on
+    # SqrtBalanced and re-check calibration afterwards.
+
+random_seed: 42                     # production seed; matches all other
+                                    # H=25 cells for cross-cell comparability.
