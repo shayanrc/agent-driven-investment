@@ -378,9 +378,17 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
     lines.append("")
     lines.append(
         "Per-day: pick the top-K rows by ``p_calibrated`` each date, pool "
-        "across days. Global: top-K by score across the whole segment. "
-        "``base_rate`` = unweighted segment positive prevalence. "
-        "``lift = P@k / base_rate``."
+        "across days. ``P@k = sum_d(positives_in_top_k(d)) / "
+        "sum_d(min(R(d), k))`` where ``R(d)`` is the count of positives on "
+        "day ``d`` — the ``min(R(d), k)`` denominator is the achievable-"
+        "positives count (mandatory; see "
+        "``.claude/memories/project-r-precision-methodology.md``). "
+        "``n_denom = sum_d(min(R(d), k))``; ``n_days_R<k`` = days with "
+        "fewer than ``k`` positives. Global: top-K by score across the "
+        "whole segment, denominator ``min(k, total_positives)``. "
+        "``base_rate`` = unweighted segment positive prevalence (compare "
+        "P@k to base_rate directly; lift omitted from the table by "
+        "project reporting convention)."
     )
     lines.append("")
     for seg in ("eval", "test"):
@@ -397,26 +405,32 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
         per_day = tk.get("per_day", {})
         lines.append("Per-day:")
         lines.append("")
-        lines.append("| k | P@k | lift | n_picks | n_positives | days_full_k / days_total |")
-        lines.append("|---|---|---|---|---|---|")
+        lines.append(
+            "| k | P@k | base_rate | n_picks | n_positives | n_denom | "
+            "days_R<k / days_full_k / days_total |"
+        )
+        lines.append("|---|---|---|---|---|---|---|")
         for k, b in sorted(per_day.items(), key=lambda kv: int(kv[0])):
             lines.append(
                 f"| {k} | {_fmt(b.get('p_at_k'))} | "
-                f"{_fmt(b.get('lift'), '.3f')} | {b.get('n_picks_total')} | "
+                f"{_fmt(base, '.4f')} | {b.get('n_picks_total')} | "
                 f"{b.get('n_positives_in_picks')} | "
+                f"{b.get('n_denom')} | "
+                f"{b.get('n_days_R_lt_k')} / "
                 f"{b.get('n_days_full_k')} / {b.get('n_days_total')} |"
             )
         lines.append("")
         glb = tk.get("global", {})
         lines.append("Global (top-K across entire segment):")
         lines.append("")
-        lines.append("| k | P@k | lift | n_picks | n_positives |")
-        lines.append("|---|---|---|---|---|")
+        lines.append("| k | P@k | base_rate | n_picks | n_positives | n_denom |")
+        lines.append("|---|---|---|---|---|---|")
         for k, b in sorted(glb.items(), key=lambda kv: int(kv[0])):
             lines.append(
                 f"| {k} | {_fmt(b.get('p_at_k'))} | "
-                f"{_fmt(b.get('lift'), '.3f')} | {b.get('n_picks')} | "
-                f"{b.get('n_positives_in_picks')} |"
+                f"{_fmt(base, '.4f')} | {b.get('n_picks')} | "
+                f"{b.get('n_positives_in_picks')} | "
+                f"{b.get('n_denom')} |"
             )
         lines.append("")
 
