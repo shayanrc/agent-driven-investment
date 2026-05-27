@@ -23,10 +23,25 @@ for NIFTY; ``252`` for US universes once v1.1 adds them).
 from __future__ import annotations
 
 import fnmatch
+import sys
+import time
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
+
+
+# ---------------------------------------------------------------------------
+# Progress-logging throttle
+# ---------------------------------------------------------------------------
+
+# Minimum seconds between successive ``[features] family=...`` progress
+# lines emitted from inside ``build_feature_matrix``. Time-based throttle
+# (NOT per-step) so small panels emit ~1 line while big panels (sp500
+# H=25 hits ~155 min on the features stage) emit ~50 lines. Tight scope
+# by design — kept as a module-level constant, not a CLI/spec knob, per
+# the runner-logging PR scope.
+_FEATURES_PROGRESS_THROTTLE_SEC: float = 30.0
 
 
 # ---------------------------------------------------------------------------
@@ -624,43 +639,78 @@ def build_feature_matrix(
 
     pieces: list[pd.DataFrame] = []
 
+    # Build the (family, callable) plan so progress logging walks a
+    # known total. ``_ALL_FAMILIES`` is the canonical order; preserving it
+    # keeps the log lines deterministic across runs.
+    plan: list[tuple[str, callable]] = []
     if "F1" in sel:
-        pieces.append(index_return_N(index_df, panel, lookbacks))
+        plan.append(("F1", lambda: index_return_N(index_df, panel, lookbacks)))
     if "F2" in sel:
-        pieces.append(stock_return_N(panel, lookbacks))
+        plan.append(("F2", lambda: stock_return_N(panel, lookbacks)))
     if "F3" in sel:
-        pieces.append(rel_strength_N(panel, index_df, lookbacks))
+        plan.append(("F3", lambda: rel_strength_N(panel, index_df, lookbacks)))
     if "F4" in sel:
-        pieces.append(realized_vol_N(panel, lookbacks, annualization))
+        plan.append(("F4", lambda: realized_vol_N(panel, lookbacks, annualization)))
     if "F5" in sel:
-        pieces.append(index_vol_N(index_df, panel, lookbacks, annualization))
+        plan.append(("F5", lambda: index_vol_N(index_df, panel, lookbacks, annualization)))
     if "F6" in sel:
-        pieces.append(drawdown_N(panel, lookbacks))
-        pieces.append(runup_N(panel, lookbacks))
-        pieces.append(index_drawdown_N(index_df, panel, lookbacks))
-        pieces.append(index_runup_N(index_df, panel, lookbacks))
+        plan.append(("F6", lambda: pd.concat([
+            drawdown_N(panel, lookbacks),
+            runup_N(panel, lookbacks),
+            index_drawdown_N(index_df, panel, lookbacks),
+            index_runup_N(index_df, panel, lookbacks),
+        ], axis=1)))
     if "F7" in sel:
-        pieces.append(volume_family(panel, lookbacks))
+        plan.append(("F7", lambda: volume_family(panel, lookbacks)))
     if "F8" in sel:
-        pieces.append(higher_moments(panel, lookbacks))
+        plan.append(("F8", lambda: higher_moments(panel, lookbacks)))
     if "F10" in sel:
-        pieces.append(beta_N(panel, index_df, lookbacks))
+        plan.append(("F10", lambda: beta_N(panel, index_df, lookbacks)))
     if "F11" in sel:
-        pieces.append(range_vol(panel, lookbacks, annualization))
+        plan.append(("F11", lambda: range_vol(panel, lookbacks, annualization)))
     if "F12" in sel:
-        pieces.append(sma_distance_N(panel, lookbacks))
+        plan.append(("F12", lambda: sma_distance_N(panel, lookbacks)))
     if "F13" in sel:
-        pieces.append(vol_regime(panel, lookbacks, annualization))
+        plan.append(("F13", lambda: vol_regime(panel, lookbacks, annualization)))
     if "F14" in sel:
-        pieces.append(cross_sectional_rank_z(panel, lookbacks, annualization))
+        plan.append(("F14", lambda: cross_sectional_rank_z(panel, lookbacks, annualization)))
     if "F15" in sel:
-        pieces.append(calendar_features(panel))
+        plan.append(("F15", lambda: calendar_features(panel)))
     if "F16" in sel:
-        f16_nat = f16_underlying(panel, lookbacks, annualization)
-        pieces.append(f16_nat)
-        underlyings = f16_meta_underlying_columns(panel, lookbacks, annualization)
-        meta = signed_days_outside_band_meta(underlyings, sigmas=(1.0, 2.0, 3.0))
-        pieces.append(meta)
+        def _build_f16() -> pd.DataFrame:
+            f16_nat = f16_underlying(panel, lookbacks, annualization)
+            underlyings = f16_meta_underlying_columns(panel, lookbacks, annualization)
+            meta = signed_days_outside_band_meta(
+                underlyings, sigmas=(1.0, 2.0, 3.0),
+            )
+            return pd.concat([f16_nat, meta], axis=1)
+        plan.append(("F16", _build_f16))
+
+    total = len(plan)
+    t_start = time.time()
+    last_log_time = t_start
+    any_emit = False
+    for i, (fam, fn) in enumerate(plan, start=1):
+        pieces.append(fn())
+        now = time.time()
+        # Time-based throttle: emit at most once per
+        # _FEATURES_PROGRESS_THROTTLE_SEC seconds. To guarantee at least
+        # one progress line per run (so smoketests / fast panels still
+        # produce evidence the stage advanced), force the final-boundary
+        # emit ONLY when no prior line was emitted — otherwise the
+        # throttle takes precedence (a 35s F1 followed by instantaneous
+        # F2..F15 emits exactly one line, not two).
+        throttle_ok = (now - last_log_time) >= _FEATURES_PROGRESS_THROTTLE_SEC
+        force_final = (i == total and not any_emit)
+        if throttle_ok or force_final:
+            print(
+                f"[features] family={fam} step={i}/{total} "
+                f"elapsed={now - t_start:.1f}s",
+                file=sys.stderr,
+                flush=True,
+            )
+            last_log_time = now
+            any_emit = True
 
     out = pd.concat(pieces, axis=1)
     out = out.loc[:, ~out.columns.duplicated()]

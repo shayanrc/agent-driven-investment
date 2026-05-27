@@ -12,9 +12,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import pickle
+import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -214,6 +217,95 @@ def _format_test_split_warning(projection: dict, threshold: int) -> str:
     )
 
 
+def _collect_preflight(repo_root: Path) -> dict:
+    """Capture a fingerprint of the cache + code state at run start.
+
+    Six fields, captured BEFORE any data is loaded so the fingerprint
+    survives even when the data stage fails:
+
+    - ``cache_db``: resolved absolute path to ``<repo_root>/data/processed.db``.
+      Symlinks are followed (via ``os.path.realpath``) so a run reading
+      from a tmpfs-backed cache mounted at ``data/`` records the real
+      target path. Empty string if the file does not exist.
+    - ``cache_db_size``: size in bytes; ``0`` if missing.
+    - ``cache_db_mtime``: UTC ISO-8601 mtime; empty string if missing.
+    - ``data_root``: resolved absolute path to ``<repo_root>/data``
+      (the directory data_pipelines was rooted at). Same realpath rule.
+    - ``code_commit``: ``git rev-parse HEAD`` output, or ``"unknown"``
+      when git is unavailable / repo_root is not a git checkout.
+    - ``code_dirty``: ``True`` when ``git status --porcelain`` is
+      non-empty, else ``False``. Defaults to ``False`` when git is
+      unavailable (matches the ``code_commit="unknown"`` fail-safe).
+
+    Motivated by the ``/tmp/exp_data`` tmpfs wipe (May 27): two runs on
+    consecutive dates reading from a transient cache looked identical
+    in their artifacts but in fact consumed different cache snapshots.
+    Persisting these six fields into the artifact (``metrics.json``)
+    makes archived runs self-describing post-hoc.
+    """
+    data_root = Path(repo_root) / "data"
+    cache_db = data_root / "processed.db"
+
+    data_root_resolved = os.path.realpath(data_root)
+    if cache_db.exists():
+        cache_db_resolved = os.path.realpath(cache_db)
+        try:
+            st = os.stat(cache_db_resolved)
+            cache_db_size = int(st.st_size)
+            cache_db_mtime = datetime.fromtimestamp(
+                st.st_mtime, tz=timezone.utc,
+            ).isoformat()
+        except OSError:
+            cache_db_size = 0
+            cache_db_mtime = ""
+    else:
+        cache_db_resolved = ""
+        cache_db_size = 0
+        cache_db_mtime = ""
+
+    code_commit = "unknown"
+    code_dirty = False
+    try:
+        rev = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=False, timeout=5,
+        )
+        if rev.returncode == 0:
+            commit = rev.stdout.strip()
+            if commit:
+                code_commit = commit
+                status = subprocess.run(
+                    ["git", "-C", str(repo_root), "status", "--porcelain"],
+                    capture_output=True, text=True, check=False, timeout=5,
+                )
+                if status.returncode == 0:
+                    code_dirty = bool(status.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        # ``git`` binary missing, perms denied, hung, etc. — preserve the
+        # ``unknown``/``False`` fail-safe and continue. Never crash a run.
+        pass
+
+    return {
+        "cache_db": cache_db_resolved,
+        "cache_db_size": cache_db_size,
+        "cache_db_mtime": cache_db_mtime,
+        "data_root": data_root_resolved,
+        "code_commit": code_commit,
+        "code_dirty": code_dirty,
+    }
+
+
+def _format_preflight_line(pf: dict) -> str:
+    return (
+        f"[preflight] cache_db={pf['cache_db']} "
+        f"cache_db_size={pf['cache_db_size']} "
+        f"cache_db_mtime={pf['cache_db_mtime']} "
+        f"data_root={pf['data_root']} "
+        f"code_commit={pf['code_commit']} "
+        f"code_dirty={pf['code_dirty']}"
+    )
+
+
 def _data_hash(panel: pd.DataFrame) -> str:
     h = hashlib.sha256()
     h.update(str(panel.shape).encode())
@@ -277,6 +369,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     """Run the experiment end-to-end. Returns the artifact dir path."""
     spec_path = Path(spec_path).resolve()
     repo_root = Path(repo_root) if repo_root is not None else Path.cwd()
+
+    # Pre-flight fingerprint — captured BEFORE spec load / artifact dir
+    # checks / data load so even an aborted run leaves a trail in stdout.
+    # Persisted into ``metrics.json::preflight`` below for post-hoc audit.
+    preflight = _collect_preflight(repo_root)
+    print(_format_preflight_line(preflight), flush=True)
+
     spec = load_spec(spec_path, default_path=repo_root / "configs/gbdt/default.yaml")
     name = spec_path.stem
     out_root = repo_root / spec.get("artifacts", {}).get(
@@ -554,6 +653,9 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         "experiment_name": name,
         "spec_hash": _spec_hash(spec),
         "data_hash": _data_hash(panel_obj.panel),
+        # Pre-flight cache + code fingerprint (see ``_collect_preflight``).
+        # Six fields populated even when git is unavailable.
+        "preflight": preflight,
         "data": {
             "n_tickers_in_universe": len(panel_obj.statuses),
             "n_tickers_used": len(panel_obj.tickers_kept),
