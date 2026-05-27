@@ -1,0 +1,31 @@
+# NIFTY50 Value 20 — value-tilted Nifty 50 subset (strategy) (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_Nifty50_Value20.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty50_value_20
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:VALUE20"
+tickers:
+  - "NSE:AXISBANK"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:CIPLA"
+  - "NSE:COALINDIA"
+  - "NSE:DRREDDY"
+  - "NSE:HCLTECH"
+  - "NSE:HINDALCO"
+  - "NSE:ICICIBANK"
+  - "NSE:INFY"
+  - "NSE:ITC"
+  - "NSE:KOTAKBANK"
+  - "NSE:MARUTI"
+  - "NSE:NTPC"
+  - "NSE:ONGC"
+  - "NSE:POWERGRID"
+  - "NSE:SBIN"
+  - "NSE:TCS"
+  - "NSE:TECHM"
+  - "NSE:TMPV"
+  - "NSE:WIPRO"

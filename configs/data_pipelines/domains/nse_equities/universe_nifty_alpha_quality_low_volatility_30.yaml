@@ -1,0 +1,41 @@
+# NIFTY Alpha Quality Low Volatility 30 — 3-factor combo (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_nifty_alpha_quality_lowvol30list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_alpha_quality_low_volatility_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:ALPHAQUALLOWVOL30"
+tickers:
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BAJFINANCE"
+  - "NSE:BEL"
+  - "NSE:BOSCHLTD"
+  - "NSE:BRITANNIA"
+  - "NSE:COALINDIA"
+  - "NSE:COLPAL"
+  - "NSE:CUMMINSIND"
+  - "NSE:DABUR"
+  - "NSE:DIVISLAB"
+  - "NSE:DRREDDY"
+  - "NSE:EICHERMOT"
+  - "NSE:HDFCAMC"
+  - "NSE:HEROMOTOCO"
+  - "NSE:HINDUNILVR"
+  - "NSE:ICICIBANK"
+  - "NSE:ITC"
+  - "NSE:MARICO"
+  - "NSE:MARUTI"
+  - "NSE:NESTLEIND"
+  - "NSE:PAGEIND"
+  - "NSE:PIDILITIND"
+  - "NSE:SBICARD"
+  - "NSE:SHREECEM"
+  - "NSE:SUNPHARMA"
+  - "NSE:TCS"
+  - "NSE:TORNTPHARM"
+  - "NSE:UNITDSPR"
+  - "NSE:ZYDUSLIFE"

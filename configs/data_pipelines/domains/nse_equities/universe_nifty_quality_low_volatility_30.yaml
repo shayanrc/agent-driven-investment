@@ -1,0 +1,41 @@
+# NIFTY Quality Low Volatility 30 — combined quality+lowvol factor (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_nifty_quality_lowvol30list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_quality_low_volatility_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:QUALLOWVOL30"
+tickers:
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BOSCHLTD"
+  - "NSE:BRITANNIA"
+  - "NSE:CIPLA"
+  - "NSE:COALINDIA"
+  - "NSE:COLPAL"
+  - "NSE:DABUR"
+  - "NSE:DRREDDY"
+  - "NSE:EICHERMOT"
+  - "NSE:HAVELLS"
+  - "NSE:HCLTECH"
+  - "NSE:HDFCBANK"
+  - "NSE:HEROMOTOCO"
+  - "NSE:HINDUNILVR"
+  - "NSE:ICICIBANK"
+  - "NSE:INFY"
+  - "NSE:IRCTC"
+  - "NSE:ITC"
+  - "NSE:KOTAKBANK"
+  - "NSE:LTM"
+  - "NSE:MARICO"
+  - "NSE:MARUTI"
+  - "NSE:NESTLEIND"
+  - "NSE:PAGEIND"
+  - "NSE:PIDILITIND"
+  - "NSE:PIIND"
+  - "NSE:SUNPHARMA"
+  - "NSE:TCS"
+  - "NSE:UNITDSPR"

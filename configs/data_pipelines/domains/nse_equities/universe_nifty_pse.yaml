@@ -1,0 +1,31 @@
+# NIFTY PSE — public-sector enterprise theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftypselist.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_pse
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:PSE"
+tickers:
+  - "NSE:BEL"
+  - "NSE:BHEL"
+  - "NSE:BPCL"
+  - "NSE:COALINDIA"
+  - "NSE:CONCOR"
+  - "NSE:GAIL"
+  - "NSE:HAL"
+  - "NSE:HINDPETRO"
+  - "NSE:IOC"
+  - "NSE:IRCTC"
+  - "NSE:IRFC"
+  - "NSE:NHPC"
+  - "NSE:NMDC"
+  - "NSE:NTPC"
+  - "NSE:OIL"
+  - "NSE:ONGC"
+  - "NSE:PFC"
+  - "NSE:POWERGRID"
+  - "NSE:RECLTD"
+  - "NSE:RVNL"

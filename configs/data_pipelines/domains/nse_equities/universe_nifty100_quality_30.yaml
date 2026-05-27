@@ -1,0 +1,41 @@
+# NIFTY100 Quality 30 — top-30 quality stocks from Nifty 100 (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_nifty100Quality30list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty100_quality_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:100QUALITY30"
+tickers:
+  - "NSE:ABB"
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BEL"
+  - "NSE:BOSCHLTD"
+  - "NSE:BRITANNIA"
+  - "NSE:COALINDIA"
+  - "NSE:DIVISLAB"
+  - "NSE:DRREDDY"
+  - "NSE:EICHERMOT"
+  - "NSE:GODREJCP"
+  - "NSE:HAL"
+  - "NSE:HAVELLS"
+  - "NSE:HCLTECH"
+  - "NSE:HINDUNILVR"
+  - "NSE:HINDZINC"
+  - "NSE:INFY"
+  - "NSE:ITC"
+  - "NSE:LTM"
+  - "NSE:MARUTI"
+  - "NSE:MAZDOCK"
+  - "NSE:NESTLEIND"
+  - "NSE:PIDILITIND"
+  - "NSE:SOLARINDS"
+  - "NSE:TCS"
+  - "NSE:TECHM"
+  - "NSE:UNITDSPR"
+  - "NSE:VBL"
+  - "NSE:WIPRO"
+  - "NSE:ZYDUSLIFE"

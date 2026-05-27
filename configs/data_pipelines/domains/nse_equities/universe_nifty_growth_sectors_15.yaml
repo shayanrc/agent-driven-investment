@@ -1,0 +1,26 @@
+# NIFTY Growth Sectors 15 — growth-sector tilt (strategy) (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_NiftyGrowth_Sectors15_Index.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_growth_sectors_15
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:GROWTHSECT15"
+tickers:
+  - "NSE:APOLLOHOSP"
+  - "NSE:CIPLA"
+  - "NSE:DIVISLAB"
+  - "NSE:EICHERMOT"
+  - "NSE:HINDUNILVR"
+  - "NSE:INFY"
+  - "NSE:M&M"
+  - "NSE:MARUTI"
+  - "NSE:NESTLEIND"
+  - "NSE:PERSISTENT"
+  - "NSE:SUNPHARMA"
+  - "NSE:TCS"
+  - "NSE:TECHM"
+  - "NSE:TITAN"
+  - "NSE:TVSMOTOR"

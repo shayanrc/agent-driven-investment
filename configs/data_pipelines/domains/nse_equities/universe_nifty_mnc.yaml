@@ -1,0 +1,41 @@
+# NIFTY MNC — multinational-corporation theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftymnclist.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_mnc
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:MNC"
+tickers:
+  - "NSE:3MINDIA"
+  - "NSE:ABB"
+  - "NSE:ABBOTINDIA"
+  - "NSE:AMBUJACEM"
+  - "NSE:ASHOKLEY"
+  - "NSE:AWL"
+  - "NSE:BOSCHLTD"
+  - "NSE:BRITANNIA"
+  - "NSE:CASTROLIND"
+  - "NSE:COHANCE"
+  - "NSE:COLPAL"
+  - "NSE:CRISIL"
+  - "NSE:CUMMINSIND"
+  - "NSE:ENRIN"
+  - "NSE:ESCORTS"
+  - "NSE:GLAND"
+  - "NSE:HINDUNILVR"
+  - "NSE:HYUNDAI"
+  - "NSE:LINDEINDIA"
+  - "NSE:MARUTI"
+  - "NSE:NAM-INDIA"
+  - "NSE:NESTLEIND"
+  - "NSE:OFSS"
+  - "NSE:POWERINDIA"
+  - "NSE:SCHAEFFLER"
+  - "NSE:SIEMENS"
+  - "NSE:TIMKEN"
+  - "NSE:UBL"
+  - "NSE:UNITDSPR"
+  - "NSE:VEDL"

@@ -152,6 +152,139 @@ universes:
     source: configs/data_pipelines/domains/nse_equities/universe_nifty_oil_and_gas.yaml
     index_ticker: "NIFTY:OILGAS"
     annualization_factor: 250
+  # --- NSE Thematic / Strategy indices (30) --------------------------------
+  # Materialized by scripts/data_pipelines/thematic_fetch.py.
+  # Constituent CSVs sourced from niftyindices.com/IndexConstituent/...
+  # (thematic/strategy files are hosted there rather than under
+  # archives.nseindia.com, with heterogeneous slug shapes). Benchmark
+  # index_ticker values use the symbol form already cached under
+  # nse_equities where available; for new benchmarks not yet seeded
+  # (e.g. NIFTY:CAPMKT, NIFTY:HOUSING) the canonical NIFTY: form per
+  # niftyindices.com is recorded here and the benchmark back-extend is
+  # tracked as a follow-up.
+  #
+  # Strategy / factor (16):
+  nifty_alpha_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_alpha_50.yaml
+    index_ticker: "NIFTY:ALPHA50"
+    annualization_factor: 250
+  nifty_low_volatility_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_low_volatility_50.yaml
+    index_ticker: "NIFTY:LOWVOL50"
+    annualization_factor: 250
+  nifty_high_beta_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_high_beta_50.yaml
+    index_ticker: "NIFTY:HIGHBETA50"
+    annualization_factor: 250
+  nifty_dividend_opportunities_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_dividend_opportunities_50.yaml
+    index_ticker: "NIFTY:DIVOPP50"
+    annualization_factor: 250
+  nifty50_value_20:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty50_value_20.yaml
+    index_ticker: "NIFTY:VALUE20"
+    annualization_factor: 250
+  nifty_growth_sectors_15:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_growth_sectors_15.yaml
+    index_ticker: "NIFTY:GROWTHSECT15"
+    annualization_factor: 250
+  nifty_quality_low_volatility_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_quality_low_volatility_30.yaml
+    index_ticker: "NIFTY:QUALLOWVOL30"
+    annualization_factor: 250
+  nifty_alpha_low_volatility_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_alpha_low_volatility_30.yaml
+    index_ticker: "NIFTY:ALPHALOWVOL30"
+    annualization_factor: 250
+  nifty_alpha_quality_low_volatility_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_alpha_quality_low_volatility_30.yaml
+    index_ticker: "NIFTY:ALPHAQUALLOWVOL30"
+    annualization_factor: 250
+  nifty_alpha_quality_value_low_volatility_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_alpha_quality_value_low_volatility_30.yaml
+    index_ticker: "NIFTY:ALPHAQUALVALLOWVOL30"
+    annualization_factor: 250
+  nifty100_quality_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty100_quality_30.yaml
+    index_ticker: "NIFTY:100QUALITY30"
+    annualization_factor: 250
+  nifty100_low_volatility_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty100_low_volatility_30.yaml
+    index_ticker: "NIFTY:100LOWVOL30"
+    annualization_factor: 250
+  nifty200_momentum_30:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty200_momentum_30.yaml
+    index_ticker: "NIFTY:200MOMENTUM30"
+    annualization_factor: 250
+  nifty_midcap150_momentum_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap150_momentum_50.yaml
+    index_ticker: "NIFTY:MIDCAP150MOM50"
+    annualization_factor: 250
+  nifty_midcap150_quality_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_midcap150_quality_50.yaml
+    index_ticker: "NIFTY:MIDCAP150QUAL50"
+    annualization_factor: 250
+  nifty500_multifactor_mqvlv_50:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty500_multifactor_mqvlv_50.yaml
+    index_ticker: "NIFTY:500MULTIFACTOR50"
+    annualization_factor: 250
+  # Thematic / cross-cutting (14):
+  nifty_commodities:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_commodities.yaml
+    index_ticker: "NIFTY:COMMODITIES"
+    annualization_factor: 250
+  nifty_cpse:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_cpse.yaml
+    index_ticker: "NIFTY:CPSE"
+    annualization_factor: 250
+  nifty_infrastructure:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_infrastructure.yaml
+    index_ticker: "NIFTY:INFRA"
+    annualization_factor: 250
+  nifty_mnc:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_mnc.yaml
+    index_ticker: "NIFTY:MNC"
+    annualization_factor: 250
+  nifty_pse:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_pse.yaml
+    index_ticker: "NIFTY:PSE"
+    annualization_factor: 250
+  nifty_services_sector:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_services_sector.yaml
+    index_ticker: "NIFTY:SERVICES"
+    annualization_factor: 250
+  nifty_india_consumption:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_india_consumption.yaml
+    index_ticker: "NIFTY:CONSUMPTION"
+    annualization_factor: 250
+  nifty_india_manufacturing:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_india_manufacturing.yaml
+    index_ticker: "NIFTY:MANUFACTURING"
+    annualization_factor: 250
+  nifty_india_defence:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_india_defence.yaml
+    index_ticker: "NIFTY:DEFENCE"
+    annualization_factor: 250
+  nifty_india_digital:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_india_digital.yaml
+    index_ticker: "NIFTY:DIGITAL"
+    annualization_factor: 250
+  nifty_india_tourism:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_india_tourism.yaml
+    index_ticker: "NIFTY:TOURISM"
+    annualization_factor: 250
+  nifty_mobility:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_mobility.yaml
+    index_ticker: "NIFTY:MOBILITY"
+    annualization_factor: 250
+  nifty_capital_markets:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_capital_markets.yaml
+    index_ticker: "NIFTY:CAPMKT"
+    annualization_factor: 250
+  nifty_housing:
+    source: configs/data_pipelines/domains/nse_equities/universe_nifty_housing.yaml
+    index_ticker: "NIFTY:HOUSING"
+    annualization_factor: 250
   # --- US equities ---------------------------------------------------------
   sp500:
     source: configs/data_pipelines/domains/us_equities/universe_sp500.yaml

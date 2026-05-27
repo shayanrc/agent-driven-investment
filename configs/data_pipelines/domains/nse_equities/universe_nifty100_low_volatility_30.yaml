@@ -1,0 +1,41 @@
+# NIFTY100 Low Volatility 30 — 30 lowest-vol from Nifty 100 (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_Nifty100LowVolatility30list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty100_low_volatility_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:100LOWVOL30"
+tickers:
+  - "NSE:APOLLOHOSP"
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BAJAJFINSV"
+  - "NSE:BHARTIARTL"
+  - "NSE:BOSCHLTD"
+  - "NSE:BRITANNIA"
+  - "NSE:CIPLA"
+  - "NSE:DRREDDY"
+  - "NSE:HCLTECH"
+  - "NSE:HDFCBANK"
+  - "NSE:HINDUNILVR"
+  - "NSE:ICICIBANK"
+  - "NSE:INFY"
+  - "NSE:ITC"
+  - "NSE:KOTAKBANK"
+  - "NSE:LT"
+  - "NSE:MARUTI"
+  - "NSE:NESTLEIND"
+  - "NSE:PIDILITIND"
+  - "NSE:RELIANCE"
+  - "NSE:SBILIFE"
+  - "NSE:SBIN"
+  - "NSE:SHREECEM"
+  - "NSE:SUNPHARMA"
+  - "NSE:TCS"
+  - "NSE:TITAN"
+  - "NSE:TORNTPHARM"
+  - "NSE:ULTRACEMCO"
+  - "NSE:WIPRO"

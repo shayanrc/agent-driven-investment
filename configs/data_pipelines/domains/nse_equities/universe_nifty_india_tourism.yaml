@@ -1,0 +1,26 @@
+# NIFTY India Tourism — tourism/hospitality theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftyindiatourism_list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_india_tourism
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:TOURISM"
+tickers:
+  - "NSE:BLS"
+  - "NSE:CHALET"
+  - "NSE:DEVYANI"
+  - "NSE:EIHOTEL"
+  - "NSE:GMRAIRPORT"
+  - "NSE:INDHOTEL"
+  - "NSE:INDIGO"
+  - "NSE:IRCTC"
+  - "NSE:ITCHOTELS"
+  - "NSE:JUBLFOOD"
+  - "NSE:LEMONTREE"
+  - "NSE:SAPPHIRE"
+  - "NSE:TBOTEK"
+  - "NSE:THELEELA"
+  - "NSE:TRAVELFOOD"

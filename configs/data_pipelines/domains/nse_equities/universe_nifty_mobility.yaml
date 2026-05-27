@@ -1,0 +1,41 @@
+# NIFTY Mobility — mobility/transport theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftymobility_list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_mobility
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:MOBILITY"
+tickers:
+  - "NSE:ADANIPORTS"
+  - "NSE:ASHOKLEY"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BALKRISIND"
+  - "NSE:BHARATFORG"
+  - "NSE:BOSCHLTD"
+  - "NSE:BPCL"
+  - "NSE:CONCOR"
+  - "NSE:EICHERMOT"
+  - "NSE:ETERNAL"
+  - "NSE:GAIL"
+  - "NSE:GMRAIRPORT"
+  - "NSE:HEROMOTOCO"
+  - "NSE:HINDPETRO"
+  - "NSE:HYUNDAI"
+  - "NSE:INDIGO"
+  - "NSE:IOC"
+  - "NSE:IRCTC"
+  - "NSE:M&M"
+  - "NSE:MARUTI"
+  - "NSE:MOTHERSON"
+  - "NSE:MRF"
+  - "NSE:PETRONET"
+  - "NSE:RELIANCE"
+  - "NSE:SONACOMS"
+  - "NSE:SWIGGY"
+  - "NSE:TIINDIA"
+  - "NSE:TMCV"
+  - "NSE:TMPV"
+  - "NSE:TVSMOTOR"

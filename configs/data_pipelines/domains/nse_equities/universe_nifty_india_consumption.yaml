@@ -1,0 +1,41 @@
+# NIFTY India Consumption — domestic-consumption theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftyconsumptionlist.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_india_consumption
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:CONSUMPTION"
+tickers:
+  - "NSE:ADANIPOWER"
+  - "NSE:APOLLOHOSP"
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJ-AUTO"
+  - "NSE:BHARTIARTL"
+  - "NSE:BRITANNIA"
+  - "NSE:DIXON"
+  - "NSE:DLF"
+  - "NSE:DMART"
+  - "NSE:EICHERMOT"
+  - "NSE:ETERNAL"
+  - "NSE:GODREJCP"
+  - "NSE:HAVELLS"
+  - "NSE:HEROMOTOCO"
+  - "NSE:HINDUNILVR"
+  - "NSE:INDHOTEL"
+  - "NSE:INDIGO"
+  - "NSE:ITC"
+  - "NSE:M&M"
+  - "NSE:MARUTI"
+  - "NSE:MAXHEALTH"
+  - "NSE:NAUKRI"
+  - "NSE:NESTLEIND"
+  - "NSE:TATACONSUM"
+  - "NSE:TATAPOWER"
+  - "NSE:TITAN"
+  - "NSE:TRENT"
+  - "NSE:TVSMOTOR"
+  - "NSE:UNITDSPR"
+  - "NSE:VBL"
