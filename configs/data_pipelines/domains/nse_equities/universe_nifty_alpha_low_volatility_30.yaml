@@ -1,0 +1,41 @@
+# NIFTY Alpha Low Volatility 30 — combined alpha+lowvol factor (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_nifty_alpha_lowvol30list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_alpha_low_volatility_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:ALPHALOWVOL30"
+tickers:
+  - "NSE:APOLLOHOSP"
+  - "NSE:ASIANPAINT"
+  - "NSE:BAJAJFINSV"
+  - "NSE:BAJFINANCE"
+  - "NSE:BHARTIARTL"
+  - "NSE:BRITANNIA"
+  - "NSE:DRREDDY"
+  - "NSE:EICHERMOT"
+  - "NSE:FEDERALBNK"
+  - "NSE:GRASIM"
+  - "NSE:HDFCBANK"
+  - "NSE:HDFCLIFE"
+  - "NSE:ICICIBANK"
+  - "NSE:KOTAKBANK"
+  - "NSE:MARICO"
+  - "NSE:MARUTI"
+  - "NSE:MFSL"
+  - "NSE:NESTLEIND"
+  - "NSE:PIDILITIND"
+  - "NSE:RELIANCE"
+  - "NSE:SBICARD"
+  - "NSE:SBILIFE"
+  - "NSE:SBIN"
+  - "NSE:SHREECEM"
+  - "NSE:SUNPHARMA"
+  - "NSE:TATACONSUM"
+  - "NSE:TITAN"
+  - "NSE:TORNTPHARM"
+  - "NSE:TVSMOTOR"
+  - "NSE:ULTRACEMCO"

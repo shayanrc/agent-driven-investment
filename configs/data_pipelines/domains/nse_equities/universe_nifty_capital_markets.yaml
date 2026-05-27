@@ -1,0 +1,28 @@
+# NIFTY Capital Markets — exchanges + brokerage + AMC theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftyCapitalMarkets_list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_capital_markets
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:CAPMKT"
+tickers:
+  - "NSE:360ONE"
+  - "NSE:ABSLAMC"
+  - "NSE:ANANDRATHI"
+  - "NSE:ANGELONE"
+  - "NSE:BSE"
+  - "NSE:CAMS"
+  - "NSE:CDSL"
+  - "NSE:GROWW"
+  - "NSE:HDFCAMC"
+  - "NSE:ICICIAMC"
+  - "NSE:IEX"
+  - "NSE:KFINTECH"
+  - "NSE:MCX"
+  - "NSE:MOTILALOFS"
+  - "NSE:NAM-INDIA"
+  - "NSE:NUVAMA"
+  - "NSE:UTIAMC"

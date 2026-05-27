@@ -1,0 +1,22 @@
+# NIFTY CPSE — central-public-sector enterprises theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftycpselist.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_cpse
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:CPSE"
+tickers:
+  - "NSE:BEL"
+  - "NSE:COALINDIA"
+  - "NSE:COCHINSHIP"
+  - "NSE:NBCC"
+  - "NSE:NHPC"
+  - "NSE:NLCINDIA"
+  - "NSE:NTPC"
+  - "NSE:OIL"
+  - "NSE:ONGC"
+  - "NSE:POWERGRID"
+  - "NSE:SJVN"

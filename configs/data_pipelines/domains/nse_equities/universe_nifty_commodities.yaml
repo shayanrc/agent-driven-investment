@@ -1,0 +1,41 @@
+# NIFTY Commodities — diversified commodity-producer theme (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_niftycommoditieslist.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty_commodities
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:COMMODITIES"
+tickers:
+  - "NSE:ADANIENSOL"
+  - "NSE:ADANIGREEN"
+  - "NSE:ADANIPOWER"
+  - "NSE:AMBUJACEM"
+  - "NSE:APLAPOLLO"
+  - "NSE:BPCL"
+  - "NSE:COALINDIA"
+  - "NSE:GRASIM"
+  - "NSE:HINDALCO"
+  - "NSE:HINDPETRO"
+  - "NSE:IOC"
+  - "NSE:JINDALSTEL"
+  - "NSE:JSWENERGY"
+  - "NSE:JSWSTEEL"
+  - "NSE:NHPC"
+  - "NSE:NMDC"
+  - "NSE:NTPC"
+  - "NSE:OIL"
+  - "NSE:ONGC"
+  - "NSE:PIDILITIND"
+  - "NSE:PIIND"
+  - "NSE:RELIANCE"
+  - "NSE:SHREECEM"
+  - "NSE:SRF"
+  - "NSE:TATAPOWER"
+  - "NSE:TATASTEEL"
+  - "NSE:TORNTPOWER"
+  - "NSE:ULTRACEMCO"
+  - "NSE:UPL"
+  - "NSE:VEDL"

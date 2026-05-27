@@ -1,0 +1,41 @@
+# NIFTY200 Momentum 30 — top-30 momentum from Nifty 200 (as of 2026-05-27).
+# Source: https://niftyindices.com/IndexConstituent/ind_nifty200Momentum30_list.csv
+# Refresh by re-running scripts/data_pipelines/thematic_fetch.py --write-yamls;
+# NSE rebalances thematic / strategy indices semi-annually (some quarterly).
+# Point-in-time historical membership is explicitly out of scope (V2_TBD open q.1).
+
+universe: nifty200_momentum_30
+listed_at: 2026-05-27
+indices:
+  - "NIFTY:200MOMENTUM30"
+tickers:
+  - "NSE:ABCAPITAL"
+  - "NSE:ASHOKLEY"
+  - "NSE:ASIANPAINT"
+  - "NSE:AUBANK"
+  - "NSE:BAJFINANCE"
+  - "NSE:BHARTIARTL"
+  - "NSE:BSE"
+  - "NSE:CANBK"
+  - "NSE:CHOLAFIN"
+  - "NSE:CUMMINSIND"
+  - "NSE:EICHERMOT"
+  - "NSE:FEDERALBNK"
+  - "NSE:FORTIS"
+  - "NSE:GLENMARK"
+  - "NSE:GMRAIRPORT"
+  - "NSE:HEROMOTOCO"
+  - "NSE:HINDALCO"
+  - "NSE:INDIANB"
+  - "NSE:INDIGO"
+  - "NSE:LTF"
+  - "NSE:MARUTI"
+  - "NSE:MFSL"
+  - "NSE:MUTHOOTFIN"
+  - "NSE:NYKAA"
+  - "NSE:PAYTM"
+  - "NSE:SBILIFE"
+  - "NSE:SBIN"
+  - "NSE:SHRIRAMFIN"
+  - "NSE:TVSMOTOR"
+  - "NSE:UPL"
