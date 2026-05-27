@@ -13,6 +13,7 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 - [project-fat-tail-eval.md](project-fat-tail-eval.md) — Operational how-to for the mandatory 15-anchor fat-tail eval panel (scripts, fig paths, regeneration rules)
 - [project-nse-data-quirks.md](project-nse-data-quirks.md) — NSE fetch quirks: jugaad/nselib blocked → use curl from archives.nseindia.com; filter DUMMY* placeholders; processed.db-wal can corrupt → /tmp/exp_data workaround; per-ticker fetch is 30–80s; cached-but-short tickers need `back_extend=True`
 - [project-gbdt-uniqueness-weights.md](project-gbdt-uniqueness-weights.md) — gbdt applies LdP §4.4 sample-uniqueness weights by default; corrects the 2.15× overlap-prevalence inflation surfaced by sweep exp #1; opt-out via `target.uniqueness_weighting: false`
+- [project-r-precision-methodology.md](project-r-precision-methodology.md) — R-precision (per-day variable K=R(d)) is the headline cross-cell metric for gbdt; AUC alone misclassifies top-tail-signal cells as null; compound rule + compute_r_precision.py script
 
 ## Workflow feedback
 
@@ -22,3 +23,4 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 - [feedback-disk-wedge-pattern.md](feedback-disk-wedge-pattern.md) — NTFS-on-Linux volumes can wedge when near-full → kernel D-state procs, unkillable, cascading; pre-flight disk check + cleanup via paths off the wedged FS
 - [feedback-sub-agent-foreground.md](feedback-sub-agent-foreground.md) — Sub-30-min sub-agent tasks: run in FOREGROUND with `timeout`, NOT background+Monitor (the latter exits prematurely, orphans procs); ≥2h tasks still use background+Monitor+ScheduleWakeup chain
 - [feedback-worktree-symlink-contract.md](feedback-worktree-symlink-contract.md) — Sub-agents can't `git worktree add` (sandbox blocks); parent pre-creates. Symlink: `rm -rf data && ln -s` (not `ln -snf` — creates nested `data/data` when data/ exists as dir). Then `git update-index --skip-worktree data/.gitkeep` so the shadowed tracked file doesn't break `git rebase --autostash` / `git checkout`
+- [feedback-agent-pkill-antipattern.md](feedback-agent-pkill-antipattern.md) — Sub-agents MUST NOT use `pkill -f <pattern>` in bash wrappers; pattern-based kills catch other concurrent processes (cost us 2 sp500 H=25 retries 2026-05-27). Use direct PID targeting or plain `timeout(1)` instead
