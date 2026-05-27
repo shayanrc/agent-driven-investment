@@ -47,6 +47,7 @@ import pandas as pd
 
 def _empty_top_k(k_values: Iterable[int]) -> dict[str, Any]:
     return {
+        "formula_version": "v2_min_R_d_k",
         "base_rate": None,
         "n_rows": 0,
         "per_day": {str(k): _empty_per_k() for k in k_values},
@@ -59,6 +60,8 @@ def _empty_per_k() -> dict[str, Any]:
         "p_at_k": None,
         "n_picks_total": 0,
         "n_positives_in_picks": 0,
+        "n_denom": 0,
+        "n_days_R_lt_k": 0,
         "n_days_full_k": 0,
         "n_days_total": 0,
         "lift": None,
@@ -70,6 +73,7 @@ def _empty_global_k() -> dict[str, Any]:
         "p_at_k": None,
         "n_picks": 0,
         "n_positives_in_picks": 0,
+        "n_denom": 0,
         "lift": None,
     }
 
@@ -93,10 +97,27 @@ def compute_top_k_metrics(
 
     For each ``k``:
       ``per_day`` — group by date, take the top-``k`` rows per day, pool
-        across days. ``p_at_k`` = positives in picks / picks; ``lift`` =
-        ``p_at_k / base_rate``. ``n_days_full_k`` counts days that had at
-        least ``k`` tickers (= days where the pick size equals ``k``).
-      ``global`` — flat top-``k`` across the entire segment.
+        across days. Weighted aggregate
+        ``p_at_k = sum_d(positives_in_top_k(d)) / sum_d(min(R(d), k))``
+        where ``R(d)`` is the count of positives on day ``d``. The
+        ``min(R(d), k)`` denominator (achievable positives) is mandatory —
+        using the picks-made count (``min(k, n_tickers(d))``) silently
+        mis-normalizes on staggered panels where ``R(d) < k`` for many
+        days. ``lift = p_at_k / base_rate``. ``n_days_full_k`` counts days
+        that had at least ``k`` tickers (= days where the pick size
+        equals ``k``); ``n_days_R_lt_k`` counts days where ``R(d) < k``
+        (the days for which the new denominator differs from the old).
+      ``global`` — flat top-``k`` across the entire segment, with the
+        analogous denominator: ``min(k, total_positives_in_segment)``
+        (achievable positives across the segment). Chosen for consistency
+        with the per-day block; segments with ``R_total < k`` are rare in
+        practice but the recall-style semantics are well-defined.
+
+    ``formula_version: "v2_min_R_d_k"`` (introduced 2026-05-28, fixes
+    issue #45). Pre-fix artifacts have no such field — absence = v1
+    (``"v1_picks_made"``, the buggy denominator). See
+    ``.claude/memories/project-r-precision-methodology.md`` for the full
+    spec and the bug history.
     """
     k_values = tuple(sorted(int(k) for k in k_values))
     if df is None or df.empty:
@@ -105,8 +126,10 @@ def compute_top_k_metrics(
     n_rows = int(len(df))
     y = df["y_true"].values.astype(int)
     base_rate = float(y.mean()) if n_rows else None
+    total_positives = int(y.sum())
 
     out: dict[str, Any] = {
+        "formula_version": "v2_min_R_d_k",
         "base_rate": base_rate,
         "n_rows": n_rows,
         "per_day": {},
@@ -122,6 +145,8 @@ def compute_top_k_metrics(
     )
     n_days_total = int(sorted_df["date"].nunique())
     grouped = sorted_df.groupby("date", sort=False)
+    # Per-day R(d) = positives on day d.
+    per_day_r = grouped["y_true"].sum().astype(int)
 
     for k in k_values:
         picks = grouped.head(k)
@@ -132,7 +157,13 @@ def compute_top_k_metrics(
         # were available that day).
         sizes = picks.groupby("date", sort=False).size()
         n_days_full_k = int((sizes >= k).sum())
-        p_at_k = float(n_pos / n_picks_total) if n_picks_total else None
+        # Denominator under the corrected formula: sum_d(min(R(d), k))
+        # = achievable positives. n_days_R_lt_k counts days where the
+        # denominator is R(d) rather than k.
+        clipped_r = per_day_r.clip(upper=k)
+        n_denom = int(clipped_r.sum())
+        n_days_R_lt_k = int((per_day_r < k).sum())
+        p_at_k = float(n_pos / n_denom) if n_denom else None
         lift = (
             float(p_at_k / base_rate)
             if (p_at_k is not None and base_rate not in (None, 0.0))
@@ -142,6 +173,8 @@ def compute_top_k_metrics(
             "p_at_k": p_at_k,
             "n_picks_total": n_picks_total,
             "n_positives_in_picks": n_pos,
+            "n_denom": n_denom,
+            "n_days_R_lt_k": n_days_R_lt_k,
             "n_days_full_k": n_days_full_k,
             "n_days_total": n_days_total,
             "lift": lift,
@@ -153,7 +186,12 @@ def compute_top_k_metrics(
         n_picks = int(min(k, n_rows))
         picks = flat_sorted.head(n_picks)
         n_pos = int(picks["y_true"].sum())
-        p_at_k = float(n_pos / n_picks) if n_picks else None
+        # Achievable-positives denominator for the global block:
+        # min(k, total_positives_in_segment). Matches the per-day
+        # convention. Reduces to k whenever there are at least k positives
+        # in the segment (the usual case).
+        n_denom = int(min(k, total_positives))
+        p_at_k = float(n_pos / n_denom) if n_denom else None
         lift = (
             float(p_at_k / base_rate)
             if (p_at_k is not None and base_rate not in (None, 0.0))
@@ -163,6 +201,7 @@ def compute_top_k_metrics(
             "p_at_k": p_at_k,
             "n_picks": n_picks,
             "n_positives_in_picks": n_pos,
+            "n_denom": n_denom,
             "lift": lift,
         }
 

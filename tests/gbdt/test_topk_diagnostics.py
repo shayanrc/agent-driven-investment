@@ -60,40 +60,63 @@ def _tiny_df():
 
 
 def test_top_k_per_day_hand_checkable():
-    """P@1 = 1.0 (A always picked, always positive).
-    P@5 = positives / 50. Positives: A=10, B=5, C=5 → 20/50 = 0.4.
-    base_rate = 20/50 = 0.4. So lift @5 = 1.0.
-    Lift @1 = 1.0/0.4 = 2.5.
+    """Per-day P@k under the corrected ``min(R(d), k)`` formula.
+
+    Fixture: each day has R(d) = 2 positives (A always; B on even days,
+    C on odd days). 10 days, 5 tickers/day, 20 positives total.
+    base_rate = 20/50 = 0.4.
+
+    k=1: per-day denom = sum_d(min(R(d), 1)) = 10*1 = 10. Hits = 10
+      (A picked every day, always positive). P@1 = 10/10 = 1.0;
+      lift = 2.5. n_days_R_lt_k = 0 (every day has R >= 1).
+    k=5: per-day denom = sum_d(min(R(d), 5)) = 10*2 = 20. Hits = 20
+      (top-5 each day captures all positives since k=5 == n_tickers).
+      P@5 = 20/20 = 1.0; lift = 2.5. n_days_R_lt_k = 10 (R=2 < 5 every
+      day). Under the old buggy formula this was 20/50 = 0.4.
+
+    Formula spec: ``.claude/memories/project-r-precision-methodology.md``.
     """
     df = _tiny_df()
     out = topk_diagnostics.compute_top_k_metrics(df, k_values=(1, 5))
+    assert out["formula_version"] == "v2_min_R_d_k"
     assert out["n_rows"] == 50
     assert out["base_rate"] == pytest.approx(0.4)
     p1 = out["per_day"]["1"]
-    assert p1["p_at_k"] == pytest.approx(1.0)
+    assert p1["p_at_k"] == pytest.approx(1.0)  # 10/10
     assert p1["n_picks_total"] == 10
     assert p1["n_positives_in_picks"] == 10
+    assert p1["n_denom"] == 10  # sum_d min(R(d), 1) = sum_d min(2, 1) = 10
+    assert p1["n_days_R_lt_k"] == 0  # R(d) = 2 >= 1 every day
     assert p1["n_days_full_k"] == 10
     assert p1["n_days_total"] == 10
     assert p1["lift"] == pytest.approx(2.5)
     p5 = out["per_day"]["5"]
-    assert p5["p_at_k"] == pytest.approx(0.4)
+    assert p5["p_at_k"] == pytest.approx(1.0)  # 20/20 (new) vs 20/50 = 0.4 (old)
     assert p5["n_picks_total"] == 50
     assert p5["n_positives_in_picks"] == 20
-    assert p5["lift"] == pytest.approx(1.0)
+    assert p5["n_denom"] == 20  # sum_d min(R(d), 5) = sum_d min(2, 5) = 20
+    assert p5["n_days_R_lt_k"] == 10  # R(d) = 2 < 5 every day
+    assert p5["lift"] == pytest.approx(2.5)  # 1.0 / 0.4
 
 
 def test_top_k_global_hand_checkable():
-    """Global top-5 by score across the whole panel — ties on (A, day0)
-    through (A, day9) get broken by ticker asc and the score is 0.9 for
-    all of them. So the top-5 by score is {(A, D0)..(A, D4)} — all
-    positives. P@5_global = 1.0, lift = 2.5.
+    """Global top-5 by score across the whole panel.
+
+    All ten (A, D*) rows share p_calibrated = 0.9. ``_sorted_by_score``
+    sorts by (p_calibrated desc, ticker asc) with stable mergesort, so
+    the first five rows of the sort are (A, D0)..(A, D4) — all positives.
+
+    Global P@5 denominator under the corrected formula:
+    ``min(k=5, total_positives=20) = 5``. Hits = 5. P@5 = 5/5 = 1.0;
+    lift = 1.0 / 0.4 = 2.5. (For this fixture the corrected and original
+    formulas agree because total_positives >= k.)
     """
     df = _tiny_df()
     out = topk_diagnostics.compute_top_k_metrics(df, k_values=(1, 5))
     g5 = out["global"]["5"]
     assert g5["n_picks"] == 5
     assert g5["n_positives_in_picks"] == 5
+    assert g5["n_denom"] == 5  # min(5, 20 total positives)
     assert g5["p_at_k"] == pytest.approx(1.0)
     assert g5["lift"] == pytest.approx(2.5)
 
@@ -102,17 +125,34 @@ def test_top_k_empty_segment():
     df = pd.DataFrame(columns=["date", "ticker", "p_raw", "p_calibrated",
                                  "y_true", "sample_weight"])
     out = topk_diagnostics.compute_top_k_metrics(df)
+    assert out["formula_version"] == "v2_min_R_d_k"
     assert out["n_rows"] == 0
     assert out["base_rate"] is None
     for k in ("1", "5", "10"):
         assert out["per_day"][k]["p_at_k"] is None
         assert out["per_day"][k]["n_picks_total"] == 0
+        assert out["per_day"][k]["n_denom"] == 0
+        assert out["per_day"][k]["n_days_R_lt_k"] == 0
         assert out["global"][k]["p_at_k"] is None
+        assert out["global"][k]["n_denom"] == 0
 
 
 def test_top_k_days_with_fewer_than_k_tickers():
-    """First day has 2 tickers, second day has 5. k=5: day1 contributes 2
-    picks, day2 contributes 5; n_picks_total = 7, n_days_full_k = 1."""
+    """Staggered panel with R(d) < k — exercises the corrected formula.
+
+    Day 0: 2 tickers (A pos, B neg). R(0) = 1.
+    Day 1: 5 tickers (A pos, B pos, C neg, D neg, E neg). R(1) = 2.
+
+    k=5:
+      Picks-made = 2 + 5 = 7 (the OLD buggy denominator).
+      Corrected denom = sum_d(min(R(d), 5)) = min(1, 5) + min(2, 5) = 3.
+      Hits: day 0 top-5 = {A, B}, 1 positive. Day 1 top-5 = all rows,
+        2 positives. Total hits = 3.
+      P@5 = 3 / 3 = 1.0 under the corrected formula.
+      (OLD formula would have given 3 / 7 = 0.4286 — both days had
+       R < k, so the staggered-panel under-count is maximal here.)
+      n_days_R_lt_k = 2 (both days). n_days_full_k = 1 (day 1 only).
+    """
     rows = []
     # Day 0: 2 tickers
     for tk, p, y in [("A", 0.9, 1), ("B", 0.5, 0)]:
@@ -132,6 +172,81 @@ def test_top_k_days_with_fewer_than_k_tickers():
     assert pd5["n_days_full_k"] == 1
     assert pd5["n_days_total"] == 2
     assert pd5["n_positives_in_picks"] == 3
+    assert pd5["n_denom"] == 3  # min(1,5) + min(2,5)
+    assert pd5["n_days_R_lt_k"] == 2  # both days have R < k
+    assert pd5["p_at_k"] == pytest.approx(1.0)  # 3/3 (new) vs 3/7 (old buggy)
+
+
+def test_top_k_formula_version_field_present():
+    """``formula_version == "v2_min_R_d_k"`` is the schema marker that
+    distinguishes post-fix (issue #45) artifacts from pre-fix ones.
+
+    Pre-fix ``metrics.json::segment_diagnostics::top_k_metrics`` blocks
+    have NO ``formula_version`` field — absence = v1 (the buggy
+    ``min(k, n_tickers_in_day)`` denominator). Post-fix blocks always
+    carry the field, on populated and empty segments alike.
+    """
+    df = _tiny_df()
+    out = topk_diagnostics.compute_top_k_metrics(df, k_values=(1, 5))
+    assert out["formula_version"] == "v2_min_R_d_k"
+    # And on an empty segment.
+    empty_df = pd.DataFrame(
+        columns=["date", "ticker", "p_raw", "p_calibrated",
+                 "y_true", "sample_weight"]
+    )
+    empty_out = topk_diagnostics.compute_top_k_metrics(empty_df)
+    assert empty_out["formula_version"] == "v2_min_R_d_k"
+
+
+def test_top_k_staggered_panel_new_formula_higher_than_old():
+    """On a staggered panel with R(d) << k, the corrected formula yields
+    a STRICTLY HIGHER P@k than the old picks-made denominator (assuming
+    the model has any signal at all).
+
+    Construction: 4 days, each with a different number of tickers (R(d)
+    is 1 every day — only ticker A is positive). The model ranks A on
+    top each day. Picks-made denom = 2+3+4+5 = 14; achievable-positives
+    denom = min(1, k=5) * 4 = 4. Hits = 4 (A picked + positive every
+    day).
+
+    Corrected P@5 = 4/4 = 1.0
+    Old buggy P@5 = 4/14 ≈ 0.286
+
+    This is the cross-market memo's NSE pattern in miniature.
+    """
+    rows = []
+    panels = [
+        ("2024-01-01", ["A", "B"]),
+        ("2024-01-02", ["A", "B", "C"]),
+        ("2024-01-03", ["A", "B", "C", "D"]),
+        ("2024-01-04", ["A", "B", "C", "D", "E"]),
+    ]
+    score_map = {"A": 0.9, "B": 0.7, "C": 0.5, "D": 0.3, "E": 0.1}
+    for date_str, tickers_day in panels:
+        for tk in tickers_day:
+            rows.append({
+                "date": date_str, "ticker": tk,
+                "p_raw": score_map[tk], "p_calibrated": score_map[tk],
+                "y_true": 1 if tk == "A" else 0,
+                "sample_weight": 1.0,
+            })
+    df = pd.DataFrame(rows)
+    out = topk_diagnostics.compute_top_k_metrics(df, k_values=(5,))
+    pd5 = out["per_day"]["5"]
+
+    # New formula: corrected denominator
+    assert pd5["n_picks_total"] == 14  # 2 + 3 + 4 + 5
+    assert pd5["n_denom"] == 4  # sum_d min(R(d)=1, 5) = 4
+    assert pd5["n_positives_in_picks"] == 4  # A picked + positive every day
+    assert pd5["n_days_R_lt_k"] == 4  # every day has R=1 < 5
+    new_pk = pd5["p_at_k"]
+    assert new_pk == pytest.approx(1.0)  # 4 / 4
+
+    # Verify that the new formula is strictly higher than the old buggy
+    # denominator would have given (4 / 14 ≈ 0.286).
+    old_buggy_pk = pd5["n_positives_in_picks"] / pd5["n_picks_total"]
+    assert old_buggy_pk == pytest.approx(4 / 14)
+    assert new_pk > old_buggy_pk
 
 
 # ---------------------------------------------------------------------------
