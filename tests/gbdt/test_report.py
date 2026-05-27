@@ -149,3 +149,237 @@ def test_load_spec_rejects_bad_calibration(tmp_path):
     ))
     with pytest.raises(ValueError, match="calibration_method"):
         load_spec(spec_path, default_path=tmp_path / "nope.yaml")
+
+
+# ---------------------------------------------------------------------------
+# Issue #30 — spec.yaml snapshot must be the per-experiment spec only
+# ---------------------------------------------------------------------------
+
+
+def test_load_spec_stashes_per_experiment_authored_content(tmp_path):
+    """``load_spec`` must preserve the on-disk spec under
+    ``__per_experiment_spec__`` so the runner can write a snapshot that
+    isn't polluted by defaults (issue #30).
+    """
+    from gbdt.__main__ import load_spec
+
+    defaults = {
+        "universes": {
+            "nifty50": {"source": "x", "index_ticker": "NIFTY:50",
+                         "annualization_factor": 250},
+            "nasdaq100": {"source": "y", "index_ticker": "INDEX:^NDX",
+                           "annualization_factor": 252},
+        },
+        "split": {"train_rows": 800, "val_rows": 400, "eval_rows": 200,
+                   "test_rows": 100, "min_rows_per_ticker": 1600},
+        "backend": {"library": "catboost",
+                     "calibration_method": "conditional_isotonic",
+                     "fs_hp_loop": {"max_iterations": 8}},
+        "random_seed": 42,
+    }
+    (tmp_path / "default.yaml").write_text(yaml.safe_dump(defaults))
+    spec = {
+        "target": {"universe": "nasdaq100", "direction": "up",
+                    "threshold_pct": 10, "horizon_days": 100,
+                    "max_drawdown": 0.05},
+        "backend": {"fs_hp_loop": {"max_iterations": 3}},
+    }
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(yaml.safe_dump(spec))
+
+    merged = load_spec(spec_path, default_path=tmp_path / "default.yaml")
+    # The merged spec carries the snapshot under an internal key.
+    assert "__per_experiment_spec__" in merged
+    snap = merged["__per_experiment_spec__"]
+    # The snapshot is exactly what the author wrote — no universes block.
+    assert "universes" not in snap
+    assert snap["target"]["universe"] == "nasdaq100"
+    assert snap["backend"]["fs_hp_loop"]["max_iterations"] == 3
+
+
+def test_spec_hash_ignores_internal_keys(tmp_path):
+    """``_spec_hash`` must skip the snapshot key — adding the snapshot
+    helper must not perturb the recorded hash of historical experiments.
+    """
+    from gbdt.__main__ import _spec_hash
+
+    base = {"target": {"universe": "x", "direction": "up",
+                         "threshold_pct": 10, "horizon_days": 20}}
+    h1 = _spec_hash(base)
+    base_with_internal = dict(base)
+    base_with_internal["__per_experiment_spec__"] = {"target": {"x": "y"}}
+    h2 = _spec_hash(base_with_internal)
+    assert h1 == h2
+
+
+# ---------------------------------------------------------------------------
+# Issue #31 — test segment projection + warning
+# ---------------------------------------------------------------------------
+
+
+def _toy_panel(n_tickers: int = 3, n_rows: int = 200) -> pd.DataFrame:
+    """Build a minimal MultiIndex(date, ticker) panel for projection tests."""
+    dates = pd.date_range("2020-01-01", periods=n_rows, freq="B")
+    rows = []
+    for ti in range(n_tickers):
+        for d in dates:
+            rows.append({"date": d, "ticker": f"T{ti}", "close": 100.0})
+    df = pd.DataFrame(rows).set_index(["date", "ticker"]).sort_index()
+    return df
+
+
+def test_project_test_rows_zero_when_horizon_eats_window():
+    """At ``horizon_days == split.test_rows`` every ticker's test rows
+    are NaN-target → expected_test_rows = 0 (the H=100 bug from issue #31).
+    """
+    from gbdt.__main__ import _project_test_rows
+
+    panel = _toy_panel(n_tickers=3)
+    proj = _project_test_rows(
+        panel, test_rows_per_ticker=100, horizon_days=100,
+    )
+    assert proj["expected_test_rows"] == 0
+    assert proj["per_ticker_usable"] == 0
+    assert proj["n_tickers"] == 3
+
+
+def test_project_test_rows_normal_case():
+    """At ``horizon_days << split.test_rows`` we recover the expected
+    ``(test_rows - horizon) × n_tickers`` row count.
+    """
+    from gbdt.__main__ import _project_test_rows
+
+    panel = _toy_panel(n_tickers=4)
+    proj = _project_test_rows(
+        panel, test_rows_per_ticker=100, horizon_days=25,
+    )
+    # 100 - 25 = 75 usable per ticker × 4 tickers = 300
+    assert proj["per_ticker_usable"] == 75
+    assert proj["expected_test_rows"] == 300
+
+
+def test_format_test_split_warning_empty_segment_explicit():
+    """The empty-segment warning string names both knobs (horizon, test_rows)
+    so a first-time reader can diagnose without source-code lookup.
+    """
+    from gbdt.__main__ import _format_test_split_warning
+
+    proj = {"per_ticker_usable": 0, "horizon_days": 100,
+             "test_rows_per_ticker": 100, "n_tickers": 5,
+             "expected_test_rows": 0}
+    msg = _format_test_split_warning(proj, threshold=100)
+    assert "EMPTY" in msg
+    assert "horizon_days=100" in msg
+    assert "test_rows=100" in msg
+
+
+def test_format_test_split_warning_slim_but_nonzero():
+    from gbdt.__main__ import _format_test_split_warning
+
+    proj = {"per_ticker_usable": 10, "horizon_days": 90,
+             "test_rows_per_ticker": 100, "n_tickers": 5,
+             "expected_test_rows": 50}
+    msg = _format_test_split_warning(proj, threshold=100)
+    assert "SMALL" in msg
+    assert "50" in msg
+
+
+def test_render_report_surfaces_test_split_warning(tmp_path):
+    """When ``data.test_split_warning`` is present in ``metrics.json``,
+    the rendered report must include a top-level ``## Warnings`` section.
+    """
+    spec = {"target": {"universe": "x", "direction": "up",
+                         "threshold_pct": 10, "horizon_days": 100}}
+    (tmp_path / "spec.yaml").write_text(yaml.safe_dump(spec))
+    metrics = {
+        "experiment_name": "warn_exp",
+        "data": {"n_tickers_in_universe": 5, "n_tickers_used": 5,
+                  "n_rows_train": 4000, "n_rows_val": 2000,
+                  "n_rows_eval": 1000, "n_rows_test": 0,
+                  "test_split_warning":
+                      "Test segment expected to be EMPTY: horizon_days=100 >= "
+                      "split.test_rows=100, …"},
+        "loop": {"n_iterations_run": 3, "best_iteration": 0,
+                  "inner_stop_signal": "cap",
+                  "hp_search_active": True, "max_iterations": 8,
+                  "hp_search_iter_threshold": 5},
+        "calibration": {"method": "conditional_isotonic", "decision": "native",
+                          "spiegelhalter_z": 0.5, "spiegelhalter_p": 0.6},
+        "headline_eval": {"brier": 0.2, "brier_baseline_baserate": 0.2,
+                            "brier_improvement_vs_baseline": 0.0,
+                            "log_loss": 0.6, "roc_auc": 0.5},
+    }
+    (tmp_path / "metrics.json").write_text(json.dumps(metrics))
+    (tmp_path / "iterations.jsonl").write_text("")
+    out = render_report(tmp_path)
+    md = out.read_text()
+    assert "## Warnings" in md
+    assert "test_split" in md
+    assert "EMPTY" in md
+
+
+# ---------------------------------------------------------------------------
+# Issue #32 — sweep-mode hp_search_active flag + report warning
+# ---------------------------------------------------------------------------
+
+
+def test_render_report_surfaces_hp_search_inactive_warning(tmp_path):
+    """``loop.hp_search_active=False`` must surface in the report's
+    ``## Warnings`` section so artifact readers know the FS+HP loop
+    actually ran FS only.
+    """
+    spec = {"target": {"universe": "x", "direction": "up",
+                         "threshold_pct": 10, "horizon_days": 20}}
+    (tmp_path / "spec.yaml").write_text(yaml.safe_dump(spec))
+    metrics = {
+        "experiment_name": "sweep_exp",
+        "data": {"n_tickers_in_universe": 5, "n_tickers_used": 5,
+                  "n_rows_train": 4000, "n_rows_val": 2000,
+                  "n_rows_eval": 1000, "n_rows_test": 500},
+        "loop": {"n_iterations_run": 3, "best_iteration": 0,
+                  "inner_stop_signal": "cap",
+                  "hp_search_active": False, "max_iterations": 3,
+                  "hp_search_iter_threshold": 5},
+        "calibration": {"method": "conditional_isotonic", "decision": "native",
+                          "spiegelhalter_z": 0.5, "spiegelhalter_p": 0.6},
+        "headline_eval": {"brier": 0.2, "brier_baseline_baserate": 0.2,
+                            "brier_improvement_vs_baseline": 0.0,
+                            "log_loss": 0.6, "roc_auc": 0.5},
+    }
+    (tmp_path / "metrics.json").write_text(json.dumps(metrics))
+    (tmp_path / "iterations.jsonl").write_text("")
+    out = render_report(tmp_path)
+    md = out.read_text()
+    assert "## Warnings" in md
+    assert "hp_search" in md
+    assert "max_iter=3" in md
+    assert "threshold=5" in md
+
+
+def test_render_report_no_warnings_section_when_clean(tmp_path):
+    """When nothing is wrong, the warnings section must NOT appear at all
+    (no empty header, no noise)."""
+    spec = {"target": {"universe": "x", "direction": "up",
+                         "threshold_pct": 10, "horizon_days": 20}}
+    (tmp_path / "spec.yaml").write_text(yaml.safe_dump(spec))
+    metrics = {
+        "experiment_name": "clean_exp",
+        "data": {"n_tickers_in_universe": 5, "n_tickers_used": 5,
+                  "n_rows_train": 4000, "n_rows_val": 2000,
+                  "n_rows_eval": 1000, "n_rows_test": 500,
+                  "test_split_warning": None},
+        "loop": {"n_iterations_run": 8, "best_iteration": 0,
+                  "inner_stop_signal": "cap",
+                  "hp_search_active": True, "max_iterations": 8,
+                  "hp_search_iter_threshold": 5},
+        "calibration": {"method": "conditional_isotonic", "decision": "native",
+                          "spiegelhalter_z": 0.5, "spiegelhalter_p": 0.6},
+        "headline_eval": {"brier": 0.2, "brier_baseline_baserate": 0.2,
+                            "brier_improvement_vs_baseline": 0.0,
+                            "log_loss": 0.6, "roc_auc": 0.5},
+    }
+    (tmp_path / "metrics.json").write_text(json.dumps(metrics))
+    (tmp_path / "iterations.jsonl").write_text("")
+    out = render_report(tmp_path)
+    md = out.read_text()
+    assert "## Warnings" not in md
