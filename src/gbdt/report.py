@@ -152,6 +152,11 @@ def render_report(experiment_dir: Path) -> Path:
     lines.append(f"# gbdt experiment — {name}")
     lines.append("")
 
+    # 0. Runner warnings (issue #31 + issue #32). Surfaced at the top so
+    # they can't be missed when scanning the report. Both blocks are
+    # no-ops when their condition isn't tripped.
+    _render_runner_warnings(lines, metrics)
+
     # 1. Spec echo
     lines.append("## Spec")
     lines.append("")
@@ -319,6 +324,37 @@ def compute_segment_diagnostics(
 # ---------------------------------------------------------------------------
 # Segment-diagnostic rendering (top-K / per-ticker / per-quarter / range)
 # ---------------------------------------------------------------------------
+
+
+def _render_runner_warnings(lines: list[str], metrics: dict) -> None:
+    """Surface runner-level warnings at the top of ``report.md``.
+
+    Covers:
+    - Issue #31 — ``data.test_split_warning`` (horizon ate the test segment)
+    - Issue #32 — ``loop.hp_search_active = false`` (sweep-mode FS-only loop)
+
+    Both are silent no-ops when nothing is wrong; otherwise we emit an
+    explicit "Warnings" section so the user can't miss the caveat.
+    """
+    data = metrics.get("data", {}) or {}
+    loop = metrics.get("loop", {}) or {}
+    test_warn = data.get("test_split_warning")
+    hp_active = loop.get("hp_search_active")
+    if not test_warn and hp_active is not False:
+        return
+    lines.append("## Warnings")
+    lines.append("")
+    if test_warn:
+        lines.append(f"- **test_split**: {test_warn}")
+    if hp_active is False:
+        max_it = loop.get("max_iterations")
+        thr = loop.get("hp_search_iter_threshold")
+        lines.append(
+            f"- **hp_search**: HP search disabled in sweep mode "
+            f"(max_iter={max_it} < threshold={thr}); the FS+HP loop ran "
+            f"feature-selection only — see issue #32."
+        )
+    lines.append("")
 
 
 def _fmt(x, spec=".4f", na="n/a"):

@@ -43,16 +43,44 @@ from gbdt.uniqueness import (
 _VALID_DIRECTIONS = {"up", "down"}
 _VALID_CAL_METHODS = {"native", "conditional_isotonic", "isotonic_always", "platt"}
 
+# Issue #32 — sweep-mode "FS+HP loop" is feature-selection-only when the
+# loop budget is too small to surface HP variation. We flag the loop as
+# ``hp_search_active`` only when ``max_iterations >= _HP_SEARCH_ITER_THRESHOLD``;
+# below the threshold the default fallback callback reuses the prior HP
+# unchanged on every iteration (FS-only screening). Picked 5 because the
+# canonical 8-iter budget comfortably exceeds it while the 3-iter sweep
+# budget falls below — see the issue for the why.
+_HP_SEARCH_ITER_THRESHOLD = 5
+
+# Issue #31 — minimum number of usable test rows the runner expects to
+# emit before it warns the user that the test segment was structurally
+# eaten by the horizon. Picked 100 to match the default ``split.test_rows``
+# budget so a fully-eaten test (the H=100 evidence in the issue) is well
+# under the bar but the normal case (test_rows ≥ 100 - horizon per
+# ticker × tickers) is comfortably above.
+_TEST_ROWS_WARNING_THRESHOLD = 100
+
 
 def load_spec(spec_path: Path, default_path: Path | None = None) -> dict:
-    """Load + validate a spec, merging on top of ``default.yaml``."""
-    spec = yaml.safe_load(spec_path.read_text()) or {}
+    """Load + validate a spec, merging on top of ``default.yaml``.
+
+    Returns the fully-merged spec ready for the runner. The on-disk
+    per-experiment spec contents (pre-merge) are also stashed under
+    ``__per_experiment_spec__`` for downstream artifact snapshotting —
+    see issue #30: the merged dict contains the entire ``universes::``
+    registry from defaults, which the snapshot at
+    ``results/.../spec.yaml`` MUST NOT echo verbatim.
+    """
+    raw = yaml.safe_load(spec_path.read_text()) or {}
 
     default_path = default_path or Path("configs/gbdt/default.yaml")
     defaults = yaml.safe_load(default_path.read_text()) if default_path.exists() else {}
 
-    merged = _deep_merge(defaults, spec)
+    merged = _deep_merge(defaults, raw)
     _validate_spec(merged)
+    # Stash the per-experiment-only contents so the runner can snapshot
+    # exactly what the user authored (not the merge with defaults).
+    merged["__per_experiment_spec__"] = raw
     return merged
 
 
@@ -113,9 +141,77 @@ def _validate_spec(spec: dict) -> None:
 
 
 def _spec_hash(spec: dict) -> str:
+    # Hash on the merged-but-public spec; strip internal keys so the
+    # presence of ``__per_experiment_spec__`` (added by ``load_spec`` to
+    # back the snapshot path for issue #30) doesn't change the hash.
     return "sha256:" + hashlib.sha256(
-        json.dumps(spec, sort_keys=True, default=str).encode()
+        json.dumps(_strip_internal_keys(spec), sort_keys=True, default=str).encode()
     ).hexdigest()
+
+
+def _strip_internal_keys(spec: dict) -> dict:
+    """Return a copy of ``spec`` with internal ``__*__`` keys removed.
+
+    The merged spec carries ``__per_experiment_spec__`` (see ``load_spec``)
+    which must not be hashed or persisted into downstream artifacts.
+    """
+    return {k: v for k, v in spec.items() if not (
+        isinstance(k, str) and k.startswith("__") and k.endswith("__")
+    )}
+
+
+def _project_test_rows(
+    panel: pd.DataFrame,
+    *,
+    test_rows_per_ticker: int,
+    horizon_days: int,
+) -> dict:
+    """Estimate the number of usable rows the test segment will yield.
+
+    The walk-forward driver carves the trailing ``test_rows`` positional
+    rows per ticker as the test segment. The target builder produces
+    ``NaN`` for the last ``horizon_days`` rows per ticker (forward window
+    incomplete), and the driver drops NaN-target rows before scoring. So
+    the expected usable test row count per ticker is
+    ``max(0, test_rows - horizon_days)``, summed across kept tickers.
+
+    Returns a dict with ``expected_test_rows``, ``per_ticker_usable``,
+    and ``n_tickers`` so the caller can compose a human-readable warning.
+    """
+    n_tickers = int(panel.index.get_level_values("ticker").nunique())
+    per_ticker_usable = max(0, int(test_rows_per_ticker) - int(horizon_days))
+    expected = per_ticker_usable * n_tickers
+    return {
+        "expected_test_rows": int(expected),
+        "per_ticker_usable": int(per_ticker_usable),
+        "n_tickers": int(n_tickers),
+        "test_rows_per_ticker": int(test_rows_per_ticker),
+        "horizon_days": int(horizon_days),
+    }
+
+
+def _format_test_split_warning(projection: dict, threshold: int) -> str:
+    """One-line, human-readable explanation of the test_rows projection."""
+    per = projection["per_ticker_usable"]
+    h = projection["horizon_days"]
+    tpt = projection["test_rows_per_ticker"]
+    n = projection["n_tickers"]
+    exp = projection["expected_test_rows"]
+    if per == 0:
+        return (
+            f"Test segment expected to be EMPTY: horizon_days={h} >= "
+            f"split.test_rows={tpt}, so every ticker's trailing {tpt} rows "
+            f"have NaN targets (forward window incomplete). "
+            f"headline_test will be {{}} and predictions/test.csv will be "
+            f"header-only. Eval segment is still measured. "
+            f"(threshold={threshold})"
+        )
+    return (
+        f"Test segment will be SMALL: per-ticker usable = "
+        f"max(0, test_rows={tpt} - horizon_days={h}) = {per}; "
+        f"{n} kept ticker(s) -> expected ~{exp} rows < threshold={threshold}. "
+        f"Headline_test will be computed but may be unreliable."
+    )
 
 
 def _data_hash(panel: pd.DataFrame) -> str:
@@ -232,6 +328,29 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     print(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
            f"tickers_kept={len(panel_obj.tickers_kept)}", flush=True)
 
+    # -------- Phase 1b: project test segment size + warn if structurally slim --------
+    # Issue #31 — the walk-forward driver silently emits an empty test
+    # segment when ``horizon_days >= split.test_rows``: every ticker's
+    # trailing ``test_rows`` rows have NaN targets (forward window
+    # incomplete) and get dropped before scoring. The user saw
+    # ``headline_test={}`` + ``predictions/test.csv`` with only a header
+    # and no warning. Project the row count here and emit a clear warning
+    # to the run log; the same string is persisted into
+    # ``metrics.json::data.test_split_warning`` and surfaced in
+    # ``report.md`` so downstream readers can't miss it. We do NOT
+    # auto-shift the split (deferred to V2 per the issue).
+    test_split_projection = _project_test_rows(
+        panel_obj.panel,
+        test_rows_per_ticker=split.test_rows,
+        horizon_days=int(target["horizon_days"]),
+    )
+    test_split_warning: str | None = None
+    if test_split_projection["expected_test_rows"] < _TEST_ROWS_WARNING_THRESHOLD:
+        test_split_warning = _format_test_split_warning(
+            test_split_projection, _TEST_ROWS_WARNING_THRESHOLD,
+        )
+        print(f"[data] WARNING: {test_split_warning}", flush=True)
+
     # -------- Phase 2: features --------
     print("[features] start", flush=True)
     t1 = time.time()
@@ -315,7 +434,36 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     print("[artifact] start", flush=True)
     t1 = time.time()
 
-    (out_dir / "spec.yaml").write_text(yaml.safe_dump(spec, sort_keys=False))
+    # Issue #30 — the snapshot at ``spec.yaml`` MUST be the per-experiment
+    # spec as authored on disk, NOT the merge of defaults+spec. Dumping
+    # the merged dict (the pre-fix behaviour) buried the actual target
+    # under hundreds of lines of universe-registry content from defaults,
+    # which made archived artifacts look corrupted (see the
+    # nasdaq100_up_10pct_100d_dd5pct_pre_uniqueness_fix archive: the
+    # snapshot's first 30 lines listed nifty50/nifty100/... while the
+    # actual target was buried at the bottom).
+    per_exp_spec = spec.get("__per_experiment_spec__") or {
+        k: v for k, v in spec.items()
+        if k in ("target", "date_range", "split", "features", "backend",
+                  "random_seed", "artifacts", "data")
+    }
+    # Defence-in-depth: refuse to write a snapshot whose target.universe
+    # disagrees with the run we just executed. This is the fail-loud
+    # regression assertion called for in issue #30 — even if a future
+    # refactor regresses the snapshot path, the user will not silently
+    # get an artifact pointing at the wrong universe.
+    snap_universe = (per_exp_spec.get("target") or {}).get("universe")
+    run_universe = target["universe"]
+    if snap_universe is not None and snap_universe != run_universe:
+        raise RuntimeError(
+            f"spec.yaml snapshot universe mismatch: snapshot says "
+            f"{snap_universe!r} but the run actually executed against "
+            f"{run_universe!r}. This is a runner bug — refusing to "
+            f"persist a misleading artifact (see issue #30)."
+        )
+    (out_dir / "spec.yaml").write_text(
+        yaml.safe_dump(per_exp_spec, sort_keys=False)
+    )
 
     result.best_model.save(out_dir / "model.cbm")
     # Always write a pickle. When no calibrator is needed (native pass) we
@@ -436,11 +584,30 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
                 float(result.predictions.get("eval", pd.DataFrame({"y_true": []}))["y_true"].mean())
                 if len(result.predictions.get("eval", pd.DataFrame())) else None
             ),
+            # Issue #31 — surfaces structurally-thin/empty test segments
+            # (horizon eats the test window). Absent/None when the test
+            # segment is expected to be normally sized; a human-readable
+            # string explaining the calculation when below threshold.
+            "test_split_warning": test_split_warning,
+            "test_split_projection": test_split_projection,
         },
         "loop": {
             "n_iterations_run": len(result.iterations),
             "best_iteration": int(result.best_iteration),
             "inner_stop_signal": result.inner_stop_signal,
+            # Issue #32 — the default FS+HP callback only nudges HPs in
+            # response to overfit/cap signals; when ``max_iterations`` is
+            # small (sweep mode = 3) the loop typically reuses the
+            # starting HP unchanged across every iteration, so the
+            # ``hp_history`` field is honest about FS-only behaviour.
+            # We flag this here so artifact readers don't misinterpret
+            # the "FS+HP loop" name as evidence of real HP search.
+            "hp_search_active": bool(
+                int(loop_cfg.get("max_iterations", 8))
+                >= _HP_SEARCH_ITER_THRESHOLD
+            ),
+            "hp_search_iter_threshold": int(_HP_SEARCH_ITER_THRESHOLD),
+            "max_iterations": int(loop_cfg.get("max_iterations", 8)),
         },
         "calibration": {
             "method": cal_method,
