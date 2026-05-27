@@ -486,6 +486,38 @@ class TestBackExtend:
         assert len(seed.calls) == seed_calls_before
         assert list(df["value"]) == [10, 20, 30]
 
+    def test_back_extend_with_dup_rows_in_adapter_response(self, root):
+        # Regression for issue #36. Production trigger: jugaad-data returned a
+        # response containing 3 duplicate-(date) rows when asked to back-fill
+        # NSE:RELIANCE 2010..2014, which crashed the SQLite write with
+        # `IntegrityError: UNIQUE constraint failed`. The fix de-duplicates
+        # in merge_cache (keeping the last row per timestamp) so the write
+        # succeeds with the canonical one-row-per-trading-day contract.
+        df_existing = make_df([date(2026, 1, 8), date(2026, 1, 9)], [10, 20])
+        # Back-extend response with an internal duplicate on Jan-6.
+        df_back = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 6),
+             date(2026, 1, 7)],
+            [5, 6, 60, 7],  # the 60 (second Jan-6 row) wins under "keep last"
+        )
+        seed = _ScriptedAdapter("seed", df_existing, root)
+        _register(seed, threshold=10)
+
+        fetch("FAKE:X", date(2026, 1, 8), date(2026, 1, 9), data_root=root)
+        seed._df = df_back
+
+        # Must not raise — pre-fix this crashed inside write_processed_atomic.
+        df = fetch(
+            "FAKE:X", date(2026, 1, 5), date(2026, 1, 9),
+            data_root=root, back_extend=True,
+        )
+        assert list(df["date"].dt.date) == [
+            date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7),
+            date(2026, 1, 8), date(2026, 1, 9),
+        ]
+        # Jan-6 = 60 (last occurrence wins); pre-cache rows merged with cached.
+        assert list(df["value"]) == [5, 60, 7, 10, 20]
+
     def test_back_extend_preserves_existing_cached_rows(self, root):
         # Existing rows must not be corrupted by a back_extend re-fetch even
         # when the new adapter response happens to cover (with the same

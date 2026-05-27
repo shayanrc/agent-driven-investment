@@ -27,12 +27,15 @@ data/raw/<provider>/... as immutable per-fetch files.
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 import threading
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+
+_log = logging.getLogger(__name__)
 
 from data_pipelines.domain import Calendar, Domain
 from data_pipelines.schema import ColumnSpec
@@ -315,6 +318,9 @@ def merge_cache(
 
     if existing_df is None or len(existing_df) == 0:
         merged = new_df.sort_values(tcol).reset_index(drop=True)
+        merged = _drop_duplicate_timestamps(
+            merged, tcol, source=new_source.get("provider", "<unknown>"),
+        )
         meta = _build_meta(existing_meta=None, domain=domain, df=merged,
                            new_source=new_source)
         return merged, meta
@@ -342,9 +348,60 @@ def merge_cache(
         [non_overlap_existing, resolved, non_overlap_new], ignore_index=True,
     ).sort_values(tcol).reset_index(drop=True)
 
+    # Defensive de-dup on the time column. The cache's PRIMARY KEY is
+    # (ticker, <time_column>), so any duplicates here would crash the SQLite
+    # write with an opaque IntegrityError (see issue #36). Duplicates can leak
+    # in via two paths:
+    #   (1) An adapter returning multiple rows for the same trading day
+    #       (observed with jugaad-data on a handful of pre-2015 NSE bhav
+    #       rows; the upstream NSE archive sometimes carries duplicate
+    #       records for re-issued / corrected entries).
+    #   (2) An overlap-resolution policy that yields rows beyond what the
+    #       set-diff above accounted for (theoretical; current
+    #       merge_overlap implementations are well-behaved, but a future
+    #       domain could break this invariant).
+    # Keeping `last` matches the existing "new wins" precedence for ordinary
+    # overlap (later non-overlap rows in `non_overlap_new` follow earlier
+    # rows in `non_overlap_existing` after the concat → sort_values is a
+    # stable sort in pandas, so the last duplicate is the most-recently-
+    # sourced row).
+    merged = _drop_duplicate_timestamps(
+        merged, tcol, source=new_source.get("provider", "<unknown>"),
+    )
+
     meta = _build_meta(existing_meta=existing_meta, domain=domain, df=merged,
                        new_source=new_source)
     return merged, meta
+
+
+def _drop_duplicate_timestamps(
+    df: pd.DataFrame, time_column: str, *, source: str,
+) -> pd.DataFrame:
+    """Drop rows with duplicate values in ``time_column``, keeping the last.
+
+    Returns the de-duped DataFrame, re-indexed. Emits a WARNING-level log
+    line per call that dropped rows, naming the source so provider
+    misbehavior surfaces in the run log rather than silently propagating
+    into the cache.
+
+    No-op when the input has no duplicates — common case, zero overhead
+    beyond a single ``duplicated().any()`` scan.
+    """
+    if len(df) == 0:
+        return df
+    dup_mask = df[time_column].duplicated(keep="last")
+    n_dropped = int(dup_mask.sum())
+    if n_dropped == 0:
+        return df
+    dup_dates = sorted({_as_date(d) for d in df.loc[dup_mask, time_column]})
+    sample = ", ".join(d.isoformat() for d in dup_dates[:5])
+    suffix = f" (+{len(dup_dates) - 5} more)" if len(dup_dates) > 5 else ""
+    _log.warning(
+        "merge_cache: dropped %d duplicate row(s) on '%s' from source=%r; "
+        "kept last per timestamp. Sample dup-dates: %s%s",
+        n_dropped, time_column, source, sample, suffix,
+    )
+    return df.loc[~dup_mask].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------

@@ -276,6 +276,110 @@ class TestMergeCache:
         assert list(merged["value"]) == [1, 2, 3]
 
 
+class TestMergeDeDuplicatesTimestamps:
+    """Regression for issue #36.
+
+    Some upstream providers (e.g., jugaad-data on a handful of pre-2015 NSE
+    bhav rows) return DataFrames with internal duplicate timestamps. Without
+    a de-dup pass in ``merge_cache``, those duplicates flow into
+    ``write_processed_atomic`` and crash the SQLite write with an opaque
+    ``IntegrityError: UNIQUE constraint failed`` because the data table has
+    PRIMARY KEY (ticker, <time_column>).
+
+    The de-dup must:
+      - keep the LAST occurrence per timestamp (matches "new wins"),
+      - emit a WARNING log line naming the source,
+      - be a no-op when there are no duplicates.
+    """
+
+    def test_internal_dup_in_new_df_cold_cache(self, fake_domain, src_meta, caplog):
+        # Cold cache + adapter returns 2 rows for the same date.
+        new = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 6)],
+            [1.0, 2.0, 2.5],
+        )
+        with caplog.at_level("WARNING", logger="data_pipelines.cache"):
+            merged, meta = merge_cache(None, new, None, src_meta, fake_domain)
+        # The duplicate was dropped; the LAST occurrence (2.5) wins.
+        assert list(merged["date"].dt.date) == [date(2026, 1, 5), date(2026, 1, 6)]
+        assert list(merged["value"]) == [1.0, 2.5]
+        assert meta["row_count"] == 2
+        # Warning was emitted with the source name visible.
+        assert any("dropped 1 duplicate" in r.message and "fake_prov" in r.message
+                   for r in caplog.records)
+
+    def test_internal_dup_in_new_df_with_existing_cache(self, fake_domain, src_meta, caplog):
+        # Cache has Jan-1..Jan-3; new payload extends backward to Dec-30
+        # with an internal duplicate on Dec-31. No overlap with cache.
+        # Exercises the non-cold-cache code path that initially exhibited
+        # the production bug (back-extend → adapter dup → crash on write).
+        existing = make_df(
+            [date(2026, 1, 1), date(2026, 1, 2), date(2026, 1, 3)],
+            [10.0, 20.0, 30.0],
+        )
+        new = make_df(
+            [date(2025, 12, 30), date(2025, 12, 31), date(2025, 12, 31)],
+            [98.0, 99.0, 99.5],
+        )
+        ex_meta = {"sources": [{"provider": "prev"}]}
+        with caplog.at_level("WARNING", logger="data_pipelines.cache"):
+            merged, meta = merge_cache(existing, new, ex_meta, src_meta, fake_domain)
+        assert list(merged["date"].dt.date) == [
+            date(2025, 12, 30), date(2025, 12, 31),
+            date(2026, 1, 1), date(2026, 1, 2), date(2026, 1, 3),
+        ]
+        assert list(merged["value"]) == [98.0, 99.5, 10.0, 20.0, 30.0]
+        assert meta["row_count"] == 5
+        assert any("dropped 1 duplicate" in r.message for r in caplog.records)
+
+    def test_no_dup_no_warning(self, fake_domain, src_meta, caplog):
+        new = make_df([date(2026, 1, 5), date(2026, 1, 6)], [1.0, 2.0])
+        with caplog.at_level("WARNING", logger="data_pipelines.cache"):
+            merged, _ = merge_cache(None, new, None, src_meta, fake_domain)
+        assert list(merged["value"]) == [1.0, 2.0]
+        # No warning emitted on the clean path.
+        assert not any("duplicate" in r.message for r in caplog.records)
+
+    def test_deduped_df_writes_cleanly_via_full_pipeline(
+        self, root, fake_domain, src_meta,
+    ):
+        # End-to-end: a new_df with internal dups merges + writes without
+        # triggering a SQLite UNIQUE error. This is the exact path the
+        # production back-extend hit.
+        existing = make_df(
+            [date(2026, 1, 4), date(2026, 1, 5)], [100.0, 101.0],
+        )
+        write_processed_atomic(
+            root, fake_domain, "FAKE:X", existing,
+            {"schema_version": 1, "row_count": 2,
+             "range": {"start": "2026-01-04", "end": "2026-01-05"},
+             "last_fetch_utc": "x", "sources": [src_meta]},
+        )
+        cached_df, cached_meta = read_processed(root, fake_domain, "FAKE:X")
+
+        # Simulated provider response with an internal duplicate.
+        new = make_df(
+            [date(2026, 1, 1), date(2026, 1, 2), date(2026, 1, 2)],
+            [200.0, 300.0, 301.0],
+        )
+        new_source = {"provider": "back_extend_prov",
+                      "raw_file": "back_extend.csv",
+                      "covers": {"start": "2026-01-01", "end": "2026-01-02"}}
+        merged, meta = merge_cache(
+            cached_df, new, cached_meta, new_source, fake_domain,
+        )
+        # No exception — this is the regression.
+        write_processed_atomic(root, fake_domain, "FAKE:X", merged, meta)
+
+        df_out, meta_out = read_processed(root, fake_domain, "FAKE:X")
+        assert list(df_out["date"].dt.date) == [
+            date(2026, 1, 1), date(2026, 1, 2),
+            date(2026, 1, 4), date(2026, 1, 5),
+        ]
+        assert list(df_out["value"]) == [200.0, 301.0, 100.0, 101.0]
+        assert meta_out["row_count"] == 4
+
+
 class TestReadWriteRoundTrip:
     def test_full_pipeline(self, root, fake_domain, src_meta):
         df1 = make_df([date(2026, 1, 5), date(2026, 1, 6)], [1, 2])
