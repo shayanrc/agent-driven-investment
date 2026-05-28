@@ -1,0 +1,73 @@
+# V1.2 Phase 7 — A6 replication gate (XGBoost backend).
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
+# This is the XGBoost replication of the `_147` answer-key cell
+# (docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md), the same cell the V1.1
+# Phase-6 acceptance spec (nifty50_up_10pct_25d_dd5pct_acceptance.yaml) drove on
+# CatBoost. Phase 7 reruns it on XGBoost to test whether the XGBoost backend
+# reproduces the documented CatBoost *signal conclusions* within tolerance (A6):
+#   - calibration story (Brier ballpark + Spiegelhalter-Z sign/gate outcome),
+#   - discrimination (AUC + weighted R-precision lift, [[project-r-precision-methodology]]),
+#   - signal/null verdict under the compound rule.
+# Replication is on FINDINGS, not bit-identical numbers (XGBoost != CatBoost
+# algorithmically); it does NOT require XGBoost to beat CatBoost. A backend that
+# can't reproduce these known results is mis-implemented or the finding was
+# CatBoost-specific — either way STOP and investigate before Phase 8.
+#
+# Sweep-mode run (NOT the agent_file_protocol loop): callback_mode is left unset,
+# so walk_forward_train uses its built-in algorithmic FS+HP fallback. No
+# per-iteration agent. ~30 min/cell budget per the plan (§ 8 Phase 7). This is
+# the nifty50 signal cell, so it gets a slightly larger budget (max_iterations: 5)
+# than the cross-market screening cell.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05                              # <=5% interim drawdown before the +10% breach (same as the CatBoost acceptance cell)
+
+# split omitted - default 800/400/200/100 (train/val/eval/test) per ticker, the
+#   same split `_147` + the CatBoost acceptance spec ran on.
+# features omitted - start with the full 279-column candidate pool; the loop prunes.
+
+backend:
+  library: xgboost                                # V1.2 Phase 7 — XGBoost backend (validated against the *_XGB HP tables).
+  calibration_method: conditional_isotonic        # Spiegelhalter Z on val -> ship native or isotonic. Backend-neutral path.
+
+  # XGBoost iteration-0 HPs — the spirit of default.yaml::backend.hp_starting
+  # (the CatBoost depth-6 / lr-0.05 / 1000-tree / early-stop-75 baseline)
+  # translated to XGBoost names per the CatBoost<->XGBoost mapping
+  # (plan § 5.2 / § 6.3; project-xgboost-training-essentials § 2):
+  #   iterations->n_estimators, learning_rate->eta, depth->max_depth,
+  #   l2_leaf_reg->lambda, rsm->colsample_bytree. Ordered boosting has no XGBoost
+  #   analog (grow_policy depthwise is the default tree growth). subsample 0.8 is
+  #   the plan's indicative iter-0 value (stochastic row sampling, seeded -> still
+  #   bit-reproducible single-threaded). Determinism pins (tree_method/n_jobs/
+  #   device/objective/eval_metric) are listed explicitly to self-document the
+  #   contract; they match PINNED_HPS_XGB so passing them is a no-op, not an
+  #   override (an override would hard-fail at construction — plan D5 / § 5.1).
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 6
+    lambda: 3.0                                   # L2 <-> CatBoost l2_leaf_reg 3.0
+    subsample: 0.8
+    colsample_bytree: 1.0                         # <-> CatBoost rsm 1.0
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic                    # PINNED_HPS_XGB (<-> CatBoost Logloss); no-op match
+    eval_metric: logloss                          # PINNED_HPS_XGB (Brier computed in the bundle); no-op match
+    tree_method: exact                            # PINNED_HPS_XGB determinism pin; no-op match
+    n_jobs: 1                                     # PINNED_HPS_XGB determinism pin; no-op match
+    device: cpu                                   # PINNED_HPS_XGB determinism pin; no-op match
+
+  fs_hp_loop:
+    # NO callback_mode -> sweep mode (built-in algorithmic FS+HP fallback, no agent).
+    max_iterations: 5                             # signal cell gets a slightly larger budget than the cross-market screen.
+    plateau_threshold: 0.005                      # default - 0.5% absolute val Brier improvement floor.
+    degradation_gate: 0.01                        # default - 1% degrade from best-seen val Brier triggers stop.
+
+random_seed: 42
