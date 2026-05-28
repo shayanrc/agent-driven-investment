@@ -57,12 +57,14 @@ def test_resolve_callback_agent_file_protocol_returns_callable():
     assert callable(cb)
 
 
-def test_resolve_callback_agent_file_protocol_body_not_implemented():
+def test_resolve_callback_agent_file_protocol_requires_wiring():
+    # Phase 2: the callback is implemented (exit-and-resume), but it needs the
+    # artifact dir + loop_state_sink wired by run_experiment. Resolving it
+    # without that wiring (the Phase-1 resolution-only call shape) and invoking
+    # it raises a clear RuntimeError naming the missing wiring — NOT a silent
+    # mis-write. The wired path is exercised in test_loop_protocol.py.
     cb = _resolve_callback({"callback_mode": "agent_file_protocol"}, run_id="r")
-    # Phase 1: the body is a placeholder; the exit-and-resume protocol lands
-    # in Phase 2. Calling it (with the (bundle, current_features) signature)
-    # must raise NotImplementedError.
-    with pytest.raises(NotImplementedError, match="Phase 2"):
+    with pytest.raises(RuntimeError, match="artifact_dir"):
         cb(object(), ["feat_a", "feat_b"])
 
 

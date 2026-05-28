@@ -25,8 +25,10 @@ import pandas as pd
 import yaml
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
+from gbdt import checkpoint as gbdt_checkpoint
 from gbdt import data as gbdt_data
 from gbdt import features as gbdt_features
+from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
 from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
 from gbdt.targets import build_target
@@ -378,7 +380,14 @@ def _compute_headline(pred_df: pd.DataFrame | None) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_callback(loop_cfg: dict, run_id: str):
+def _resolve_callback(
+    loop_cfg: dict,
+    run_id: str,
+    *,
+    artifact_dir: Path | None = None,
+    loop_state_sink: dict | None = None,
+    max_iterations: int = 8,
+):
     """Select the FS+HP iteration callback from ``backend.fs_hp_loop`` config.
 
     Returns either ``None`` (so ``walk_forward_train`` keeps using its built-in
@@ -387,25 +396,152 @@ def _resolve_callback(loop_cfg: dict, run_id: str):
     rationale)`` signature.
 
     - ``callback_mode == "default"`` (or absent) → ``None``.
-    - ``callback_mode == "agent_file_protocol"`` → a non-None callable whose
-      body raises ``NotImplementedError``; the exit-and-resume protocol lands
-      in V1.1 Phase 2. Phase 1 only proves *resolution* returns a callable.
+    - ``callback_mode == "agent_file_protocol"`` → the exit-and-resume callback
+      (plan § 0): at the end of iteration N it writes
+      ``loop/iter_<N>_request.json`` (the minimal request bundle) + a resume
+      checkpoint, then raises :class:`~gbdt.loop_protocol.PauseForAgentDecision`
+      to hand control back to the agent. ``run_experiment`` catches the pause,
+      logs the ``--resume`` hint, and exits cleanly.
+
+    The agent-file-protocol callback needs the artifact dir (where loop files
+    land) and the live loop history (``loop_state_sink``, populated by
+    ``walk_forward_train`` before each callback invocation). When those are not
+    wired (e.g. a Phase 1-style resolution-only call) it raises a clear error
+    instead of silently mis-writing.
     """
     mode = (loop_cfg or {}).get("callback_mode", _DEFAULT_CALLBACK_MODE)
     if mode == "default":
         return None
     if mode == "agent_file_protocol":
-        def _agent_file_protocol_callback(bundle, current_features):
-            # Phase 2: read loop/iter_<N>_decision.json, validate, apply.
-            # See docs/gbdt/V1.1_agent_driven_fs_hp_loop_plan.md § 0 (exit-and-resume).
-            raise NotImplementedError(
-                "agent_file_protocol callback lands in V1.1 Phase 2 (exit-and-resume)"
-            )
-        return _agent_file_protocol_callback
+        return _make_agent_file_protocol_callback(
+            run_id=run_id,
+            artifact_dir=artifact_dir,
+            loop_state_sink=loop_state_sink,
+            max_iterations=max_iterations,
+        )
     # Unreachable when the spec passed _validate_spec, but defend anyway.
     raise ValueError(
         f"unknown callback_mode: {mode!r} (expected one of {sorted(_VALID_CALLBACK_MODES)})"
     )
+
+
+def _make_agent_file_protocol_callback(
+    *,
+    run_id: str,
+    artifact_dir: Path | None,
+    loop_state_sink: dict | None,
+    max_iterations: int,
+):
+    """Build the exit-and-resume callback (plan § 0).
+
+    On invocation (end of iteration N, loop continuing) it: (1) builds + writes
+    the minimal request bundle to ``loop/iter_<N>_request.json``; (2) writes a
+    resume checkpoint capturing exactly what's needed to seed iter N+1 without
+    re-training 0..N (iteration index, accumulated history, current features +
+    HP, run/spec identity — NO model blobs, plan § 0.2); (3) raises
+    :class:`PauseForAgentDecision`. ``run_experiment`` catches it and exits 0.
+    """
+    def _cb(bundle, current_features):
+        if artifact_dir is None or loop_state_sink is None:
+            raise RuntimeError(
+                "agent_file_protocol callback invoked without artifact_dir / "
+                "loop_state_sink wired — resolve it via run_experiment, not the "
+                "Phase-1 resolution-only path."
+            )
+        state = dict(loop_state_sink)
+        iter_n = int(state["iter_idx"])
+        # (1) request bundle (Phase 2: the in-memory DiagnosticBundle).
+        req_payload = loop_protocol.build_request_bundle(
+            bundle,
+            iter_n=iter_n,
+            run_id=run_id,
+            max_iterations=int(state.get("max_iterations", max_iterations)),
+            available_features=list(current_features),
+        )
+        req_path = loop_protocol.write_request(artifact_dir, iter_n, req_payload)
+        # (2) resume checkpoint — full loop state, no model blobs.
+        ckpt_state = {
+            "run_id": run_id,
+            "iter_idx": iter_n,
+            "max_iterations": int(state.get("max_iterations", max_iterations)),
+            "current_features": list(state["current_features"]),
+            "current_hp": dict(state["current_hp"]),
+            "val_briers": list(state["val_briers"]),
+            "hp_history": list(state["hp_history"]),
+            "feature_history": list(state["feature_history"]),
+            "hp_lists": list(state["hp_lists"]),
+            "delta_attributions": list(state["delta_attributions"]),
+        }
+        ckpt_path = gbdt_checkpoint.write_checkpoint(artifact_dir, ckpt_state)
+        # (3) hand control back to the agent.
+        raise loop_protocol.PauseForAgentDecision(
+            iter_n=iter_n,
+            request_path=req_path,
+            checkpoint_path=ckpt_path,
+            run_id=run_id,
+        )
+    return _cb
+
+
+def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
+    """Load the checkpoint + the agent's decision, validate + apply it.
+
+    Returns the ``resume_state`` dict ``walk_forward_train`` seeds the loop with
+    at iteration N+1 (plan § 0). The checkpoint (written by the
+    agent-file-protocol callback when it paused at iter N) carries the iteration
+    index, the accumulated history, and the iter-N features/HP. The decision at
+    ``loop/iter_<N>_decision.json`` is validated against the spec
+    (bounds / pinned / known features — :func:`loop_protocol.validate_decision`)
+    and applied: ``prune_features`` removed + ``hp_changes`` merged → the
+    features/HP that seed iter N+1.
+
+    Raises a clear error (caller surfaces it) when the checkpoint is missing,
+    the decision is missing/malformed, or the decision violates a constraint —
+    the user fixes the decision file + relaunches ``--resume``.
+    """
+    ckpt = gbdt_checkpoint.read_checkpoint(out_dir)
+    if ckpt is None:
+        raise FileNotFoundError(
+            f"[resume] no checkpoint at "
+            f"{gbdt_checkpoint.checkpoint_path(out_dir)} — cannot --resume a run "
+            f"that never paused. Launch the experiment first (without --resume)."
+        )
+    iter_n = int(ckpt["iter_idx"])
+    print(f"[resume] loaded checkpoint at iter {iter_n} (run_id={run_id})", flush=True)
+
+    decision = loop_protocol.read_decision(out_dir, iter_n)
+
+    # Validate against the spec: HP bounds, no pinned-HP changes, prune_features
+    # ⊆ the active feature set the checkpoint paused on.
+    known_features = list(ckpt["current_features"])
+    loop_protocol.validate_decision(decision, spec, known_features)
+
+    next_features, next_hp, should_stop = loop_protocol.apply_decision(
+        decision, known_features, dict(ckpt["current_hp"]),
+    )
+    n_pruned = len(known_features) - len(next_features)
+    hp_changed = sorted((decision.get("hp_changes") or {}).keys())
+    print(
+        f"[resume] decision applied: pruned {n_pruned} feature(s), "
+        f"hp_changes={hp_changed}, should_stop={should_stop}",
+        flush=True,
+    )
+
+    # The applied decision becomes iter N's recorded delta_attribution.
+    prior_deltas = list(ckpt.get("delta_attributions", []))
+    prior_deltas.append(decision.get("rationale", "agent decision (no rationale)"))
+
+    return {
+        "iter_idx": iter_n + 1,
+        "current_features": next_features,
+        "current_hp": next_hp,
+        "val_briers": list(ckpt.get("val_briers", [])),
+        "hp_history": list(ckpt.get("hp_history", [])),
+        "feature_history": list(ckpt.get("feature_history", [])),
+        "hp_lists": list(ckpt.get("hp_lists", [])),
+        "delta_attributions": prior_deltas,
+        "force_stop": should_stop,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -464,21 +600,29 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         "experiment_dir", "results/gbdt/experiments"
     )
     out_dir = Path(out_root) / name
-    if out_dir.exists() and any(out_dir.iterdir()) and not overwrite:
+    # On --resume the artifact dir is EXPECTED to exist (it holds the prior
+    # iteration's loop/ request + checkpoint), so the non-empty-dir guard is
+    # bypassed. A fresh run still refuses to clobber a non-empty dir.
+    if (
+        resume is None
+        and out_dir.exists()
+        and any(out_dir.iterdir())
+        and not overwrite
+    ):
         print(f"[experiment] artifact dir already exists at {out_dir}", file=sys.stderr)
         print("[experiment] pass --overwrite to replace", file=sys.stderr)
         sys.exit(2)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"[experiment] start spec={spec_path.name} -> {out_dir}", flush=True)
+
+    # V1.1 exit-and-resume (plan § 0): load the prior checkpoint + the agent's
+    # decision, validate + apply it, and build the ``resume_state`` that seeds
+    # ``walk_forward_train`` at iter N+1 (without re-training 0..N). ``None``
+    # when this is a fresh run.
+    resume_state: dict | None = None
     if resume is not None:
-        # V1.1 Phase 1 scaffolding: the flag + param are accepted but the
-        # exit-and-resume control flow lands in Phase 2. No-op for now.
-        print(
-            "[loop] --resume scaffolding present; exit-and-resume control flow "
-            "lands in Phase 2",
-            flush=True,
-        )
+        resume_state = _load_and_apply_resume(out_dir, spec, run_id=resume)
     t0 = time.time()
 
     # Liveness heartbeat: emits [heartbeat] lines on a fixed cadence so a
@@ -613,30 +757,69 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     seed = spec.get("random_seed", 42)
 
     callback_mode = loop_cfg.get("callback_mode", _DEFAULT_CALLBACK_MODE)
+    max_iter = loop_cfg.get("max_iterations", 8)
     # V1.1 — resolve the FS+HP callback from the (possibly CLI-overridden) spec.
     # ``default`` resolves to None so walk_forward_train keeps using its built-in
-    # default_fs_hp_callback (v1 behaviour preserved byte-for-byte).
-    fs_hp_callback = _resolve_callback(loop_cfg, run_id=name)
+    # default_fs_hp_callback (v1 behaviour preserved byte-for-byte). The
+    # agent_file_protocol callback gets the artifact dir + a live loop-state
+    # sink so it can write a complete resume checkpoint before pausing.
+    loop_state_sink: dict | None = (
+        {} if callback_mode == "agent_file_protocol" else None
+    )
+    fs_hp_callback = _resolve_callback(
+        loop_cfg, run_id=name,
+        artifact_dir=out_dir,
+        loop_state_sink=loop_state_sink,
+        max_iterations=int(max_iter),
+    )
 
     heartbeat.set_phase("loop")
+    resume_note = (
+        f" (resume from iter {resume_state['iter_idx']})" if resume_state else ""
+    )
     print(
-        f"[loop] start max_iter={loop_cfg.get('max_iterations', 8)} "
-        f"callback_mode={callback_mode}",
+        f"[loop] start max_iter={max_iter} callback_mode={callback_mode}{resume_note}",
         flush=True,
     )
     t1 = time.time()
-    result = walk_forward_train(
-        panel=panel_obj.panel, X=X, y=y,
-        features=list(X.columns), hp=dict(hp_starting), split=split,
-        calibration_method=cal_method,
-        calibration_z_threshold=cal_z_thr,
-        max_iterations=loop_cfg.get("max_iterations", 8),
-        plateau_threshold=loop_cfg.get("plateau_threshold", 0.005),
-        degradation_gate=loop_cfg.get("degradation_gate", 0.01),
-        fs_hp_callback=fs_hp_callback,
-        random_seed=seed,
-        sample_weights=sample_weights,
-    )
+    try:
+        result = walk_forward_train(
+            panel=panel_obj.panel, X=X, y=y,
+            features=list(X.columns), hp=dict(hp_starting), split=split,
+            calibration_method=cal_method,
+            calibration_z_threshold=cal_z_thr,
+            max_iterations=max_iter,
+            plateau_threshold=loop_cfg.get("plateau_threshold", 0.005),
+            degradation_gate=loop_cfg.get("degradation_gate", 0.01),
+            fs_hp_callback=fs_hp_callback,
+            random_seed=seed,
+            sample_weights=sample_weights,
+            resume_state=resume_state,
+            loop_state_sink=loop_state_sink,
+        )
+    except loop_protocol.PauseForAgentDecision as pause:
+        # Exit half of exit-and-resume (plan § 0): the callback wrote the
+        # request bundle + checkpoint and handed control back. Log a
+        # copy-pasteable resume hint and return cleanly (NOT an error). The
+        # agent reads the request, writes loop/iter_<N>_decision.json, then
+        # relaunches `--resume <run_id>` to continue at iter N+1.
+        heartbeat.stop()
+        print(
+            f"[loop] paused at iter {pause.iter_n} — request written: "
+            f"{pause.request_path}",
+            flush=True,
+        )
+        print(
+            f"[loop] checkpoint written: {pause.checkpoint_path}",
+            flush=True,
+        )
+        print(
+            f"[loop] paused at iter {pause.iter_n} — resume with: "
+            f"uv run python -m gbdt experiment {spec_path.name} "
+            f"--resume {pause.run_id}",
+            flush=True,
+        )
+        return out_dir
     print(f"[loop] complete in {time.time()-t1:.1f}s best_iter={result.best_iteration} "
            f"val_brier={result.best_val_brier:.4f} signal={result.inner_stop_signal}",
            flush=True)
@@ -875,8 +1058,11 @@ def main(argv: list[str] | None = None) -> int:
         "--resume",
         metavar="RUN_ID",
         default=None,
-        help="V1.1 Phase 1 scaffolding (no-op): exit-and-resume control flow "
-             "lands in Phase 2.",
+        help="Resume a paused agent-driven FS+HP run (callback_mode="
+             "agent_file_protocol). Loads the run's checkpoint + the agent's "
+             "loop/iter_<N>_decision.json, validates + applies it, and "
+             "continues at iteration N+1. RUN_ID is the value printed in the "
+             "pause hint.",
     )
 
     args = parser.parse_args(argv)
