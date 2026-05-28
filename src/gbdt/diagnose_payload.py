@@ -23,17 +23,20 @@ a **pure function** that assembles a ``diagnose.json``-*shaped* dict from the
 carries native feature importance, the train/val gap, calibration (Spiegelhalter
 z + reliability), val prevalence, the learning curve, eval brier, and the
 sample-uniqueness telemetry. It **reuses** the existing diagnose-family pure
-helpers (no metric is re-derived):
+helpers (no metric is re-derived). Those helpers live in the package
+(``gbdt.diagnose_core``); the on-disk ``/gbdt-diagnose`` + R-precision CLIs under
+``scripts/`` re-export the *same* function objects, so the in-loop payload and
+the on-disk artifact compute identical metrics:
 
-- ``scripts.gbdt.diagnose.assess_overfit``  — the train/val-gap overfit read
+- ``gbdt.diagnose_core.assess_overfit``  — the train/val-gap overfit read
   (identical threshold + semantics as the on-disk diagnose).
-- ``scripts.gbdt.diagnose.prevalence_drift`` — the prevalence-drift /
+- ``gbdt.diagnose_core.prevalence_drift`` — the prevalence-drift /
   calibration-ceiling flag (same function the on-disk diagnose calls).
 - ``gbdt.topk_diagnostics.compute_top_k_metrics`` /
   ``compute_per_ticker_hit_rate`` / ``compute_prediction_range`` — the corrected
   ``min(R(d), k)`` per-day P@k, per-ticker hit-rate, and prediction-range
   diagnostics (the exact functions the runner's report layer uses).
-- ``scripts.gbdt.compute_r_precision.per_day_r_precision`` — per-day variable-K
+- ``gbdt.diagnose_core.per_day_r_precision`` — per-day variable-K
   (K = R(d)) weighted R-precision (the canonical cross-cell comparison metric).
 
 The signals that genuinely require the rebuilt matrix + the live model object
@@ -66,10 +69,14 @@ import numpy as np
 import pandas as pd
 
 # Reused diagnose-family pure helpers — DO NOT re-derive these metrics here.
-from scripts.gbdt.compute_r_precision import per_day_r_precision
-from scripts.gbdt.diagnose import (
+# These live in the package (src/gbdt/diagnose_core.py); the on-disk
+# /gbdt-diagnose + R-precision CLIs under scripts/ re-export the SAME function
+# objects, so no metric is re-derived between the in-loop payload and the
+# on-disk artifact.
+from gbdt.diagnose_core import (
     _OVERFIT_GAP_THR,
     assess_overfit,
+    per_day_r_precision,
     prevalence_drift,
 )
 from gbdt.topk_diagnostics import (
