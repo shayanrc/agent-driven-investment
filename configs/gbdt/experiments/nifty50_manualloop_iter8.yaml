@@ -1,0 +1,36 @@
+# ITER8 — constrain ONLY 9 LOW-interaction vol estimators (remove constraints from 8 HIGH-interaction).
+# Tests: does removing constraints from HIGH-interaction features recover baseline?
+# Predict: ~baseline 0.1642 (constraining non-interacting feats does little harm).
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      realized_vol_10: 1
+      parkinson_20: 1
+      garman_klass_5: 1
+      garman_klass_10: 1
+      realized_vol_20: 1
+      garman_klass_20: 1
+      parkinson_10: 1
+      parkinson_5: 1
+      parkinson_50: 1
+random_seed: 42

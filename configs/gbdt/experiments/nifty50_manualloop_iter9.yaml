@@ -1,0 +1,34 @@
+# ITER9 — constrain ONLY 8 HIGH-interaction vol estimators (remove constraints from 9 LOW-interaction).
+# Tests: does removing constraints from LOW-interaction features help? Predict: stays bad (~iter5 0.1664).
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      garman_klass_200: 1
+      parkinson_100: 1
+      parkinson_200: 1
+      realized_vol_100: 1
+      realized_vol_200: 1
+      garman_klass_100: 1
+      garman_klass_50: 1
+      realized_vol_50: 1
+random_seed: 42

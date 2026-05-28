@@ -92,6 +92,23 @@ Follow-up: does a *surgically correct* constraint help, or is monotone contraind
 
 **Verdict**: harm does *not* scale with raw constraint count — it scales with **how much the model uses the constrained feature**. Constraining unused/pruned features = no-op; constraining used features = harm (worst on the inverted-U four). **No monotone-constraint configuration beats the unconstrained baseline.** Even the 1D-PDP-monotone check is necessary-but-not-sufficient: CatBoost enforces monotonicity at the *tree-structure* level, so it degrades the vol×regime conditional interactions even when the *net* marginal effect was monotone. **Monotone constraints are contraindicated for this cell**, and "adding pruned features back under constraint" yields no benefit (neutral at best).
 
+### Iterations 8–9 — high- vs low-interaction constraint ablation
+
+To localize the harm, the 17 estimators were split by total interaction involvement in the baseline model (bimodal: 8 features with involvement >0, led by `garman_klass_200`=9.67 / `parkinson_100`=5.97; 9 short-window features with involvement **0.00**), and each half constrained alone:
+
+| config | constrained set | val_brier | test AUC |
+|---|---|---:|---:|
+| baseline | none | **0.1642** | **0.733** |
+| iter 8 | 9 **low**-interaction only | 0.1654 | 0.690 |
+| iter 9 | 8 **high**-interaction only | 0.1664 | 0.687 |
+| iter 5 | all 17 | 0.1664 | 0.677 |
+
+**Two-component harm:**
+1. **Fixed "constraints-on" cost (~0.0012)**: present even when constraining the 9 *zero-interaction* features (iter 8, 0.1654 ≠ baseline). Turning on `monotone_constraints` at all switches CatBoost to a more restrictive tree builder, costing global expressiveness regardless of *which* features are constrained.
+2. **Interaction-specific harm (dominant)**: constraining just the 8 high-interaction features (iter 9, **0.1664**) reproduces the *entire* 17-constraint val_brier harm; removing the low-interaction constraints recovers 0%, while removing the high-interaction ones (iter 8) recovers ~45%. The val_brier damage concentrates in the high-interaction features; on test AUC both halves hurt and the harm roughly adds (0.690 / 0.687 → 0.677 for all 17).
+
+So there is **no "safe" subset to constrain** — even surgically constraining only non-interacting features carries the fixed cost, and the high-interaction features carry the rest. Confirms monotone constraints are contraindicated for this interaction-driven cell.
+
 ## Investigation — were the 191 pruned features signal or redundancy?
 
 `scripts/gbdt/pruned_feature_investigation.py` (on the cached in-sample matrix):
@@ -114,6 +131,8 @@ This explains why iter 4 (88 feat) ≈ baseline: pruning removed redundant-or-we
 | 5 | monotone +1 (17 vol est.) | 0.1664 | worst — flattened a real inverted-U |
 | 6 | monotone +1 (safe 13 only) | 0.1657 | still < baseline; harm only ⅓ recovered |
 | 7 | monotone +1 (18: +5 pruned) | 0.1656 | ≈ iter6 — constraining unused feats = no-op |
+| 8 | monotone +1 (9 low-interaction) | 0.1654 | removing high-interaction constraints recovers ~45% |
+| 9 | monotone +1 (8 high-interaction) | 0.1664 | = full 17-constraint harm; removing low recovers 0% |
 
 The cell's signal lives **irreducibly in the conditional interactions** (vol × regime), is **low-complexity**, and is **robust to model configuration** (val_brier band 0.1641–0.1664; R-precision ~2.1× throughout). Every lever that simplifies or constrains either does nothing (HP, FS redundancy) or hurts (monotone). **The untouched baseline is near-optimal.** The brier is capped not by model configuration but by the **train→eval prevalence non-stationarity (28%→14%)** — a distribution shift no FS/HP/constraint lever can touch, because the loop only sees val.
 
@@ -129,14 +148,14 @@ The ranking signal is strong (2.1× R-precision) but the *calibrated probability
 
 1. **Read the train/val gap + early-stop tree before pruning.** Negative gap + early-stop never firing = no overfit → FS will *hurt*, not help. The fallback callback's prune-on-sight is wrong for non-overfit cells.
 2. **HP-ceiling detection**: scan depth + lr first; if val_brier stays in a tiny band across diverse configs, declare the ceiling and stop — don't burn 8 iterations.
-3. **Monotone constraints: check the unconstrained model's 1D PDP, not the marginal correlation — and even then expect neutral-to-harmful, never free.** Marginal-monotone ≠ model-internally-monotone (long-window vol learns an inverted-U the Spearman hides). And the 1D-PDP check is *necessary but not sufficient*: CatBoost enforces monotonicity at the tree-structure level, degrading conditional interactions even when the net PDP is monotone (iter 6 still lost vs baseline). Harm scales with how much the model *uses* the feature — constraining unused features is a no-op (iter 7). For an interaction-driven cell, don't bother.
+3. **Monotone constraints: check the unconstrained model's 1D PDP, not the marginal correlation — and even then expect neutral-to-harmful, never free.** Marginal-monotone ≠ model-internally-monotone (long-window vol learns an inverted-U the Spearman hides). The 1D-PDP check is *necessary but not sufficient*: CatBoost enforces monotonicity at the tree-structure level, degrading conditional interactions even when the net PDP is monotone (iter 6 still lost vs baseline). The harm has **two components** (iter 8/9 ablation): a fixed ~0.0012 "constraints-on" cost present even for zero-interaction features, plus a dominant interaction-specific cost concentrated in high-interaction features (constraining the 8 high-interaction estimators alone reproduces the full 17-constraint harm). There is **no safe subset** to constrain on an interaction-driven cell — don't bother.
 4. **importance≈0 ≠ unrelated.** Often it's redundancy (collinearity). FS that removes redundant features is ~neutral on val — it won't *improve* a non-overfit model.
 5. **Heuristic feature priors are cell-specific.** F16 recent-event features that look high-signal in EDA can be ρ≈0 in a given cell. Verify per cell.
 6. **A clean negative is a result.** "No FS/HP/constraint headroom; ranking signal robust; brier capped by prevalence drift" is the valuable output a fixed heuristic callback cannot produce.
 
 ## Reproducibility
 
-- Specs: `configs/gbdt/experiments/nifty50_manualloop_iter{1..5}.yaml`. iter0 = the screening run artifact.
+- Specs: `configs/gbdt/experiments/nifty50_manualloop_iter{1..9}.yaml`. iter0 = the screening run artifact.
 - Analysis scripts: `scripts/gbdt/{monotonic_feature_analysis,interaction_before_after,pdp_and_corr,monotone_1d_audit,pruned_feature_investigation}.py`.
 - Figures: `results/gbdt/experiments/nifty50_{interaction_before_after,pdp_before_after,feature_corr_heatmap}.png`.
 - Cached in-sample matrix: `results/gbdt/experiments/_nifty50_insample_matrix.parquet`.
