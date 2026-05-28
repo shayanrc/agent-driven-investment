@@ -15,6 +15,8 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 - [project-gbdt-uniqueness-weights.md](project-gbdt-uniqueness-weights.md) — gbdt applies LdP §4.4 sample-uniqueness weights by default; corrects the 2.15× overlap-prevalence inflation surfaced by sweep exp #1; opt-out via `target.uniqueness_weighting: false`
 - [project-r-precision-methodology.md](project-r-precision-methodology.md) — R-precision (per-day variable K=R(d)) is the headline cross-cell metric for gbdt; AUC alone misclassifies top-tail-signal cells as null; compound rule + compute_r_precision.py script
 - [project-gbdt-tuning-playbook.md](project-gbdt-tuning-playbook.md) — diagnostic-first FS+HP tuning rules (nifty50 H=25 study): check train/val gap before pruning; HP-ceiling detection; monotone constraints neutral-to-harmful on interaction-driven cells (check 1D PDP not marginal corr); importance≈0 = redundant not unrelated
+- [project-xgboost-interaction-analysis.md](project-xgboost-interaction-analysis.md) — XGBoost native TreeSHAP (`pred_contribs`/`pred_interactions`) for feature-interaction analysis: method, O(rows×feat²) cost mitigations, drop-only-if-low-main-AND-low-interaction pruning rule, GPU-OK-for-diagnostics-not-training split; grounds V1.2 (#165)
+- [project-xgboost-training-essentials.md](project-xgboost-training-essentials.md) — XGBoost backend training contract: load-bearing DETERMINISM pins (seed + `tree_method=exact` + `n_jobs=1` + cpu, hard-fail) for the finalization-retrain; HP-name mapping vs CatBoost (no `has_time`); built-in L1/L2 + missing-value handling; calibration unchanged; portability
 
 ## Workflow feedback
 
