@@ -1,0 +1,6 @@
+{
+  "iter": 0,
+  "hp_changes": { "max_depth": 8 },
+  "should_stop": false,
+  "rationale": "Iter-0 baseline (depth6/eta0.05/1000-tree/lambda3.0): val_brier=0.16402, train/val gap=-0.0119 (val below train) => NO overfit (mirrors _147 CatBoost iter-0 gap -0.0048). Per rule 1 do NOT prune for regularization; FS only removes capacity. Native calibration clean in-loop (z=-0.70). XGBoost-specific signal: early-stop at iter 13 of 1000 - plateaus in very few trees. Starting the depth scan to map the val-Brier ceiling: max_depth=8 (more interaction capacity per tree)."
+}

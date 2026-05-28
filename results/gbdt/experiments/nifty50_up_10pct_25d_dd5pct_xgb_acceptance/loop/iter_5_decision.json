@@ -1,0 +1,5 @@
+{
+  "iter": 5,
+  "should_stop": true,
+  "rationale": "HP-ceiling mapped and declared. Six configs across depth {4,6,8} x eta {0.02,0.05} x reg {light,heavy} x colsample {1.0,0.7} land in val_brier 0.16350-0.16461 - a 0.00111 band. Best (depth8, 0.16350) beats baseline (depth6, 0.16402) by only 0.00052 (noise-level). Iter-5 (colsample0.7) ties the best at 0.16351 and shows the dominant garman_klass_200 is robust real signal, not a tree-correlation artifact (importance redistributed across the vol-estimator family with val unchanged). Every tunable HP axis is exhausted: depth has a tiny monotone-deeper-better ridge, eta is on the ceiling, regularization is neutral-to-harmful (no-overfit gate confirmed - iter4 heavy reg was worst), column-subsampling is neutral. FS is neutral-to-harmful throughout (no-overfit gate fired on every iter). monotone_constraints is OUT of the XGBoost FS+HP decision schema by V1.2 design (causal-ablation tool, not a loop knob) so the _147 monotone-contraindication probe is structurally N/A here. Stopping to finalize on the best checkpoint."
+}

@@ -1,0 +1,62 @@
+# Investigation B — agent-driven FS+HP loop ACCEPTANCE spec (XGBoost backend).
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
+# The XGBoost analogue of nifty50_up_10pct_25d_dd5pct_acceptance.yaml (CatBoost).
+# This drives the *agent_file_protocol* exit-and-resume loop on XGBoost — the
+# first full agent-DRIVEN xgboost loop (vs the sweep-mode A6 run in
+# nifty50_up_10pct_25d_dd5pct_xgb_repl.yaml). The driving agent is the data
+# scientist each iteration: it reads loop/iter_<N>_request.json + the diagnose
+# bundle, decides FS pruning + HP changes (or should_stop), writes
+# loop/iter_<N>_decision.json, and relaunches --resume.
+#
+# Goal: reach a well-calibrated model and map the HP/FS landscape, then compare
+# the end-state to the _147 CatBoost conclusions WITHIN TOLERANCE (signal/null
+# verdict, AUC band, weighted R-precision lift, calibration story) — NOT the
+# CatBoost HP ceiling (XGBoost HPs differ). Closes the XGBoost half of #161.
+#
+# hp_starting + determinism pins are the A6-validated XGBoost iter-0 baseline
+# (the depth-6/lr-0.05/1000-tree/early-stop-75 CatBoost baseline translated to
+# XGBoost names); they validate against the *_XGB tables (passing the pinned
+# determinism knobs is a no-op match, not an override).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+# split omitted - default 800/400/200/100 per ticker (same as _147 + the CatBoost acceptance cell).
+# features omitted - start with the full 279-column candidate pool; the agent prunes.
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 6
+    lambda: 3.0
+    subsample: 0.8
+    colsample_bytree: 1.0
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic                    # PINNED_HPS_XGB no-op match
+    eval_metric: logloss                          # PINNED_HPS_XGB no-op match
+    tree_method: exact                            # PINNED_HPS_XGB determinism pin (no-op match)
+    n_jobs: 1                                     # PINNED_HPS_XGB determinism pin (no-op match)
+    device: cpu                                   # PINNED_HPS_XGB determinism pin (no-op match)
+
+  fs_hp_loop:
+    callback_mode: agent_file_protocol            # V1.1 — agent drives each iteration via exit-and-resume.
+    max_iterations: 10                            # same budget as the CatBoost acceptance run (_147 explored 10 configs).
+    # Gates loosened so the AGENT'S should_stop drives termination (SKILL.md worked-example pattern):
+    # on this HP-ceiling cell the depth differences are sub-0.005, so the default plateau gate trips
+    # after 2 configs and cuts the landscape map short. We want the agent to map depth+eta+reg+monotone.
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+
+random_seed: 42

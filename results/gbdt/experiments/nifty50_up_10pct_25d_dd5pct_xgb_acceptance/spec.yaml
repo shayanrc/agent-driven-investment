@@ -1,0 +1,29 @@
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 6
+    lambda: 3.0
+    subsample: 0.8
+    colsample_bytree: 1.0
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic
+    eval_metric: logloss
+    tree_method: exact
+    n_jobs: 1
+    device: cpu
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 10
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+random_seed: 42

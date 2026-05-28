@@ -1,0 +1,268 @@
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=978640896 cache_db_mtime=2026-05-28T19:42:59.103794+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 1.3s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=01:14:22 phase=features elapsed_phase=29s elapsed_total=30s rss_mb=407
+[heartbeat] t=01:14:52 phase=features elapsed_phase=59s elapsed_total=60s rss_mb=407
+[heartbeat] t=01:15:22 phase=features elapsed_phase=89s elapsed_total=90s rss_mb=410
+[features] family=F7 step=7/15 elapsed=112.8s
+[heartbeat] t=01:15:52 phase=features elapsed_phase=119s elapsed_total=120s rss_mb=457
+[heartbeat] t=01:16:22 phase=features elapsed_phase=149s elapsed_total=150s rss_mb=457
+[heartbeat] t=01:16:52 phase=features elapsed_phase=179s elapsed_total=180s rss_mb=462
+[heartbeat] t=01:17:22 phase=features elapsed_phase=209s elapsed_total=210s rss_mb=474
+[features] family=F13 step=12/15 elapsed=218.2s
+[heartbeat] t=01:17:52 phase=features elapsed_phase=239s elapsed_total=240s rss_mb=551
+[heartbeat] t=01:18:22 phase=features elapsed_phase=269s elapsed_total=270s rss_mb=551
+[heartbeat] t=01:18:52 phase=features elapsed_phase=299s elapsed_total=300s rss_mb=552
+[heartbeat] t=01:19:22 phase=features elapsed_phase=329s elapsed_total=330s rss_mb=555
+[heartbeat] t=01:19:52 phase=features elapsed_phase=359s elapsed_total=360s rss_mb=665
+[features] family=F16 step=15/15 elapsed=359.3s
+[features] complete in 359.4s shape=(129397, 279)
+[target] start
+[target] complete in 0.6s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol
+[heartbeat] t=01:20:22 phase=loop elapsed_phase=29s elapsed_total=390s rss_mb=1160
+[heartbeat] t=01:20:52 phase=loop elapsed_phase=59s elapsed_total=420s rss_mb=1161
+[loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_0_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=979472384 cache_db_mtime=2026-05-28T19:51:20.084263+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 0 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=['max_depth'], should_stop=False
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 1.6s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=01:22:44 phase=features elapsed_phase=28s elapsed_total=30s rss_mb=407
+[heartbeat] t=01:23:14 phase=features elapsed_phase=58s elapsed_total=60s rss_mb=407
+[heartbeat] t=01:23:44 phase=features elapsed_phase=88s elapsed_total=90s rss_mb=409
+[heartbeat] t=01:24:14 phase=features elapsed_phase=118s elapsed_total=120s rss_mb=411
+[features] family=F7 step=7/15 elapsed=123.1s
+[heartbeat] t=01:24:44 phase=features elapsed_phase=148s elapsed_total=150s rss_mb=458
+[heartbeat] t=01:25:14 phase=features elapsed_phase=178s elapsed_total=180s rss_mb=458
+[heartbeat] t=01:25:44 phase=features elapsed_phase=208s elapsed_total=210s rss_mb=467
+[heartbeat] t=01:26:14 phase=features elapsed_phase=238s elapsed_total=240s rss_mb=473
+[features] family=F13 step=12/15 elapsed=243.5s
+[heartbeat] t=01:26:44 phase=features elapsed_phase=268s elapsed_total=270s rss_mb=551
+[heartbeat] t=01:27:14 phase=features elapsed_phase=298s elapsed_total=300s rss_mb=551
+[heartbeat] t=01:27:44 phase=features elapsed_phase=328s elapsed_total=330s rss_mb=552
+[heartbeat] t=01:28:14 phase=features elapsed_phase=358s elapsed_total=360s rss_mb=555
+[heartbeat] t=01:28:44 phase=features elapsed_phase=388s elapsed_total=390s rss_mb=605
+[features] family=F16 step=15/15 elapsed=408.8s
+[features] complete in 408.8s shape=(129397, 279)
+[target] start
+[target] complete in 0.8s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 1)
+[heartbeat] t=01:29:14 phase=loop elapsed_phase=9s elapsed_total=420s rss_mb=1161
+[heartbeat] t=01:29:44 phase=loop elapsed_phase=39s elapsed_total=450s rss_mb=1161
+[heartbeat] t=01:30:14 phase=loop elapsed_phase=69s elapsed_total=480s rss_mb=1162
+[heartbeat] t=01:30:44 phase=loop elapsed_phase=99s elapsed_total=510s rss_mb=1162
+[heartbeat] t=01:31:14 phase=loop elapsed_phase=129s elapsed_total=540s rss_mb=1162
+[loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_1_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 1 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=980566016 cache_db_mtime=2026-05-28T20:01:04.761952+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 1 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=['max_depth'], should_stop=False
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 2.3s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=01:32:39 phase=features elapsed_phase=28s elapsed_total=30s rss_mb=407
+[heartbeat] t=01:33:09 phase=features elapsed_phase=58s elapsed_total=60s rss_mb=407
+[heartbeat] t=01:33:39 phase=features elapsed_phase=88s elapsed_total=90s rss_mb=407
+[heartbeat] t=01:34:09 phase=features elapsed_phase=118s elapsed_total=120s rss_mb=411
+[features] family=F7 step=7/15 elapsed=136.4s
+[heartbeat] t=01:34:39 phase=features elapsed_phase=148s elapsed_total=150s rss_mb=458
+[heartbeat] t=01:35:09 phase=features elapsed_phase=178s elapsed_total=180s rss_mb=458
+[heartbeat] t=01:35:39 phase=features elapsed_phase=208s elapsed_total=210s rss_mb=458
+[heartbeat] t=01:36:09 phase=features elapsed_phase=238s elapsed_total=240s rss_mb=462
+[heartbeat] t=01:36:39 phase=features elapsed_phase=268s elapsed_total=270s rss_mb=474
+[features] family=F13 step=12/15 elapsed=282.1s
+[heartbeat] t=01:37:09 phase=features elapsed_phase=298s elapsed_total=300s rss_mb=550
+[heartbeat] t=01:37:39 phase=features elapsed_phase=328s elapsed_total=330s rss_mb=550
+[heartbeat] t=01:38:09 phase=features elapsed_phase=358s elapsed_total=360s rss_mb=550
+[heartbeat] t=01:38:39 phase=features elapsed_phase=388s elapsed_total=390s rss_mb=553
+[heartbeat] t=01:39:09 phase=features elapsed_phase=418s elapsed_total=420s rss_mb=555
+[features] family=F16 step=15/15 elapsed=447.2s
+[features] complete in 447.2s shape=(129397, 279)
+[target] start
+[target] complete in 0.6s positive_prevalence=0.221
+[uniqueness] start
+[heartbeat] t=01:39:39 phase=uniqueness elapsed_phase=0s elapsed_total=450s rss_mb=759
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 2)
+[heartbeat] t=01:40:09 phase=loop elapsed_phase=30s elapsed_total=480s rss_mb=1161
+[loop] paused at iter 2 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_2_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 2 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=981889024 cache_db_mtime=2026-05-28T20:10:26.874940+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 2 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=['early_stopping_rounds', 'eta', 'max_depth'], should_stop=False
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 1.4s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=01:41:34 phase=features elapsed_phase=29s elapsed_total=30s rss_mb=407
+[heartbeat] t=01:42:04 phase=features elapsed_phase=59s elapsed_total=60s rss_mb=407
+[heartbeat] t=01:42:34 phase=features elapsed_phase=89s elapsed_total=90s rss_mb=410
+[heartbeat] t=01:43:04 phase=features elapsed_phase=119s elapsed_total=120s rss_mb=412
+[features] family=F7 step=7/15 elapsed=125.1s
+[heartbeat] t=01:43:34 phase=features elapsed_phase=149s elapsed_total=150s rss_mb=458
+[heartbeat] t=01:44:04 phase=features elapsed_phase=179s elapsed_total=180s rss_mb=458
+[heartbeat] t=01:44:34 phase=features elapsed_phase=209s elapsed_total=210s rss_mb=458
+[heartbeat] t=01:45:04 phase=features elapsed_phase=239s elapsed_total=240s rss_mb=458
+[heartbeat] t=01:45:34 phase=features elapsed_phase=269s elapsed_total=270s rss_mb=469
+[heartbeat] t=01:46:04 phase=features elapsed_phase=299s elapsed_total=300s rss_mb=474
+[features] family=F13 step=12/15 elapsed=301.5s
+[heartbeat] t=01:46:34 phase=features elapsed_phase=329s elapsed_total=330s rss_mb=551
+[heartbeat] t=01:47:04 phase=features elapsed_phase=359s elapsed_total=360s rss_mb=551
+[heartbeat] t=01:47:34 phase=features elapsed_phase=389s elapsed_total=390s rss_mb=555
+[heartbeat] t=01:48:04 phase=features elapsed_phase=419s elapsed_total=420s rss_mb=556
+[heartbeat] t=01:48:34 phase=features elapsed_phase=449s elapsed_total=450s rss_mb=631
+[features] family=F16 step=15/15 elapsed=456.0s
+[features] complete in 456.0s shape=(129397, 279)
+[target] start
+[target] complete in 0.6s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 3)
+[heartbeat] t=01:49:04 phase=loop elapsed_phase=22s elapsed_total=480s rss_mb=1162
+[heartbeat] t=01:49:34 phase=loop elapsed_phase=52s elapsed_total=510s rss_mb=1162
+[heartbeat] t=01:50:04 phase=loop elapsed_phase=82s elapsed_total=540s rss_mb=1162
+[heartbeat] t=01:50:34 phase=loop elapsed_phase=112s elapsed_total=570s rss_mb=1162
+[heartbeat] t=01:51:04 phase=loop elapsed_phase=142s elapsed_total=600s rss_mb=1162
+[heartbeat] t=01:51:34 phase=loop elapsed_phase=172s elapsed_total=630s rss_mb=1163
+[heartbeat] t=01:52:04 phase=loop elapsed_phase=202s elapsed_total=660s rss_mb=1163
+[heartbeat] t=01:52:34 phase=loop elapsed_phase=232s elapsed_total=690s rss_mb=1163
+[loop] paused at iter 3 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_3_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 3 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=982982656 cache_db_mtime=2026-05-28T20:23:01.855913+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 3 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=['early_stopping_rounds', 'eta', 'lambda', 'min_child_weight'], should_stop=False
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 2.0s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=01:54:01 phase=features elapsed_phase=28s elapsed_total=30s rss_mb=408
+[heartbeat] t=01:54:31 phase=features elapsed_phase=58s elapsed_total=60s rss_mb=408
+[heartbeat] t=01:55:01 phase=features elapsed_phase=88s elapsed_total=90s rss_mb=409
+[heartbeat] t=01:55:31 phase=features elapsed_phase=118s elapsed_total=120s rss_mb=411
+[features] family=F7 step=7/15 elapsed=131.8s
+[heartbeat] t=01:56:01 phase=features elapsed_phase=148s elapsed_total=150s rss_mb=457
+[heartbeat] t=01:56:31 phase=features elapsed_phase=178s elapsed_total=180s rss_mb=457
+[heartbeat] t=01:57:01 phase=features elapsed_phase=208s elapsed_total=210s rss_mb=462
+[heartbeat] t=01:57:31 phase=features elapsed_phase=238s elapsed_total=240s rss_mb=467
+[features] family=F13 step=12/15 elapsed=258.1s
+[heartbeat] t=01:58:01 phase=features elapsed_phase=268s elapsed_total=270s rss_mb=552
+[heartbeat] t=01:58:31 phase=features elapsed_phase=298s elapsed_total=300s rss_mb=552
+[heartbeat] t=01:59:01 phase=features elapsed_phase=328s elapsed_total=330s rss_mb=552
+[heartbeat] t=01:59:31 phase=features elapsed_phase=358s elapsed_total=360s rss_mb=554
+[heartbeat] t=02:00:01 phase=features elapsed_phase=388s elapsed_total=390s rss_mb=556
+[heartbeat] t=02:00:31 phase=features elapsed_phase=418s elapsed_total=420s rss_mb=647
+[features] family=F16 step=15/15 elapsed=428.1s
+[features] complete in 428.2s shape=(129397, 279)
+[target] start
+[target] complete in 1.4s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.4s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 4)
+[heartbeat] t=02:01:01 phase=loop elapsed_phase=18s elapsed_total=450s rss_mb=1161
+[heartbeat] t=02:01:31 phase=loop elapsed_phase=48s elapsed_total=480s rss_mb=1161
+[heartbeat] t=02:02:01 phase=loop elapsed_phase=78s elapsed_total=510s rss_mb=1161
+[loop] paused at iter 4 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_4_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 4 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=983711744 cache_db_mtime=2026-05-28T20:33:03.781805+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 4 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=['colsample_bytree', 'lambda', 'min_child_weight'], should_stop=False
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 1.5s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=02:04:02 phase=features elapsed_phase=29s elapsed_total=30s rss_mb=406
+[heartbeat] t=02:04:32 phase=features elapsed_phase=59s elapsed_total=60s rss_mb=406
+[heartbeat] t=02:05:02 phase=features elapsed_phase=89s elapsed_total=90s rss_mb=410
+[heartbeat] t=02:05:32 phase=features elapsed_phase=119s elapsed_total=120s rss_mb=412
+[features] family=F7 step=7/15 elapsed=128.5s
+[heartbeat] t=02:06:02 phase=features elapsed_phase=149s elapsed_total=150s rss_mb=458
+[heartbeat] t=02:06:32 phase=features elapsed_phase=179s elapsed_total=180s rss_mb=458
+[heartbeat] t=02:07:02 phase=features elapsed_phase=209s elapsed_total=210s rss_mb=464
+[heartbeat] t=02:07:32 phase=features elapsed_phase=239s elapsed_total=240s rss_mb=474
+[features] family=F13 step=12/15 elapsed=255.8s
+[heartbeat] t=02:08:02 phase=features elapsed_phase=269s elapsed_total=270s rss_mb=553
+[heartbeat] t=02:08:32 phase=features elapsed_phase=299s elapsed_total=300s rss_mb=553
+[heartbeat] t=02:09:02 phase=features elapsed_phase=329s elapsed_total=330s rss_mb=553
+[heartbeat] t=02:09:32 phase=features elapsed_phase=359s elapsed_total=360s rss_mb=555
+[heartbeat] t=02:10:02 phase=features elapsed_phase=389s elapsed_total=390s rss_mb=557
+[heartbeat] t=02:10:32 phase=features elapsed_phase=419s elapsed_total=420s rss_mb=666
+[features] family=F16 step=15/15 elapsed=419.2s
+[features] complete in 419.2s shape=(129397, 279)
+[target] start
+[target] complete in 0.7s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 5)
+[heartbeat] t=02:11:02 phase=loop elapsed_phase=29s elapsed_total=450s rss_mb=1162
+[heartbeat] t=02:11:32 phase=loop elapsed_phase=59s elapsed_total=480s rss_mb=1162
+[heartbeat] t=02:12:02 phase=loop elapsed_phase=89s elapsed_total=510s rss_mb=1163
+[loop] paused at iter 5 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_5_request.json
+[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 5 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=984387584 cache_db_mtime=2026-05-28T20:42:05.367081+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[resume] loaded checkpoint at iter 5 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
+[resume] decision applied: pruned 0 feature(s), hp_changes=[], should_stop=True
+[data] start universe=nifty50
+stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
+[data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
+[data] complete in 1.4s rows=129397 tickers_kept=46
+[features] start
+[heartbeat] t=02:13:25 phase=features elapsed_phase=29s elapsed_total=30s rss_mb=407
+[heartbeat] t=02:13:55 phase=features elapsed_phase=59s elapsed_total=60s rss_mb=408
+[heartbeat] t=02:14:25 phase=features elapsed_phase=89s elapsed_total=90s rss_mb=410
+[features] family=F7 step=7/15 elapsed=117.0s
+[heartbeat] t=02:14:55 phase=features elapsed_phase=119s elapsed_total=120s rss_mb=446
+[heartbeat] t=02:15:25 phase=features elapsed_phase=149s elapsed_total=150s rss_mb=458
+[heartbeat] t=02:15:55 phase=features elapsed_phase=179s elapsed_total=180s rss_mb=463
+[heartbeat] t=02:16:25 phase=features elapsed_phase=209s elapsed_total=210s rss_mb=469
+[features] family=F13 step=12/15 elapsed=236.6s
+[heartbeat] t=02:16:55 phase=features elapsed_phase=239s elapsed_total=240s rss_mb=515
+[heartbeat] t=02:17:25 phase=features elapsed_phase=269s elapsed_total=270s rss_mb=551
+[heartbeat] t=02:17:55 phase=features elapsed_phase=299s elapsed_total=300s rss_mb=551
+[heartbeat] t=02:18:25 phase=features elapsed_phase=329s elapsed_total=330s rss_mb=553
+[heartbeat] t=02:18:55 phase=features elapsed_phase=359s elapsed_total=360s rss_mb=556
+[heartbeat] t=02:19:25 phase=features elapsed_phase=389s elapsed_total=390s rss_mb=604
+[features] family=F16 step=15/15 elapsed=406.8s
+[features] complete in 406.8s shape=(129397, 279)
+[target] start
+[target] complete in 0.7s positive_prevalence=0.221
+[uniqueness] start
+[uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
+[loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 6)
+[heartbeat] t=02:19:55 phase=loop elapsed_phase=11s elapsed_total=420s rss_mb=1162
+[heartbeat] t=02:20:25 phase=loop elapsed_phase=41s elapsed_total=450s rss_mb=1162
+[heartbeat] t=02:20:55 phase=loop elapsed_phase=71s elapsed_total=480s rss_mb=1162
+[heartbeat] t=02:21:25 phase=loop elapsed_phase=101s elapsed_total=510s rss_mb=1162
+[loop] complete in 123.0s best_iter=1 val_brier=0.1635 signal=agent_should_stop
+[artifact] start
+[artifact] complete in 0.7s -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[experiment] complete in 533.0s
