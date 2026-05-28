@@ -241,11 +241,25 @@ class StatusFile:
         return self._path
 
     def _flush_locked(self) -> None:
+        # Atomic-ish write: serialize to a sibling temp file then os.replace
+        # onto status.json. os.replace is atomic on POSIX (same directory), so a
+        # monitor reading status.json concurrently with the heartbeat thread's
+        # refresh never observes a truncated/empty/half-written file — it sees
+        # either the prior complete JSON or the new complete JSON. A plain
+        # write_text() is one write() syscall for this tiny payload but is NOT
+        # guaranteed atomic, and loop_status.py reads this file while the run
+        # writes it. Best-effort: any error is swallowed (a status write must
+        # never crash the run); the temp file is cleaned up on failure.
+        payload = json.dumps(self._state, indent=2, default=str)
+        tmp = self._path.with_name(f"{self._path.name}.tmp")
         try:
-            self._path.write_text(json.dumps(self._state, indent=2, default=str))
+            tmp.write_text(payload, encoding="utf-8")
+            os.replace(tmp, self._path)
         except OSError:
-            # A status write must never crash the run.
-            pass
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def update(
         self,
