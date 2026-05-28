@@ -24,7 +24,7 @@ All 279 features, default HP (depth 6, lr 0.05, Bayesian bootstrap, Ordered boos
 | eval | 0.138 | 0.1173 | 0.1149 | **−0.0023** | 0.646 | 0.300 (2.18×) |
 | test | 0.196 | 0.1383 | 0.1470 | +0.0087 | 0.733 | 0.416 (2.12×) |
 
-- **train/val gap = −0.0048; early-stop never fired** at 1000 trees. → **No overfit.** If anything, capacity headroom.
+- **train/val gap = −0.0048** (val brier *below* train brier) → **No overfit.** If anything, capacity headroom. *(Correction: an earlier draft said "early-stop never fired at 1000 trees" — a misread; the artifact records `early_stop_iteration=67`. Early-stopping firing is healthy and orthogonal to overfit; the no-overfit signal is the negative gap. The depth-curve trees line up cleanly — depth 4→71, depth 6→67, depth 8→48: deeper overfits sooner. All val_brier conclusions unaffected.)*
 - **Calibration correct on val** (pred mean 0.2038 = prevalence 0.2038); eval improvement is negative purely from the val(20%)→eval(14%) prevalence shift the model can't see.
 - **Ranking is strong and real**: R-precision lift ~2.1× on both held-out segments.
 - **Importance highly concentrated**: top feature `vol_of_vol_200` = 10.5% of gain; **191/279 features < 0.01 importance.** A "market-regime + volatility-level" model.
@@ -33,7 +33,7 @@ All 279 features, default HP (depth 6, lr 0.05, Bayesian bootstrap, Ordered boos
 
 ## Iteration 1 — capacity test (depth 6→8, l2 3.0→1.5)
 
-- **Observation**: no overfit + early-stop never firing → maybe under-using capacity.
+- **Observation**: no overfit (negative train/val gap) → maybe under-using capacity; test it directly.
 - **Hypothesis**: more capacity extracts more signal. Change a coherent capacity cluster (depth+l2), hold features=all so the val_brier delta is attributable to HP alone.
 - **Result**: val_brier **0.1652** (worse), **early-stop crashed to tree 48** (overfits immediately). Test AUC 0.740, eval improvement +0.0011.
 - **Belief update**: capacity headroom does **not** exist upward. Signal is **low-complexity** (shallow interactions). The native-calibration flip (z 5.93→0.10) is a side effect of stopping at 48 trees (softer probs), not a depth win.
@@ -146,7 +146,7 @@ The ranking signal is strong (2.1× R-precision) but the *calibrated probability
 
 ## Reusable lessons (→ skill + memory)
 
-1. **Read the train/val gap + early-stop tree before pruning.** Negative gap + early-stop never firing = no overfit → FS will *hurt*, not help. The fallback callback's prune-on-sight is wrong for non-overfit cells.
+1. **Read the train/val gap before pruning.** A negative (or ≤0.02) train/val gap = no overfit → FS will *hurt*, not help. The fallback callback's prune-on-sight is wrong for non-overfit cells. (Early-stopping *firing* is orthogonal — healthy tree-count selection, not an overfit signal; don't conjoin it with the gap.)
 2. **HP-ceiling detection**: scan depth + lr first; if val_brier stays in a tiny band across diverse configs, declare the ceiling and stop — don't burn 8 iterations.
 3. **Monotone constraints: check the unconstrained model's 1D PDP, not the marginal correlation — and even then expect neutral-to-harmful, never free.** Marginal-monotone ≠ model-internally-monotone (long-window vol learns an inverted-U the Spearman hides). The 1D-PDP check is *necessary but not sufficient*: CatBoost enforces monotonicity at the tree-structure level, degrading conditional interactions even when the net PDP is monotone (iter 6 still lost vs baseline). The harm has **two components** (iter 8/9 ablation): a fixed ~0.0012 "constraints-on" cost present even for zero-interaction features, plus a dominant interaction-specific cost concentrated in high-interaction features (constraining the 8 high-interaction estimators alone reproduces the full 17-constraint harm). There is **no safe subset** to constrain on an interaction-driven cell — don't bother.
 4. **importance≈0 ≠ unrelated.** Often it's redundancy (collinearity). FS that removes redundant features is ~neutral on val — it won't *improve* a non-overfit model.
