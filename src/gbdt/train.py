@@ -213,6 +213,29 @@ def _carve_X_y(
     return parts
 
 
+def _fit_one(
+    X: pd.DataFrame, y: pd.Series, panel: pd.DataFrame, split: SplitSpec,
+    features: list[str], hp: dict, random_seed: int,
+    sample_weights: pd.Series | None,
+) -> GBDTModel:
+    """Fit a single GBDTModel for a (features, hp) configuration.
+
+    Used both inside the loop and at finalization, when the best checkpoint
+    selected from the full val-Brier history corresponds to a prior
+    (non-retrained) iteration on the exit-and-resume path. Retraining one
+    config is cheap and avoids serializing CatBoost model blobs into the
+    checkpoint (plan § 0.2).
+    """
+    parts = _carve_X_y(X, y, panel, split, features, sample_weights)
+    X_tr, y_tr, _, w_tr = parts["train"]
+    X_val, y_val, _, w_val = parts["val"]
+    if len(y_tr) == 0:
+        raise RuntimeError("training segment is empty; check split + min_rows")
+    model = GBDTModel(hp, feature_names=features, random_seed=random_seed)
+    model.fit(X_tr, y_tr, X_val, y_val, train_weight=w_tr, val_weight=w_val)
+    return model
+
+
 def walk_forward_train(
     *,
     panel: pd.DataFrame,
@@ -229,28 +252,73 @@ def walk_forward_train(
     fs_hp_callback: Optional[Callable] = None,
     random_seed: int = 42,
     sample_weights: pd.Series | None = None,
+    resume_state: dict | None = None,
+    loop_state_sink: dict | None = None,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
     Boundary discipline: each segment is a strictly-forward slice of every
     ticker's tail (no shuffling), per CLAUDE.md C6.
+
+    ``resume_state`` (V1.1 exit-and-resume, plan § 0): when provided, the loop
+    SEEDS at iteration ``resume_state["iter_idx"]`` with the decision already
+    applied (``current_features`` / ``current_hp``) and the prior-iteration
+    history threaded back in (``val_briers`` for the inner-stop check, plus the
+    per-iter ``(features, hp)`` so the best checkpoint can be retrained if it
+    lands on a non-retrained prior iter). Iterations 0..N are NOT re-trained —
+    only iteration N+1 runs. ``resume_state["force_stop"]`` finalizes the loop
+    after this single iteration (the agent's ``should_stop=true``). When
+    ``resume_state is None`` the loop behaves exactly as v1 (byte-for-byte).
+
+    ``loop_state_sink`` (V1.1 agent_file_protocol): an optional mutable dict the
+    loop populates with the live accumulated history each iteration *before*
+    invoking ``fs_hp_callback``. The agent-file-protocol callback reads it to
+    write the resume checkpoint, then raises ``PauseForAgentDecision`` (caught
+    by ``run_experiment``). ``default`` mode passes ``None`` here, so this is
+    inert on the v1 path.
     """
     split = split or SplitSpec()
     if fs_hp_callback is None:
         fs_hp_callback = default_fs_hp_callback
 
-    current_features = list(features)
-    current_hp = dict(hp)
     history: list[DiagnosticBundle] = []
-    hp_history: list[dict] = []
-    val_briers: list[float] = []
-    models: list[GBDTModel] = []
-    feature_lists: list[list[str]] = []
-    hp_lists: list[dict] = []
+    models: list[GBDTModel | None] = []
     inner_signal: str | None = None
 
-    iter_idx = 0
-    while True:
+    if resume_state is not None:
+        # --- exit-and-resume seed (plan § 0) ---------------------------------
+        # Prior iters' (features, hp, val_brier) are threaded back so the
+        # inner-stop check sees the full history and the best checkpoint can be
+        # retrained if it lands on a prior iter. Prior models are NOT carried
+        # (no blob in the checkpoint) — placeholder None entries.
+        current_features = list(resume_state["current_features"])
+        current_hp = dict(resume_state["current_hp"])
+        iter_idx = int(resume_state["iter_idx"])
+        val_briers = list(resume_state.get("val_briers", []))
+        hp_history = list(resume_state.get("hp_history", []))
+        feature_lists = [list(f) for f in resume_state.get("feature_history", [])]
+        hp_lists = [dict(h) for h in resume_state.get("hp_lists", [])]
+        prior_deltas = list(resume_state.get("delta_attributions", []))
+        force_stop = bool(resume_state.get("force_stop", False))
+        # Prior iters occupy slots 0..N in feature_lists/hp_lists/val_briers;
+        # models[] for those slots is None (retrained lazily at finalization).
+        models = [None] * len(feature_lists)
+    else:
+        current_features = list(features)
+        current_hp = dict(hp)
+        iter_idx = 0
+        val_briers = []
+        hp_history = []
+        feature_lists = []
+        hp_lists = []
+        prior_deltas = []
+        force_stop = False
+
+    # ``force_stop`` (agent should_stop=true on resume, plan § 8): finalize the
+    # loop at the iters already done — do NOT train a new exploration iteration.
+    # The decision's prune/hp_changes are not used to seed a new fit (there is
+    # none). The best checkpoint is retrained from the prior history below.
+    while not force_stop:
         parts = _carve_X_y(X, y, panel, split, current_features, sample_weights)
         X_tr, y_tr, _, w_tr = parts["train"]
         X_val, y_val, _, w_val = parts["val"]
@@ -292,7 +360,7 @@ def walk_forward_train(
         hp_lists.append(dict(current_hp))
         val_briers.append(bundle.val_brier)
 
-        # Inner-stop check (does the loop continue?)
+        # Inner-stop check (does the loop continue?).
         stop, signal = inner_stop_check(
             val_briers,
             plateau_threshold=plateau_threshold,
@@ -304,19 +372,58 @@ def walk_forward_train(
             history[-1].delta_attribution = f"inner_stop={signal}"
             break
 
-        # Ask the callback for next iteration
+        # Hand the live accumulated history to the agent-file-protocol callback
+        # (via loop_state_sink) so it can write a complete resume checkpoint
+        # before pausing. Inert in default mode (sink is None).
+        if loop_state_sink is not None:
+            loop_state_sink.clear()
+            loop_state_sink.update({
+                "iter_idx": iter_idx,
+                "current_features": list(current_features),
+                "current_hp": dict(current_hp),
+                "val_briers": list(val_briers),
+                "hp_history": list(hp_history),
+                "feature_history": [list(f) for f in feature_lists],
+                "hp_lists": [dict(h) for h in hp_lists],
+                "delta_attributions": list(prior_deltas),
+                "max_iterations": int(max_iterations),
+            })
+
+        # Ask the callback for next iteration. The agent-file-protocol callback
+        # raises PauseForAgentDecision here (caught by run_experiment); the
+        # default + scripted callbacks return (keep, next_hp, rationale).
         keep, next_hp, agent_rationale = fs_hp_callback(bundle, current_features)
         current_features = keep
         current_hp = next_hp
         iter_idx += 1
         # Record what the agent did into the previous iteration's record
         history[-1].delta_attribution = agent_rationale
+        prior_deltas.append(agent_rationale)
 
-    # Best checkpoint
+    if force_stop:
+        # Loop body skipped entirely — finalize at the prior history. The
+        # best checkpoint is retrained from (feature_history, hp_lists) below.
+        inner_signal = "agent_should_stop"
+
+    if not val_briers:
+        raise RuntimeError(
+            "no iterations to finalize: empty val-Brier history. On resume this "
+            "means the checkpoint carried no prior iterations."
+        )
+
+    # Best checkpoint across the FULL val-Brier history (prior + this-process).
     best_i = best_checkpoint(val_briers)
-    best_model = models[best_i]
     best_features = feature_lists[best_i]
     best_hp = hp_lists[best_i]
+    best_model = models[best_i]
+    if best_model is None:
+        # Exit-and-resume: the best checkpoint landed on a prior iteration whose
+        # model was not carried in the checkpoint (no blob — plan § 0.2). Retrain
+        # that single (features, hp) config now for calibration + prediction.
+        best_model = _fit_one(
+            X, y, panel, split, best_features, best_hp, random_seed,
+            sample_weights,
+        )
 
     # Score the best checkpoint and apply calibration
     best_parts = _carve_X_y(X, y, panel, split, best_features, sample_weights)
