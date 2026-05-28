@@ -26,9 +26,21 @@ DEFAULT_INTERVAL_SECONDS = 30.0
 
 
 class Heartbeat:
-    def __init__(self, *, interval: float = DEFAULT_INTERVAL_SECONDS, stream=None) -> None:
+    def __init__(
+        self,
+        *,
+        interval: float = DEFAULT_INTERVAL_SECONDS,
+        stream=None,
+        on_tick=None,
+    ) -> None:
         self._interval = float(interval)
         self._stream = stream if stream is not None else sys.stdout
+        # Optional side-effect fired once per tick AFTER the stdout/stream emit
+        # (task #177): the runner passes ``StatusFile.heartbeat`` here so each
+        # tick refreshes ``loop/status.json``'s ``last_heartbeat_utc``. When the
+        # heartbeat is disabled (interval <= 0) the thread never runs, so this
+        # callback is never fired — the file heartbeat no-ops automatically.
+        self._on_tick = on_tick
         self._phase = "init"
         self._t0 = time.time()
         self._phase_t0 = self._t0
@@ -37,7 +49,7 @@ class Heartbeat:
         self._thread: threading.Thread | None = None
 
     @classmethod
-    def from_env(cls, *, stream=None) -> "Heartbeat":
+    def from_env(cls, *, stream=None, on_tick=None) -> "Heartbeat":
         """Build with the interval from ``GBDT_HEARTBEAT_INTERVAL`` (default 30s;
         ``0`` or negative disables — ``start()`` becomes a no-op)."""
         raw = os.environ.get("GBDT_HEARTBEAT_INTERVAL")
@@ -45,7 +57,7 @@ class Heartbeat:
             interval = float(raw) if raw is not None else DEFAULT_INTERVAL_SECONDS
         except ValueError:
             interval = DEFAULT_INTERVAL_SECONDS
-        return cls(interval=interval, stream=stream)
+        return cls(interval=interval, stream=stream, on_tick=on_tick)
 
     @property
     def enabled(self) -> bool:
@@ -81,6 +93,14 @@ class Heartbeat:
                 self._emit()
             except Exception:
                 pass  # a heartbeat must never crash the run
+            # Side-effect tick (task #177): refresh the persisted heartbeat
+            # timestamp. Guarded so a status-file write error can't kill the
+            # thread or leak the run.
+            if self._on_tick is not None:
+                try:
+                    self._on_tick()
+                except Exception:
+                    pass
 
     def start(self) -> "Heartbeat":
         if not self.enabled or self._thread is not None:

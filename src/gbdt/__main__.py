@@ -28,6 +28,7 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from gbdt import checkpoint as gbdt_checkpoint
 from gbdt import data as gbdt_data
 from gbdt import features as gbdt_features
+from gbdt import loop_observability
 from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
 from gbdt.model import _validate_hp, model_filename
@@ -531,7 +532,10 @@ def _make_agent_file_protocol_callback(
     return _cb
 
 
-def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
+def _load_and_apply_resume(
+    out_dir: Path, spec: dict, *, run_id: str,
+    progress_log: "loop_observability.ProgressLog | None" = None,
+) -> dict:
     """Load the checkpoint + the agent's decision, validate + apply it.
 
     Returns the ``resume_state`` dict ``walk_forward_train`` seeds the loop with
@@ -547,6 +551,12 @@ def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
     the decision is missing/malformed, or the decision violates a constraint —
     the user fixes the decision file + relaunches ``--resume``.
     """
+    def _log(message: str) -> None:
+        # Mirror the [resume] milestones to stdout (unchanged) + progress.log.
+        print(message, flush=True)
+        if progress_log is not None:
+            progress_log.append(message)
+
     ckpt = gbdt_checkpoint.read_checkpoint(out_dir)
     if ckpt is None:
         raise FileNotFoundError(
@@ -555,7 +565,7 @@ def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
             f"that never paused. Launch the experiment first (without --resume)."
         )
     iter_n = int(ckpt["iter_idx"])
-    print(f"[resume] loaded checkpoint at iter {iter_n} (run_id={run_id})", flush=True)
+    _log(f"[resume] loaded checkpoint at iter {iter_n} (run_id={run_id})")
 
     decision = loop_protocol.read_decision(out_dir, iter_n)
 
@@ -575,10 +585,9 @@ def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
     )
     n_pruned = len(known_features) - len(next_features)
     hp_changed = sorted((decision.get("hp_changes") or {}).keys())
-    print(
-        f"[resume] decision applied: pruned {n_pruned} feature(s), "
-        f"hp_changes={hp_changed}, should_stop={should_stop}",
-        flush=True,
+    _log(
+        f"[resume] RESUMED iter {iter_n + 1} (decision: pruned {n_pruned}, "
+        f"hp_changes={hp_changed}, should_stop={should_stop})"
     )
 
     # The applied decision becomes iter N's recorded delta_attribution.
@@ -668,7 +677,23 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         sys.exit(2)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"[experiment] start spec={spec_path.name} -> {out_dir}", flush=True)
+    # Persistent agent-loop observability (task #177): an APPEND-only
+    # ``loop/progress.log`` (survives across the separate-process resume model)
+    # + an OVERWRITE ``loop/status.json`` (single-shot machine-readable
+    # position + liveness). The progress log + a ``_milestone`` helper mirror
+    # the runner's existing milestone prints to BOTH stdout (unchanged) and the
+    # log; the heartbeat is teed into the log and refreshes status.json's
+    # ``last_heartbeat_utc`` each tick. Both are best-effort — a write error
+    # never crashes the run. See ``gbdt.loop_observability``.
+    progress_log = loop_observability.ProgressLog(out_dir)
+    status = loop_observability.StatusFile(out_dir, run_id=name)
+
+    def _milestone(message: str) -> None:
+        """Print to stdout (unchanged) AND append to ``loop/progress.log``."""
+        print(message, flush=True)
+        progress_log.append(message)
+
+    _milestone(f"[experiment] start spec={spec_path.name} -> {out_dir}")
 
     # V1.1 exit-and-resume (plan § 0): load the prior checkpoint + the agent's
     # decision, validate + apply it, and build the ``resume_state`` that seeds
@@ -676,14 +701,38 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     # when this is a fresh run.
     resume_state: dict | None = None
     if resume is not None:
-        resume_state = _load_and_apply_resume(out_dir, spec, run_id=resume)
+        try:
+            resume_state = _load_and_apply_resume(
+                out_dir, spec, run_id=resume, progress_log=progress_log,
+            )
+        except Exception:
+            # A rejected/missing decision (DecisionError) etc. surfaces to the
+            # caller. Close the log handle first so the file is flushed + not
+            # leaked — state on disk (checkpoint/request) is untouched, so the
+            # user fixes the decision file and relaunches --resume (which
+            # re-opens progress.log in append mode and continues the same file).
+            progress_log.close()
+            raise
+        status.update(
+            iter_idx=int(resume_state["iter_idx"]),
+            phase="resume",
+            awaiting_decision=False,
+        )
     t0 = time.time()
 
     # Liveness heartbeat: emits [heartbeat] lines on a fixed cadence so a
     # stalled run is detectable (a stale heartbeat = wedged process) without a
     # tight timeout. Daemon thread — dies with the process; stopped explicitly
     # on the normal path below. Disable via GBDT_HEARTBEAT_INTERVAL=0.
-    heartbeat = Heartbeat.from_env().start()
+    #
+    # task #177: the heartbeat's ``stream`` is a TeeStream so every [heartbeat]
+    # line also lands in progress.log, and ``on_tick`` refreshes status.json's
+    # last_heartbeat_utc. When disabled (interval=0) the thread never runs, so
+    # neither side-effect fires — the file heartbeat no-ops automatically.
+    heartbeat = Heartbeat.from_env(
+        stream=loop_observability.TeeStream(sys.stdout, progress_log),
+        on_tick=status.heartbeat,
+    ).start()
 
     # -------- Phase 1: data --------
     target = spec["target"]
@@ -698,7 +747,8 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     min_rows = split_d.get("min_rows_per_ticker", split.total)
 
     heartbeat.set_phase("data")
-    print(f"[data] start universe={target['universe']}", flush=True)
+    status.update(phase="data")
+    _milestone(f"[data] start universe={target['universe']}")
     t1 = time.time()
     data_cfg = spec.get("data", {}) or {}
     staleness_days = int(data_cfg.get(
@@ -719,8 +769,8 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             f"{panel_obj.stale_tickers[:5]}{'...' if len(panel_obj.stale_tickers) > 5 else ''}",
             flush=True,
         )
-    print(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
-           f"tickers_kept={len(panel_obj.tickers_kept)}", flush=True)
+    _milestone(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
+               f"tickers_kept={len(panel_obj.tickers_kept)}")
 
     # -------- Phase 1b: project test segment size + warn if structurally slim --------
     # Issue #31 — the walk-forward driver silently emits an empty test
@@ -747,7 +797,8 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     # -------- Phase 2: features --------
     heartbeat.set_phase("features")
-    print("[features] start", flush=True)
+    status.update(phase="features")
+    _milestone("[features] start")
     t1 = time.time()
     fcfg = spec.get("features", {}) or {}
     lookbacks = tuple(fcfg.get("lookback_windows", gbdt_features.DEFAULT_LOOKBACKS))
@@ -761,11 +812,12 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     )
     # Drop all-NaN columns (some features may produce no values on a short-history ticker).
     X = X.dropna(axis=1, how="all")
-    print(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}", flush=True)
+    _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
 
     # -------- Phase 3: target --------
     heartbeat.set_phase("target")
-    print("[target] start", flush=True)
+    status.update(phase="target")
+    _milestone("[target] start")
     t1 = time.time()
     y = build_target(
         panel_obj.panel,
@@ -774,8 +826,8 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         horizon_days=target["horizon_days"],
         max_drawdown=target.get("max_drawdown"),
     )
-    print(f"[target] complete in {time.time()-t1:.1f}s "
-           f"positive_prevalence={float(y.dropna().mean()):.3f}", flush=True)
+    _milestone(f"[target] complete in {time.time()-t1:.1f}s "
+               f"positive_prevalence={float(y.dropna().mean()):.3f}")
 
     # -------- Phase 3b: sample-uniqueness weights (LdP §4.4) --------
     # ON by default. Opt-out reproduces the legacy (biased) behavior
@@ -784,18 +836,18 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     uniqueness_on = bool(target.get("uniqueness_weighting", True))
     if uniqueness_on:
         heartbeat.set_phase("uniqueness")
-        print("[uniqueness] start", flush=True)
+        status.update(phase="uniqueness")
+        _milestone("[uniqueness] start")
         t1 = time.time()
         sample_weights = compute_uniqueness_weights(
             panel_obj.panel, horizon=int(target["horizon_days"]),
         )
         # Effective-sample-size summary across the full panel (pre-segment)
         ess_full = float(effective_sample_size(sample_weights.values))
-        print(
+        _milestone(
             f"[uniqueness] complete in {time.time()-t1:.1f}s "
             f"horizon={target['horizon_days']} rows={len(sample_weights)} "
-            f"ESS={ess_full:.0f} inflation={len(sample_weights)/max(ess_full,1):.2f}x",
-            flush=True,
+            f"ESS={ess_full:.0f} inflation={len(sample_weights)/max(ess_full,1):.2f}x"
         )
     else:
         sample_weights = None
@@ -834,12 +886,16 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     )
 
     heartbeat.set_phase("loop")
+    status.update(
+        phase="loop",
+        iter_idx=int(resume_state["iter_idx"]) if resume_state else 0,
+        awaiting_decision=False,
+    )
     resume_note = (
         f" (resume from iter {resume_state['iter_idx']})" if resume_state else ""
     )
-    print(
-        f"[loop] start max_iter={max_iter} callback_mode={callback_mode}{resume_note}",
-        flush=True,
+    _milestone(
+        f"[loop] start max_iter={max_iter} callback_mode={callback_mode}{resume_note}"
     )
     t1 = time.time()
     try:
@@ -865,29 +921,55 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         # agent reads the request, writes loop/iter_<N>_decision.json, then
         # relaunches `--resume <run_id>` to continue at iter N+1.
         heartbeat.stop()
-        print(
+        # task #177: record the pause as the run's terminal milestone +
+        # mark status awaiting_decision so a monitor reading status.json knows
+        # the loop is parked on the agent, not wedged. best_val_brier is the
+        # best val Brier observed so far (from the live loop-state sink).
+        paused_best_brier = None
+        if loop_state_sink:
+            briers = [b for b in (loop_state_sink.get("val_briers") or [])
+                      if b is not None]
+            if briers:
+                paused_best_brier = float(min(briers))
+        status.update(
+            iter_idx=int(pause.iter_n),
+            phase="loop",
+            awaiting_decision=True,
+            best_val_brier=paused_best_brier,
+        )
+        _milestone(
+            f"[loop] PAUSED iter {pause.iter_n} awaiting decision "
+            f"(best_val_brier={paused_best_brier})"
+        )
+        _milestone(
             f"[loop] paused at iter {pause.iter_n} — request written: "
-            f"{pause.request_path}",
-            flush=True,
+            f"{pause.request_path}"
         )
-        print(
-            f"[loop] checkpoint written: {pause.checkpoint_path}",
-            flush=True,
-        )
-        print(
+        _milestone(f"[loop] checkpoint written: {pause.checkpoint_path}")
+        _milestone(
             f"[loop] paused at iter {pause.iter_n} — resume with: "
             f"uv run python -m gbdt experiment {spec_path.name} "
-            f"--resume {pause.run_id}",
-            flush=True,
+            f"--resume {pause.run_id}"
         )
+        progress_log.close()
         return out_dir
-    print(f"[loop] complete in {time.time()-t1:.1f}s best_iter={result.best_iteration} "
-           f"val_brier={result.best_val_brier:.4f} signal={result.inner_stop_signal}",
-           flush=True)
+    _milestone(
+        f"[loop] LOOP COMPLETE in {time.time()-t1:.1f}s "
+        f"best_iter={result.best_iteration} "
+        f"val_brier={result.best_val_brier:.4f} "
+        f"reason={result.inner_stop_signal}"
+    )
+    status.update(
+        phase="loop",
+        iter_idx=int(result.best_iteration),
+        awaiting_decision=False,
+        best_val_brier=float(result.best_val_brier),
+    )
 
     # -------- Phase 5: artifact emit --------
     heartbeat.set_phase("artifact")
-    print("[artifact] start", flush=True)
+    status.update(phase="artifact")
+    _milestone("[artifact] start")
     t1 = time.time()
 
     # Issue #30 — the snapshot at ``spec.yaml`` MUST be the per-experiment
@@ -1099,9 +1181,22 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     emit_figures(out_dir, result.iterations, result.predictions)
     render_report(out_dir)
 
-    print(f"[artifact] complete in {time.time()-t1:.1f}s -> {out_dir}", flush=True)
+    _milestone(f"[artifact] complete in {time.time()-t1:.1f}s -> {out_dir}")
     heartbeat.stop()
-    print(f"[experiment] complete in {time.time()-t0:.1f}s", flush=True)
+    # task #177: terminal status — the loop finished (or the agent stopped it).
+    # stop_reason is the inner-stop signal (e.g. ``plateau``, ``agent_should_stop``,
+    # ``max_iterations``). A monitor reading a non-null stop_reason knows the run
+    # is DONE, not wedged.
+    status.update(
+        phase="complete",
+        awaiting_decision=False,
+        stop_reason=str(result.inner_stop_signal),
+    )
+    _milestone(
+        f"[loop] STOPPED reason={result.inner_stop_signal}"
+    )
+    _milestone(f"[experiment] complete in {time.time()-t0:.1f}s")
+    progress_log.close()
     return out_dir
 
 
