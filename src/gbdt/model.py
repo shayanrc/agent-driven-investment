@@ -20,10 +20,17 @@ This module defines the **backend seam** for the gbdt module (V1.2 Phase 1,
       ranges. Anything out of range is rejected on construction with a clear
       error.
     - Exposes ``fit / predict_proba / feature_importance / save / load``.
+- :class:`XGBoostModel` — the concrete XGBoost backend (V1.2 Phase 1). Mirrors
+  :class:`CatBoostModel`'s public surface; deterministic-by-construction
+  (``tree_method=exact`` + ``n_jobs=1`` + ``device=cpu`` + fixed ``seed``),
+  ``binary:logistic`` objective, ``.ubj`` persistence. Reachable via
+  :func:`make_model` / unit tests only — not yet wired into the runner/loop
+  (the spec validation still rejects ``backend.library != "catboost"``; that
+  wiring is V1.2 Phase 5).
 - :func:`make_model` — the factory that dispatches on ``backend.library`` and
   returns the right concrete model. ``"catboost"`` routes to
-  :class:`CatBoostModel`; other backends raise ``NotImplementedError`` (the
-  XGBoost backend lands in a later V1.2 phase).
+  :class:`CatBoostModel`, ``"xgboost"`` to :class:`XGBoostModel`; other
+  backends raise ``NotImplementedError``.
 
 ``GBDTModel`` is retained as a public alias of :class:`CatBoostModel` so every
 existing import / spec / test keeps working byte-for-byte.
@@ -44,6 +51,7 @@ import numpy as np
 import pandas as pd
 
 from catboost import CatBoostClassifier, Pool
+import xgboost as xgb
 
 
 # ---------------------------------------------------------------------------
@@ -543,6 +551,257 @@ GBDTModel = CatBoostModel
 
 
 # ---------------------------------------------------------------------------
+# XGBoost backend (V1.2 Phase 1)
+# ---------------------------------------------------------------------------
+
+
+class XGBoostModel(BaseGBDTModel):
+    """Thin XGBoost wrapper implementing the :class:`BaseGBDTModel` protocol.
+
+    The second concrete backend behind the V1.2 seam
+    (``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md`` § 4 / § 8 Phase 1).
+    It mirrors :class:`CatBoostModel`'s method signatures + return shapes exactly:
+    ``predict_proba`` returns a **1-D** array of ``P(positive)``,
+    ``feature_importance`` returns a feature → importance ``Series``,
+    ``best_iteration`` / ``evals_result`` expose early-stopping + learning-curve
+    state, and ``save`` / ``load`` round-trip the fitted model (XGBoost native
+    ``.ubj`` binary, ``project-xgboost-training-essentials`` § 4).
+
+    **Deterministic by construction** (the load-bearing § 5.1 / § 1 contract):
+    ``PINNED_HPS_XGB`` supplies the determinism knobs (``tree_method="exact"``,
+    ``n_jobs=1``, ``device="cpu"``) and a fixed ``seed``/``random_state`` is
+    applied at construction, so a refit on the same ``(features, hp, seed)`` +
+    row order reproduces the prior model bit-identically. The XGBoost objective is
+    pinned to ``binary:logistic`` (raw margin → sigmoid → probability) and
+    ``eval_metric="logloss"`` drives early stopping (Brier is computed in the
+    diagnostic bundle, not as a native eval metric — V1.2 plan Q1). Missing values
+    flow through XGBoost's sparsity-aware split finding — no imputation.
+
+    Calibration is unchanged — :mod:`gbdt.calibration` operates purely on the
+    ``(y_val, p_raw)`` arrays ``predict_proba`` produces (§ 4.3).
+
+    .. note::
+
+        The ``PINNED_HPS_XGB`` determinism values are applied here as **safe
+        construction defaults** only. The construction-time hard-fail on a
+        non-deterministic override (``_validate_hp_xgb``) is V1.2 Phase 3 and is
+        intentionally **not** implemented here.
+    """
+
+    def __init__(
+        self,
+        hp: dict,
+        *,
+        feature_names: list[str] | None = None,
+        random_seed: int = 42,
+    ) -> None:
+        hp = _validate_hp(hp, backend="xgboost")
+        # Deterministic-by-construction: the seed mirrors CatBoost's random_seed.
+        # XGBoost's sklearn wrapper reads ``random_state``; accept either spelling
+        # from a spec and keep them consistent.
+        seed = hp.pop("seed", None)
+        if seed is None:
+            seed = hp.get("random_state", random_seed)
+        hp.setdefault("random_state", seed)
+        hp["seed"] = seed
+        hp.setdefault("verbosity", 0)               # quiet by default
+        self._hp = hp
+        self._feature_names = feature_names
+        self._model: xgb.XGBClassifier | None = None
+        self._fitted = False
+
+    # ---- accessors ------------------------------------------------------
+
+    @property
+    def hp(self) -> dict:
+        return dict(self._hp)
+
+    @property
+    def feature_names(self) -> list[str] | None:
+        return list(self._feature_names) if self._feature_names else None
+
+    @property
+    def fitted(self) -> bool:
+        return self._fitted
+
+    @property
+    def best_iteration(self) -> int | None:
+        if not self._fitted:
+            return None
+        bi = getattr(self._model, "best_iteration", None)
+        return int(bi) if bi is not None else None
+
+    @property
+    def evals_result(self) -> dict | None:
+        """Per-split metric history normalized to CatBoost's nested shape.
+
+        XGBoost nests as ``{"validation_0": {"logloss": [...]}}``. The
+        ``diagnostics.py`` learning-curve builder (lines 298–304) iterates
+        ``evals.items()`` → ``metrics.items()`` and joins as ``f"{split}_{metric}"``,
+        so the nested ``{split: {metric: [...]}}`` shape is exactly what it
+        expects. We only relabel ``validation_0`` → ``validation`` so the
+        learning-curve keys read the same as CatBoost's (``validation_logloss``).
+        """
+        if not self._fitted:
+            return None
+        try:
+            raw = self._model.evals_result()
+        except xgb.core.XGBoostError:
+            # No eval_set was used during training (so no learning curve).
+            return {}
+        if not raw:
+            return {}
+        out: dict[str, dict] = {}
+        for split, metrics in raw.items():
+            label = "validation" if split == "validation_0" else split
+            out[label] = {m: list(vals) for m, vals in metrics.items()}
+        return out
+
+    # ---- core ops -------------------------------------------------------
+
+    def fit(
+        self,
+        X_train: pd.DataFrame | np.ndarray,
+        y_train: np.ndarray | pd.Series,
+        X_val: pd.DataFrame | np.ndarray | None = None,
+        y_val: np.ndarray | pd.Series | None = None,
+        *,
+        early_stopping_rounds: int | None = None,
+        train_weight: np.ndarray | pd.Series | None = None,
+        val_weight: np.ndarray | pd.Series | None = None,
+    ) -> "XGBoostModel":
+        """Fit XGBoost with optional early stopping against ``(X_val, y_val)``.
+
+        Mirrors :meth:`CatBoostModel.fit`: ``train_weight`` / ``val_weight``
+        (optional) are per-row sample weights (LdP §4.4 uniqueness weights) —
+        XGBoost weights the gradient by ``w_i`` on training and the val loss
+        reported in ``evals_result`` by ``w_i`` on val.
+        """
+        feat_names = self._feature_names
+        if feat_names is None and isinstance(X_train, pd.DataFrame):
+            feat_names = list(X_train.columns)
+            self._feature_names = feat_names
+
+        X_tr = _to_2d(X_train)
+        y_tr = np.asarray(y_train).ravel()
+        w_tr = (
+            np.asarray(train_weight, dtype=float).ravel()
+            if train_weight is not None else None
+        )
+
+        eval_set = None
+        eval_weight = None
+        if X_val is not None and y_val is not None:
+            eval_set = [(_to_2d(X_val), np.asarray(y_val).ravel())]
+            if val_weight is not None:
+                eval_weight = [np.asarray(val_weight, dtype=float).ravel()]
+
+        model_hp = dict(self._hp)
+        if early_stopping_rounds is None:
+            early_stopping_rounds = model_hp.pop("early_stopping_rounds", None)
+        else:
+            model_hp.pop("early_stopping_rounds", None)
+        # Early stopping is only meaningful with an eval set; XGBoost raises if
+        # ``early_stopping_rounds`` is set without one.
+        if eval_set is None:
+            early_stopping_rounds = None
+
+        model = xgb.XGBClassifier(
+            early_stopping_rounds=early_stopping_rounds,
+            **model_hp,
+        )
+        model.fit(
+            X_tr,
+            y_tr,
+            sample_weight=w_tr,
+            eval_set=eval_set,
+            sample_weight_eval_set=eval_weight,
+            verbose=False,
+        )
+        self._model = model
+        self._fitted = True
+        return self
+
+    def predict_proba(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Return ``P(positive)`` as a 1-D array."""
+        if not self._fitted:
+            raise RuntimeError("model is not fitted")
+        proba = self._model.predict_proba(_to_2d(X))
+        # XGBClassifier returns (n, 2) for binary; positive class is col 1.
+        return np.asarray(proba)[:, 1]
+
+    def feature_importance(
+        self,
+        kind: str = "native",
+        X_val: pd.DataFrame | np.ndarray | None = None,
+        y_val: np.ndarray | pd.Series | None = None,
+    ) -> pd.Series:
+        """Return a Series of feature → importance.
+
+        - ``kind="native"`` (default): XGBoost gain importance (the booster's
+          ``feature_importances_`` with ``importance_type="gain"``), aligned to
+          the model's feature order. Mirrors CatBoost's native-importance Series.
+        - ``kind="permutation"``: drop-column-style importance against
+          ``(X_val, y_val)`` — backend-neutral Brier perturbation, identical to
+          :meth:`CatBoostModel.feature_importance` (``kind="permutation"``).
+        """
+        if not self._fitted:
+            raise RuntimeError("model is not fitted")
+        n_feat = self._model.n_features_in_
+        feat_names = self._feature_names or list(range(n_feat))
+
+        if kind == "native":
+            booster = self._model.get_booster()
+            score = booster.get_score(importance_type="gain")
+            # get_score keys are the booster feature names; align to our order.
+            booster_names = list(booster.feature_names or [])
+            imp = np.zeros(n_feat, dtype=float)
+            for j in range(n_feat):
+                bname = booster_names[j] if j < len(booster_names) else f"f{j}"
+                imp[j] = score.get(bname, 0.0)
+            return pd.Series(imp, index=feat_names, name="importance_native")
+        if kind == "permutation":
+            if X_val is None or y_val is None:
+                raise ValueError("permutation importance needs X_val + y_val")
+            from sklearn.metrics import brier_score_loss
+            X_arr = _to_2d(X_val).copy()
+            y_arr = np.asarray(y_val).ravel()
+            base_pred = self.predict_proba(X_arr)
+            base_brier = brier_score_loss(y_arr, base_pred)
+            rng = np.random.default_rng(self._hp.get("seed", 42))
+            scores = []
+            for j in range(X_arr.shape[1]):
+                X_perm = X_arr.copy()
+                X_perm[:, j] = rng.permutation(X_perm[:, j])
+                perm_pred = self.predict_proba(X_perm)
+                perm_brier = brier_score_loss(y_arr, perm_pred)
+                scores.append(max(0.0, perm_brier - base_brier))
+            return pd.Series(scores, index=feat_names, name="importance_permutation")
+        raise ValueError(f"unknown importance kind {kind!r}")
+
+    # ---- persistence ----------------------------------------------------
+
+    def save(self, path: str | Path) -> None:
+        """Persist the fitted model as XGBoost native UBJSON (``.ubj``)."""
+        if not self._fitted:
+            raise RuntimeError("model is not fitted")
+        self._model.save_model(str(path))
+
+    @classmethod
+    def load(cls, path: str | Path, hp: dict | None = None,
+             feature_names: list[str] | None = None) -> "XGBoostModel":
+        m = xgb.XGBClassifier()
+        m.load_model(str(path))
+        obj = cls(hp or PINNED_HPS_XGB, feature_names=feature_names)
+        obj._model = m
+        obj._fitted = True
+        if feature_names is None:
+            booster_names = getattr(m.get_booster(), "feature_names", None)
+            obj._feature_names = list(booster_names) if booster_names else None
+        return obj
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -590,18 +849,30 @@ def make_model(
     - ``"catboost"`` → :class:`CatBoostModel` (behaviour-identical to the v1
       ``GBDTModel`` — same construction, same ``has_time`` pin, same
       determinism, same save/load).
-    - anything else → ``NotImplementedError``. The XGBoost backend lands in a
-      later V1.2 phase (``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md``
-      § 8); this factory is the dispatch point it will plug into.
+    - ``"xgboost"`` → :class:`XGBoostModel` (V1.2 Phase 1 — deterministic-by-
+      construction defaults, ``binary:logistic`` objective, ``.ubj`` save/load).
+    - anything else → ``NotImplementedError``.
+
+    .. note::
+
+        Constructing an :class:`XGBoostModel` via this factory is reachable in
+        v1 only through unit tests / direct calls — the runner's spec validation
+        (``gbdt.__main__``) still rejects ``backend.library != "catboost"``, so
+        no end-to-end XGBoost path is wired into the FS+HP loop yet. That wiring
+        is V1.2 Phase 5.
     """
     library = _resolve_backend(backend)
     if library == "catboost":
         return CatBoostModel(
             hp, feature_names=feature_names, random_seed=random_seed
         )
+    if library == "xgboost":
+        return XGBoostModel(
+            hp, feature_names=feature_names, random_seed=random_seed
+        )
     raise NotImplementedError(
-        "xgboost backend lands in a later V1.2 phase "
-        f"(got backend.library={library!r}); only 'catboost' is wired today."
+        f"unknown backend.library={library!r}; "
+        f"only 'catboost' and 'xgboost' are wired."
     )
 
 
@@ -622,6 +893,7 @@ def _to_2d(X: pd.DataFrame | np.ndarray) -> np.ndarray:
 __all__ = [
     "BaseGBDTModel",
     "CatBoostModel",
+    "XGBoostModel",
     "GBDTModel",
     "make_model",
     "hp_tables_for",

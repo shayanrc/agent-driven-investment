@@ -19,8 +19,12 @@ from gbdt.model import (
     PINNED_HPS_XGB,
     TUNABLE_HP_RANGES,
     TUNABLE_HP_RANGES_XGB,
+    BaseGBDTModel,
+    CatBoostModel,
     GBDTModel,
+    XGBoostModel,
     hp_tables_for,
+    make_model,
 )
 from gbdt.model import _validate_hp
 
@@ -195,3 +199,167 @@ def test_validate_hp_xgboost_rejects_pinned_override():
 def test_validate_hp_xgboost_rejects_enum():
     with pytest.raises(ValueError, match="grow_policy"):
         _validate_hp({"grow_policy": "Magical"}, backend="xgboost")
+
+
+# ---------------------------------------------------------------------------
+# V1.2 Phase 1 — XGBoostModel adapter (deterministic-by-construction)
+#
+# The XGBoost backend lands behind the V1.2 seam: same 7-member protocol as
+# CatBoost, ``predict_proba`` contracted to 1-D P(positive), ``.ubj`` persistence,
+# and bit-identical determinism (the R1 guard, pulled forward as a smoke test).
+# Not wired into the runner/loop yet — reachable only via ``make_model`` here.
+# ---------------------------------------------------------------------------
+
+
+# The full abstract surface that ``train.py`` / ``diagnostics.py`` / the loop call.
+_PROTOCOL_MEMBERS = (
+    "fit",
+    "predict_proba",
+    "feature_importance",
+    "best_iteration",
+    "evals_result",
+    "save",
+    "load",
+    "hp",
+    "feature_names",
+    "fitted",
+)
+
+
+@pytest.mark.parametrize("model_cls", [CatBoostModel, XGBoostModel])
+def test_protocol_conformance_both_backends(model_cls):
+    """Both concrete backends expose every ``BaseGBDTModel`` abstract member,
+    and have no remaining un-implemented abstract methods (so they instantiate)."""
+    assert issubclass(model_cls, BaseGBDTModel)
+    # No abstract methods left → the class is concrete and constructible.
+    assert not getattr(model_cls, "__abstractmethods__", set())
+    for member in _PROTOCOL_MEMBERS:
+        assert hasattr(model_cls, member), (
+            f"{model_cls.__name__} is missing protocol member {member!r}"
+        )
+
+
+def test_xgboost_make_model_fits_and_predicts_1d_in_range():
+    """``make_model("xgboost", hp)`` fits a tiny synthetic panel; ``predict_proba``
+    returns a **1-D** array of P(positive) in [0, 1]."""
+    X, y = _toy_dataset(400, seed=11)
+    m = make_model(
+        "xgboost",
+        {"n_estimators": 50, "max_depth": 4, "eta": 0.1,
+         "early_stopping_rounds": 10},
+    )
+    assert isinstance(m, XGBoostModel)
+    assert isinstance(m, BaseGBDTModel)
+    m.fit(X.iloc[:300], y[:300], X.iloc[300:], y[300:])
+    p = m.predict_proba(X.iloc[300:])
+    assert p.ndim == 1                       # 1-D contract
+    assert p.shape == (100,)
+    assert ((p >= 0) & (p <= 1)).all()
+
+
+def test_xgboost_deterministic_pins_applied_on_construction():
+    """The ``PINNED_HPS_XGB`` determinism knobs + a fixed seed are applied at
+    construction (deterministic-by-construction; Phase-3 hard-fail not present)."""
+    m = make_model("xgboost", {"n_estimators": 10, "max_depth": 3})
+    assert m.hp["objective"] == "binary:logistic"
+    assert m.hp["eval_metric"] == "logloss"
+    assert m.hp["tree_method"] == "exact"
+    assert m.hp["n_jobs"] == 1
+    assert m.hp["device"] == "cpu"
+    assert m.hp["seed"] == 42                # default random_seed mirrored to seed
+    # A custom seed threads through to both spellings.
+    m2 = XGBoostModel({"n_estimators": 10}, random_seed=7)
+    assert m2.hp["seed"] == 7 and m2.hp["random_state"] == 7
+
+
+def test_xgboost_dominant_feature_lights_up_in_native_importance():
+    X, y = _toy_dataset(800, seed=12)
+    m = make_model("xgboost", {"n_estimators": 100, "max_depth": 4, "eta": 0.1})
+    m.fit(X.iloc[:600], y[:600], X.iloc[600:], y[600:])
+    imp = m.feature_importance("native")
+    assert imp.idxmax() == "good_feat"
+
+
+def test_xgboost_permutation_importance_non_negative():
+    X, y = _toy_dataset(400, seed=13)
+    m = make_model("xgboost", {"n_estimators": 50, "max_depth": 4, "eta": 0.1})
+    m.fit(X.iloc[:300], y[:300], X.iloc[300:], y[300:])
+    imp = m.feature_importance("permutation", X.iloc[300:], y[300:])
+    assert (imp >= 0).all()
+
+
+def test_xgboost_save_load_round_trip_ubj(tmp_path):
+    """save → load → predict_proba reproduces predictions exactly via ``.ubj``."""
+    X, y = _toy_dataset(400, seed=14)
+    m = make_model("xgboost", {"n_estimators": 40, "max_depth": 4, "eta": 0.1,
+                               "early_stopping_rounds": 10})
+    m.fit(X.iloc[:300], y[:300], X.iloc[300:], y[300:])
+    p_before = m.predict_proba(X.iloc[300:])
+    out_path = tmp_path / "m.ubj"
+    m.save(out_path)
+    assert out_path.exists()
+    loaded = XGBoostModel.load(out_path)
+    p_after = loaded.predict_proba(X.iloc[300:])
+    assert np.array_equal(p_before, p_after)
+
+
+def test_xgboost_bit_identity_determinism():
+    """R1 guard (pulled forward as a smoke): two fits with the same
+    ``(features, hp, seed)`` + identical row order produce bit-identical
+    ``predict_proba`` outputs — proves the deterministic-by-construction defaults."""
+    X, y = _toy_dataset(500, seed=15)
+    hp = {"n_estimators": 60, "max_depth": 5, "eta": 0.1,
+          "early_stopping_rounds": 10}
+    m_a = make_model("xgboost", dict(hp))
+    m_a.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])
+    m_b = make_model("xgboost", dict(hp))
+    m_b.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])
+    p_a = m_a.predict_proba(X.iloc[350:])
+    p_b = m_b.predict_proba(X.iloc[350:])
+    assert np.array_equal(p_a, p_b)
+
+
+def test_xgboost_evals_result_normalized_shape():
+    """``evals_result`` is the nested ``{split: {metric: [...]}}`` shape
+    ``diagnostics.py`` consumes, with the split relabeled to ``validation``."""
+    X, y = _toy_dataset(300, seed=16)
+    m = make_model("xgboost", {"n_estimators": 20, "max_depth": 3, "eta": 0.1,
+                               "early_stopping_rounds": 5})
+    m.fit(X.iloc[:200], y[:200], X.iloc[200:], y[200:])
+    er = m.evals_result
+    assert "validation" in er
+    assert "logloss" in er["validation"]
+    assert isinstance(m.best_iteration, int)
+
+
+def test_xgboost_sample_weights_round_trip():
+    """Per-row uniqueness weights (LdP §4.4) flow through fit without raising."""
+    X, y = _toy_dataset(300, seed=17)
+    rng = np.random.default_rng(0)
+    w_tr = rng.uniform(0.5, 1.0, 200)
+    w_val = rng.uniform(0.5, 1.0, 100)
+    m = make_model("xgboost", {"n_estimators": 20, "max_depth": 3, "eta": 0.1,
+                               "early_stopping_rounds": 5})
+    m.fit(X.iloc[:200], y[:200], X.iloc[200:], y[200:],
+          train_weight=w_tr, val_weight=w_val)
+    assert m.fitted
+    p = m.predict_proba(X.iloc[200:])
+    assert p.ndim == 1
+
+
+def test_xgboost_predict_before_fit_raises():
+    X, _ = _toy_dataset(50, seed=18)
+    m = make_model("xgboost", {"n_estimators": 10})
+    with pytest.raises(RuntimeError, match="not fitted"):
+        m.predict_proba(X)
+
+
+def test_xgboost_out_of_range_hp_rejected_on_construction():
+    """The factory/adapter validates against the XGBoost ranges on construction."""
+    with pytest.raises(ValueError, match="max_depth"):
+        make_model("xgboost", {"n_estimators": 10, "max_depth": 50})
+
+
+def test_xgboost_pinned_override_rejected_on_construction():
+    with pytest.raises(ValueError, match="tree_method"):
+        make_model("xgboost", {"n_estimators": 10, "tree_method": "hist"})
