@@ -1,0 +1,38 @@
+# Hand-driven FS+HP loop — nifty50 UP +10% / 25d / dd5%.
+# ITERATION 3 — learning-rate test at optimal depth.
+#
+# Depth scan complete: val_brier depth4=0.1661, depth6=0.1642 (best), depth8=0.1652.
+# depth 6 is the sweet spot. val_brier band is tight [0.1642,0.1661] -> little HP headroom.
+#
+# Hypothesis H3: learning_rate is the one major untested HP. Slower learning
+# (0.05 -> 0.02) with more trees (1000 -> 2000) sometimes finds a better minimum.
+# Change ONLY lr + iterations; hold depth 6, l2 3.0, all 279 feat. early_stop
+# will find the effective tree count. Watch val_brier vs 0.1642 best.
+#
+# max_iterations: 1 -> single clean fit.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 2000
+    learning_rate: 0.02
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+
+random_seed: 42

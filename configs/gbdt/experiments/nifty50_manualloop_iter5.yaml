@@ -1,0 +1,50 @@
+# Hand-driven FS+HP loop — nifty50 UP +10% / 25d / dd5%.
+# ITERATION 5 — empirically-derived monotonic constraints.
+# Analysis (scripts/gbdt/monotonic_feature_analysis.py, in-sample, test excluded):
+# garman_klass/parkinson/realized_vol families show CLEAN monotone-increasing
+# relationship to the target (rho 0.11-0.19, decile-consistency 0.78-1.00).
+# vol_of_vol_200 (model top feature) + index_vol_* are NON-monotone (consist 0.44-0.67) -> left 0.
+# H5: +1 constraint on the 17 clean vol-estimator features encodes a true
+# structural prior -> variance-reducing regularizer. Hold baseline HP + all 279 feat.
+# Watch val_brier vs 0.1642 and eval (starved low-prevalence segment).
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      garman_klass_5: 1
+      parkinson_5: 1
+      garman_klass_10: 1
+      parkinson_10: 1
+      garman_klass_20: 1
+      parkinson_20: 1
+      garman_klass_50: 1
+      parkinson_50: 1
+      garman_klass_100: 1
+      parkinson_100: 1
+      garman_klass_200: 1
+      parkinson_200: 1
+      realized_vol_10: 1
+      realized_vol_20: 1
+      realized_vol_50: 1
+      realized_vol_100: 1
+      realized_vol_200: 1
+random_seed: 42

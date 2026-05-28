@@ -14,6 +14,7 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 - [project-nse-data-quirks.md](project-nse-data-quirks.md) — NSE fetch quirks: jugaad/nselib blocked → use curl from archives.nseindia.com; filter DUMMY* placeholders; processed.db-wal can corrupt → /tmp/exp_data workaround; per-ticker fetch is 30–80s; cached-but-short tickers need `back_extend=True`
 - [project-gbdt-uniqueness-weights.md](project-gbdt-uniqueness-weights.md) — gbdt applies LdP §4.4 sample-uniqueness weights by default; corrects the 2.15× overlap-prevalence inflation surfaced by sweep exp #1; opt-out via `target.uniqueness_weighting: false`
 - [project-r-precision-methodology.md](project-r-precision-methodology.md) — R-precision (per-day variable K=R(d)) is the headline cross-cell metric for gbdt; AUC alone misclassifies top-tail-signal cells as null; compound rule + compute_r_precision.py script
+- [project-gbdt-tuning-playbook.md](project-gbdt-tuning-playbook.md) — diagnostic-first FS+HP tuning rules (nifty50 H=25 study): check train/val gap before pruning; HP-ceiling detection; monotone constraints neutral-to-harmful on interaction-driven cells (check 1D PDP not marginal corr); importance≈0 = redundant not unrelated
 
 ## Workflow feedback
 
