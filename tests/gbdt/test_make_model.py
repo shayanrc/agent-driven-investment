@@ -6,7 +6,10 @@ plan.md`` § 4 / § 8 + the per-phase test strategy):
 - ``make_model("catboost", ...)`` returns a ``CatBoostModel`` (== the public
   ``GBDTModel`` alias) and is an instance of the backend-agnostic
   ``BaseGBDTModel``.
-- unknown backends raise (``NotImplementedError``) — no half-built XGBoost path.
+- ``make_model("xgboost", ...)`` returns an ``XGBoostModel`` (V1.2 Phase 1 wired
+  the adapter — the seam PR's "no half-built XGBoost path" only deferred the
+  *runner* wiring, which still rejects xgboost; the factory itself now routes).
+- genuinely-unknown backends still raise (``NotImplementedError``).
 - a model built via the factory produces **bit-identical** predictions to one
   constructed the old way (``GBDTModel(...)`` directly) on a fixed synthetic
   fixture — the determinism / behaviour-identity contract the finalization
@@ -24,6 +27,7 @@ from gbdt.model import (
     BaseGBDTModel,
     CatBoostModel,
     GBDTModel,
+    XGBoostModel,
     make_model,
 )
 
@@ -40,6 +44,7 @@ def _toy_dataset(n: int = 400, seed: int = 7):
 
 
 _HP = {"iterations": 50, "depth": 4, "learning_rate": 0.1, "boosting_type": "Plain"}
+_HP_XGB = {"n_estimators": 50, "max_depth": 4, "eta": 0.1}
 
 
 def test_factory_returns_catboost_model():
@@ -51,10 +56,15 @@ def test_factory_returns_catboost_model():
     assert GBDTModel is CatBoostModel
 
 
+def test_factory_returns_xgboost_model():
+    """V1.2 Phase 1 — ``make_model("xgboost", ...)`` now routes to the adapter."""
+    m = make_model("xgboost", dict(_HP_XGB))
+    assert isinstance(m, XGBoostModel)
+    assert isinstance(m, BaseGBDTModel)
+
+
 def test_factory_rejects_unknown_backend():
-    with pytest.raises(NotImplementedError, match="xgboost"):
-        make_model("xgboost", dict(_HP))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="lightgbm"):
         make_model("lightgbm", dict(_HP))
 
 
