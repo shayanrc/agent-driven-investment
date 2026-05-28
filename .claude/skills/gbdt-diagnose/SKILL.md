@@ -42,7 +42,7 @@ uv run python -m scripts.gbdt.diagnose <artifact_dir> [--top-n 30] \
 2. **Prevalence drift** — positive-rate across train/val/eval/test from the saved predictions; flags non-stationarity (the calibration-ceiling signal — when the brier is capped by a regime shift the FS/HP loop can't touch).
 3. **Marginal monotonicity** — per top feature: Spearman ρ(feature, target) + decile-consistency on in-sample rows. "Should this feature be monotone, and which way?"
 4. **Model 1D-PDP audit** — per top feature: is the *fitted model* monotone in it? (The necessary-but-not-sufficient pre-check before constraining — a marginally-monotone feature can have a learned inverted-U the model uses.)
-5. **Interaction strength** — top pairwise interactions + per-feature involvement, split into high/low. The features the model leans on for *conditional* structure.
+5. **Interaction strength** — top pairwise interactions + per-feature involvement, split into high/low. The features the model leans on for *conditional* structure. **Backend-conditional (V1.2):** an XGBoost artifact uses native TreeSHAP interaction values (`booster.predict(pred_interactions=True)`); a CatBoost artifact uses CatBoost-native split co-occurrence. The compact top-N summary (top pairs + per-feature {main-effect SHAP, interaction load}) lands in `diagnose.json` (the D7 bundle block); `--interactions full` lifts the row cap to score the whole in-sample slice (the O(features²) pass — slower; only the top-N summary still lands in the bundle).
 6. **Correlation heatmap** — Spearman collinearity among the top features (`figs/corr_heatmap.png`). Explains redundancy.
 7. **Pruned-feature investigation** — for sub-threshold-importance features: do they have a real monotone relationship, and are they redundant (collinear with a kept feature) vs genuine noise?
 
@@ -60,7 +60,7 @@ uv run python -m scripts.gbdt.diagnose <artifact_dir> [--top-n 30] \
 ## Pre-flight
 
 0. **Infrastructure** (same contract as `/gbdt-experiment`): disk ≥10 G headroom; `readlink data` resolves to the shared cache; `sqlite3 data/processed.db 'PRAGMA quick_check'` prints `ok`. See `.claude/memories/{feedback-disk-wedge-pattern,feedback-worktree-symlink-contract,project-nse-data-quirks}.md`.
-1. **Artifact validity** — `<artifact_dir>` must contain `model.cbm`, `features.yaml`, `spec.yaml`. `predictions/*.csv` enable the prevalence-drift check; `iterations.jsonl` enables the overfit read. The skill degrades gracefully if the optional pieces are missing (those sections are skipped).
+1. **Artifact validity** — `<artifact_dir>` must contain the model file (`model.cbm` for a CatBoost cell, `model.ubj` for an XGBoost cell — the loader dispatches on `spec.yaml::backend.library` via `gbdt.model.model_filename`), `features.yaml`, `spec.yaml`. `predictions/*.csv` enable the prevalence-drift check; `iterations.jsonl` enables the overfit read. The skill degrades gracefully if the optional pieces are missing (those sections are skipped).
 2. **Cache coverage** — the cell's universe must be cached (the skill rebuilds the in-sample feature matrix via `data.load_panel` + `features.build_feature_matrix`). If the universe isn't cached, run `/gbdt-experiment`'s pre-flight first.
 
 ## Long-running pattern
