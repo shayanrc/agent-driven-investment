@@ -192,8 +192,12 @@ def test_validate_hp_xgboost_rejects_out_of_range():
 
 
 def test_validate_hp_xgboost_rejects_pinned_override():
-    with pytest.raises(ValueError, match="tree_method"):
+    # V1.2 Phase 3: determinism knobs hard-fail with a determinism-specific msg.
+    with pytest.raises(ValueError, match="determinism"):
         _validate_hp({"tree_method": "hist"}, backend="xgboost")
+    # Policy pins (objective / eval_metric) reject too, generic message.
+    with pytest.raises(ValueError, match="objective"):
+        _validate_hp({"objective": "reg:squarederror"}, backend="xgboost")
 
 
 def test_validate_hp_xgboost_rejects_enum():
@@ -259,7 +263,8 @@ def test_xgboost_make_model_fits_and_predicts_1d_in_range():
 
 def test_xgboost_deterministic_pins_applied_on_construction():
     """The ``PINNED_HPS_XGB`` determinism knobs + a fixed seed are applied at
-    construction (deterministic-by-construction; Phase-3 hard-fail not present)."""
+    construction (deterministic-by-construction; the Phase-3 hard-fail on a
+    *different* value is covered by ``test_xgboost_nondeterministic_override_raises``)."""
     m = make_model("xgboost", {"n_estimators": 10, "max_depth": 3})
     assert m.hp["objective"] == "binary:logistic"
     assert m.hp["eval_metric"] == "logloss"
@@ -304,9 +309,14 @@ def test_xgboost_save_load_round_trip_ubj(tmp_path):
 
 
 def test_xgboost_bit_identity_determinism():
-    """R1 guard (pulled forward as a smoke): two fits with the same
-    ``(features, hp, seed)`` + identical row order produce bit-identical
-    ``predict_proba`` outputs — proves the deterministic-by-construction defaults."""
+    """A2 guard (V1.2 Phase 3, plan § 8 / § 5.1 R1): two fits with the same
+    ``(features, hp, seed)`` + identical row order produce **bit-identical**
+    ``predict_proba`` outputs — the load-bearing finalization-retrain contract.
+
+    Bit-identity (``np.array_equal``, NOT ``allclose``) is the assertion: the
+    loop's finalization step retrains the selected ``(features, hp)`` config and
+    must reproduce the in-loop fit exactly, or ``predictions/*.csv`` silently
+    disagree with the val-Brier the checkpoint was selected on."""
     X, y = _toy_dataset(500, seed=15)
     hp = {"n_estimators": 60, "max_depth": 5, "eta": 0.1,
           "early_stopping_rounds": 10}
@@ -316,7 +326,30 @@ def test_xgboost_bit_identity_determinism():
     m_b.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])
     p_a = m_a.predict_proba(X.iloc[350:])
     p_b = m_b.predict_proba(X.iloc[350:])
-    assert np.array_equal(p_a, p_b)
+    assert np.array_equal(p_a, p_b)        # bit-identical, not merely close
+
+
+def test_xgboost_nondeterministic_override_raises():
+    """A2 guard, negative half (plan § 8): a ``tree_method="hist", n_jobs=4``
+    override — the canonical non-deterministic combo — hard-fails at
+    construction with a determinism-specific message, so it can never reach
+    predict-time and silently corrupt the finalization retrain."""
+    with pytest.raises(ValueError, match="determinism"):
+        make_model("xgboost",
+                   {"n_estimators": 10, "tree_method": "hist", "n_jobs": 4})
+    # Each individual determinism knob also hard-fails on its own.
+    for knob, bad in (("tree_method", "hist"), ("n_jobs", 4), ("device", "cuda")):
+        with pytest.raises(ValueError, match=knob):
+            make_model("xgboost", {"n_estimators": 10, knob: bad})
+
+
+def test_xgboost_same_pinned_value_is_noop():
+    """Passing the SAME pinned determinism value is a no-op, not an error
+    (the hard-fail triggers only on a DIFFERENT value)."""
+    m = make_model("xgboost", {"n_estimators": 10, "tree_method": "exact",
+                               "n_jobs": 1, "device": "cpu"})
+    assert m.hp["tree_method"] == "exact"
+    assert m.hp["n_jobs"] == 1 and m.hp["device"] == "cpu"
 
 
 def test_xgboost_evals_result_normalized_shape():

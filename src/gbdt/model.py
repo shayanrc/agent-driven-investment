@@ -67,12 +67,14 @@ import xgboost as xgb
 # (``CATBOOST_HP_REFERENCE.md`` / ``XGBOOST_HP_REFERENCE.md``) and the agent
 # always requests names from the backend it is actually tuning.
 #
-# Phase 2 ships the **name-mapping data + the resolver + backend-aware
-# validation**. The XGBoost *model adapter*, the ``xgboost`` dependency, and the
-# determinism hard-fail (``tree_method``/``n_jobs``/``device`` enforcement on
-# ``PINNED_HPS_XGB``) land in later V1.2 phases (§ 8 Phases 1/3); the pins below
-# are recorded as table *data* (so ``validate_decision`` rejects an agent
-# request to change them) but are not yet enforced at model construction.
+# Phase 2 shipped the **name-mapping data + the resolver + backend-aware
+# validation**; Phase 1 shipped the XGBoost *model adapter* + ``xgboost``
+# dependency. Phase 3 (this change) adds the **determinism hard-fail**:
+# :func:`_validate_hp_xgb` raises at construction if a caller overrides any of
+# the ``PINNED_HPS_XGB`` determinism knobs (``tree_method``/``n_jobs``/``device``)
+# with a value that would break the bit-identical finalization retrain (plan D5 /
+# § 5.1), mirroring how :func:`_validate_hp` raises on a ``has_time`` override
+# for CatBoost.
 
 
 # ---------------------------------------------------------------------------
@@ -161,11 +163,12 @@ ENUM_HP_VALUES_XGB: dict[str, tuple[str, ...]] = {
 
 # Pinned: never overridable from a spec. For XGBoost the load-bearing pins are
 # the determinism knobs (``tree_method``/``n_jobs``/``device``) that replace
-# ``has_time``'s "never-override" role (plan § 5.1/§ 5.3). Phase 2 records these
-# as table *data* so :func:`validate_decision` rejects an agent request to change
-# them; the construction-time **hard-fail** enforcement (``_validate_hp_xgb``) is
-# Phase 3 (plan § 8). ``seed`` is set from ``random_seed`` at construction, like
-# CatBoost's ``random_seed`` — so it is not listed as a fixed-value pin here.
+# ``has_time``'s "never-override" role (plan § 5.1/§ 5.3). The construction-time
+# **hard-fail** enforcement (:func:`_validate_hp_xgb`, V1.2 Phase 3 / plan D5)
+# raises if any of these is set to a *different* value — passing the same pinned
+# value is a no-op. ``seed`` is set from ``random_seed`` at construction, like
+# CatBoost's ``random_seed`` — so it is not listed as a fixed-value pin here (a
+# caller may pick the seed; it just stays fixed within a run).
 PINNED_HPS_XGB: dict[str, Any] = {
     "objective": "binary:logistic",            # ↔ Logloss
     "eval_metric": "logloss",                   # Brier computed in the bundle
@@ -173,6 +176,12 @@ PINNED_HPS_XGB: dict[str, Any] = {
     "n_jobs": 1,                                # determinism
     "device": "cpu",                            # determinism
 }
+
+# The subset of ``PINNED_HPS_XGB`` whose override breaks bit-reproducibility of
+# the finalization retrain (plan § 5.1). These get the **determinism-specific**
+# hard-fail message in :func:`_validate_hp_xgb`; ``objective``/``eval_metric`` are
+# pinned-by-policy (semantics, not determinism) and reuse the generic message.
+_DETERMINISM_PINS_XGB: tuple[str, ...] = ("tree_method", "n_jobs", "device")
 
 
 # Backend → (tunable ranges, enum values, pinned) table triple.
@@ -210,14 +219,74 @@ def hp_tables_for(backend: str) -> tuple[dict, dict, dict]:
         ) from None
 
 
+def _validate_hp_xgb(hp: dict) -> dict:
+    """XGBoost HP validation with the **determinism hard-fail** (V1.2 Phase 3 /
+    plan D5 / § 5.1).
+
+    The load-bearing reason this exists: the FS+HP loop's finalization step
+    *retrains* a prior ``(features, hp)`` config (``train.py::_fit_one``) and
+    assumes it reproduces the in-loop fit **bit-identically** — the checkpoint
+    stores no model blob. XGBoost only reproduces bit-identically with
+    ``tree_method="exact"`` + ``n_jobs=1`` + ``device="cpu"`` (the histogram
+    build / multi-thread float-reduction order / GPU reductions are otherwise
+    run-to-run non-deterministic). So those knobs are pinned in
+    ``PINNED_HPS_XGB`` and **cannot be overridden** — exactly as CatBoost pins
+    ``has_time`` (``model.py`` ``_validate_hp`` raises on a ``has_time``
+    override). A caller passing the *same* pinned value is a no-op; passing a
+    *different* value raises here, at construction, never at predict-time.
+
+    Returns a copy of ``hp`` with the pins applied + the tunable/enum tables
+    range-checked. Raises :class:`ValueError` on the first violation.
+    """
+    tunable, enum_values, pinned = hp_tables_for("xgboost")
+    out = dict(hp)
+
+    # Determinism knobs: a DIFFERENT value breaks the bit-identical retrain
+    # contract — hard-fail with a determinism-specific message (plan § 5.1).
+    for k in _DETERMINISM_PINS_XGB:
+        if k in out and out[k] != pinned[k]:
+            raise ValueError(
+                f"XGBoost determinism pin {k!r} is fixed to {pinned[k]!r} and "
+                f"cannot be overridden (got {out[k]!r}). This pin is load-bearing: "
+                f"the FS+HP loop's finalization step retrains the selected "
+                f"(features, hp) config and requires a bit-identical reproduction "
+                f"of the in-loop fit. Only tree_method='exact', n_jobs=1, "
+                f"device='cpu' guarantee that — a non-deterministic override "
+                f"(e.g. tree_method='hist' with n_jobs>1, or device='cuda') would "
+                f"silently make the artifact's predictions disagree with the "
+                f"val-Brier the checkpoint was selected on. See V1.2 plan D5 / "
+                f"§ 5.1 and project-xgboost-training-essentials § 1."
+            )
+
+    # Remaining pins (objective / eval_metric): policy pins, generic message.
+    for k, v in pinned.items():
+        if k in _DETERMINISM_PINS_XGB:
+            out[k] = v
+            continue
+        if k in out and out[k] != v:
+            raise ValueError(
+                f"{k!r} is pinned to {v!r} in v1 and cannot be overridden "
+                f"(got {out[k]!r}); see V1_PLAN.md Stage 4."
+            )
+        out[k] = v
+
+    _range_enum_check(out, tunable, enum_values, _HP_REFERENCE_DOC["xgboost"])
+    return out
+
+
 def _validate_hp(hp: dict, backend: str = "catboost") -> dict:
     """Return a copy of ``hp`` with pinned HPs applied and tunable HPs
     range-checked against ``backend``'s tables. Raise ``ValueError`` on the
     first violation.
 
     ``backend`` defaults to ``"catboost"`` so every existing caller (and the
-    ``GBDTModel`` alias) behaves byte-for-byte as before the V1.2 seam.
+    ``GBDTModel`` alias) behaves byte-for-byte as before the V1.2 seam. The
+    ``"xgboost"`` path dispatches to :func:`_validate_hp_xgb`, which adds the
+    determinism-specific hard-fail message (V1.2 Phase 3 / plan D5).
     """
+    if backend == "xgboost":
+        return _validate_hp_xgb(hp)
+
     tunable, enum_values, pinned = hp_tables_for(backend)
     doc = _HP_REFERENCE_DOC.get(backend, "the backend HP reference")
     out = dict(hp)
@@ -231,6 +300,21 @@ def _validate_hp(hp: dict, backend: str = "catboost") -> dict:
             )
         out[k] = v
 
+    _range_enum_check(out, tunable, enum_values, doc)
+    return out
+
+
+def _range_enum_check(
+    out: dict, tunable: dict, enum_values: dict, doc: str
+) -> None:
+    """Range-check tunable HPs and validate enum HPs in ``out`` against the
+    given tables. Raises :class:`ValueError` on the first violation. Mutates
+    nothing — ``out`` is read only.
+
+    Shared by the CatBoost (:func:`_validate_hp`) and XGBoost
+    (:func:`_validate_hp_xgb`) validators so the range/enum message text is
+    identical across backends.
+    """
     # Numeric range checks
     for k, (lo, hi) in tunable.items():
         if k not in out or out[k] is None:
@@ -257,8 +341,6 @@ def _validate_hp(hp: dict, backend: str = "catboost") -> dict:
                 f"HP {k}={out[k]!r} is not one of {allowed}; "
                 f"see {doc}."
             )
-
-    return out
 
 
 # ---------------------------------------------------------------------------
@@ -582,10 +664,12 @@ class XGBoostModel(BaseGBDTModel):
 
     .. note::
 
-        The ``PINNED_HPS_XGB`` determinism values are applied here as **safe
-        construction defaults** only. The construction-time hard-fail on a
-        non-deterministic override (``_validate_hp_xgb``) is V1.2 Phase 3 and is
-        intentionally **not** implemented here.
+        Construction runs :func:`_validate_hp_xgb` (V1.2 Phase 3 / plan D5),
+        which **hard-fails** if a caller overrides any of the ``PINNED_HPS_XGB``
+        determinism knobs (``tree_method``/``n_jobs``/``device``) with a value
+        that would break the bit-identical finalization retrain. Passing the
+        same pinned value is a no-op; a different value (e.g. ``tree_method=
+        "hist"`` with ``n_jobs=4``, or ``device="cuda"``) raises at construction.
     """
 
     def __init__(
@@ -849,8 +933,9 @@ def make_model(
     - ``"catboost"`` → :class:`CatBoostModel` (behaviour-identical to the v1
       ``GBDTModel`` — same construction, same ``has_time`` pin, same
       determinism, same save/load).
-    - ``"xgboost"`` → :class:`XGBoostModel` (V1.2 Phase 1 — deterministic-by-
-      construction defaults, ``binary:logistic`` objective, ``.ubj`` save/load).
+    - ``"xgboost"`` → :class:`XGBoostModel` (V1.2 — deterministic-by-construction
+      pins with a Phase-3 hard-fail on any determinism-knob override,
+      ``binary:logistic`` objective, ``.ubj`` save/load).
     - anything else → ``NotImplementedError``.
 
     .. note::
