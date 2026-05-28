@@ -31,7 +31,7 @@ from gbdt.calibration import (
 )
 from gbdt.diagnostics import DiagnosticBundle, build_diagnostic_bundle
 from gbdt.fs_hp_loop import best_checkpoint, inner_stop_check
-from gbdt.model import GBDTModel
+from gbdt.model import BaseGBDTModel, make_model
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ def default_fs_hp_callback(
 @dataclass
 class WalkForwardResult:
     best_iteration: int
-    best_model: GBDTModel
+    best_model: BaseGBDTModel
     best_features: list[str]
     best_hp: dict
     best_val_brier: float
@@ -217,21 +217,24 @@ def _fit_one(
     X: pd.DataFrame, y: pd.Series, panel: pd.DataFrame, split: SplitSpec,
     features: list[str], hp: dict, random_seed: int,
     sample_weights: pd.Series | None,
-) -> GBDTModel:
-    """Fit a single GBDTModel for a (features, hp) configuration.
+    backend: str = "catboost",
+) -> BaseGBDTModel:
+    """Fit a single model for a (features, hp) configuration.
 
     Used both inside the loop and at finalization, when the best checkpoint
     selected from the full val-Brier history corresponds to a prior
     (non-retrained) iteration on the exit-and-resume path. Retraining one
-    config is cheap and avoids serializing CatBoost model blobs into the
-    checkpoint (plan § 0.2).
+    config is cheap and avoids serializing model blobs into the checkpoint
+    (plan § 0.2). The retrain assumes bit-identical reproduction of the
+    in-loop fit, which the chosen ``backend`` must guarantee given the same
+    ``(features, hp, random_seed)`` + row order.
     """
     parts = _carve_X_y(X, y, panel, split, features, sample_weights)
     X_tr, y_tr, _, w_tr = parts["train"]
     X_val, y_val, _, w_val = parts["val"]
     if len(y_tr) == 0:
         raise RuntimeError("training segment is empty; check split + min_rows")
-    model = GBDTModel(hp, feature_names=features, random_seed=random_seed)
+    model = make_model(backend, hp, feature_names=features, random_seed=random_seed)
     model.fit(X_tr, y_tr, X_val, y_val, train_weight=w_tr, val_weight=w_val)
     return model
 
@@ -254,6 +257,7 @@ def walk_forward_train(
     sample_weights: pd.Series | None = None,
     resume_state: dict | None = None,
     loop_state_sink: dict | None = None,
+    backend: str = "catboost",
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -276,13 +280,18 @@ def walk_forward_train(
     write the resume checkpoint, then raises ``PauseForAgentDecision`` (caught
     by ``run_experiment``). ``default`` mode passes ``None`` here, so this is
     inert on the v1 path.
+
+    ``backend`` (V1.2 backend seam, plan § 6.2): the ``backend.library`` value
+    from the spec. Threaded to :func:`gbdt.model.make_model` for both the
+    in-loop fit and the finalization retrain. Defaults to ``"catboost"`` so
+    every existing spec + test stays byte-for-byte unchanged.
     """
     split = split or SplitSpec()
     if fs_hp_callback is None:
         fs_hp_callback = default_fs_hp_callback
 
     history: list[DiagnosticBundle] = []
-    models: list[GBDTModel | None] = []
+    models: list[BaseGBDTModel | None] = []
     inner_signal: str | None = None
 
     if resume_state is not None:
@@ -329,8 +338,8 @@ def walk_forward_train(
             raise RuntimeError("training segment is empty; check split + min_rows")
 
         t0 = time.time()
-        model = GBDTModel(current_hp, feature_names=current_features,
-                          random_seed=random_seed)
+        model = make_model(backend, current_hp, feature_names=current_features,
+                           random_seed=random_seed)
         model.fit(
             X_tr, y_tr, X_val, y_val,
             train_weight=w_tr, val_weight=w_val,
@@ -422,7 +431,7 @@ def walk_forward_train(
         # that single (features, hp) config now for calibration + prediction.
         best_model = _fit_one(
             X, y, panel, split, best_features, best_hp, random_seed,
-            sample_weights,
+            sample_weights, backend=backend,
         )
 
     # Score the best checkpoint and apply calibration

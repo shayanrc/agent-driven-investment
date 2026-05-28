@@ -349,7 +349,9 @@ def test_resume_round_trip_unaffected_by_richer_bundle(monkeypatch, tmp_path):
     class _FakeModel:
         pass
 
-    monkeypatch.setattr(T, "GBDTModel", lambda *a, **k: _FakeModel())
+    # train.py builds the per-iteration model via make_model(backend, ...)
+    # (V1.2 backend seam) — patch the factory in train's namespace.
+    monkeypatch.setattr(T, "make_model", lambda *a, **k: _FakeModel())
     monkeypatch.setattr(_FakeModel, "fit", lambda self, *a, **k: None,
                         raising=False)
     monkeypatch.setattr(

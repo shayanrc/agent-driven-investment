@@ -376,7 +376,10 @@ def test_walk_forward_pauses_via_callback(monkeypatch, tmp_path):
     class _FakeModel:
         pass
 
-    monkeypatch.setattr(T, "GBDTModel", lambda *a, **k: _FakeModel())
+    # train.py builds the per-iteration model via make_model(backend, ...)
+    # (V1.2 backend seam) — patch the factory in train's namespace so no real
+    # CatBoost fit runs.
+    monkeypatch.setattr(T, "make_model", lambda *a, **k: _FakeModel())
     monkeypatch.setattr(_FakeModel, "fit", lambda self, *a, **k: None, raising=False)
 
     def _fake_bundle(**kwargs):
