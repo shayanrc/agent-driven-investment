@@ -1,0 +1,6 @@
+{
+  "iter": 2,
+  "hp_changes": { "max_depth": 8, "eta": 0.02, "early_stopping_rounds": 150 },
+  "should_stop": false,
+  "rationale": "Depth scan complete: depth 8/6/4 -> val 0.16350/0.16402/0.16447. Deeper marginally better; full spread only 0.00097 (a tight HP-ceiling band). Depth 4 deepens the underfit gap (-0.0176). XGBoost differs from _147 CatBoost (which found depth 6 the inverted-U optimum) but the differences are all sub-noise. Returning to the best depth (8) and now scanning eta: lower to 0.02 with early_stopping_rounds raised to 150 (slower learning needs longer plateaus). Early-stop has been firing at ~12-15 trees at eta=0.05 - finer learning may probe a slightly lower val ceiling. Changing eta+patience together per the HP reference."
+}

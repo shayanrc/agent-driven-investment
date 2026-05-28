@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "hp_changes": { "max_depth": 4 },
+  "should_stop": false,
+  "rationale": "Iter-1 (depth8): val_brier=0.16350 vs iter-0 (depth6) 0.16402, a -0.00052 move (borderline noise). Still NO overfit (gap=-0.0082), clean calibration (z=-0.56), early-stop ~15 trees. Reproduces run-1 exactly (determinism confirmed). Completing the depth scan: max_depth=4 (shallow end) to characterize the depth ridge {4,6,8} and confirm whether val_brier sits in a flat ceiling band."
+}

@@ -1,0 +1,6 @@
+{
+  "iter": 4,
+  "hp_changes": { "lambda": 3.0, "min_child_weight": 1.0, "colsample_bytree": 0.7 },
+  "should_stop": false,
+  "rationale": "Iter-4 (heavy reg: lambda10 + mcw20): val_brier=0.16461, the worst HP config yet (+0.00111 vs best). As the no-overfit gate predicted, heavy regularization HURT - it widened the underfit gap to -0.0215 and collapsed the active set (240 feats below floor, concentrating on garman_klass_200=12.17). Reg axis confirmed neutral-to-harmful (the _147 lesson). Now the last tunable axis: garman_klass_200 dominates every config (one-feature-dominance, HP-ref rubric #6). Return reg to baseline (lambda3, mcw1) and set colsample_bytree=0.7 to force tree diversity / decorrelate the dominant feature. If val stays in the ceiling band, the dominance is real signal not a tree-correlation artifact."
+}

@@ -1,0 +1,90 @@
+{
+  "id": "_149",
+  "title": "Investigation B — agent-driven FS+HP loop on XGBoost (nifty50 H=25)",
+  "date": "2026-05-29",
+  "branch": "invB-nifty50-h25-xgboost-loop",
+  "cell": {
+    "universe": "nifty50",
+    "direction": "up",
+    "threshold_pct": 10,
+    "horizon_days": 25,
+    "max_drawdown": 0.05
+  },
+  "backend": "xgboost",
+  "xgboost_version": "3.2.0",
+  "callback_mode": "agent_file_protocol",
+  "spec": "configs/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml",
+  "run_dir": "results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance",
+  "data": {
+    "n_tickers_used": 46,
+    "n_tickers_excluded": 4,
+    "split": "800/400/200/100",
+    "uniqueness_weighting": true,
+    "overlap_inflation": 49.0,
+    "prevalence_by_segment": {"train": 0.280, "val": 0.204, "eval": 0.133},
+    "prevalence_drift_train_minus_eval": 0.147
+  },
+  "loop": {
+    "n_configs_explored": 6,
+    "inner_stop_signal": "agent_should_stop",
+    "best_iteration": 1,
+    "max_iterations": 10,
+    "hp_ceiling_band_val_brier": [0.16350, 0.16461],
+    "hp_ceiling_spread": 0.00111,
+    "best_improvement_over_baseline": 0.00052,
+    "no_overfit_baseline_gap": -0.011859,
+    "iterations": [
+      {"iter": 0, "lever": "baseline depth6 eta0.05 lambda3.0", "val_brier": 0.16402, "train_val_gap": -0.011859, "early_stop": 13},
+      {"iter": 1, "lever": "max_depth=8", "val_brier": 0.16350, "train_val_gap": -0.008154, "early_stop": 15},
+      {"iter": 2, "lever": "max_depth=4", "val_brier": 0.16447, "train_val_gap": -0.017587, "early_stop": 12},
+      {"iter": 3, "lever": "depth8 eta=0.02 es=150", "val_brier": 0.16367, "train_val_gap": -0.013406, "early_stop": 29},
+      {"iter": 4, "lever": "depth8 lambda=10 min_child_weight=20", "val_brier": 0.16461, "train_val_gap": -0.021542, "early_stop": 20},
+      {"iter": 5, "lever": "depth8 colsample_bytree=0.7", "val_brier": 0.16351, "train_val_gap": -0.012335, "early_stop": 12}
+    ]
+  },
+  "final_config": {
+    "max_depth": 8,
+    "eta": 0.05,
+    "lambda": 3.0,
+    "subsample": 0.8,
+    "colsample_bytree": 1.0,
+    "grow_policy": "depthwise",
+    "n_estimators": 1000,
+    "early_stopping_rounds": 75,
+    "n_features_final": 279,
+    "features_pruned": 0
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "isotonic",
+    "spiegelhalter_z": -3.893,
+    "spiegelhalter_p": 9.9e-05
+  },
+  "metrics": {
+    "eval": {"base_rate": 0.1325, "brier": 0.11447, "brier_baseline": 0.11494, "improvement": 0.00048, "roc_auc": 0.65757, "weighted_r_precision": 0.3175, "weighted_r_precision_lift": 2.304, "p_at_k": {"1": 0.2133, "5": 0.2584, "10": 0.3247}},
+    "test": {"base_rate": 0.1791, "brier": 0.14079, "brier_baseline": 0.14704, "improvement": 0.00625, "roc_auc": 0.65614, "weighted_r_precision": 0.4078, "weighted_r_precision_lift": 2.078, "p_at_k": {"1": 0.2571, "5": 0.3815, "10": 0.3930}}
+  },
+  "tolerance_verdict": {
+    "reproduces_147_within_tolerance": true,
+    "compound_rule_verdict": "SIGNAL (AUC-visible)",
+    "auc_same_side_of_null_band": true,
+    "r_precision_lift_comparable": true,
+    "calibration_outcome_class_consistent": true,
+    "documented_differences": [
+      "depth optimum is depth-8 (XGBoost) vs depth-6 (CatBoost _147) - expected HP-ceiling difference, both sub-noise",
+      "monotone_constraints out of XGBoost FS+HP decision schema by V1.2 design - _147 monotone arc N/A",
+      "calibration ships isotonic (|Z|=3.89) vs CatBoost _147 tree-count-sensitive native/isotonic flip"
+    ]
+  },
+  "comparison_to_sweep_mode_a6_148": {
+    "reference": "docs/gbdt/_148_xgboost_a6_replication.md (default callback, depth 6)",
+    "a6_eval_auc": 0.592,
+    "this_eval_auc": 0.658,
+    "a6_eval_r_precision_lift": 1.97,
+    "this_eval_r_precision_lift": 2.304,
+    "a6_test_r_precision_lift": 2.04,
+    "this_test_r_precision_lift": 2.078,
+    "note": "agent-driven loop moved to depth 8 (best-on-val); eval ranking notably stronger than the fixed depth-6 default callback; test matches; same SIGNAL verdict + isotonic outcome"
+  },
+  "wall_time_total_sec": 532.8
+}

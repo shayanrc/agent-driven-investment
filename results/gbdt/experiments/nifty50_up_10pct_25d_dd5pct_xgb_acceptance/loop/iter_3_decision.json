@@ -1,0 +1,6 @@
+{
+  "iter": 3,
+  "hp_changes": { "eta": 0.05, "early_stopping_rounds": 75, "lambda": 10.0, "min_child_weight": 20.0 },
+  "should_stop": false,
+  "rationale": "Iter-3 (depth8, eta0.02): val_brier=0.16367, essentially tied with depth8/eta0.05 (0.16350), a +0.00017 regression (noise). Lower eta did NOT lower the ceiling - early-stop just moved 15->29 trees (same ~0.6 effective learning units). eta is on the ceiling. Now mapping the regularization axis (the brief wants depth+eta+reg covered): return to best config (depth8, eta0.05, patience75) and raise L2 lambda 3->10 plus min_child_weight 1->20. The no-overfit gate predicts reg will be neutral-to-slightly-worse on val (it can only smooth an already-non-overfit model); confirming that closes the reg axis of the HP-ceiling map."
+}
