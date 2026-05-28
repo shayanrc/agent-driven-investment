@@ -387,6 +387,7 @@ def _resolve_callback(
     artifact_dir: Path | None = None,
     loop_state_sink: dict | None = None,
     max_iterations: int = 8,
+    cell: dict | None = None,
 ):
     """Select the FS+HP iteration callback from ``backend.fs_hp_loop`` config.
 
@@ -418,6 +419,7 @@ def _resolve_callback(
             artifact_dir=artifact_dir,
             loop_state_sink=loop_state_sink,
             max_iterations=max_iterations,
+            cell=cell,
         )
     # Unreachable when the spec passed _validate_spec, but defend anyway.
     raise ValueError(
@@ -431,6 +433,7 @@ def _make_agent_file_protocol_callback(
     artifact_dir: Path | None,
     loop_state_sink: dict | None,
     max_iterations: int,
+    cell: dict | None = None,
 ):
     """Build the exit-and-resume callback (plan § 0).
 
@@ -450,13 +453,19 @@ def _make_agent_file_protocol_callback(
             )
         state = dict(loop_state_sink)
         iter_n = int(state["iter_idx"])
-        # (1) request bundle (Phase 2: the in-memory DiagnosticBundle).
+        # (1) request bundle (Phase 3: the diagnose.json-shaped payload built
+        # in-memory from this iteration's DiagnosticBundle — reuses the
+        # /gbdt-diagnose pure helpers, no matrix rebuild). ``artifact_dir`` +
+        # ``cell`` are surfaced so the agent can run the full on-disk diagnose
+        # for the matrix-dependent analyses (plan § 0.5).
         req_payload = loop_protocol.build_request_bundle(
             bundle,
             iter_n=iter_n,
             run_id=run_id,
             max_iterations=int(state.get("max_iterations", max_iterations)),
             available_features=list(current_features),
+            artifact_dir=artifact_dir,
+            cell=cell,
         )
         req_path = loop_protocol.write_request(artifact_dir, iter_n, req_payload)
         # (2) resume checkpoint — full loop state, no model blobs.
@@ -771,6 +780,11 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         artifact_dir=out_dir,
         loop_state_sink=loop_state_sink,
         max_iterations=int(max_iter),
+        cell={
+            k: target.get(k)
+            for k in ("universe", "direction", "threshold_pct",
+                      "horizon_days", "max_drawdown")
+        },
     )
 
     heartbeat.set_phase("loop")

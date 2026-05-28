@@ -20,8 +20,13 @@ This module is the Phase 2 control-flow primitives, kept pure (no imports from
 - :func:`apply_decision` — turns a validated decision into the
   ``(features, hp)`` pair that seeds the next iteration.
 
-Phase 2 writes a **minimal** request bundle (the in-memory ``DiagnosticBundle``).
-Phase 3 swaps it for ``diagnose.json`` from ``/gbdt-diagnose`` — not wired here.
+Phase 2 wrote a **minimal** request bundle (the in-memory ``DiagnosticBundle``
+dumped under ``diagnostics``). **Phase 3** (``docs/gbdt/V1.1_...plan.md`` § 0 Q5)
+swaps that payload for the richer ``diagnose.json``-*shaped* dict — assembled
+in-memory by :func:`gbdt.diagnose_payload.build_diagnose_payload` (which reuses
+the ``/gbdt-diagnose`` pure helpers; it does NOT rebuild the in-sample matrix or
+re-fit PDPs). The loop-control envelope (``schema_version``, ``run_id``,
+``iter``, ``max_iterations``, ``available_features``) is unchanged.
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from gbdt.checkpoint import _LOOP_SUBDIR
+from gbdt.diagnose_payload import build_diagnose_payload
 from gbdt.model import ENUM_HP_VALUES, PINNED_HPS, TUNABLE_HP_RANGES
 
 # Bumped on any breaking change to the request/decision file shapes
@@ -87,7 +93,7 @@ def decision_path(artifact_dir: str | Path, iter_n: int) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Request bundle (Phase 2: minimal — the in-memory DiagnosticBundle)
+# Request bundle (Phase 3: diagnose.json-shaped — reuses /gbdt-diagnose logic)
 # ---------------------------------------------------------------------------
 
 
@@ -98,25 +104,53 @@ def build_request_bundle(
     run_id: str,
     max_iterations: int,
     available_features: list[str],
+    artifact_dir: str | Path | None = None,
+    cell: dict | None = None,
+    val_predictions: Any = None,
 ) -> dict:
-    """Assemble the minimal per-iteration request the agent reads.
+    """Assemble the per-iteration request the agent reads.
 
-    Phase 2 wraps the in-memory :class:`~gbdt.diagnostics.DiagnosticBundle`
-    (``bundle.to_dict()``) with the loop-control envelope the agent needs to
-    write a decision: the iteration index, the budget, and the **currently
-    available feature names** (so a ``prune_features`` decision can be
-    validated as a subset). Phase 3 replaces ``diagnostics`` with the richer
-    ``diagnose.json`` payload — the envelope stays.
+    The loop-control **envelope** the agent needs to write a decision is
+    unchanged from Phase 2: the iteration index, the budget, and the currently
+    available feature names (so a ``prune_features`` decision can be validated
+    as a subset). **Phase 3** replaces the ``diagnostics`` payload: instead of a
+    raw :meth:`DiagnosticBundle.to_dict` dump it now carries the richer
+    ``diagnose.json``-*shaped* dict from
+    :func:`gbdt.diagnose_payload.build_diagnose_payload`.
+
+    That payload reuses the ``/gbdt-diagnose`` pure helpers (overfit read,
+    prevalence-drift flag, per-day P@k with the ``min(R(d), k)`` denominator,
+    per-day variable-K R-precision, prediction-range, tuning-guidance lines) and
+    is assembled purely from the in-memory iteration state — it does NOT rebuild
+    the in-sample matrix or re-fit PDPs (those matrix-dependent analyses stay in
+    the on-disk ``/gbdt-diagnose`` reachable via ``artifact_dir``; plan § 0.5).
+
+    ``artifact_dir`` / ``cell`` / ``val_predictions`` are optional extra context
+    threaded through to the payload (the in-loop callback passes ``artifact_dir``
+    + ``cell``; ``val_predictions`` stays ``None`` in-loop because the runner
+    only carves calibrated predictions over the best checkpoint at
+    finalization). When ``bundle`` is not a real ``DiagnosticBundle`` (a raw dict
+    passed through), it is embedded verbatim under ``diagnostics``.
     """
+    if hasattr(bundle, "importance_native") or hasattr(bundle, "val_brier"):
+        diagnostics = build_diagnose_payload(
+            bundle,
+            artifact_dir=str(artifact_dir) if artifact_dir is not None else None,
+            cell=cell,
+            val_predictions=val_predictions,
+        )
+    else:
+        # Defensive: a plain dict / already-serialized payload passes through.
+        diagnostics = bundle.to_dict() if hasattr(bundle, "to_dict") else bundle
     return {
         "schema_version": REQUEST_SCHEMA_VERSION,
         "run_id": str(run_id),
         "iter": int(iter_n),
         "max_iterations": int(max_iterations),
         "available_features": list(available_features),
-        # The DiagnosticBundle the callback already receives. ``to_dict`` is
-        # NaN/Inf-safe + JSON-serializable.
-        "diagnostics": bundle.to_dict() if hasattr(bundle, "to_dict") else bundle,
+        # Phase 3: diagnose.json-shaped payload (NaN/Inf-safe, JSON-serializable
+        # via build_diagnose_payload's _json_safe coercion).
+        "diagnostics": diagnostics,
     }
 
 
