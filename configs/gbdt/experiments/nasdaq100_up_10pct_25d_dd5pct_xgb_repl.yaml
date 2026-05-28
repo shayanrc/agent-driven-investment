@@ -1,0 +1,65 @@
+# V1.2 Phase 7 — A6 replication gate (XGBoost backend), cross-market H=25 cell.
+#
+# Cell: nasdaq100 UP +10% within 25 trading days, max_drawdown 5%.
+# This is the >=1 H=25 CROSS-MARKET replication cell required by A6 (plan § 2.2 /
+# § 8 Phase 7): the same cell the CatBoost spec nasdaq100_up_10pct_25d_dd5pct.yaml
+# ran (from the memo-#138 H=25 cross-market corpus). Phase 7 reruns it on XGBoost
+# to confirm the XGBoost backend reproduces the documented CatBoost conclusions
+# within tolerance (A6): calibration story, AUC + weighted R-precision lift, and
+# signal/null verdict under the compound rule. Replication is on FINDINGS, not
+# bit-identical numbers, and does NOT require XGBoost to beat CatBoost.
+#
+# Pairing the nifty50 `_147` cell (the answer key) with this cross-market cell is
+# the A6 minimum replication set: a backend that reproduces an NSE cell but flips
+# a US-market verdict (or vice versa) is information about where the divergence
+# lives. If either fails to reproduce -> STOP and investigate before Phase 8.
+#
+# Sweep-mode run (NOT the agent_file_protocol loop): callback_mode is left unset,
+# so walk_forward_train uses its built-in algorithmic FS+HP fallback. No
+# per-iteration agent. max_iterations: 3 — a screening budget matching the
+# original CatBoost nasdaq100 sweep cell.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05                              # numeric, e.g. 0.05 not "5%" (same as the CatBoost nasdaq100 cell)
+
+# split omitted - default 800/400/200/100 (train/val/eval/test) per ticker.
+# features omitted - start with the full 279-column candidate pool; the loop prunes.
+
+backend:
+  library: xgboost                                # V1.2 Phase 7 — XGBoost backend (validated against the *_XGB HP tables).
+  calibration_method: conditional_isotonic        # Spiegelhalter Z on val -> ship native or isotonic. Backend-neutral path.
+
+  # XGBoost iteration-0 HPs — identical to the nifty50 replication cell so the
+  # two cells differ only in the universe/market (clean cross-market control).
+  # CatBoost depth-6 / lr-0.05 / 1000-tree / early-stop-75 baseline translated to
+  # XGBoost names (plan § 5.2 / § 6.3). Determinism pins listed explicitly to
+  # self-document the contract; they match PINNED_HPS_XGB so they are no-ops, not
+  # overrides (an override would hard-fail at construction — plan D5 / § 5.1).
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 6
+    lambda: 3.0                                   # L2 <-> CatBoost l2_leaf_reg 3.0
+    subsample: 0.8
+    colsample_bytree: 1.0                         # <-> CatBoost rsm 1.0
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic                    # PINNED_HPS_XGB (<-> CatBoost Logloss); no-op match
+    eval_metric: logloss                          # PINNED_HPS_XGB (Brier computed in the bundle); no-op match
+    tree_method: exact                            # PINNED_HPS_XGB determinism pin; no-op match
+    n_jobs: 1                                     # PINNED_HPS_XGB determinism pin; no-op match
+    device: cpu                                   # PINNED_HPS_XGB determinism pin; no-op match
+
+  fs_hp_loop:
+    # NO callback_mode -> sweep mode (built-in algorithmic FS+HP fallback, no agent).
+    max_iterations: 3                             # screening budget, matches the original CatBoost nasdaq100 sweep cell.
+    plateau_threshold: 0.005                      # default - 0.5% absolute val Brier improvement floor.
+    degradation_gate: 0.01                        # default - 1% degrade from best-seen val Brier triggers stop.
+
+random_seed: 42
