@@ -1,0 +1,79 @@
+# Investigation A — monotone-constraint PROBE (CatBoost).
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5% (the _147 cell).
+# Purpose: make the `monotone_contraindicated` acceptance check evaluable. The
+# agent_file_protocol resume-decision path REJECTS `monotone_constraints` (it is
+# not a whitelisted tunable/enum HP in model.TUNABLE_HP_RANGES/ENUM_HP_VALUES —
+# see loop_protocol.validate_decision), so a monotone ablation cannot be threaded
+# through the live loop. The documented escape hatch is `backend.hp_starting`,
+# where unknown keys flow through _validate_hp -> CatBoostClassifier untouched.
+#
+# This probe fits ONE config: the loop's best config (depth 8 / lr 0.05 over the
+# full 279-feature pool) PLUS monotone_constraints +1 on the 30 clean volatility
+# estimators — the canonical _147 monotone test (rule 4 of the tuning playbook).
+# Expectation: neutral-to-harmful vs the unconstrained best (0.16326), because
+# this cell's signal lives in vol x regime conditional interactions that
+# tree-structure-level monotonicity degrades.
+#
+# Run as agent_file_protocol so the runner trains iter 0, writes the bundle, and
+# pauses — its val_brier is then appended (as the monotone iter) to the main
+# run's reconstructed iterations.jsonl so the checker can evaluate the
+# contraindication. Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      realized_vol_5: 1
+      realized_vol_10: 1
+      realized_vol_20: 1
+      realized_vol_50: 1
+      realized_vol_100: 1
+      realized_vol_200: 1
+      index_vol_5: 1
+      index_vol_10: 1
+      index_vol_20: 1
+      index_vol_50: 1
+      index_vol_100: 1
+      index_vol_200: 1
+      parkinson_5: 1
+      parkinson_10: 1
+      parkinson_20: 1
+      parkinson_50: 1
+      parkinson_100: 1
+      parkinson_200: 1
+      garman_klass_5: 1
+      garman_klass_10: 1
+      garman_klass_20: 1
+      garman_klass_50: 1
+      garman_klass_100: 1
+      garman_klass_200: 1
+      vol_of_vol_5: 1
+      vol_of_vol_10: 1
+      vol_of_vol_20: 1
+      vol_of_vol_50: 1
+      vol_of_vol_100: 1
+      vol_of_vol_200: 1
+
+random_seed: 42

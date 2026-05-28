@@ -1,0 +1,6 @@
+{
+  "iter": 0,
+  "hp_changes": { "depth": 8 },
+  "should_stop": false,
+  "rationale": "Iter-0 baseline: val_brier=0.16417, train_val_gap=-0.00477 (val below train) => NO overfit, so per playbook rule 1 I will NOT prune for regularization (FS is neutral-to-harmful here). Top features are long-window vol/index-regime (vol_of_vol_200, index_vol_200, index_return_100, garman_klass_200) => interaction-driven cell. Start the depth response-curve scan by deepening 6->8 (upper arm). Hold lr/reg/features fixed (one attributable change per iter, rule 6) so the depth curve is clean. Expect an inverted-U with depth 6 likely optimal."
+}

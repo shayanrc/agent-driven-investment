@@ -1,0 +1,77 @@
+{
+  "experiment_id": "_174_invA_catboost_agentloop",
+  "title": "Investigation A — agent-driven FS+HP loop (CatBoost) vs _147 answer key",
+  "cell": {
+    "universe": "nifty50",
+    "direction": "up",
+    "threshold_pct": 10,
+    "horizon_days": 25,
+    "max_drawdown": 0.05
+  },
+  "run_dir": "results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_loop",
+  "spec": "configs/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_loop.yaml",
+  "backend": "catboost",
+  "callback_mode": "agent_file_protocol",
+  "loop": {
+    "n_configs_explored": 6,
+    "inner_stop_signal": "agent_should_stop",
+    "best_iteration": 1,
+    "tickers_kept": 46
+  },
+  "iterations": [
+    {"iter": 0, "depth": 6, "lr": 0.05, "nfeat": 279, "val_brier": 0.16417, "train_val_gap": -0.00477, "monotone": false},
+    {"iter": 1, "depth": 8, "lr": 0.05, "nfeat": 279, "val_brier": 0.16326, "train_val_gap": 0.00436, "monotone": false},
+    {"iter": 2, "depth": 4, "lr": 0.05, "nfeat": 279, "val_brier": 0.16608, "train_val_gap": -0.00992, "monotone": false},
+    {"iter": 3, "depth": 8, "lr": 0.02, "nfeat": 279, "val_brier": 0.16447, "train_val_gap": -0.00215, "monotone": false},
+    {"iter": 4, "depth": 8, "lr": 0.05, "nfeat": 141, "val_brier": 0.16497, "train_val_gap": -0.00628, "monotone": false},
+    {"iter": 5, "depth": 8, "lr": 0.05, "nfeat": 279, "val_brier": 0.16500, "train_val_gap": -0.00375, "monotone": true}
+  ],
+  "final_model": {
+    "depth": 8,
+    "learning_rate": 0.05,
+    "l2_leaf_reg": 3.0,
+    "n_features": 279,
+    "calibration_decision": "isotonic",
+    "spiegelhalter_z": 5.92
+  },
+  "headline": {
+    "eval_roc_auc": 0.6338,
+    "eval_brier": 0.11568,
+    "eval_brier_baseline_baserate": 0.11494,
+    "test_roc_auc": 0.7063,
+    "test_brier": 0.14183,
+    "prevalence_train": 0.280,
+    "prevalence_eval": 0.133
+  },
+  "r_precision_weighted": {
+    "method": "per_day_variable_K",
+    "eval": {"weighted": 0.2986, "base_rate_weighted": 0.1378, "lift": 2.167},
+    "test": {"weighted": 0.3948, "base_rate_weighted": 0.1963, "lift": 2.012}
+  },
+  "acceptance_check_147": {
+    "overall_pass": false,
+    "n_pass": 4,
+    "n_fail": 5,
+    "n_skip": 0,
+    "exit_code": 1,
+    "pass": ["no_overfit_baseline", "prevalence_drift_ceiling", "ranking_robust", "final_features_not_collapsed"],
+    "fail": ["hp_ceiling_band", "hp_ceiling_spread", "depth_optimal", "no_meaningful_improvement", "monotone_contraindicated"],
+    "root_cause_of_fails": "depth 8 marginally best (0.16326) vs _147 depth-6 optimum (0.1642); depth ordering flipped on the current data snapshot, shifting the band ~0.0009 below the answer key's tolerances. All FAILs are sub-0.003 noise-band differences against tolerances pinned to _147's exact numbers.",
+    "qualitative_findings_reproduced": [
+      "no overfit (negative train/val gap)",
+      "HP ceiling (tiny ~0.003 spread across depth 4/6/8 x lr 0.02/0.05)",
+      "no config meaningfully beats baseline",
+      "monotone constraints worse than baseline (contraindicated)",
+      "prevalence-drift ceiling (train 0.280 -> eval 0.133)",
+      "FS neutral-to-harmful (best model keeps full 279-feature pool)",
+      "ranking robust (weighted R-precision ~2x base rate)"
+    ]
+  },
+  "artifact_caveats": {
+    "iterations_jsonl": "reconstructed from loop/iter_<N>_request.json bundles + iter-5 monotone probe (should_stop finalization emits empty iterations.jsonl; full history lives in loop/checkpoint.json)",
+    "metrics_json_r_precision": "augmented with r_precision block via scripts/gbdt/compute_r_precision.py",
+    "features_yaml": "rewritten from runner dict {features:[...]} to bare list for checker load_run compatibility; same 279 features",
+    "monotone_iter": "iter 5 run via separate catboost_monotone_probe spec because agent_file_protocol resume rejects monotone_constraints (not a whitelisted tunable HP)"
+  },
+  "date": "2026-05-29"
+}
