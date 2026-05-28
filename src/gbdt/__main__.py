@@ -27,6 +27,7 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
 from gbdt import data as gbdt_data
 from gbdt import features as gbdt_features
+from gbdt.heartbeat import Heartbeat
 from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
@@ -391,6 +392,12 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     print(f"[experiment] start spec={spec_path.name} -> {out_dir}", flush=True)
     t0 = time.time()
 
+    # Liveness heartbeat: emits [heartbeat] lines on a fixed cadence so a
+    # stalled run is detectable (a stale heartbeat = wedged process) without a
+    # tight timeout. Daemon thread — dies with the process; stopped explicitly
+    # on the normal path below. Disable via GBDT_HEARTBEAT_INTERVAL=0.
+    heartbeat = Heartbeat.from_env().start()
+
     # -------- Phase 1: data --------
     target = spec["target"]
     dr = spec.get("date_range", {}) or {}
@@ -403,6 +410,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     )
     min_rows = split_d.get("min_rows_per_ticker", split.total)
 
+    heartbeat.set_phase("data")
     print(f"[data] start universe={target['universe']}", flush=True)
     t1 = time.time()
     data_cfg = spec.get("data", {}) or {}
@@ -451,6 +459,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         print(f"[data] WARNING: {test_split_warning}", flush=True)
 
     # -------- Phase 2: features --------
+    heartbeat.set_phase("features")
     print("[features] start", flush=True)
     t1 = time.time()
     fcfg = spec.get("features", {}) or {}
@@ -468,6 +477,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     print(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}", flush=True)
 
     # -------- Phase 3: target --------
+    heartbeat.set_phase("target")
     print("[target] start", flush=True)
     t1 = time.time()
     y = build_target(
@@ -486,6 +496,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     # reproducing pre-PR results / measuring the overlap-bias delta.
     uniqueness_on = bool(target.get("uniqueness_weighting", True))
     if uniqueness_on:
+        heartbeat.set_phase("uniqueness")
         print("[uniqueness] start", flush=True)
         t1 = time.time()
         sample_weights = compute_uniqueness_weights(
@@ -512,6 +523,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     cal_z_thr = backend.get("calibration_z_threshold", 2.0)
     seed = spec.get("random_seed", 42)
 
+    heartbeat.set_phase("loop")
     print(f"[loop] start max_iter={loop_cfg.get('max_iterations', 8)}", flush=True)
     t1 = time.time()
     result = walk_forward_train(
@@ -530,6 +542,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
            flush=True)
 
     # -------- Phase 5: artifact emit --------
+    heartbeat.set_phase("artifact")
     print("[artifact] start", flush=True)
     t1 = time.time()
 
@@ -733,6 +746,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     render_report(out_dir)
 
     print(f"[artifact] complete in {time.time()-t1:.1f}s -> {out_dir}", flush=True)
+    heartbeat.stop()
     print(f"[experiment] complete in {time.time()-t0:.1f}s", flush=True)
     return out_dir
 
