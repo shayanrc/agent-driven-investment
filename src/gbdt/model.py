@@ -47,7 +47,28 @@ from catboost import CatBoostClassifier, Pool
 
 
 # ---------------------------------------------------------------------------
-# HP validation (CatBoost)
+# HP validation tables (backend-conditional — V1.2 Phase 2 / plan D3)
+# ---------------------------------------------------------------------------
+#
+# The HP vocabularies for the two backends are genuinely different
+# (``depth``↔``max_depth``, ``learning_rate``↔``eta``, ``l2_leaf_reg``↔``lambda``,
+# ``rsm``↔``colsample_bytree``, …) and XGBoost has **no ``has_time`` analogue**.
+# Per V1.2 plan decision D3 we deliberately reject a lossy canonical
+# cross-backend HP vocabulary in favour of **sibling ``*_XGB`` tables** + a
+# :func:`hp_tables_for` resolver, so each backend reads its own HP reference doc
+# (``CATBOOST_HP_REFERENCE.md`` / ``XGBOOST_HP_REFERENCE.md``) and the agent
+# always requests names from the backend it is actually tuning.
+#
+# Phase 2 ships the **name-mapping data + the resolver + backend-aware
+# validation**. The XGBoost *model adapter*, the ``xgboost`` dependency, and the
+# determinism hard-fail (``tree_method``/``n_jobs``/``device`` enforcement on
+# ``PINNED_HPS_XGB``) land in later V1.2 phases (§ 8 Phases 1/3); the pins below
+# are recorded as table *data* (so ``validate_decision`` rejects an agent
+# request to change them) but are not yet enforced at model construction.
+
+
+# ---------------------------------------------------------------------------
+# HP validation tables — CatBoost
 # ---------------------------------------------------------------------------
 
 
@@ -93,14 +114,108 @@ PINNED_HPS: dict[str, Any] = {
 }
 
 
-def _validate_hp(hp: dict) -> dict:
-    """Return a copy of ``hp`` with pinned HPs applied and tunable HPs
-    range-checked. Raise ``ValueError`` on the first violation.
+# ---------------------------------------------------------------------------
+# HP validation tables — XGBoost (sibling tables; V1.2 plan D3 / § 5.2)
+# ---------------------------------------------------------------------------
+
+
+# Source: docs/gbdt/XGBOOST_HP_REFERENCE.md per-parameter "Range/values".
+# CatBoost↔XGBoost name mapping (project-xgboost-training-essentials § 2):
+#   depth↔max_depth, learning_rate↔eta, l2_leaf_reg↔lambda/reg_lambda,
+#   (L1) reg_alpha/alpha, min_data_in_leaf↔min_child_weight (loosely),
+#   gamma/min_split_loss, subsample, rsm↔colsample_bytree, border_count↔max_bin.
+# There is deliberately **no ``has_time`` analogue** — XGBoost has no
+# ordered-boosting concept, so the walk-forward C6 guarantee rests on the split
+# discipline alone (plan § 5.3). Tuples (min, max) are inclusive bounds; None
+# means "no enforced upper bound."
+TUNABLE_HP_RANGES_XGB: dict[str, tuple[float, float | None]] = {
+    "n_estimators": (1, 20_000),               # ↔ catboost iterations
+    "eta": (1e-4, 1.0),                         # ↔ learning_rate
+    "max_depth": (1, 16),                       # ↔ depth
+    "min_child_weight": (0.0, 1_000.0),         # ↔ min_data_in_leaf (loosely)
+    "lambda": (0.0, 100.0),                     # L2 ↔ l2_leaf_reg
+    "alpha": (0.0, 100.0),                      # L1 (no clean CatBoost analog)
+    "gamma": (0.0, 100.0),                      # min split loss
+    "subsample": (0.05, 1.0),
+    "colsample_bytree": (0.05, 1.0),            # ↔ rsm
+    "colsample_bylevel": (0.05, 1.0),
+    "colsample_bynode": (0.05, 1.0),
+    "max_leaves": (0, 64),                      # 0 = no limit (lossguide)
+    "early_stopping_rounds": (1, 5_000),
+    "scale_pos_weight": (1e-4, 1_000.0),
+    "max_bin": (2, 65_535),                     # ↔ border_count
+}
+
+ENUM_HP_VALUES_XGB: dict[str, tuple[str, ...]] = {
+    "grow_policy": ("depthwise", "lossguide"),
+    "sampling_method": ("uniform", "gradient_based"),
+}
+
+# Pinned: never overridable from a spec. For XGBoost the load-bearing pins are
+# the determinism knobs (``tree_method``/``n_jobs``/``device``) that replace
+# ``has_time``'s "never-override" role (plan § 5.1/§ 5.3). Phase 2 records these
+# as table *data* so :func:`validate_decision` rejects an agent request to change
+# them; the construction-time **hard-fail** enforcement (``_validate_hp_xgb``) is
+# Phase 3 (plan § 8). ``seed`` is set from ``random_seed`` at construction, like
+# CatBoost's ``random_seed`` — so it is not listed as a fixed-value pin here.
+PINNED_HPS_XGB: dict[str, Any] = {
+    "objective": "binary:logistic",            # ↔ Logloss
+    "eval_metric": "logloss",                   # Brier computed in the bundle
+    "tree_method": "exact",                     # determinism (plan § 5.1)
+    "n_jobs": 1,                                # determinism
+    "device": "cpu",                            # determinism
+}
+
+
+# Backend → (tunable ranges, enum values, pinned) table triple.
+_HP_TABLES: dict[str, tuple[dict, dict, dict]] = {
+    "catboost": (TUNABLE_HP_RANGES, ENUM_HP_VALUES, PINNED_HPS),
+    "xgboost": (TUNABLE_HP_RANGES_XGB, ENUM_HP_VALUES_XGB, PINNED_HPS_XGB),
+}
+
+# Per-backend HP reference doc, surfaced in validation error messages so the
+# agent is pointed at the right doc when it requests an out-of-vocab / out-of-
+# range HP.
+_HP_REFERENCE_DOC: dict[str, str] = {
+    "catboost": "docs/gbdt/CATBOOST_HP_REFERENCE.md",
+    "xgboost": "docs/gbdt/XGBOOST_HP_REFERENCE.md",
+}
+
+
+def hp_tables_for(backend: str) -> tuple[dict, dict, dict]:
+    """Return ``(tunable_ranges, enum_values, pinned)`` for ``backend``.
+
+    The single dispatch point for the backend-conditional HP-name tables
+    (V1.2 plan D3). ``"catboost"`` returns the existing CatBoost tables
+    (unchanged behaviour); ``"xgboost"`` returns the ``*_XGB`` siblings. Any
+    other backend raises :class:`ValueError`.
+
+    The returned dicts are the module-level singletons — callers must not mutate
+    them (they are read-only validation references).
     """
+    try:
+        return _HP_TABLES[backend]
+    except KeyError:
+        raise ValueError(
+            f"unknown backend {backend!r}; HP tables exist for "
+            f"{sorted(_HP_TABLES)} only."
+        ) from None
+
+
+def _validate_hp(hp: dict, backend: str = "catboost") -> dict:
+    """Return a copy of ``hp`` with pinned HPs applied and tunable HPs
+    range-checked against ``backend``'s tables. Raise ``ValueError`` on the
+    first violation.
+
+    ``backend`` defaults to ``"catboost"`` so every existing caller (and the
+    ``GBDTModel`` alias) behaves byte-for-byte as before the V1.2 seam.
+    """
+    tunable, enum_values, pinned = hp_tables_for(backend)
+    doc = _HP_REFERENCE_DOC.get(backend, "the backend HP reference")
     out = dict(hp)
 
     # Reject overrides on pinned HPs (except matching value, which is a no-op).
-    for k, v in PINNED_HPS.items():
+    for k, v in pinned.items():
         if k in out and out[k] != v:
             raise ValueError(
                 f"{k!r} is pinned to {v!r} in v1 and cannot be overridden "
@@ -109,7 +224,7 @@ def _validate_hp(hp: dict) -> dict:
         out[k] = v
 
     # Numeric range checks
-    for k, (lo, hi) in TUNABLE_HP_RANGES.items():
+    for k, (lo, hi) in tunable.items():
         if k not in out or out[k] is None:
             continue
         v = out[k]
@@ -117,7 +232,7 @@ def _validate_hp(hp: dict) -> dict:
             if not (lo <= v <= hi):
                 raise ValueError(
                     f"HP {k}={v} is outside the documented range [{lo}, {hi}] "
-                    f"(see docs/gbdt/CATBOOST_HP_REFERENCE.md)."
+                    f"(see {doc})."
                 )
         else:
             if v < lo:
@@ -126,13 +241,13 @@ def _validate_hp(hp: dict) -> dict:
                 )
 
     # Enum checks
-    for k, allowed in ENUM_HP_VALUES.items():
+    for k, allowed in enum_values.items():
         if k not in out or out[k] is None:
             continue
         if out[k] not in allowed:
             raise ValueError(
                 f"HP {k}={out[k]!r} is not one of {allowed}; "
-                f"see docs/gbdt/CATBOOST_HP_REFERENCE.md."
+                f"see {doc}."
             )
 
     return out
@@ -509,7 +624,11 @@ __all__ = [
     "CatBoostModel",
     "GBDTModel",
     "make_model",
+    "hp_tables_for",
     "PINNED_HPS",
     "TUNABLE_HP_RANGES",
     "ENUM_HP_VALUES",
+    "PINNED_HPS_XGB",
+    "TUNABLE_HP_RANGES_XGB",
+    "ENUM_HP_VALUES_XGB",
 ]

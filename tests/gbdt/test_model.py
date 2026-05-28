@@ -1,4 +1,10 @@
-"""Stage 4 — CatBoost wrapper tests."""
+"""Stage 4 — CatBoost wrapper tests.
+
+V1.2 Phase 2 (``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md`` § 8 / D3)
+adds the backend-conditional HP-name tables + the :func:`hp_tables_for` resolver;
+the CatBoost-path tests above must stay byte-for-byte green (the default
+``backend="catboost"`` path is unchanged).
+"""
 
 from __future__ import annotations
 
@@ -6,7 +12,17 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gbdt.model import GBDTModel, PINNED_HPS
+from gbdt.model import (
+    ENUM_HP_VALUES,
+    ENUM_HP_VALUES_XGB,
+    PINNED_HPS,
+    PINNED_HPS_XGB,
+    TUNABLE_HP_RANGES,
+    TUNABLE_HP_RANGES_XGB,
+    GBDTModel,
+    hp_tables_for,
+)
+from gbdt.model import _validate_hp
 
 
 def _toy_dataset(n: int = 500, seed: int = 0):
@@ -98,3 +114,84 @@ def test_permutation_importance_non_negative():
     m.fit(X.iloc[:300], y[:300], X.iloc[300:], y[300:])
     imp = m.feature_importance("permutation", X.iloc[300:], y[300:])
     assert (imp >= 0).all()
+
+
+# ---------------------------------------------------------------------------
+# V1.2 Phase 2 — backend-conditional HP-name tables + hp_tables_for resolver
+# ---------------------------------------------------------------------------
+
+
+def test_hp_tables_for_catboost_returns_existing_tables():
+    """``hp_tables_for("catboost")`` returns the existing CatBoost triple,
+    unchanged — the default path is byte-for-byte identical."""
+    tunable, enum_values, pinned = hp_tables_for("catboost")
+    assert tunable is TUNABLE_HP_RANGES
+    assert enum_values is ENUM_HP_VALUES
+    assert pinned is PINNED_HPS
+    # CatBoost-only names live here; XGBoost names do not.
+    assert "depth" in tunable and "max_depth" not in tunable
+    assert "has_time" in pinned
+
+
+def test_hp_tables_for_xgboost_exposes_xgb_names():
+    """``hp_tables_for("xgboost")`` returns the *_XGB siblings: XGBoost names
+    present, CatBoost-only names absent, no ``has_time`` analogue."""
+    tunable, enum_values, pinned = hp_tables_for("xgboost")
+    assert tunable is TUNABLE_HP_RANGES_XGB
+    assert enum_values is ENUM_HP_VALUES_XGB
+    assert pinned is PINNED_HPS_XGB
+    # XGBoost names present.
+    for name in ("max_depth", "eta", "lambda", "alpha", "colsample_bytree",
+                 "min_child_weight", "gamma", "max_bin", "n_estimators"):
+        assert name in tunable, f"missing XGBoost HP {name!r}"
+    assert "grow_policy" in enum_values  # lowercase XGBoost values
+    # CatBoost-only names rejected (not in the XGBoost vocab).
+    for cb_only in ("depth", "learning_rate", "l2_leaf_reg", "iterations",
+                    "rsm", "bootstrap_type", "border_count"):
+        assert cb_only not in tunable and cb_only not in enum_values, (
+            f"CatBoost-only HP {cb_only!r} leaked into the XGBoost table"
+        )
+    # No has_time analogue on the XGBoost side; determinism pins replace it.
+    assert "has_time" not in pinned
+    for det in ("tree_method", "n_jobs", "device", "objective"):
+        assert det in pinned, f"missing XGBoost pin {det!r}"
+
+
+def test_hp_tables_for_unknown_backend_raises():
+    with pytest.raises(ValueError, match="unknown backend"):
+        hp_tables_for("lightgbm")
+
+
+def test_validate_hp_default_backend_is_catboost():
+    """``_validate_hp`` with no backend arg behaves exactly as before the seam:
+    CatBoost pins applied, CatBoost ranges enforced."""
+    out = _validate_hp({"iterations": 100, "depth": 6})
+    assert out["has_time"] is True               # CatBoost pin applied
+    assert out["loss_function"] == "Logloss"
+    # A CatBoost-only override still raises.
+    with pytest.raises(ValueError, match="has_time"):
+        _validate_hp({"iterations": 10, "has_time": False})
+
+
+def test_validate_hp_xgboost_applies_pins_and_ranges():
+    """``_validate_hp(..., backend="xgboost")`` applies XGBoost pins + ranges."""
+    out = _validate_hp({"n_estimators": 1000, "max_depth": 6, "eta": 0.05},
+                       backend="xgboost")
+    assert out["objective"] == "binary:logistic"  # XGBoost pin applied
+    assert out["tree_method"] == "exact"
+    assert out["n_jobs"] == 1 and out["device"] == "cpu"
+
+
+def test_validate_hp_xgboost_rejects_out_of_range():
+    with pytest.raises(ValueError, match="max_depth"):
+        _validate_hp({"max_depth": 50}, backend="xgboost")
+
+
+def test_validate_hp_xgboost_rejects_pinned_override():
+    with pytest.raises(ValueError, match="tree_method"):
+        _validate_hp({"tree_method": "hist"}, backend="xgboost")
+
+
+def test_validate_hp_xgboost_rejects_enum():
+    with pytest.raises(ValueError, match="grow_policy"):
+        _validate_hp({"grow_policy": "Magical"}, backend="xgboost")

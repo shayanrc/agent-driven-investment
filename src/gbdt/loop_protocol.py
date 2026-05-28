@@ -37,7 +37,7 @@ from typing import Any
 
 from gbdt.checkpoint import _LOOP_SUBDIR
 from gbdt.diagnose_payload import build_diagnose_payload
-from gbdt.model import ENUM_HP_VALUES, PINNED_HPS, TUNABLE_HP_RANGES
+from gbdt.model import hp_tables_for
 
 # Bumped on any breaking change to the request/decision file shapes
 # (plan § 12 R6). Tracks the checkpoint schema independently.
@@ -203,8 +203,7 @@ def _search_space_bounds(spec: dict | None) -> dict[str, dict]:
     Plan § 5 lets a spec carry ``backend.fs_hp_loop.search_space`` to narrow
     the canonical model.py ranges (e.g. ``learning_rate: {min, max}``). When
     absent (the common case — no shipped spec carries one) the canonical
-    :data:`~gbdt.model.TUNABLE_HP_RANGES` / :data:`~gbdt.model.ENUM_HP_VALUES`
-    are authoritative.
+    per-backend tables from :func:`~gbdt.model.hp_tables_for` are authoritative.
     """
     if not spec:
         return {}
@@ -217,6 +216,8 @@ def validate_decision(
     decision: dict,
     spec: dict | None,
     known_features: list[str],
+    *,
+    backend: str = "catboost",
 ) -> None:
     """Validate an agent decision dict in place (raises on first violation).
 
@@ -226,14 +227,24 @@ def validate_decision(
     - ``should_stop`` (if present) is a bool.
     - ``prune_features`` (if present) is a list of strings, each ⊆
       ``known_features``.
-    - ``hp_changes`` (if present) is a dict; each key is a real, tunable HP;
-      no key is a pinned HP (``has_time``, ``loss_function``, etc.); each value
-      is within the canonical bounds (and any per-spec ``search_space``
-      narrowing). ``calibration_method`` is pinned-by-policy and rejected.
+    - ``hp_changes`` (if present) is a dict; each key is a real, tunable HP
+      **for the requested backend**; no key is a pinned HP (CatBoost's
+      ``has_time``/``loss_function``/…, or XGBoost's ``objective``/``tree_method``/
+      …); each value is within the canonical bounds (and any per-spec
+      ``search_space`` narrowing). ``calibration_method`` is pinned-by-policy and
+      rejected for both backends.
+
+    ``backend`` (V1.2 Phase 2 / plan D3 + § 5.2) selects which backend's HP-name
+    tables the ``hp_changes`` are validated against — an XGBoost decision
+    (``backend="xgboost"``) validates against the ``*_XGB`` tables (``max_depth``,
+    ``eta``, ``lambda``, …) and rejects CatBoost-only names (``depth``,
+    ``has_time``); vice versa for ``"catboost"``. It defaults to ``"catboost"``
+    so every existing call site stays byte-for-byte identical.
 
     Raises :class:`DecisionError` with a distinct, specific message per
     violation class so the user can fix the file and relaunch ``--resume``.
     """
+    tunable_ranges, enum_values, pinned_hps = hp_tables_for(backend)
     if not isinstance(decision, dict):
         raise DecisionError(
             f"decision must be a JSON object, got {type(decision).__name__}"
@@ -281,8 +292,14 @@ def validate_decision(
 
     ss = _search_space_bounds(spec)
     # ``calibration_method`` is pinned-by-policy for the loop (plan § 5):
-    # it is a backend-level choice, not a per-iteration FS+HP knob.
-    pinned_names = set(PINNED_HPS) | {"calibration_method"}
+    # it is a backend-level choice, not a per-iteration FS+HP knob. The rest of
+    # the pinned set is the requested backend's never-override list (CatBoost:
+    # ``has_time``/loss/eval; XGBoost: ``objective``/``tree_method``/…).
+    pinned_names = set(pinned_hps) | {"calibration_method"}
+    doc = (
+        "docs/gbdt/XGBOOST_HP_REFERENCE.md" if backend == "xgboost"
+        else "docs/gbdt/CATBOOST_HP_REFERENCE.md"
+    )
 
     for name, value in hp_changes.items():
         if name in pinned_names:
@@ -291,15 +308,15 @@ def validate_decision(
                 f"pinned HPs ({sorted(pinned_names)}) are never overridable "
                 f"(see CLAUDE.md gbdt §)."
             )
-        is_numeric = name in TUNABLE_HP_RANGES
-        is_enum = name in ENUM_HP_VALUES
+        is_numeric = name in tunable_ranges
+        is_enum = name in enum_values
         if not (is_numeric or is_enum):
             raise DecisionError(
                 f"decision.hp_changes references unknown HP {name!r}; not a "
-                f"tunable CatBoost HP (see docs/gbdt/CATBOOST_HP_REFERENCE.md)."
+                f"tunable {backend} HP (see {doc})."
             )
         if is_enum:
-            allowed = ENUM_HP_VALUES[name]
+            allowed = enum_values[name]
             # Per-spec search_space may narrow the allowed enum values.
             ss_vals = (ss.get(name) or {}).get("values")
             if ss_vals is not None:
@@ -310,7 +327,7 @@ def validate_decision(
                     f"the allowed values {list(allowed)}."
                 )
         else:  # numeric
-            lo, hi = TUNABLE_HP_RANGES[name]
+            lo, hi = tunable_ranges[name]
             # Per-spec search_space may narrow the numeric bounds.
             ss_b = ss.get(name) or {}
             if "min" in ss_b:

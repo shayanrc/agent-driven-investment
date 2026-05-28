@@ -521,9 +521,15 @@ def _load_and_apply_resume(out_dir: Path, spec: dict, *, run_id: str) -> dict:
     decision = loop_protocol.read_decision(out_dir, iter_n)
 
     # Validate against the spec: HP bounds, no pinned-HP changes, prune_features
-    # ⊆ the active feature set the checkpoint paused on.
+    # ⊆ the active feature set the checkpoint paused on. The HP names are
+    # validated against the spec's backend table (V1.2 Phase 2 / plan § 6.2):
+    # an xgboost spec validates against the *_XGB tables, a catboost spec (the
+    # default when unset) against the CatBoost tables.
     known_features = list(ckpt["current_features"])
-    loop_protocol.validate_decision(decision, spec, known_features)
+    backend = ((spec or {}).get("backend", {}) or {}).get("library", "catboost")
+    loop_protocol.validate_decision(
+        decision, spec, known_features, backend=backend,
+    )
 
     next_features, next_hp, should_stop = loop_protocol.apply_decision(
         decision, known_features, dict(ckpt["current_hp"]),
