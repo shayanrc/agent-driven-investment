@@ -1,23 +1,42 @@
-"""CatBoost classifier wrapper for gbdt v1.
+"""GBDT classifier backends for gbdt.
 
-Thin layer over ``catboost.CatBoostClassifier`` that:
+This module defines the **backend seam** for the gbdt module (V1.2 Phase 1,
+``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md`` § 4 / § 8):
 
-- Pins the non-tunable HPs (``has_time``, ``loss_function``, ``eval_metric``,
-  ``custom_metric``, ``random_seed``) per V1_PLAN.md Stage 4. ``has_time=True``
-  is mandatory for walk-forward correctness; the wrapper raises if a caller
-  tries to override it.
-- Validates tunable HPs against ``CATBOOST_HP_REFERENCE.md`` per-parameter
-  ranges. Anything out of range is rejected on construction with a clear
-  error.
-- Exposes ``fit / predict_proba / feature_importance / save / load``.
+- :class:`BaseGBDTModel` — a thin abstract base capturing the backend-agnostic
+  public surface that ``train.py`` / ``diagnostics.py`` / the loop call on a
+  model (``fit``, ``predict_proba``, ``feature_importance``, ``best_iteration``,
+  ``evals_result``, the ``hp`` / ``feature_names`` / ``fitted`` properties, and
+  ``save`` / ``load``). It deliberately bakes in **no** CatBoost-only
+  assumptions (no ``has_time``, no ``.cbm``) so a future ``XGBoostModel`` can
+  slot in without redesign.
+- :class:`CatBoostModel` — the concrete CatBoost backend. This is the current
+  v1 wrapper, behaviour-identical to before the seam was introduced. It:
+    - Pins the non-tunable HPs (``has_time``, ``loss_function``, ``eval_metric``,
+      ``custom_metric``, ``random_seed``) per V1_PLAN.md Stage 4. ``has_time=True``
+      is mandatory for walk-forward correctness; the wrapper raises if a caller
+      tries to override it.
+    - Validates tunable HPs against ``CATBOOST_HP_REFERENCE.md`` per-parameter
+      ranges. Anything out of range is rejected on construction with a clear
+      error.
+    - Exposes ``fit / predict_proba / feature_importance / save / load``.
+- :func:`make_model` — the factory that dispatches on ``backend.library`` and
+  returns the right concrete model. ``"catboost"`` routes to
+  :class:`CatBoostModel`; other backends raise ``NotImplementedError`` (the
+  XGBoost backend lands in a later V1.2 phase).
+
+``GBDTModel`` is retained as a public alias of :class:`CatBoostModel` so every
+existing import / spec / test keeps working byte-for-byte.
 
 This is the v1 *model* surface — calibration lives separately in
-``gbdt.calibration``, and the FS+HP iteration loop lives in
+``gbdt.calibration`` (and is already backend-neutral — it operates only on
+``(y_val, p_raw)`` arrays), and the FS+HP iteration loop lives in
 ``gbdt.train`` / ``gbdt.fs_hp_loop``.
 """
 
 from __future__ import annotations
 
+import abc
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +47,7 @@ from catboost import CatBoostClassifier, Pool
 
 
 # ---------------------------------------------------------------------------
-# HP validation
+# HP validation (CatBoost)
 # ---------------------------------------------------------------------------
 
 
@@ -120,15 +139,113 @@ def _validate_hp(hp: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Wrapper
+# Backend-agnostic interface (the seam)
 # ---------------------------------------------------------------------------
 
 
-class GBDTModel:
+class BaseGBDTModel(abc.ABC):
+    """Backend-agnostic GBDT classifier interface.
+
+    Captures *exactly* the public surface that the rest of the gbdt codebase
+    (``train.py``, ``diagnostics.py``, the FS+HP loop, ``/gbdt-diagnose``)
+    calls on a fitted-or-fitting model. A concrete backend (CatBoost today;
+    XGBoost in a later V1.2 phase) implements these members.
+
+    Deliberately backend-neutral: no CatBoost-only concept (``has_time``,
+    the ``.cbm`` persistence format, the two-column ``predict_proba`` shape,
+    ordered boosting) appears here. Those live in the concrete class so a
+    second backend can slot in without redesigning this base. ``predict_proba``
+    is contracted to return a **1-D** array of ``P(positive)``.
+    """
+
+    # ---- accessors ------------------------------------------------------
+
+    @property
+    @abc.abstractmethod
+    def hp(self) -> dict:
+        """The (validated, pin-applied) HP dict this model was built with."""
+
+    @property
+    @abc.abstractmethod
+    def feature_names(self) -> list[str] | None:
+        """Ordered feature names, or ``None`` if not yet known."""
+
+    @property
+    @abc.abstractmethod
+    def fitted(self) -> bool:
+        """Whether :meth:`fit` has been called."""
+
+    @property
+    @abc.abstractmethod
+    def best_iteration(self) -> int | None:
+        """Best boosting iteration after early stopping, or ``None``."""
+
+    @property
+    @abc.abstractmethod
+    def evals_result(self) -> dict | None:
+        """Per-split metric history (learning curves), or ``None``."""
+
+    # ---- core ops -------------------------------------------------------
+
+    @abc.abstractmethod
+    def fit(
+        self,
+        X_train: pd.DataFrame | np.ndarray,
+        y_train: np.ndarray | pd.Series,
+        X_val: pd.DataFrame | np.ndarray | None = None,
+        y_val: np.ndarray | pd.Series | None = None,
+        *,
+        early_stopping_rounds: int | None = None,
+        train_weight: np.ndarray | pd.Series | None = None,
+        val_weight: np.ndarray | pd.Series | None = None,
+    ) -> "BaseGBDTModel":
+        """Fit the model, optionally early-stopping against ``(X_val, y_val)``.
+
+        ``train_weight`` / ``val_weight`` (optional) are per-row sample weights
+        (typically the LdP §4.4 uniqueness weights). Returns ``self``.
+        """
+
+    @abc.abstractmethod
+    def predict_proba(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Return ``P(positive)`` as a 1-D array."""
+
+    @abc.abstractmethod
+    def feature_importance(
+        self,
+        kind: str = "native",
+        X_val: pd.DataFrame | np.ndarray | None = None,
+        y_val: np.ndarray | pd.Series | None = None,
+    ) -> pd.Series:
+        """Return a Series of feature → importance for the given ``kind``."""
+
+    # ---- persistence ----------------------------------------------------
+
+    @abc.abstractmethod
+    def save(self, path: str | Path) -> None:
+        """Persist the fitted model to ``path`` in the backend's format."""
+
+    @classmethod
+    @abc.abstractmethod
+    def load(
+        cls,
+        path: str | Path,
+        hp: dict | None = None,
+        feature_names: list[str] | None = None,
+    ) -> "BaseGBDTModel":
+        """Load a fitted model previously written by :meth:`save`."""
+
+
+# ---------------------------------------------------------------------------
+# CatBoost backend
+# ---------------------------------------------------------------------------
+
+
+class CatBoostModel(BaseGBDTModel):
     """Thin CatBoost wrapper. ``has_time=True`` is mandatory.
 
-    Build via ``GBDTModel(hp_dict, feature_names=...)``; fit with
-    ``fit(X_train, y_train, X_val, y_val)``; score with ``predict_proba(X)``
+    Build via ``CatBoostModel(hp_dict, feature_names=...)`` (or, equivalently,
+    the back-compat ``GBDTModel`` alias / ``make_model("catboost", ...)``); fit
+    with ``fit(X_train, y_train, X_val, y_val)``; score with ``predict_proba(X)``
     returning the marginal probability of the positive class.
     """
 
@@ -186,7 +303,7 @@ class GBDTModel:
         early_stopping_rounds: int | None = None,
         train_weight: np.ndarray | pd.Series | None = None,
         val_weight: np.ndarray | pd.Series | None = None,
-    ) -> "GBDTModel":
+    ) -> "CatBoostModel":
         """Fit CatBoost with optional early stopping against ``(X_val, y_val)``.
 
         ``train_weight`` / ``val_weight`` (optional) are per-row sample
@@ -293,7 +410,7 @@ class GBDTModel:
 
     @classmethod
     def load(cls, path: str | Path, hp: dict | None = None,
-             feature_names: list[str] | None = None) -> "GBDTModel":
+             feature_names: list[str] | None = None) -> "CatBoostModel":
         m = CatBoostClassifier()
         m.load_model(str(path))
         obj = cls(hp or PINNED_HPS, feature_names=feature_names)
@@ -302,6 +419,75 @@ class GBDTModel:
         if feature_names is None:
             obj._feature_names = list(m.feature_names_) if m.feature_names_ else None
         return obj
+
+
+# Back-compat public alias. ``GBDTModel`` was the CatBoost wrapper's name before
+# the V1.2 backend seam; keep it pointing at the concrete CatBoost impl so every
+# existing import / spec / test keeps working byte-for-byte.
+GBDTModel = CatBoostModel
+
+
+# ---------------------------------------------------------------------------
+# Factory
+# ---------------------------------------------------------------------------
+
+
+def _resolve_backend(backend: Any) -> str:
+    """Coerce a ``backend`` argument to its library string.
+
+    Accepts a plain string (``"catboost"``), or a spec-like object exposing
+    ``.library`` directly or nested under ``.backend.library`` (so the runner
+    can thread the parsed spec through without unwrapping). Mappings with a
+    ``"backend"``/``"library"`` key are also accepted.
+    """
+    if isinstance(backend, str):
+        return backend
+    # spec.backend.library or spec.library
+    lib = getattr(getattr(backend, "backend", None), "library", None)
+    if lib is None:
+        lib = getattr(backend, "library", None)
+    if lib is None and isinstance(backend, dict):
+        inner = backend.get("backend", backend)
+        if isinstance(inner, dict):
+            lib = inner.get("library")
+        else:
+            lib = getattr(inner, "library", None)
+    if not isinstance(lib, str):
+        raise TypeError(
+            f"cannot resolve backend library from {backend!r}; pass a string "
+            f"(e.g. 'catboost') or a spec exposing backend.library."
+        )
+    return lib
+
+
+def make_model(
+    backend: str | Any,
+    hp: dict,
+    *,
+    feature_names: list[str] | None = None,
+    random_seed: int = 42,
+) -> BaseGBDTModel:
+    """Construct the GBDT model for the requested ``backend``.
+
+    ``backend`` is the ``backend.library`` value from the experiment spec
+    (a string like ``"catboost"``), or a spec-like object exposing it. Dispatch:
+
+    - ``"catboost"`` → :class:`CatBoostModel` (behaviour-identical to the v1
+      ``GBDTModel`` — same construction, same ``has_time`` pin, same
+      determinism, same save/load).
+    - anything else → ``NotImplementedError``. The XGBoost backend lands in a
+      later V1.2 phase (``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md``
+      § 8); this factory is the dispatch point it will plug into.
+    """
+    library = _resolve_backend(backend)
+    if library == "catboost":
+        return CatBoostModel(
+            hp, feature_names=feature_names, random_seed=random_seed
+        )
+    raise NotImplementedError(
+        "xgboost backend lands in a later V1.2 phase "
+        f"(got backend.library={library!r}); only 'catboost' is wired today."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +505,10 @@ def _to_2d(X: pd.DataFrame | np.ndarray) -> np.ndarray:
 
 
 __all__ = [
+    "BaseGBDTModel",
+    "CatBoostModel",
     "GBDTModel",
+    "make_model",
     "PINNED_HPS",
     "TUNABLE_HP_RANGES",
     "ENUM_HP_VALUES",
