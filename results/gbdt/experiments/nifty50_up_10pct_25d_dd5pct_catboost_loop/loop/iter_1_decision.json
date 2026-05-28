@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "hp_changes": { "depth": 4 },
+  "should_stop": false,
+  "rationale": "Depth 8 gave val_brier=0.16326 vs depth-6 baseline 0.16417 (delta -0.00091, within the ~0.001 noise band); gap +0.0044 still << 0.02 so still no overfit. To complete the depth response curve and locate the inverted-U minimum, drop to depth 4 (lower arm). Hold lr=0.05 / l2=3.0 / full 279 features fixed (one attributable change per iter). Expect depth 4 to be the worst of {4,6,8} (shallow underfit) confirming an interior optimum."
+}

@@ -1,0 +1,33 @@
+# Investigation A — agent-driven FS+HP loop (CatBoost), loosened-gate variant.
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5% (the _147 cell).
+# Same as nifty50_up_10pct_25d_dd5pct_acceptance.yaml (CatBoost, agent_file_protocol)
+# EXCEPT the plateau/degradation gates are loosened so the AGENT'S should_stop
+# drives termination — mirroring the invB xgboost variant. Rationale: on this
+# HP-ceiling cell the depth differences are sub-0.005, so the DEFAULT plateau
+# gate (0.005) trips after ~2 configs and cuts the landscape map short before the
+# agent can map depth + lr + regularization + the monotone ablation (which is
+# what acceptance_check_147.py expects to see).
+#
+# Iter 0 launches from default.yaml::backend.hp_starting (CatBoost depth 6 / lr 0.05
+# / Ordered / 1000 trees / early-stop 75) over the full 279-feature pool; the agent
+# prunes + tunes each iteration.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic        # default; library omitted -> catboost
+  fs_hp_loop:
+    callback_mode: agent_file_protocol             # V1.1 — agent drives each iteration via exit-and-resume.
+    max_iterations: 10                             # same budget as the _147 hand-loop.
+    plateau_threshold: 0.0001                       # loosened (see header) so the agent maps the full landscape.
+    degradation_gate: 0.05                          # loosened so a monotone-ablation iteration doesn't trip the gate.
+
+random_seed: 42

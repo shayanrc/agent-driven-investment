@@ -1,0 +1,6 @@
+{
+  "iter": 2,
+  "hp_changes": { "depth": 8, "learning_rate": 0.02 },
+  "should_stop": false,
+  "rationale": "Depth response curve now mapped: depth4=0.16608, depth6=0.16417, depth8=0.16326 — monotone-decreasing, full spread only 0.00282 (a tiny band => HP-ceiling territory). Depth 4 underfits (gap -0.0099). Best depth = 8 (marginally). Next question (rule 6): scan learning_rate at the best depth. Set depth=8, lower lr 0.05->0.02 (the diagnostic lr scan); iterations=1000/early-stop=75 has ample tree headroom for the slower lr. Expect val_brier to stay in the ~0.163-0.164 band, confirming no lr headroom either."
+}
