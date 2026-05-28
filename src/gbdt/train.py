@@ -27,6 +27,7 @@ from gbdt.calibration import (
     apply_calibrator,
     conditional_isotonic,
     isotonic_always,
+    platt_calibration,
     spiegelhalter_z,
 )
 from gbdt.diagnostics import DiagnosticBundle, build_diagnostic_bundle
@@ -455,6 +456,9 @@ def walk_forward_train(
         cal = conditional_isotonic(y_val, p_val_raw, z_threshold=calibration_z_threshold)
     elif calibration_method == "isotonic_always":
         cal = isotonic_always(y_val, p_val_raw, z_threshold=calibration_z_threshold)
+    elif calibration_method == "platt":
+        # Backend-neutral Platt scaling fit on (p_val_raw, y_val) — V1.2 plan R7.
+        cal = platt_calibration(y_val, p_val_raw, z_threshold=calibration_z_threshold)
     else:
         raise NotImplementedError(f"calibration_method={calibration_method!r}")
 
