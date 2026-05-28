@@ -1,0 +1,42 @@
+# Hand-driven FS+HP loop — nifty50 UP +10% / 25d / dd5%.
+# ITERATION 1 — capacity test.
+#
+# Iteration 0 (screening baseline, all 279 feat, default HP): val_brier 0.1642,
+# train_brier 0.1689 (gap -0.0048), early_stop never fired at 1000 trees.
+# Read: NO overfit. Model has capacity headroom. Fallback callback's pruning
+# (->62->43 feat) HURT val_brier because it cut capacity with no overfit to recover.
+#
+# Hypothesis H1: with no overfit and early-stop never firing, added capacity
+# should let the model extract more signal. Change ONE cluster (depth + l2),
+# hold features = all 279, so the val_brier delta is attributable to HP alone.
+#   depth 6 -> 8, l2_leaf_reg 3.0 -> 1.5
+# Watch: train_brier should drop (more capacity used); does val_brier follow
+# it down (signal under-extracted) or diverge (noise floor)?
+#
+# max_iterations: 1 -> single clean fit, no fallback callback fires.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 1.5
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+
+random_seed: 42

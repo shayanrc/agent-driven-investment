@@ -1,0 +1,43 @@
+# ITERATION 6 — SAFE monotone constraint (mechanism confirmation).
+# iter5 (+1 on all 17 vol est.) HURT: val 0.1664, test AUC 0.677. 1D audit showed
+# 4 LONG-window estimators (gk_50,gk_100,park_200,rv_200) had a learned inverted-U
+# the +1 flattened. H6: constrain ONLY the 13 already-monotone estimators -> no
+# inverted-U to flatten -> should recover ~baseline (0.1642) or beat it. Confirms
+# the 4 inverted-U features were the entire iter5 harm. All 279 feat, baseline HP.
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      garman_klass_5: 1
+      garman_klass_10: 1
+      garman_klass_20: 1
+      garman_klass_200: 1
+      parkinson_5: 1
+      parkinson_10: 1
+      parkinson_20: 1
+      parkinson_50: 1
+      parkinson_100: 1
+      realized_vol_10: 1
+      realized_vol_20: 1
+      realized_vol_50: 1
+      realized_vol_100: 1
+random_seed: 42

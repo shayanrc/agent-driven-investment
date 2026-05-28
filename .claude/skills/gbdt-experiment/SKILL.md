@@ -72,6 +72,8 @@ Before launching the loop:
 
 ### Phase 3 — FS+HP loop (iterations 1..N, N ≤ max_iterations)
 
+> **Diagnostic-first gate (read `.claude/memories/project-gbdt-tuning-playbook.md` first).** Before applying any heuristic below, check the train/val gap + early-stop tree. **If `train_val_gap ≥ 0` (val not worse than train) AND early-stop never fired → the model is NOT overfitting; do NOT prune.** Pruning a non-overfit model only removes capacity (nifty50 H=25: pruning raised val brier 0.1642→0.1663). Also: `importance≈0` usually means *redundant* (collinear with a kept feature), not unrelated — so FS is ~neutral on a non-overfit model, never an accuracy win. And watch for an **HP ceiling**: if val brier stays in a tiny band across depth {4,6,8} × lr scan, declare it and stop — a clean negative is a result. If val/eval brier is stuck but AUC/R-precision are strong, suspect a **prevalence shift** (compare `positive_prevalence` across segments) — that lever is out of this loop's scope.
+
 Each iteration:
 
 1. **Read the previous iteration's diagnostic bundle.** Look at: train Brier, val Brier, the gap between them, reliability deviation, val curve shape (descending? plateau? oscillating?), early-stop iteration (was the cap hit?), top-K feature importances, pairwise correlation among top features, positive-class recall.
@@ -90,6 +92,8 @@ Each iteration:
    - One-feature dominance: raise `random_strength` and/or set `rsm=0.7`.
 
    Stay within the documented ranges in `CATBOOST_HP_REFERENCE.md` per parameter; do not change pinned HPs (`has_time=True`, `loss_function`, `eval_metric`, `random_seed`).
+
+   - **Monotone constraints** (`monotone_constraints` passes through `hp_starting` as a named dict): use with caution and rarely. On an interaction-driven cell (good AUC/R-precision; signal in feature *combinations*) they are **neutral-to-harmful** — CatBoost enforces monotonicity at the tree-structure level and degrades conditional interactions even when the net effect is monotone (nifty50 H=25: every constraint config lost vs baseline). Marginal feature-target correlation is NOT sufficient justification; check the unconstrained model's **1D partial dependence** first, and even then expect no gain. CatBoost has no interaction constraints. See `[[project-gbdt-tuning-playbook]]` rule 4.
 
 4. **Record the rationale.** Every change must be logged with the signal that triggered it. The agent's value-add is the chain of reasoning, not the parameter values.
 

@@ -1,0 +1,47 @@
+# ITERATION 7 — extend constraints to pruned-but-monotone features (user hypothesis).
+# Trend so far: 0 constr -> val 0.1642; 13 constr -> 0.1657; 17 constr -> 0.1664.
+# Harm scales with constraint count. H7: add 5 pruned-but-monotone-positive feats
+# (vol_xs_rank_50/100, runup_50/100/200) to the safe-13 -> 18 constraints total.
+# Tests literal "add those pruned monotone features with constraint". Predict: worse.
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 1
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    min_data_in_leaf: 1
+    rsm: 1.0
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+    random_strength: 1.0
+    boosting_type: Ordered
+    early_stopping_rounds: 75
+    monotone_constraints:
+      garman_klass_5: 1
+      garman_klass_10: 1
+      garman_klass_20: 1
+      garman_klass_200: 1
+      parkinson_5: 1
+      parkinson_10: 1
+      parkinson_20: 1
+      parkinson_50: 1
+      parkinson_100: 1
+      realized_vol_10: 1
+      realized_vol_20: 1
+      realized_vol_50: 1
+      realized_vol_100: 1
+      vol_xs_rank_50: 1
+      vol_xs_rank_100: 1
+      runup_50: 1
+      runup_100: 1
+      runup_200: 1
+random_seed: 42
