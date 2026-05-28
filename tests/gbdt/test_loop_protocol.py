@@ -255,6 +255,71 @@ def test_validate_respects_spec_search_space_narrowing():
 
 
 # ---------------------------------------------------------------------------
+# V1.2 Phase 2 — backend-conditional HP validation (plan D3 + § 5.2)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_default_backend_is_catboost():
+    """No backend arg ⇒ CatBoost tables (back-compat). A CatBoost name validates;
+    an XGBoost-only name is rejected as unknown."""
+    validate_decision({"hp_changes": {"depth": 8}}, spec=None,
+                      known_features=_KNOWN)  # CatBoost name OK by default
+    with pytest.raises(DecisionError, match="unknown HP"):
+        validate_decision({"hp_changes": {"max_depth": 8}}, spec=None,
+                          known_features=_KNOWN)
+
+
+def test_validate_xgboost_accepts_xgb_named_hp():
+    validate_decision(
+        {"hp_changes": {"max_depth": 8, "eta": 0.03, "lambda": 5.0}},
+        spec=None, known_features=_KNOWN, backend="xgboost",
+    )  # no raise
+
+
+def test_validate_xgboost_rejects_catboost_only_hp():
+    # `depth` is a CatBoost-only name; under the XGBoost backend it is unknown.
+    with pytest.raises(DecisionError, match="unknown HP"):
+        validate_decision({"hp_changes": {"depth": 8}}, spec=None,
+                          known_features=_KNOWN, backend="xgboost")
+
+
+def test_validate_xgboost_rejects_has_time_as_unknown():
+    # XGBoost has no `has_time` concept — it is neither tunable nor a pin here,
+    # so it is rejected as an unknown HP under the XGBoost backend.
+    with pytest.raises(DecisionError, match="unknown HP"):
+        validate_decision({"hp_changes": {"has_time": False}}, spec=None,
+                          known_features=_KNOWN, backend="xgboost")
+
+
+def test_validate_xgboost_rejects_pinned_determinism_knob():
+    # tree_method is an XGBoost determinism pin — never overridable.
+    with pytest.raises(DecisionError, match="pinned"):
+        validate_decision({"hp_changes": {"tree_method": "hist"}}, spec=None,
+                          known_features=_KNOWN, backend="xgboost")
+
+
+def test_validate_xgboost_out_of_range():
+    with pytest.raises(DecisionError, match="outside the allowed range"):
+        validate_decision({"hp_changes": {"max_depth": 99}}, spec=None,
+                          known_features=_KNOWN, backend="xgboost")
+
+
+def test_validate_xgboost_enum_accepts_and_rejects():
+    validate_decision({"hp_changes": {"grow_policy": "lossguide"}}, spec=None,
+                      known_features=_KNOWN, backend="xgboost")  # no raise
+    with pytest.raises(DecisionError, match="not one of"):
+        validate_decision({"hp_changes": {"grow_policy": "Nonsense"}}, spec=None,
+                          known_features=_KNOWN, backend="xgboost")
+
+
+def test_validate_catboost_rejects_xgboost_pinned_objective():
+    # `objective` is an XGBoost pin, not in the CatBoost vocab ⇒ unknown HP.
+    with pytest.raises(DecisionError, match="unknown HP"):
+        validate_decision({"hp_changes": {"objective": "binary:logistic"}},
+                          spec=None, known_features=_KNOWN, backend="catboost")
+
+
+# ---------------------------------------------------------------------------
 # apply_decision
 # ---------------------------------------------------------------------------
 
