@@ -40,12 +40,12 @@ The loop-target is **val_brier** (lower better); ranking is tracked via AUC + we
 
 Final HP: `max_depth=8, eta=0.05, lambda=3.0, subsample=0.8, colsample_bytree=1.0, grow_policy=depthwise, n_estimators=1000, early_stopping_rounds=75`. Determinism pins (`tree_method=exact, n_jobs=1, device=cpu, objective=binary:logistic, eval_metric=logloss, seed=42`) held. **Final feature count: 279 (no pruning)** — the no-overfit gate kept the full pool, exactly as `_147` concluded all-279 is near-optimal.
 
-| segment | base rate | Brier | base-rate Brier | improvement | AUC | weighted R-precision (lift) |
+| segment | base rate | Brier | base-rate Brier | improvement | AUC | weighted R-precision |
 |---|---:|---:|---:|---:|---:|---:|
-| eval | 0.1325 | 0.1145 | 0.1149 | +0.0005 | 0.6576 | 0.3175 (2.30×) |
-| test | 0.1791 | 0.1408 | 0.1470 | +0.0063 | 0.6561 | 0.4078 (2.08×) |
+| eval | 0.1325 | 0.1145 | 0.1149 | +0.0005 | 0.6576 | 0.3175 |
+| test | 0.1791 | 0.1408 | 0.1470 | +0.0063 | 0.6561 | 0.4078 |
 
-Per-day P@k (eval): P@1 0.2133, P@5 0.2584, P@10 0.3247 (vs base 0.1325 → 1.61×/1.95×/2.45×). Prediction range well-separated (eval std 0.070, test std 0.059; `flag_low_separation=False`).
+Weighted R-precision lift over base rate: eval 2.30×, test 2.08× (per-day variable-K, `min(R(d),k)` denominator; see `[[project-r-precision-methodology]]`). Per-day P@k (eval): P@1 0.2133, P@5 0.2584, P@10 0.3247 (vs base 0.1325 → 1.61×/1.95×/2.45×). Prediction range well-separated (eval std 0.070, test std 0.059; `flag_low_separation=False`).
 
 **Calibration**: Spiegelhalter |Z|=3.89 on the best-checkpoint's val predictions → gate fired → **isotonic** shipped. (In-loop the iter-0/1 raw-pred z was −0.70/−0.56; the best-checkpoint finalization recomputes on the full val fit and lands at −3.89 → isotonic. Isotonic is order-preserving, so it does not change the ranking.)
 
