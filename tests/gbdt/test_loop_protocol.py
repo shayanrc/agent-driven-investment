@@ -104,14 +104,23 @@ def test_build_request_bundle_wraps_diagnostics(tmp_path):
         b, iter_n=2, run_id="cell_x", max_iterations=8,
         available_features=["sig", "n1"],
     )
+    # Envelope (Phase 2 keys, unchanged in Phase 3).
     assert payload["schema_version"] == LP.REQUEST_SCHEMA_VERSION
     assert payload["iter"] == 2
     assert payload["run_id"] == "cell_x"
     assert payload["max_iterations"] == 8
     assert payload["available_features"] == ["sig", "n1"]
-    # The DiagnosticBundle is embedded under "diagnostics" via to_dict().
-    assert payload["diagnostics"]["iter"] == 2
-    assert payload["diagnostics"]["val_brier"] == pytest.approx(0.16)
+    # Phase 3: ``diagnostics`` is now the diagnose.json-shaped payload, not a
+    # raw DiagnosticBundle.to_dict() dump.
+    diag = payload["diagnostics"]
+    assert diag["source"] == "in_memory_iteration"
+    assert diag["iter"] == 2
+    assert diag["metrics"]["val_brier"] == pytest.approx(0.16)
+    # Richer diagnose-shaped keys are present (the Phase-3 swap).
+    for key in ("overfit", "prevalence_drift", "calibration", "top_features",
+                "per_day_p_at_k", "r_precision", "tuning_guidance",
+                "full_diagnose_available"):
+        assert key in diag, f"missing diagnose key {key!r}"
 
 
 def test_write_request_lands_in_loop_subdir(tmp_path):
@@ -330,7 +339,9 @@ def test_callback_writes_request_and_checkpoint_then_raises(tmp_path):
     req = json.loads(request_path(tmp_path, 0).read_text())
     assert req["iter"] == 0
     assert req["available_features"] == ["sig", "n1", "n2"]
-    assert req["diagnostics"]["val_brier"] == pytest.approx(0.165)
+    # Phase 3: diagnose.json-shaped payload under "diagnostics".
+    assert req["diagnostics"]["metrics"]["val_brier"] == pytest.approx(0.165)
+    assert req["diagnostics"]["source"] == "in_memory_iteration"
 
     # Checkpoint written with the full loop state (no model blobs).
     ckpt = read_checkpoint(tmp_path)

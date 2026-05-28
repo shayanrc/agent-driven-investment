@@ -36,29 +36,20 @@ import pandas as pd
 import yaml
 from scipy.stats import spearmanr
 
-# Overfit threshold on train_val_gap (= val_brier - train_brier); matches the
-# fallback regularization trigger in src/gbdt/train.py.
-_OVERFIT_GAP_THR = 0.02
+# The pure train/val-gap overfit read + prevalence-drift flag live in the
+# package (src/gbdt/diagnose_core.py) so package code (the V1.1 in-loop
+# diagnose payload) can reuse the SAME function objects without importing from
+# this ad-hoc scripts/ tree. Re-exported here so this module's public API + CLI
+# are unchanged.
+from gbdt.diagnose_core import (  # noqa: F401  (re-exported)
+    _OVERFIT_GAP_THR,
+    assess_overfit,
+    prevalence_drift,
+)
 
 # ---------------------------------------------------------------------------
 # Pure helpers (unit-tested; no I/O)
 # ---------------------------------------------------------------------------
-
-
-def assess_overfit(train_val_gap: float | None, *, threshold: float = _OVERFIT_GAP_THR) -> bool | None:
-    """Is the cell free of overfit? Based on the train/val gap ALONE.
-
-    ``gap = val_brier - train_brier``; POSITIVE = val worse than train = overfit.
-    No-overfit when ``gap <= threshold`` (default 0.02, matching the fallback
-    regularization trigger in src/gbdt/train.py). Early-stopping firing is
-    deliberately NOT a factor: it's the healthy mechanism that selects the tree
-    count, not an overfit signal — a model can early-stop at tree 67 with a
-    deeply negative gap (val better than train), which is the opposite of
-    overfit. Returns None when the gap is unavailable.
-    """
-    if train_val_gap is None:
-        return None
-    return bool(train_val_gap <= threshold)
 
 
 def spearman_monotonicity(x: np.ndarray, y: np.ndarray, n_bins: int = 10) -> dict:
@@ -134,22 +125,6 @@ def top_interaction_pairs(model, k: int = 15) -> list[tuple[str, str, float]]:
     for i1, i2, s in model.get_feature_importance(type="Interaction")[:k]:
         out.append((names[int(i1)], names[int(i2)], float(s)))
     return out
-
-
-def prevalence_drift(seg_prevalence: dict[str, float]) -> dict:
-    """Given per-segment positive prevalence, flag non-stationarity."""
-    vals = [v for v in seg_prevalence.values() if v is not None and np.isfinite(v)]
-    if len(vals) < 2:
-        return {"spread": float("nan"), "drift_flag": False, "monotone_decline": False}
-    spread = float(max(vals) - min(vals))
-    order = [seg_prevalence.get(s) for s in ("train", "val", "eval", "test")
-             if seg_prevalence.get(s) is not None]
-    monotone_decline = bool(len(order) >= 3 and all(
-        order[i] >= order[i + 1] for i in range(len(order) - 1)))
-    # flag if the spread is a large fraction of the mean prevalence
-    drift_flag = bool(spread > 0.5 * (np.mean(vals) if np.mean(vals) > 0 else 1))
-    return {"spread": spread, "drift_flag": drift_flag,
-            "monotone_decline": monotone_decline}
 
 
 def constraint_advice(marg: dict, model_pdp: dict, involvement: float,
