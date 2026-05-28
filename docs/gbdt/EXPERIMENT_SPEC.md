@@ -207,13 +207,15 @@ backend:
 
 #### `backend.fs_hp_loop`
 
-The agent-driven feature-selection + hyperparameter loop config.
+The feature-selection + hyperparameter loop config.
 
 | Field | Type | Default | Semantics |
 |---|---|---|---|
-| `max_iterations` | int | `8` | Hard cap on iteration count. After this many iterations the loop emits the best-checkpoint artifact regardless of remaining headroom. |
+| `callback_mode` | str | `"default"` | Which per-iteration FS+HP callback drives the loop. `"default"` = the algorithmic prune+nudge fallback (`default_fs_hp_callback`); `"agent_file_protocol"` = the V1.1 agent-driven exit-and-resume loop (see § "Agent-driven FS+HP loop" below). |
+| `max_iterations` | int | `8` | Hard cap on iteration count. After this many iterations the loop emits the best-checkpoint artifact regardless of remaining headroom. Validated to `[1, 16]`. |
 | `plateau_threshold` | float | `0.005` | Absolute val Brier improvement floor. If the last 2 iterations both improve by less than this, inner-stop fires. |
 | `degradation_gate` | float | `0.01` | Multiplicative tolerance over best-seen val Brier. If the current val Brier > `(1 + degradation_gate) * best_val_brier`, inner-stop fires. |
+| `search_space` | dict (optional) | unset | Per-spec **narrowing** of the canonical tunable-HP bounds (`TUNABLE_HP_RANGES` / `ENUM_HP_VALUES` in `model.py`). Each key is a tunable HP → `{min, max}` (numeric) or `{values: [...]}` (enum); a decision's `hp_changes` is validated against the intersection of the canonical bounds and this narrowing. Absent (the common case) ⇒ the canonical ranges are authoritative. |
 
 Override example (tighter loop for a quick exploration):
 ```yaml
@@ -222,6 +224,43 @@ backend:
     max_iterations: 4
     plateau_threshold: 0.01
 ```
+
+Agent-driven loop example (the `/gbdt-experiment` agent surface drives the iterations):
+```yaml
+backend:
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 8
+```
+
+> The `callback_mode` value is the spec field (snapshotted into `spec.yaml`, surfaced in `report.md`). It can be overridden at launch with `--callback-mode {default|agent_file_protocol}`; the override is mirrored back into the snapshot so an archived run records the *effective* mode that actually drove it.
+
+##### Agent-driven FS+HP loop (`callback_mode: agent_file_protocol`)
+
+The V1.1 exit-and-resume protocol (authoritative spec: `V1.1_agent_driven_fs_hp_loop_plan.md` § 0). Instead of a fixed prune heuristic, the agent (a Claude Code session, via `/gbdt-experiment`) makes each iteration's FS+HP decision. The runner and the agent talk through files co-located under the artifact dir:
+
+```
+results/gbdt/experiments/<experiment_name>/loop/
+├── checkpoint.json            # resume checkpoint (full loop state, NO model blob)
+├── iter_<N>_request.json      # the per-iteration bundle the agent READS (diagnose.json-shaped)
+└── iter_<N>_decision.json     # the agent's decision the runner READS on --resume
+```
+
+Mechanic per iteration N: the runner trains iter N, writes `iter_<N>_request.json` + `checkpoint.json`, then **exits cleanly** (no blocking). The agent reads the request, writes `iter_<N>_decision.json`, and relaunches `python -m gbdt experiment <spec> --resume <run_id>`; the resumed run validates + applies the decision and trains iteration N+1 (iterations 0..N are **not** re-trained — they are threaded back from the checkpoint).
+
+**`iter_<N>_request.json`** (the bundle the agent reads). Envelope keys: `schema_version`, `run_id`, `iter`, `max_iterations`, `available_features` (the active feature set a `prune_features` decision is validated against), and `diagnostics` (the `diagnose.json`-shaped payload from `build_diagnose_payload` — `metrics` {train/val Brier, train/val gap}, `overfit` {`no_overfit`, `train_val_gap`}, `prevalence_by_segment` + `prevalence_drift`, `calibration` {Spiegelhalter z/p}, `top_features` + `feature_importance`, `pruned_summary`, per-day `per_day_p_at_k` / `r_precision` (populated only when a prediction frame is threaded — `available: false` in-loop), `tuning_guidance` lines, and `full_diagnose_available: false` + `artifact_dir` for an on-demand full `/gbdt-diagnose`).
+
+**`iter_<N>_decision.json`** (the agent writes). Schema (validated by `loop_protocol.validate_decision`):
+
+| Field | Type | Semantics |
+|---|---|---|
+| `prune_features` | list[str] (optional) | Feature names to drop for iter N+1. Each MUST be in the request's `available_features`. |
+| `hp_changes` | dict (optional) | HP name → new value. Each key must be a real tunable HP (in `TUNABLE_HP_RANGES` / `ENUM_HP_VALUES`), NOT a pinned HP (`has_time`, `loss_function`, `eval_metric`, `custom_metric`, `calibration_method`), and within the canonical bounds (∩ any `search_space` narrowing). |
+| `should_stop` | bool (optional, default `false`) | When `true`, the next `--resume` finalizes the loop WITHOUT training a new iteration (`inner_stop_signal: "agent_should_stop"`); the best checkpoint is selected across the prior history. |
+| `rationale` | str (optional) | The decision's lab-notebook entry. Recorded as iter N's `delta_attribution` (surfaced in `iterations.jsonl` + `report.md`). |
+| `iter` | int (optional) | The iteration the decision is for (informational; the runner keys off the checkpoint's `iter_idx`). |
+
+Any other fields are ignored. A malformed / out-of-bounds / pinned-HP / unknown-feature decision raises a clear `DecisionError` on `--resume` and does NOT corrupt state — the user fixes the file and relaunches. The full per-iteration reasoning + worked example live in `.claude/skills/gbdt-experiment/SKILL.md` § "Agent-driven FS+HP loop".
 
 #### `backend.hp_starting`
 
@@ -281,8 +320,14 @@ results/gbdt/experiments/<experiment_name>/
 │   ├── learning_curve_iter_*.png     # one per FS+HP iteration
 │   ├── feature_importance_final.png
 │   └── train_val_gap_history.png
+├── loop/                             # ONLY under callback_mode=agent_file_protocol (V1.1)
+│   ├── checkpoint.json               # resume state (no model blob); read by --resume
+│   ├── iter_<N>_request.json         # per-iteration bundle the agent reads
+│   └── iter_<N>_decision.json        # the agent's decision the runner applies on --resume
 └── report.md                         # human-readable narrative (see V1_PLAN.md Stage 8 for sections)
 ```
+
+The `loop/` subdir is present only for agent-driven runs (`callback_mode: agent_file_protocol`); `default`-mode runs finalize in a single process and write no loop files. See `backend.fs_hp_loop` § "Agent-driven FS+HP loop" above for the protocol.
 
 **Every artifact is self-contained.** Re-running the spec against the same data + seed should reproduce the same artifact. Predictions are saved per segment so downstream analyses don't need to re-load the model.
 
@@ -466,6 +511,7 @@ Loading a spec fails fast on:
 - `target.max_drawdown` set but not a float in `(0, 1)` (must be a positive fractional bound less than 1).
 - `backend.library` other than `"catboost"`.
 - `backend.calibration_method` not in `{"native", "conditional_isotonic", "isotonic_always", "platt"}`.
+- `backend.fs_hp_loop.callback_mode` not in `{"default", "agent_file_protocol"}` (the `--callback-mode` CLI override is validated the same way).
 - `backend.fs_hp_loop.max_iterations < 1` or `> 16` (hard ceiling above the default 8 to prevent runaway agent loops).
 - `backend.hp_starting` keys not in the tunable-HP allowlist, or values outside the ranges in `CATBOOST_HP_REFERENCE.md`.
 - `random_seed < 0`.

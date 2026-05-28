@@ -167,6 +167,14 @@ def render_report(experiment_dir: Path) -> Path:
     lines.append(f"- horizon_days: `{target.get('horizon_days', '?')}`")
     if "max_drawdown" in target:
         lines.append(f"- max_drawdown: `{target['max_drawdown']}`")
+    # FS+HP loop flavour (V1.1) — which callback drove the iterations.
+    # ``default`` = the algorithmic prune+nudge fallback; ``agent_file_protocol``
+    # = the agent-driven exit-and-resume loop (the agent read each iteration's
+    # diagnose bundle and wrote the prune/HP decision). Read from the spec
+    # snapshot so archived reports are self-describing about what tuned the run.
+    loop_cfg = (spec.get("backend", {}) or {}).get("fs_hp_loop", {}) or {}
+    callback_mode = loop_cfg.get("callback_mode", "default")
+    lines.append(f"- fs_hp_loop callback_mode: `{callback_mode}`")
     lines.append("")
 
     # 2. Data
@@ -211,6 +219,12 @@ def render_report(experiment_dir: Path) -> Path:
     lines.append("")
 
     # 3. Iteration history
+    # The ``rationale``/``delta_attribution`` columns carry each iteration's
+    # decision narrative. Under ``callback_mode: agent_file_protocol`` (V1.1)
+    # the ``delta_attribution`` is the agent's per-iteration ``rationale`` from
+    # ``loop/iter_<N>_decision.json`` (its lab-notebook entry: why those features
+    # were pruned / those HPs changed); under ``default`` it is the algorithmic
+    # fallback's one-line summary.
     lines.append("## Iteration history")
     lines.append("")
     lines.append("| iter | n_features | train Brier | val Brier | gap | rationale | inner_stop |")
@@ -236,6 +250,10 @@ def render_report(experiment_dir: Path) -> Path:
     lines.append(f"- best iteration: {loop.get('best_iteration')}")
     lines.append(f"- iterations run: {loop.get('n_iterations_run')}")
     lines.append(f"- inner stop signal: `{loop.get('inner_stop_signal')}`")
+    lines.append(f"- fs_hp_loop callback_mode: `{callback_mode}`")
+    # ``agent_should_stop`` is the V1.1 agent-driven stop (the agent emitted
+    # ``should_stop: true`` in a decision file); ``plateau`` / ``degradation`` /
+    # ``cap`` are the runner's built-in inner-stop gates (fire under either mode).
     lines.append("")
 
     # 5. Calibration
