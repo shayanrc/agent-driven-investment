@@ -30,6 +30,7 @@ from gbdt import data as gbdt_data
 from gbdt import features as gbdt_features
 from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
+from gbdt.model import _validate_hp, model_filename
 from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
@@ -48,6 +49,11 @@ from gbdt.uniqueness import (
 
 _VALID_DIRECTIONS = {"up", "down"}
 _VALID_CAL_METHODS = {"native", "conditional_isotonic", "isotonic_always", "platt"}
+# V1.2 Phase 5 (plan § 6.1): the runner accepts both GBDT backends behind the
+# same experiment-loop contract. ``backend.library`` selects the model adapter
+# (``gbdt.model.make_model``), the HP-validation tables, and the persisted-model
+# filename (``gbdt.model.model_filename``).
+_VALID_BACKENDS = {"catboost", "xgboost"}
 
 # V1.1 — selects which FS+HP iteration callback drives the walk-forward loop.
 # ``default`` (or absent) preserves v1 behaviour: ``walk_forward_train`` falls
@@ -89,6 +95,22 @@ def load_spec(spec_path: Path, default_path: Path | None = None) -> dict:
 
     default_path = default_path or Path("configs/gbdt/default.yaml")
     defaults = yaml.safe_load(default_path.read_text()) if default_path.exists() else {}
+
+    # V1.2 Phase 5 (plan § 6.3): ``default.yaml``'s ``backend.hp_starting`` /
+    # ``backend.hp_pinned`` carry CatBoost-named knobs (``iterations``, ``depth``,
+    # ``l2_leaf_reg``, ``has_time`` …). A deep-merge would leak those into an
+    # XGBoost spec's ``hp_starting``, producing an HP dict with both vocabularies
+    # — which XGBoost can't consume. So when the per-experiment spec selects a
+    # non-catboost backend, drop the default's CatBoost HP blocks before merging;
+    # the spec carries its own (XGBoost-named, backend-validated) ``hp_starting``.
+    raw_library = ((raw.get("backend") or {}).get("library")) or "catboost"
+    if raw_library != "catboost":
+        defaults = dict(defaults)
+        if isinstance(defaults.get("backend"), dict):
+            defaults["backend"] = {
+                k: v for k, v in defaults["backend"].items()
+                if k not in ("hp_starting", "hp_pinned")
+            }
 
     merged = _deep_merge(defaults, raw)
     _validate_spec(merged)
@@ -133,8 +155,25 @@ def _validate_spec(spec: dict) -> None:
         )
 
     backend = spec.get("backend", {}) or {}
-    if backend.get("library", "catboost") != "catboost":
-        raise ValueError("v1 supports backend.library='catboost' only")
+    # V1.2 Phase 5 (plan § 6.1/§ 6.2): the runner now accepts both backends.
+    # ``backend.library`` is the load-bearing switch; the iter-0 ``hp_starting``
+    # is validated against the backend's HP tables here (fail-fast on an
+    # out-of-vocab / out-of-range / pinned-override HP before any data is loaded)
+    # so a malformed XGBoost spec is rejected at parse time, not deep in the loop.
+    library = backend.get("library", "catboost")
+    if library not in _VALID_BACKENDS:
+        raise ValueError(
+            f"backend.library must be in {sorted(_VALID_BACKENDS)}, got {library!r}"
+        )
+    hp_starting = backend.get("hp_starting", {}) or {}
+    if hp_starting:
+        try:
+            _validate_hp(dict(hp_starting), backend=library)
+        except ValueError as exc:
+            raise ValueError(
+                f"backend.hp_starting is invalid for backend.library={library!r}: "
+                f"{exc}"
+            ) from exc
     cal = backend.get("calibration_method", "conditional_isotonic")
     if cal not in _VALID_CAL_METHODS:
         raise ValueError(f"backend.calibration_method must be in {_VALID_CAL_METHODS}")
@@ -765,6 +804,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     # -------- Phase 4: walk-forward + FS+HP loop --------
     backend = spec.get("backend", {}) or {}
+    backend_library = backend.get("library", "catboost")
     hp_starting = backend.get("hp_starting", {}) or {}
     loop_cfg = backend.get("fs_hp_loop", {}) or {}
     cal_method = backend.get("calibration_method", "conditional_isotonic")
@@ -816,6 +856,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             sample_weights=sample_weights,
             resume_state=resume_state,
             loop_state_sink=loop_state_sink,
+            backend=backend_library,
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the
@@ -880,7 +921,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         yaml.safe_dump(per_exp_spec, sort_keys=False)
     )
 
-    result.best_model.save(out_dir / "model.cbm")
+    # Backend-determined model filename (V1.2 plan § 4.4): catboost → model.cbm,
+    # xgboost → model.ubj. The single source of truth is gbdt.model.model_filename,
+    # which the /gbdt-diagnose loader also consults so the two always agree.
+    result.best_model.save(out_dir / model_filename(backend_library))
     # Always write a pickle. When no calibrator is needed (native pass) we
     # still pickle ``None`` so downstream ``pickle.load`` is uniform — see
     # PR #8 review (Minor 2): a plaintext-vs-pickle mix produced
@@ -967,6 +1011,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     }
     metrics = {
         "experiment_name": name,
+        # Which GBDT backend produced this artifact (V1.2 plan § 4.4) — so a
+        # post-hoc reader knows whether model.cbm or model.ubj sits beside it,
+        # and which model class /gbdt-diagnose must load.
+        "backend": {
+            "library": backend_library,
+            "model_filename": model_filename(backend_library),
+        },
         "spec_hash": _spec_hash(spec),
         "data_hash": _data_hash(panel_obj.panel),
         # Pre-flight cache + code fingerprint (see ``_collect_preflight``).

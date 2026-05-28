@@ -199,6 +199,37 @@ _HP_REFERENCE_DOC: dict[str, str] = {
 }
 
 
+# Backend → persisted-model filename. The single source of truth the runner and
+# the ``/gbdt-diagnose`` loader both consult so they agree on the on-disk name
+# (V1.2 plan § 4.4 / § 6.4): CatBoost writes its ``.cbm`` binary, XGBoost its
+# native ``.ubj`` (UBJSON). ``CatBoostModel.save`` / ``XGBoostModel.save`` write
+# the format implied here; ``make_model(backend).load`` reads it back.
+_MODEL_FILENAME: dict[str, str] = {
+    "catboost": "model.cbm",
+    "xgboost": "model.ubj",
+}
+
+
+def model_filename(backend: str | Any) -> str:
+    """Return the canonical persisted-model filename for ``backend``.
+
+    The single dispatch point for the backend-determined artifact model name
+    (V1.2 plan § 4.4): ``"catboost"`` → ``"model.cbm"``, ``"xgboost"`` →
+    ``"model.ubj"``. ``backend`` may be a plain string or a spec-like object
+    exposing ``backend.library`` (resolved via :func:`_resolve_backend`), so the
+    runner can pass the parsed spec straight through. Any other backend raises
+    :class:`ValueError`.
+    """
+    library = _resolve_backend(backend)
+    try:
+        return _MODEL_FILENAME[library]
+    except KeyError:
+        raise ValueError(
+            f"unknown backend {library!r}; model filenames exist for "
+            f"{sorted(_MODEL_FILENAME)} only."
+        ) from None
+
+
 def hp_tables_for(backend: str) -> tuple[dict, dict, dict]:
     """Return ``(tunable_ranges, enum_values, pinned)`` for ``backend``.
 
@@ -982,6 +1013,7 @@ __all__ = [
     "GBDTModel",
     "make_model",
     "hp_tables_for",
+    "model_filename",
     "PINNED_HPS",
     "TUNABLE_HP_RANGES",
     "ENUM_HP_VALUES",
