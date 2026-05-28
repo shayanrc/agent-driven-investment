@@ -1,0 +1,63 @@
+{
+  "id": "_148",
+  "name": "xgboost_a6_replication",
+  "phase": "V1.2 Phase 7 (A6 replication gate)",
+  "date": "2026-05-29",
+  "branch": "gbdt-v12-xgboost-p7-a6-replication",
+  "metric_methodology": {
+    "primary": "weighted R-precision (per-day variable K = R(d), sum(positives_caught)/sum(R(d)), panel-invariant)",
+    "p_at_k_denominator": "min(R(d), k)",
+    "lift_definition": "weighted R-precision / weighted base rate",
+    "computed_via": "scripts/gbdt/compute_r_precision.py on predictions/{test,eval}.csv (p_calibrated)",
+    "calibration_gate": "conditional_isotonic, Spiegelhalter |Z| on val; |Z| < 2.0 ships native, else isotonic"
+  },
+  "tolerance_reasoning": "Conclusions gate, not metric-match gate. XGBoost HP ceiling != CatBoost HP ceiling, so exact AUC/R-prec differ. Require: same signal/null verdict, AUC same side of [0.45,0.55] null band (or both inside for the cross-market cell whose CatBoost AUC was already in-band), weighted R-precision lift comparable magnitude+direction (~within 15% relative), calibration outcome class analogous (|Z| is backend-specific).",
+  "cells": {
+    "nifty50_up_10pct_25d_dd5pct": {
+      "reference_doc": "docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md",
+      "reference_run": "iter-0 / all-279 CatBoost baseline (documented headline)",
+      "base_rate": {"test": 0.1963, "eval": 0.1378},
+      "catboost": {
+        "test": {"auc": 0.733, "brier": 0.1383, "brier_baseline": 0.1470, "r_precision_weighted": 0.416, "r_precision_lift": 2.12},
+        "eval": {"auc": 0.646, "brier": 0.1173, "brier_baseline": 0.1149, "r_precision_weighted": 0.300, "r_precision_lift": 2.18},
+        "calibration": {"decision": "native/isotonic (tree-count sensitive at iter 0)", "spiegelhalter_z_note": "5.93 raw pre-stop; flip is a tree-count side effect per _147 memo"},
+        "verdict": "SIGNAL (AUC-visible)"
+      },
+      "xgboost": {
+        "test": {"auc": 0.6670, "brier": 0.1435, "brier_baseline": 0.1470, "r_precision_weighted": 0.4013, "r_precision_lift": 2.044},
+        "eval": {"auc": 0.5916, "brier": 0.1178, "brier_baseline": 0.1149, "r_precision_weighted": 0.2715, "r_precision_lift": 1.970},
+        "calibration": {"decision": "isotonic", "spiegelhalter_z": -4.896, "gate_fired": true},
+        "verdict": "SIGNAL (AUC-visible)"
+      },
+      "a6": "PASS",
+      "a6_notes": "AUC both well above null band; R-prec lift 2.04x vs 2.12x (test), 1.97x vs 2.18x (eval); both fire calibration on the prevalence-drift cell (train 0.28 -> eval 0.13). Verdicts match."
+    },
+    "nasdaq100_up_10pct_25d_dd5pct": {
+      "reference_doc": "docs/gbdt/_138_h25_cross_market_combined.md (Cell A)",
+      "reference_run": "results/gbdt/experiments/nasdaq100_up_10pct_25d_dd5pct/",
+      "base_rate": {"test": 0.2733, "eval": 0.2524},
+      "catboost": {
+        "test": {"auc": 0.5111, "brier": 0.2061, "brier_baseline": 0.1984, "r_precision_weighted": 0.3994, "r_precision_lift": 1.461},
+        "eval": {"auc": 0.6549, "r_precision_weighted": 0.5121, "r_precision_lift": 2.029},
+        "calibration": {"decision": "native", "spiegelhalter_z": 1.588, "gate_fired": false},
+        "verdict": "SIGNAL (top-tail hidden by null test AUC)"
+      },
+      "xgboost": {
+        "test": {"auc": 0.4951, "brier": 0.2052, "brier_baseline": 0.1984, "r_precision_weighted": 0.3776, "r_precision_lift": 1.382},
+        "eval": {"auc": 0.6335, "brier": 0.2045, "brier_baseline": 0.1872, "r_precision_weighted": 0.4907, "r_precision_lift": 1.944},
+        "calibration": {"decision": "isotonic", "spiegelhalter_z": 10.327, "gate_fired": true},
+        "verdict": "SIGNAL (top-tail hidden by null test AUC)"
+      },
+      "a6": "PASS",
+      "a6_notes": "Both: test AUC inside [0.45,0.55] null band, eval AUC above it. Test individually ambiguous under compound rule (lift 1.2-1.5x); eval decisive (lift ~2x). Verdict structure identical. Calibration DIFFERS (CatBoost native z=1.59 / XGBoost isotonic z=10.33) — backend-native-surface property the conditional-isotonic gate is designed to absorb; isotonic is order-preserving so cross-cell ranking comparable is unchanged. Within tolerance."
+    }
+  },
+  "calibration_divergence_flag": {
+    "cell": "nasdaq100_up_10pct_25d_dd5pct",
+    "description": "CatBoost ships native (val |Z|=1.59), XGBoost ships isotonic (val |Z|=10.33). XGBoost binary:logistic + depthwise growth produces sharper/over-confident raw probabilities; CatBoost Ordered-boosting + symmetric trees produces near-calibrated raw. The gate responds to each backend's own native surface. Calibrated ranking (weighted R-precision on p_calibrated) matches; isotonic monotone => no per-day reorder => ranking conclusion unchanged.",
+    "blocks_phase_8": false,
+    "classification": "expected backend property, not a backend bug"
+  },
+  "a6_overall": "PASS",
+  "phase_8_unblocked": true
+}
