@@ -35,7 +35,8 @@ for ln in lines:
             elif t == "text" and msg.get("role") == "assistant": last_text = b.get("text", "")
             elif t == "tool_result":
                 c = b.get("content")
-                if isinstance(c, list):
+                if isinstance(c, str): last_tr = c[:160]          # this harness: content is a plain string
+                elif isinstance(c, list):                          # other shape: list of {type:text} blocks
                     for x in c:
                         if isinstance(x, dict) and x.get("type") == "text": last_tr = x.get("text", "")[:160]
 print(f"events={len(lines)} tool_uses={len(tools)}")
