@@ -47,6 +47,14 @@ from gbdt.uniqueness import (
 _VALID_DIRECTIONS = {"up", "down"}
 _VALID_CAL_METHODS = {"native", "conditional_isotonic", "isotonic_always", "platt"}
 
+# V1.1 — selects which FS+HP iteration callback drives the walk-forward loop.
+# ``default`` (or absent) preserves v1 behaviour: ``walk_forward_train`` falls
+# back to ``default_fs_hp_callback`` (the algorithmic prune + HP nudge).
+# ``agent_file_protocol`` is the exit-and-resume agent loop (callback body
+# lands in V1.1 Phase 2). See ``docs/gbdt/V1.1_agent_driven_fs_hp_loop_plan.md``.
+_VALID_CALLBACK_MODES = {"default", "agent_file_protocol"}
+_DEFAULT_CALLBACK_MODE = "default"
+
 # Issue #32 — sweep-mode "FS+HP loop" is feature-selection-only when the
 # loop budget is too small to surface HP variation. We flag the loop as
 # ``hp_search_active`` only when ``max_iterations >= _HP_SEARCH_ITER_THRESHOLD``;
@@ -131,6 +139,11 @@ def _validate_spec(spec: dict) -> None:
     loop = backend.get("fs_hp_loop", {}) or {}
     if "max_iterations" in loop and not (1 <= loop["max_iterations"] <= 16):
         raise ValueError("backend.fs_hp_loop.max_iterations must be in [1, 16]")
+    if "callback_mode" in loop and loop["callback_mode"] not in _VALID_CALLBACK_MODES:
+        raise ValueError(
+            f"backend.fs_hp_loop.callback_mode must be in {sorted(_VALID_CALLBACK_MODES)}, "
+            f"got {loop['callback_mode']!r}"
+        )
     sp = spec.get("split", {}) or {}
     if sp:
         total = (sp.get("train_rows", 0) + sp.get("val_rows", 0)
@@ -361,13 +374,58 @@ def _compute_headline(pred_df: pd.DataFrame | None) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# FS+HP loop callback resolution (V1.1)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_callback(loop_cfg: dict, run_id: str):
+    """Select the FS+HP iteration callback from ``backend.fs_hp_loop`` config.
+
+    Returns either ``None`` (so ``walk_forward_train`` keeps using its built-in
+    ``default_fs_hp_callback`` — v1 behaviour, byte-for-byte preserved) or a
+    callable matching the ``(bundle, current_features) -> (keep, next_hp,
+    rationale)`` signature.
+
+    - ``callback_mode == "default"`` (or absent) → ``None``.
+    - ``callback_mode == "agent_file_protocol"`` → a non-None callable whose
+      body raises ``NotImplementedError``; the exit-and-resume protocol lands
+      in V1.1 Phase 2. Phase 1 only proves *resolution* returns a callable.
+    """
+    mode = (loop_cfg or {}).get("callback_mode", _DEFAULT_CALLBACK_MODE)
+    if mode == "default":
+        return None
+    if mode == "agent_file_protocol":
+        def _agent_file_protocol_callback(bundle, current_features):
+            # Phase 2: read loop/iter_<N>_decision.json, validate, apply.
+            # See docs/gbdt/V1.1_agent_driven_fs_hp_loop_plan.md § 0 (exit-and-resume).
+            raise NotImplementedError(
+                "agent_file_protocol callback lands in V1.1 Phase 2 (exit-and-resume)"
+            )
+        return _agent_file_protocol_callback
+    # Unreachable when the spec passed _validate_spec, but defend anyway.
+    raise ValueError(
+        f"unknown callback_mode: {mode!r} (expected one of {sorted(_VALID_CALLBACK_MODES)})"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 
 def run_experiment(spec_path: Path, *, overwrite: bool = False,
+                    callback_mode_override: str | None = None,
+                    resume: str | None = None,
                     repo_root: Path | None = None) -> Path:
-    """Run the experiment end-to-end. Returns the artifact dir path."""
+    """Run the experiment end-to-end. Returns the artifact dir path.
+
+    ``callback_mode_override`` (CLI ``--callback-mode``): when set, overrides
+    ``backend.fs_hp_loop.callback_mode`` from the spec. Validated against
+    :data:`_VALID_CALLBACK_MODES`.
+
+    ``resume`` (CLI ``--resume <run_id>``): V1.1 Phase 1 scaffolding only.
+    Accepted + logged; the exit-and-resume control flow lands in Phase 2.
+    """
     spec_path = Path(spec_path).resolve()
     repo_root = Path(repo_root) if repo_root is not None else Path.cwd()
 
@@ -379,6 +437,29 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     spec = load_spec(spec_path, default_path=repo_root / "configs/gbdt/default.yaml")
     name = spec_path.stem
+
+    # V1.1 — CLI ``--callback-mode`` overrides the spec's
+    # ``backend.fs_hp_loop.callback_mode`` (and the snapshotted value, since we
+    # mutate the merged spec in place before the snapshot below). Validated the
+    # same way as the spec-level field.
+    if callback_mode_override is not None:
+        if callback_mode_override not in _VALID_CALLBACK_MODES:
+            raise ValueError(
+                f"--callback-mode must be in {sorted(_VALID_CALLBACK_MODES)}, "
+                f"got {callback_mode_override!r}"
+            )
+        spec.setdefault("backend", {}).setdefault("fs_hp_loop", {})[
+            "callback_mode"
+        ] = callback_mode_override
+        # Mirror the override into the per-experiment snapshot source (issue
+        # #30) so the persisted spec.yaml reflects the *effective* callback
+        # mode this run actually used, not the on-disk default.
+        per_exp = spec.get("__per_experiment_spec__")
+        if isinstance(per_exp, dict):
+            per_exp.setdefault("backend", {}).setdefault("fs_hp_loop", {})[
+                "callback_mode"
+            ] = callback_mode_override
+
     out_root = repo_root / spec.get("artifacts", {}).get(
         "experiment_dir", "results/gbdt/experiments"
     )
@@ -390,6 +471,14 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"[experiment] start spec={spec_path.name} -> {out_dir}", flush=True)
+    if resume is not None:
+        # V1.1 Phase 1 scaffolding: the flag + param are accepted but the
+        # exit-and-resume control flow lands in Phase 2. No-op for now.
+        print(
+            "[loop] --resume scaffolding present; exit-and-resume control flow "
+            "lands in Phase 2",
+            flush=True,
+        )
     t0 = time.time()
 
     # Liveness heartbeat: emits [heartbeat] lines on a fixed cadence so a
@@ -523,8 +612,18 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     cal_z_thr = backend.get("calibration_z_threshold", 2.0)
     seed = spec.get("random_seed", 42)
 
+    callback_mode = loop_cfg.get("callback_mode", _DEFAULT_CALLBACK_MODE)
+    # V1.1 — resolve the FS+HP callback from the (possibly CLI-overridden) spec.
+    # ``default`` resolves to None so walk_forward_train keeps using its built-in
+    # default_fs_hp_callback (v1 behaviour preserved byte-for-byte).
+    fs_hp_callback = _resolve_callback(loop_cfg, run_id=name)
+
     heartbeat.set_phase("loop")
-    print(f"[loop] start max_iter={loop_cfg.get('max_iterations', 8)}", flush=True)
+    print(
+        f"[loop] start max_iter={loop_cfg.get('max_iterations', 8)} "
+        f"callback_mode={callback_mode}",
+        flush=True,
+    )
     t1 = time.time()
     result = walk_forward_train(
         panel=panel_obj.panel, X=X, y=y,
@@ -534,6 +633,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         max_iterations=loop_cfg.get("max_iterations", 8),
         plateau_threshold=loop_cfg.get("plateau_threshold", 0.005),
         degradation_gate=loop_cfg.get("degradation_gate", 0.01),
+        fs_hp_callback=fs_hp_callback,
         random_seed=seed,
         sample_weights=sample_weights,
     )
@@ -764,10 +864,29 @@ def main(argv: list[str] | None = None) -> int:
     p_exp.add_argument("spec", type=Path, help="Path to spec YAML")
     p_exp.add_argument("--overwrite", action="store_true",
                         help="Overwrite an existing non-empty artifact dir")
+    p_exp.add_argument(
+        "--callback-mode",
+        choices=sorted(_VALID_CALLBACK_MODES),
+        default=None,
+        help="Override backend.fs_hp_loop.callback_mode from the spec "
+             "(default: use the spec's value, or 'default' if absent).",
+    )
+    p_exp.add_argument(
+        "--resume",
+        metavar="RUN_ID",
+        default=None,
+        help="V1.1 Phase 1 scaffolding (no-op): exit-and-resume control flow "
+             "lands in Phase 2.",
+    )
 
     args = parser.parse_args(argv)
     if args.cmd == "experiment":
-        run_experiment(args.spec, overwrite=args.overwrite)
+        run_experiment(
+            args.spec,
+            overwrite=args.overwrite,
+            callback_mode_override=args.callback_mode,
+            resume=args.resume,
+        )
         return 0
     parser.print_help()
     return 2
