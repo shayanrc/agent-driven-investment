@@ -83,12 +83,17 @@ def spearman_monotonicity(x: np.ndarray, y: np.ndarray, n_bins: int = 10) -> dic
 
 
 def pdp_1d(model, base_vals: np.ndarray, feat_idx: int, grid: np.ndarray) -> np.ndarray:
-    """1D partial dependence: mean predicted P(+) sweeping one feature over a grid."""
+    """1D partial dependence: mean predicted P(+) sweeping one feature over a grid.
+
+    Backend-neutral: ``model`` is a :class:`~gbdt.model.BaseGBDTModel` whose
+    ``predict_proba`` returns a **1-D** array of P(+) (the protocol contract),
+    so no ``[:, 1]`` slice — the same call works for catboost and xgboost.
+    """
     out = np.zeros(len(grid))
     for k, gv in enumerate(grid):
         g = base_vals.copy()
         g[:, feat_idx] = gv
-        out[k] = model.predict_proba(g)[:, 1].mean()
+        out[k] = model.predict_proba(g).mean()
     return out
 
 
@@ -109,22 +114,74 @@ def pdp_monotonicity(curve: np.ndarray, tol: float = 1e-4) -> dict:
             "worst_rise_frac": worst_rise}
 
 
-def interaction_involvement(model) -> dict[str, float]:
-    """Total pairwise-interaction strength involving each feature."""
-    names = model.feature_names_
-    involve: dict[str, float] = {n: 0.0 for n in names}
-    for i1, i2, s in model.get_feature_importance(type="Interaction"):
-        involve[names[int(i1)]] += s
-        involve[names[int(i2)]] += s
-    return involve
+def compute_interaction_result(
+    model,
+    backend: str,
+    *,
+    X: pd.DataFrame | None = None,
+    top_n: int = 15,
+    max_rows: int = 5000,
+):
+    """Backend-dispatched feature-interaction ranking (V1.2 plan § 4.2 / § 6.4).
+
+    The single dispatch point both :func:`interaction_involvement` and
+    :func:`top_interaction_pairs` (and the D7 ``interactions`` bundle block) call
+    through. Routes to :func:`gbdt.interactions.interaction_strength`:
+
+    - **xgboost** → ``kind="shap"`` (native TreeSHAP ``pred_interactions``, the
+      headline per-row signed measurement; streamed pair aggregation). Needs the
+      in-sample matrix ``X`` (pruned to the model's active feature set — the §3.3
+      feasibility budget). The result carries ``per_feature_main_effect`` (mean
+      |diagonal SHAP|) so the D7 *drop-only-if-low-main-AND-low-interaction*
+      pruning rule is applicable straight off the bundle.
+    - **catboost** → ``kind="cooccurrence"`` (CatBoost's native split-pair
+      ``get_feature_importance(type="Interaction")``, unchanged from v1 — the
+      same numbers, now flowing through the common :class:`InteractionResult`
+      shape). No per-row SHAP, so ``sign_consistency`` / ``per_feature_main_effect``
+      are empty/``nan`` here (the cheap-cross-check semantics).
+
+    Returns a :class:`gbdt.interactions.InteractionResult`.
+    """
+    from gbdt.interactions import interaction_strength
+
+    if backend == "xgboost":
+        if X is None:
+            raise ValueError(
+                "the xgboost SHAP-interaction path needs the in-sample matrix X"
+            )
+        names = model.feature_names or list(X.columns)
+        Xsub = X[[c for c in names if c in X.columns]]
+        return interaction_strength(
+            model, Xsub, kind="shap", top_n=top_n, max_rows=max_rows,
+        )
+    # catboost: native co-occurrence via the wrapped CatBoost estimator. The
+    # wrapper (BaseGBDTModel) exposes the native model as ``_model``; pass it
+    # straight to the shared co-occurrence ranker so the v1 numbers are
+    # byte-identical (interaction_strength routes catboost through the same
+    # get_feature_importance(type="Interaction") call this code used before).
+    return interaction_strength(model, X, kind="cooccurrence", top_n=top_n)
 
 
-def top_interaction_pairs(model, k: int = 15) -> list[tuple[str, str, float]]:
-    names = model.feature_names_
-    out = []
-    for i1, i2, s in model.get_feature_importance(type="Interaction")[:k]:
-        out.append((names[int(i1)], names[int(i2)], float(s)))
-    return out
+def interaction_involvement(model, backend: str = "catboost",
+                            X: pd.DataFrame | None = None) -> dict[str, float]:
+    """Total pairwise-interaction strength involving each feature.
+
+    Thin caller of :func:`compute_interaction_result` (V1.2 § 6.4) — the actual
+    measurement now lives in ``gbdt.interactions`` (SHAP for xgboost,
+    co-occurrence for catboost). Returns the ``per_feature_involvement`` map.
+    """
+    return dict(compute_interaction_result(model, backend, X=X).per_feature_involvement)
+
+
+def top_interaction_pairs(model, k: int = 15, backend: str = "catboost",
+                          X: pd.DataFrame | None = None) -> list[tuple[str, str, float]]:
+    """Top-``k`` feature pairs by interaction strength (pair, pair, strength).
+
+    Thin caller of :func:`compute_interaction_result` (V1.2 § 6.4); drops the
+    sign-consistency field (carried in the richer ``interactions`` bundle block).
+    """
+    res = compute_interaction_result(model, backend, X=X, top_n=k)
+    return [(a, b, float(s)) for a, b, s, _sign in res.top_pairs]
 
 
 def constraint_advice(marg: dict, model_pdp: dict, involvement: float,
@@ -146,14 +203,43 @@ def constraint_advice(marg: dict, model_pdp: dict, involvement: float,
 
 
 def load_cell(artifact_dir: Path) -> dict:
-    """Load model, feature list, spec, and per-segment predictions."""
-    from catboost import CatBoostClassifier
+    """Load model, feature list, spec, and per-segment predictions.
+
+    Backend dispatch (V1.2 plan § 6.4): the persisted model filename is
+    backend-determined (``model.cbm`` for catboost, ``model.ubj`` for xgboost —
+    :func:`gbdt.model.model_filename`), and the loader reads ``backend.library``
+    from ``spec.yaml`` to build the right :class:`~gbdt.model.BaseGBDTModel`
+    backend via ``make_model(backend).load(...)``. The single source of truth
+    for both the filename and the load path is ``gbdt.model`` — the runner that
+    wrote the artifact and this loader use the same dispatch, so they always
+    agree. The returned ``model`` is the backend wrapper exposing the
+    backend-neutral protocol surface (``feature_names`` / ``feature_importance``
+    / ``predict_proba`` → 1-D P(+)); ``backend`` carries the resolved library
+    string so downstream interaction dispatch (SHAP for xgboost, co-occurrence
+    for catboost) picks the right method.
+    """
+    from gbdt.model import CatBoostModel, XGBoostModel, model_filename
 
     artifact_dir = Path(artifact_dir)
-    model = CatBoostClassifier()
-    model.load_model(str(artifact_dir / "model.cbm"))
     spec = yaml.safe_load((artifact_dir / "spec.yaml").read_text())
     target = spec["target"]
+    backend = ((spec.get("backend") or {}).get("library")) or "catboost"
+    model_path = artifact_dir / model_filename(backend)
+    # ``features.yaml`` is the authoritative active-feature list (in model order).
+    # It is load-bearing for the XGBoost backend: XGBoost fits on a NAME-LESS numpy
+    # matrix (the wrapper's ``_to_2d``), so a reloaded ``.ubj`` booster carries no
+    # feature names — without this the wrapper's ``feature_names`` would be ``None``
+    # and the downstream feature-importance / interaction code has nothing to key
+    # on. For catboost the names round-trip in the ``.cbm`` already, so passing them
+    # is a harmless no-op (the ``load`` classmethod prefers the explicit list).
+    feat_names = None
+    feats_path = artifact_dir / "features.yaml"
+    if feats_path.exists():
+        feat_names = (yaml.safe_load(feats_path.read_text()) or {}).get("features")
+    # Dispatch on backend to the right wrapper class, then reuse the wrapper's
+    # own ``load`` classmethod (no duplicated, backend-specific load logic).
+    model_cls = {"catboost": CatBoostModel, "xgboost": XGBoostModel}[backend]
+    model = model_cls.load(model_path, feature_names=feat_names)
     preds = {}
     for seg in ("train", "val", "eval", "test"):
         p = artifact_dir / "predictions" / f"{seg}.csv"
@@ -168,7 +254,7 @@ def load_cell(artifact_dir: Path) -> dict:
         for line in itpath.read_text().strip().splitlines():
             if line.strip():
                 iters.append(json.loads(line))
-    return {"model": model, "spec": spec, "target": target,
+    return {"model": model, "backend": backend, "spec": spec, "target": target,
             "predictions": preds, "iterations": iters}
 
 
@@ -215,16 +301,24 @@ def build_insample(target: dict, *, test_tail_rows: int,
 
 def diagnose(artifact_dir: Path, *, top_n: int = 30, importance_threshold: float = 0.01,
              out_dir: Path | None = None, do_pdp: bool = True, do_figs: bool = True,
-             pdp_subsample: int = 4000) -> dict:
+             pdp_subsample: int = 4000, interactions: str = "summary") -> dict:
     artifact_dir = Path(artifact_dir)
     out_dir = Path(out_dir) if out_dir else artifact_dir / "diagnose"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "figs").mkdir(exist_ok=True)
 
     cell = load_cell(artifact_dir)
-    model, target = cell["model"], cell["target"]
-    names = list(model.feature_names_)
-    imp = dict(zip(names, model.get_feature_importance()))
+    # ``model`` is now a backend-neutral ``gbdt.model.BaseGBDTModel`` wrapper
+    # (catboost or xgboost — V1.2 § 6.4); ``backend`` is the resolved library
+    # string driving the interaction-method dispatch (SHAP for xgboost,
+    # co-occurrence for catboost).
+    model, target, backend = cell["model"], cell["target"], cell["backend"]
+    # Backend-neutral feature names + native importance (the wrapper exposes
+    # ``feature_names`` / ``feature_importance(kind="native")`` — NOT CatBoost's
+    # ``feature_names_`` / ``get_feature_importance()``; those would break on an
+    # xgboost cell).
+    names = list(model.feature_names)
+    imp = model.feature_importance(kind="native").to_dict()
 
     # split sizes (for in-sample test-tail)
     split = (cell["spec"].get("split") or {})
@@ -257,8 +351,24 @@ def diagnose(artifact_dir: Path, *, top_n: int = 30, importance_threshold: float
                    "iteration_cap_hit": it0.get("iteration_cap_hit"),
                    "no_overfit": assess_overfit(gap)}
 
-    # ---- E. interaction involvement (compute once; used for advice) ----
-    involve = interaction_involvement(model)
+    # ---- E. interaction strength (compute ONCE; used for advice + the D7
+    # bundle block). Backend-dispatched via gbdt.interactions (§ 6.4): xgboost →
+    # native TreeSHAP pred_interactions (kind="shap"); catboost → native
+    # split-pair co-occurrence (kind="cooccurrence"). The single
+    # compute_interaction_result call is the source for per-feature involvement,
+    # the top-pairs table, and the D7 `interactions` block — diagnose.py is a
+    # thin caller, the measurement lives in gbdt.interactions.
+    #
+    # SHAP needs the in-sample matrix pruned to the model's ACTIVE feature set
+    # (§ 3.3 mitigation 1 — the full pool is infeasible to materialise densely).
+    # ``--interactions full`` lifts the row cap so the whole in-sample slice is
+    # scored (default ``summary`` keeps the streamed-aggregate cap at 5000 rows).
+    Xact = X[[c for c in names if c in X.columns]]
+    _shap_max_rows = len(Xact) if interactions == "full" else 5000
+    inter_result = compute_interaction_result(
+        model, backend, X=Xact, top_n=max(top_n, 15), max_rows=_shap_max_rows,
+    )
+    involve = dict(inter_result.per_feature_involvement)
     inv_vals = sorted((v for v in involve.values() if v > 0), reverse=True)
     inv_high_thr = inv_vals[max(0, len(inv_vals) // 2) - 1] if inv_vals else float("inf")
 
@@ -311,11 +421,40 @@ def diagnose(artifact_dir: Path, *, top_n: int = 30, importance_threshold: float
         "overfit": overfit,
         "prevalence_by_segment": seg_prev, "prevalence_drift": drift,
         "top_features": feat_rows,
-        "top_interaction_pairs": [list(t) for t in top_interaction_pairs(model, 15)],
+        # Backwards-compatible (pair, pair, strength) triples — drawn from the
+        # single inter_result so we never re-run the interaction measurement.
+        "top_interaction_pairs": [
+            [a, b, float(s)] for a, b, s, _sign in inter_result.top_pairs[:15]
+        ],
         "interaction_high_threshold": float(inv_high_thr) if np.isfinite(inv_high_thr) else None,
+        # ---- D7 interactions block (V1.2 plan § 7 / D7) ----
+        # The compact summary the V1.1 agent-loop bundle consumes so the agent can
+        # prune/tune on interaction structure (the third axis beyond importance +
+        # correlation). Carries the top-N signed pairs, per-feature interaction
+        # load AND per-feature main effect (so the drop-only-if-low-main-AND-low-
+        # interaction rule is applicable straight off the bundle), and which method
+        # produced it (shap for xgboost, cooccurrence for catboost). The full
+        # O(features²) tensor stays OFF the bundle — gated behind `--interactions
+        # full`, which only lifts the row cap of the streamed top-N aggregate.
+        "interactions": {
+            "top_pairs": [
+                [a, b, float(s), (None if (isinstance(sign, float) and np.isnan(sign)) else float(sign))]
+                for a, b, s, sign in inter_result.top_pairs
+            ],
+            "per_feature_involvement": {
+                k: float(v) for k, v in inter_result.per_feature_involvement.items()
+            },
+            "per_feature_main_effect": {
+                k: float(v) for k, v in inter_result.per_feature_main_effect.items()
+            },
+            "method": inter_result.method,
+            "n_rows_used": int(inter_result.n_rows_used),
+            "n_features": int(inter_result.n_features),
+        },
         "kept_count": len(kept), "pruned_count": len(pruned),
         "pruned_summary": pruned_summary,
         "importance_threshold": importance_threshold,
+        "backend": backend,
     }
 
     if do_figs:
@@ -398,9 +537,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--no-pdp", action="store_true", help="Skip the 1D-PDP audit (faster)")
     ap.add_argument("--no-figs", action="store_true")
+    ap.add_argument(
+        "--interactions", choices=("summary", "full"), default="summary",
+        help="Interaction-tensor scope (V1.2 D7): 'summary' (default) streams the "
+             "top-N aggregate over a 5000-row cap; 'full' lifts the cap so the "
+             "whole in-sample slice is scored (the O(features²) full pass — slower, "
+             "still only the top-N summary lands in the bundle).",
+    )
     a = ap.parse_args(argv)
     b = diagnose(a.artifact_dir, top_n=a.top_n, importance_threshold=a.importance_threshold,
-                 out_dir=a.out, do_pdp=not a.no_pdp, do_figs=not a.no_figs)
+                 out_dir=a.out, do_pdp=not a.no_pdp, do_figs=not a.no_figs,
+                 interactions=a.interactions)
     out = Path(a.out) if a.out else a.artifact_dir / "diagnose"
     print(f"[diagnose] wrote {out}/diagnose_report.md + diagnose.json")
     print(f"[diagnose] no_overfit={b['overfit'].get('no_overfit')} "

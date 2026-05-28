@@ -184,6 +184,17 @@ def interaction_strength(
     -------
     InteractionResult
     """
+    # CatBoost co-occurrence (V1.2 plan § 4.2): the CatBoost backend has no
+    # ``get_booster()`` / native TreeSHAP-interaction surface, so its only
+    # interaction primitive is the native split-pair co-occurrence statistic
+    # (``get_feature_importance(type="Interaction")``). For a fitted CatBoost
+    # model + ``kind="cooccurrence"`` we route there, producing the same numbers
+    # the v1 ``/gbdt-diagnose`` used — now through the shared InteractionResult
+    # shape. ``kind="shap"`` on CatBoost is out of scope (the headline SHAP path
+    # is XGBoost-native — plan § 4.2 / Phase 4 scope).
+    if kind == "cooccurrence" and _is_catboost_model(model):
+        return _cooccurrence_interaction_strength_catboost(model, top_n=top_n)
+
     booster = _booster_of(model)
     feat_names = _feature_names_of(model, X)
 
@@ -380,6 +391,63 @@ def shap_interaction_dense_reference(
 # ---------------------------------------------------------------------------
 # kind="cooccurrence": tree-dump split-pair gain cross-check (near-free)
 # ---------------------------------------------------------------------------
+
+
+def _is_catboost_model(model: "BaseGBDTModel") -> bool:
+    """True iff ``model`` is a fitted CatBoost backend.
+
+    The CatBoost wrapper (:class:`~gbdt.model.CatBoostModel`) exposes its native
+    estimator as ``model._model`` — a ``catboost.CatBoostClassifier`` carrying the
+    split-pair ``get_feature_importance(type="Interaction")`` surface. We detect it
+    structurally (an estimator with a ``get_feature_importance`` *and* CatBoost's
+    ``feature_names_`` attribute) rather than importing ``catboost`` here, so the
+    interaction module stays import-light. An unfitted / non-CatBoost model
+    returns ``False`` and falls through to the XGBoost booster path.
+    """
+    estimator = getattr(model, "_model", None)
+    if estimator is None:
+        return False
+    return hasattr(estimator, "get_feature_importance") and hasattr(
+        estimator, "feature_names_"
+    )
+
+
+def _cooccurrence_interaction_strength_catboost(
+    model: "BaseGBDTModel",
+    *,
+    top_n: int,
+) -> InteractionResult:
+    """Native CatBoost split-pair co-occurrence ranking (V1.2 plan § 4.2).
+
+    Wraps CatBoost's native ``get_feature_importance(type="Interaction")`` — the
+    same statistic the v1 ``/gbdt-diagnose`` used (it returns ``[feat_i, feat_j,
+    strength]`` rows ranked by split co-occurrence gain) — into the shared
+    :class:`InteractionResult` shape. The numbers are byte-identical to v1's
+    ``diagnose.py::interaction_involvement`` / ``top_interaction_pairs``; only the
+    container changes. There is no per-row signed notion here, so
+    ``sign_consistency`` is ``nan`` and ``per_feature_main_effect`` is empty (the
+    cheap cross-check semantics, mirroring the XGBoost co-occurrence path).
+    """
+    estimator = model._model
+    feat_names = list(estimator.feature_names_)
+    involvement = {name: 0.0 for name in feat_names}
+    pairs: list[tuple[str, str, float, float]] = []
+    for i1, i2, s in estimator.get_feature_importance(type="Interaction"):
+        a = feat_names[int(i1)]
+        b = feat_names[int(i2)]
+        strength = float(s)
+        pairs.append((a, b, strength, math.nan))
+        involvement[a] += strength
+        involvement[b] += strength
+    pairs.sort(key=lambda p: p[2], reverse=True)
+    return InteractionResult(
+        top_pairs=pairs[:top_n],
+        per_feature_involvement=involvement,
+        per_feature_main_effect={},
+        method="cooccurrence",
+        n_rows_used=0,
+        n_features=len(feat_names),
+    )
 
 
 def _cooccurrence_interaction_strength(
