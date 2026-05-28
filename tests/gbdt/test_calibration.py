@@ -8,10 +8,13 @@ import numpy as np
 import pytest
 
 from gbdt.calibration import (
+    PlattCalibrator,
     apply_calibrator,
     conditional_isotonic,
     fit_isotonic,
+    fit_platt,
     isotonic_always,
+    platt_calibration,
     spiegelhalter_z,
 )
 
@@ -153,3 +156,91 @@ def test_none_calibrator_pickle_roundtrip(tmp_path):
     # And apply_calibrator passes p through unchanged.
     p = np.array([0.1, 0.5, 0.9])
     assert np.allclose(apply_calibrator(p, loaded), p)
+
+
+# ---------------------------------------------------------------------------
+# Platt path — backend-neutral, fit on (p_raw, y) (V1.2 Phase 6 / plan R7)
+# ---------------------------------------------------------------------------
+
+
+def _miscal_logistic(n: int = 6000, seed: int = 0):
+    """A monotone miscalibration a 1-D logistic (Platt) can invert.
+
+    True P comes from a logistic in a latent score ``s``; the *reported* raw
+    probability is a squashed/biased monotone transform of the true P (the kind
+    of overconfidence a sigmoid-of-linear map recovers). Returns ``(y, p_raw)``.
+    """
+    rng = np.random.default_rng(seed)
+    s = rng.normal(0, 1.5, n)
+    true_p = 1.0 / (1.0 + np.exp(-s))
+    y = (rng.uniform(0, 1, n) < true_p).astype(int)
+    # Biased, over-stretched reported probability (monotone in true_p) — its own
+    # Spiegelhalter Z fires; a 1-D logistic on p_raw recovers the calibration.
+    p_raw = np.clip(0.05 + 0.7 * true_p ** 1.6, 1e-4, 1 - 1e-4)
+    return y, p_raw
+
+
+def test_fit_platt_returns_platt_calibrator():
+    y, p = _miscal_logistic(2000, seed=20)
+    platt = fit_platt(y, p)
+    assert isinstance(platt, PlattCalibrator)
+    out = platt.predict(p)
+    # .predict returns calibrated probabilities (NOT hard class labels) in [0,1].
+    assert out.ndim == 1 and out.shape == p.shape
+    assert ((out >= 0) & (out <= 1)).all()
+
+
+def test_fit_platt_is_backend_neutral_on_arrays_only():
+    """fit_platt touches only the (p_raw, y) arrays — no model object, no
+    XGBClassifier / CatBoostClassifier sklearn surface (R7). Passing plain numpy
+    arrays is sufficient; nothing model-shaped is required."""
+    y, p = _miscal_logistic(1500, seed=21)
+    platt = fit_platt(np.asarray(y), np.asarray(p))
+    # The internal estimator is a bare 1-D LogisticRegression on the raw prob.
+    from sklearn.linear_model import LogisticRegression
+    assert isinstance(platt._lr, LogisticRegression)
+    assert platt._lr.n_features_in_ == 1
+
+
+def test_fit_platt_length_mismatch_raises():
+    with pytest.raises(ValueError, match="length mismatch"):
+        fit_platt(np.array([0, 1, 0]), np.array([0.5, 0.5]))
+
+
+def test_platt_recovers_calibration_z_drops():
+    """Platt scaling drops the Spiegelhalter |Z| below the gate threshold on a
+    monotone-miscalibrated probability vector (R7 recovery proof on arrays)."""
+    y, p = _miscal_logistic(8000, seed=22)
+    z_before, _ = spiegelhalter_z(y, p)
+    assert abs(z_before) >= 2.0  # the raw vector is miscalibrated
+    dec = platt_calibration(y, p, z_threshold=2.0)
+    assert dec.method == "platt"
+    assert dec.calibrator is not None
+    p_cal = apply_calibrator(p, dec.calibrator)
+    z_after, _ = spiegelhalter_z(y, p_cal)
+    assert abs(z_after) < 2.0
+    assert abs(z_after) < abs(z_before)
+
+
+def test_apply_calibrator_routes_platt_via_predict():
+    y, p = _miscal_logistic(2000, seed=23)
+    platt = fit_platt(y, p)
+    # apply_calibrator dispatches on the .predict surface (same path as isotonic).
+    assert np.allclose(apply_calibrator(p, platt), platt.predict(p))
+
+
+def test_platt_pickle_roundtrip_preserves_outputs(tmp_path):
+    """A PlattCalibrator pickles into calibration.pkl and reproduces outputs."""
+    y, p = _miscal_logistic(4000, seed=24)
+    platt = fit_platt(y, p)
+    out_before = apply_calibrator(p, platt)
+
+    path = tmp_path / "calibration.pkl"
+    with open(path, "wb") as f:
+        pickle.dump(platt, f)
+    with open(path, "rb") as f:
+        loaded = pickle.load(f)
+    assert isinstance(loaded, PlattCalibrator)
+
+    out_after = apply_calibrator(p, loaded)
+    assert np.allclose(out_before, out_after)
