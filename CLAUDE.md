@@ -101,6 +101,10 @@ Project-shared facts (architecture decisions, layout conventions, workflow rules
 
 Per-user/per-machine items (personal preferences, role context, machine paths) stay at `~/.claude/projects/<hash>/memory/`. Don't duplicate project facts there — refer to the project memories instead.
 
+## Presenting plans and priorities
+
+- **Always render a dependency graph to PNG when optimizing/prioritizing tasks.** Whenever the work involves task sequencing — a dependency graph, "what's unblocked?", critical-path/parallelization, "optimize for time" — produce the graph AND render it to a PNG (plus SVG) and display it via `SendUserFile`; don't stop at inline mermaid text. Trigger it automatically, without being asked. Render **locally with graphviz `dot`** (`dot -Tpng -Gdpi=150 g.dot -o g.png` + `-Tsvg`); `mmdc`/mermaid-cli is NOT usable in this environment (its install skips the headless-browser download and fails). Keep the styling consistent (green=actionable now, blue=in-flight, gold=goal, dashed-gray=pending, light-gray=backlog/context; solid edge=hard dependency, dashed=soft, a colored edge for the critical path). Don't upload graphs to external mermaid/Kroki renderers — render locally. See `.claude/memories/feedback-task-priority-graph.md`.
+
 ## What not to do — analog_mc
 
 (Module-specific anti-patterns. Future modules append their own `## What not to do — <module>` sections rather than dumping into a shared list.)
