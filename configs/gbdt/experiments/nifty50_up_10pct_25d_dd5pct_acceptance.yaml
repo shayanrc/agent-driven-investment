@@ -1,0 +1,59 @@
+# V1.1 Phase 6 — agent-driven FS+HP loop ACCEPTANCE spec.
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
+# This is the SAME cell the hand-driven loop in
+# `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` worked by hand. The point of
+# this spec is to drive the *automated* agent_file_protocol loop on it and then
+# check (via `scripts/gbdt/acceptance_check_147.py`) that the automated loop
+# reaches the same end-state findings the hand-driven loop documented:
+#   - HP ceiling: val_brier band ~0.1641-0.1664 across depth/lr configs.
+#   - depth 6 optimal (clean inverted-U: depth 4/6/8 -> 0.1661/0.1642/0.1652).
+#   - monotone constraints contraindicated (every monotone config > baseline).
+#   - prevalence-drift ceiling (train ~0.28 -> val ~0.20 -> eval ~0.14, declining).
+#   - FS neutral-to-harmful (no overfit: negative train/val gap; 88-feat ~= baseline).
+#   - ranking robust (weighted R-precision ~2.1x throughout).
+#
+# `callback_mode: agent_file_protocol` => the runner trains ONE iteration, writes
+# `loop/iter_<N>_request.json` + `loop/checkpoint.json`, and EXITS. The driving
+# agent reads the request, decides FS pruning + HP changes (or should_stop),
+# writes `loop/iter_<N>_decision.json`, and relaunches `--resume`. The agent IS
+# the data scientist each iteration (the capability under test). See
+# `docs/gbdt/PHASE6_ACCEPTANCE_RUNBOOK.md` for how to drive the full run, and
+# `.claude/skills/gbdt-experiment/SKILL.md` § "Agent-driven FS+HP loop".
+#
+# Iter 0 launches from default.yaml::backend.hp_starting (all 279 features, depth
+# 6, lr 0.05, Ordered boosting, 1000 trees, early-stop 75) — matching the `_147`
+# iteration-0 screening baseline. From there the agent drives the loop.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05                            # <=5% interim drawdown before the +10% breach
+
+# split omitted - default 800/400/200/100 (train/val/eval/test) per ticker, the
+#   same split `_147` ran on (46 of 50 tickers; ETERNAL/JIOFIN/MAXHEALTH/SHRIRAMFIN
+#   excluded as IPO-shallow by the min_rows_per_ticker gate).
+# features omitted - start with the full 279-column candidate pool; the agent prunes.
+
+backend:
+  calibration_method: conditional_isotonic      # default; Spiegelhalter Z then ship native or isotonic.
+  fs_hp_loop:
+    callback_mode: agent_file_protocol          # V1.1 — agent drives each iteration via exit-and-resume.
+    max_iterations: 10                           # hard cap. `_147` explored 10 distinct configs by hand
+                                                 #   (iter 0 baseline + iters 1-9); 10 gives the automated
+                                                 #   loop the same budget to map depth/lr + the monotone
+                                                 #   ablation without burning past the documented ceiling.
+    plateau_threshold: 0.005                     # default. With a ~0.164 ceiling and a band <0.003 wide,
+                                                 #   the plateau gate WILL fire once the agent has mapped the
+                                                 #   ceiling — that early-stop IS the expected end-state.
+    degradation_gate: 0.01                       # default; a monotone-constraint iteration (val_brier
+                                                 #   +0.0012-0.0022 vs best) stays inside the gate, so the
+                                                 #   agent can explore monotone WITHOUT tripping it.
+  # hp_starting omitted - use default.yaml::backend.hp_starting at iteration 0
+  #   (depth 6 / lr 0.05 / Ordered / 1000 trees / early-stop 75 = the `_147` iter-0 baseline).
+
+random_seed: 42
