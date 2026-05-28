@@ -7,9 +7,9 @@ metadata:
 
 Hard-won tuning rules from the nifty50 H=25 hand-driven FS+HP loop (8 configs, `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md`). These are the agent's playbook when *manually* driving the loop (or steering the V1.1 callback) — they encode what the fixed `default_fs_hp_callback` cannot reason about.
 
-**1. Read the train/val gap + early-stop tree BEFORE pruning anything.**
-- **Why**: the fallback callback prunes on sight, assuming overfit. On nifty50 H=25 the gap was *negative* (val brier < train) and early-stop never fired — **no overfit**. Pruning then only removed capacity → val brier rose monotonically (0.1642→0.1656→0.1663). The fallback's instinct was actively wrong.
-- **How to apply**: if `train_val_gap` ≥ 0 (val not worse than train) AND `early_stop_iteration` is None/near the cap → the model is NOT overfitting. Do NOT prune for regularization. Pruning a non-overfit model is at best neutral, usually harmful.
+**1. Read the train/val gap BEFORE pruning anything.**
+- **Why**: the fallback callback prunes on sight, assuming overfit. On nifty50 H=25 the gap was *negative* (val brier < train brier) — **no overfit**. Pruning then only removed capacity → the fallback's blind cut raised val brier (0.1642 → 0.1663). The fallback's instinct was actively wrong.
+- **How to apply**: `train_val_gap = val_brier − train_brier`; POSITIVE = val worse than train = overfit (src/gbdt/train.py acts at gap > 0.02). If `train_val_gap ≤ 0.02` (val not meaningfully worse than train) → the model is NOT overfitting; do NOT prune for regularization (at best neutral, usually harmful). **Early-stopping firing is NOT an overfit signal** — it's the healthy mechanism that picks the tree count; a model can early-stop at tree 67 with a deeply negative gap (the nifty50 case). Base the no-overfit call on the gap alone, not on whether early-stop fired.
 
 **2. importance≈0 ≠ unrelated — it usually means REDUNDANT.**
 - **Why**: 191/279 features had <0.01 importance, yet 26 of them had a clean monotone relationship with the target; 15 of those were 0.7–0.99 collinear with a *kept* feature. The model needs one vol estimator per window-band, not garman_klass+parkinson+realized_vol (≈0.96–1.00 correlated).
