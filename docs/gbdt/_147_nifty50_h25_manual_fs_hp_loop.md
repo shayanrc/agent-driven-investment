@@ -37,6 +37,7 @@ All 279 features, default HP (depth 6, lr 0.05, Bayesian bootstrap, Ordered boos
 - **Hypothesis**: more capacity extracts more signal. Change a coherent capacity cluster (depth+l2), hold features=all so the val_brier delta is attributable to HP alone.
 - **Result**: val_brier **0.1652** (worse), **early-stop crashed to tree 48** (overfits immediately). Test AUC 0.740, eval improvement +0.0011.
 - **Belief update**: capacity headroom does **not** exist upward. Signal is **low-complexity** (shallow interactions). The native-calibration flip (z 5.93→0.10) is a side effect of stopping at 48 trees (softer probs), not a depth win.
+- *(**Correction 2026-05-29 — l2 confound.** This iteration changed **two** variables at once: depth 6→8 AND l2 3.0→1.5 (see the section header — "a coherent capacity cluster (depth+l2)"). So this 0.1652 is depth-8-**at-l2-1.5**, NOT comparable to the depth-4/6 points, which used l2=3.0. The l2 cut — not the depth — is what crashed early-stop to tree 48 (immediate overfit). The automated agent-driven loops (`_174` CatBoost, `_149` XGBoost), which enforce one-attributable-change-per-iteration, re-ran depth-8 with l2 **held at 3.0** and got **0.1633** — marginally **below** depth-6, gap +0.0044 (still no overfit). So "capacity headroom doesn't exist upward" was an artifact of the confound: depth 6 and 8 are a **plateau within the cell's ~0.001 noise band**, not a 6-peaked inverted-U. `scripts/gbdt/acceptance_check_147.py` was updated to encode the deconfounded depth curve + the plateau check. The downstream conclusions (HP ceiling, no-overfit, FS-neutral, monotone-contraindicated, prevalence ceiling) are unaffected.)*
 
 ## Iteration 2 — shallower trees (depth 6→4), maps the depth curve
 
@@ -44,6 +45,7 @@ All 279 features, default HP (depth 6, lr 0.05, Bayesian bootstrap, Ordered boos
 - **Hypothesis**: for low-complexity signal, shallower (lower-variance) may win. Reset l2 to 3.0 to keep the depth comparison clean; change only depth.
 - **Result**: val_brier **0.1661** (worst), train_brier 0.1760 (underfit), early-stop 71. Test AUC 0.709.
 - **Belief update**: clean inverted-U on depth — **0.1661 / 0.1642 / 0.1652** for depth 4/6/8. **Depth 6 is the sweet spot**, confirmed by data, not assumed.
+- *(**Correction 2026-05-29.** The "inverted-U" is an artifact of the Iteration-1 l2 confound (see that correction): the depth-8 point was at l2=1.5, the depth-4/6 points at l2=3.0. **Deconfounded** (all at l2=3.0), depth 4/6/8 = **0.1661 / 0.1642 / 0.1633** — depth-4 underfits, but depth 6 and 8 are a **within-noise plateau** (Δ ~0.001), not a 6-peak. The "depth 6 is THE sweet spot" claim should read "depth 6–8 plateau; depth-4 underfits.")*
 
 ## Iteration 3 — learning_rate (0.05→0.02, 1000→2000 trees)
 
@@ -124,7 +126,7 @@ This explains why iter 4 (88 feat) ≈ baseline: pruning removed redundant-or-we
 | iter | lever | val_brier | verdict |
 |---:|---|---:|---|
 | 0 | baseline (all 279, depth 6, lr 0.05) | **0.1642** | best-on-val |
-| 1 | depth 8 | 0.1652 | overfits (stop @48) |
+| 1 | depth 8 | 0.1652† | overfits (stop @48) — †l2-confounded |
 | 2 | depth 4 | 0.1661 | underfits |
 | 3 | lr 0.02 | 0.1641 | tie (noise) |
 | 4 | targeted FS (88 feat) | 0.1650 | ≈ baseline, leaner |
@@ -133,6 +135,8 @@ This explains why iter 4 (88 feat) ≈ baseline: pruning removed redundant-or-we
 | 7 | monotone +1 (18: +5 pruned) | 0.1656 | ≈ iter6 — constraining unused feats = no-op |
 | 8 | monotone +1 (9 low-interaction) | 0.1654 | removing high-interaction constraints recovers ~45% |
 | 9 | monotone +1 (8 high-interaction) | 0.1664 | = full 17-constraint harm; removing low recovers 0% |
+
+† **iter-1 l2 confound (correction 2026-05-29):** the depth-8 row also cut l2 3.0→1.5, so 0.1652 is not l2-comparable to depth-4/6. Deconfounded (l2 held at 3.0), depth-8 = **0.1633** — depth 6/8 are a within-noise plateau, not a 6-peaked inverted-U. See the Iteration 1/2 corrections.
 
 The cell's signal lives **irreducibly in the conditional interactions** (vol × regime), is **low-complexity**, and is **robust to model configuration** (val_brier band 0.1641–0.1664; R-precision ~2.1× throughout). Every lever that simplifies or constrains either does nothing (HP, FS redundancy) or hurts (monotone). **The untouched baseline is near-optimal.** The brier is capped not by model configuration but by the **train→eval prevalence non-stationarity (28%→14%)** — a distribution shift no FS/HP/constraint lever can touch, because the loop only sees val.
 

@@ -11,13 +11,14 @@ tested deterministically and fast.
 Two synthetic runs anchor the tests:
 
 * ``_147_like_run()`` — an iteration history + metrics that MATCH the documented
-  `_147` end-state (HP ceiling ~0.164, depth-6 inverted-U, every monotone config
-  worse than baseline, no overfit, declining prevalence, no feature collapse).
+  `_147` end-state (HP ceiling ~0.164, depth {6,8} plateau within noise with
+  depth-4 the underfit arm, every monotone config worse than the best
+  unconstrained one, no overfit, declining prevalence, no feature collapse).
   This must pass every check.
 * A handful of mutated copies that each break exactly one finding (a config that
-  beats baseline, depth-8 winning, a "beneficial" monotone config, an overfit
-  gap, flat prevalence, a collapsed feature set) — each must flip exactly that
-  one check to FAIL while the rest still pass.
+  beats baseline, depth-4 no longer the underfit arm, a "beneficial" monotone
+  config, an overfit gap, flat prevalence, a collapsed feature set) — each must
+  flip exactly that one check to FAIL while the rest still pass.
 
 Plus the `load_run` round-trip on real-shaped on-disk artifacts (so the parsing
 half is covered too) and the SKIP behaviour when optional data is absent.
@@ -42,18 +43,21 @@ from scripts.gbdt.acceptance_check_147 import (
 
 
 def _147_like_iterations() -> list[dict]:
-    """Iteration history matching `_147`'s Unified-conclusion table.
+    """Iteration history matching `_147`'s Unified-conclusion table (deconfounded).
 
-    iter 0 baseline (all-279, depth 6, lr 0.05) 0.1642; depth/lr sweep stays in
-    [0.1641, 0.1661]; iters 5-9 apply monotone constraints, all worse than
-    baseline (0.1654-0.1664). Negative train/val gap throughout (no overfit).
+    iter 0 baseline (all-279, depth 6, lr 0.05) 0.1642; the depth/lr sweep stays
+    in [0.1633, 0.1661] with depth 6/8 a plateau within noise (deconfounded
+    depth-8 = 0.1633, l2 held) and depth-4 the underfit arm; iters 5-9 apply
+    monotone constraints, all worse than the best unconstrained config
+    (0.1654-0.1664). No overfit (small gap throughout).
     """
     return [
         # HP sweep (non-monotone) — the depth/lr ceiling map.
         {"iter": 0, "n_features": 279, "val_brier": 0.1642, "train_val_gap": -0.0048,
          "hp": {"depth": 6, "learning_rate": 0.05}, "rationale": "baseline all-279"},
-        {"iter": 1, "n_features": 279, "val_brier": 0.1652, "train_val_gap": -0.0030,
-         "hp": {"depth": 8, "learning_rate": 0.05}, "rationale": "depth 8 — overfits"},
+        {"iter": 1, "n_features": 279, "val_brier": 0.1633, "train_val_gap": 0.0044,
+         "hp": {"depth": 8, "learning_rate": 0.05},
+         "rationale": "depth 8 (l2 held) — plateau with depth-6, within noise"},
         {"iter": 2, "n_features": 279, "val_brier": 0.1661, "train_val_gap": -0.0090,
          "hp": {"depth": 4, "learning_rate": 0.05}, "rationale": "depth 4 — underfits"},
         {"iter": 3, "n_features": 279, "val_brier": 0.1641, "train_val_gap": -0.0050,
@@ -157,12 +161,19 @@ def test_config_beating_baseline_fails_ceiling_checks():
     assert _verdict(res, "hp_ceiling_spread") is False
 
 
-def test_wrong_optimal_depth_fails_depth_check():
-    """Depth 8 winning (not 6) breaks the inverted-U finding."""
+def test_depth4_not_underfit_fails_depth_check():
+    """Depth-4 NOT being the worst arm breaks the plateau finding (depth is
+    supposed to be a {6,8} plateau with depth-4 the underfit arm). Set depth-4
+    mid-band (better than depth-6) so it's no longer the worst — within the
+    ceiling band, so ONLY the depth check flips."""
     iters = _147_like_iterations()
-    iters[1]["val_brier"] = 0.1600  # depth-8 iter now the best
+    iters[2]["val_brier"] = 0.1638  # depth-4 no longer the worst arm
     res = evaluate_acceptance(iters, _147_like_metrics(), _147_like_features())
     assert _verdict(res, "depth_optimal") is False
+    # The mutation stays inside the ceiling band, so it does not trip the other
+    # ceiling checks — the depth finding fails in isolation.
+    assert _verdict(res, "hp_ceiling_spread") is True
+    assert _verdict(res, "no_meaningful_improvement") is True
 
 
 def test_beneficial_monotone_fails_contraindication():
