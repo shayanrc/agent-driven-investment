@@ -18,6 +18,19 @@ End-to-end orchestrator for a single gbdt experiment. The skill consumes a YAML 
 - You want a complete artifact: model, calibration, iteration history, predictions, figures, report.
 - For multi-cell sweeps, invoke this skill once per spec file. v1 ships no sweep runner (parked in `docs/gbdt/V1.1_TBD.md`).
 
+## What to expect by cell type (cross-experiment priors)
+
+Learnings from the completed US sweep (#107) snapshot + standalone cells, distilled in `docs/gbdt/_177_cross_experiment_analysis.md` (n ≈ 12 US sweep cells + 4 cross-market context cells; **provisional** — the full 57-cell sweep is unfinished). Use these as priors when reading a fresh run's report; they are NOT a substitute for the per-cell diagnostics.
+
+- **Eval→test AUC decay is systemic — never trust eval AUC alone.** Every completed cell loses AUC eval→test (`dAUC` always negative, −0.02 to −0.14). The decay magnitude scales with horizon within a threshold family: nasdaq +10% goes 5d −0.04 → 10d −0.13 → 25d −0.14 (drops into the [0.45,0.55] null band on test) → 100d (no test window). **Always judge a cell on its TEST R-precision, not eval AUC.** A strong eval AUC that decays into the null band on test is the expected failure mode for longer horizons, not a bug.
+- **Short horizons (5d–10d) are the cleanest, and signal survives to test.** R-prec lift is highest at 5d and declines monotonically with horizon. The 5d–10d up-move band on large US universes (sp500 ≳ russell1000 ≈ nasdaq) is the reliable, production-candidate region.
+- **Higher thresholds (+20%, +40%) → much higher lift on a smaller base, modest absolute R-precision.** E.g. sp500 +20%/5d: base ~0.7%, lift ~24× on test, R-prec ~0.17. These are "rare-but-clean top picks"; +10% cells are "more frequent, broader hit rate" (lift ~5–11× at 5d on a 3–8% base). They stay discriminating on test and decay less than the long-horizon +10% cells.
+- **Bigger panel → stronger lift** (more positives/day → deeper F14 cross-section). sp500 > nasdaq at matched thresholds; nifty500 +30%/50d (lift ~3× test) beats nifty50 H=25 (~2×) cross-market. (n=1 per universe at most thresholds — treat as a prior, not a proven ablation.)
+- **H ≥ 50 may produce zero test rows** under the standard 800/400/200/100 split — H=100 consumes the entire 100-row per-ticker test segment, leaving `n_rows_test=0` and no test metrics (nasdaq +10%/100d). If running a long-horizon cell, expect this and widen the per-ticker test allocation in the spec, or treat eval as the only held-out signal.
+- **Ranking survives prevalence drift; calibrated-probability Brier often does not.** Multiple cells beat baseline on AUC/R-prec while test Brier underperforms the base-rate constant (isotonic fit on a higher-prevalence val window over-predicts on a lower-prevalence test window). The trading rule consumes ranking — report R-precision as the headline under drift, and flag Brier as a calibration-under-drift artifact, not a discrimination failure.
+- **FS prunes hard with neutral-to-positive effect.** Final feature counts cluster at ~25–65 (out of 279) on most cells; the signal is low-complexity (a market-regime + volatility-level model). Aggressive pruning is the norm — don't be surprised by a 279→40 prune.
+- **On US panels, P@k descends with k (top picks cleanest); on staggered NSE panels P@k ascends with k** — the latter is an artifact of R(d) < k days, NOT weak top picks (see the `_138` erratum). Read the prediction-extreme regime for the real top-tail signal.
+
 ## Invocation
 
 ```
@@ -281,6 +294,7 @@ The parent will check in periodically and the auto-completion notification reach
 - `docs/gbdt/V1_PLAN.md` — architecture, stage breakdown, decisions log.
 - `docs/gbdt/V1.1_agent_driven_fs_hp_loop_plan.md` — § 0 is the AUTHORITATIVE exit-and-resume protocol spec for `callback_mode: agent_file_protocol`.
 - `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` — the hand-driven loop the automated loop must reproduce (the answer key); the source of the decision-rules surfaced in Phase 3 + § "Agent-driven FS+HP loop".
+- `docs/gbdt/_177_cross_experiment_analysis.md` — cross-experiment landscape (US sweep #107 snapshot + standalone): the source of the § "What to expect by cell type" priors — eval→test decay, horizon/threshold/universe effects, the long-horizon test-window gap.
 - `docs/gbdt/EXPERIMENT_SPEC.md` — YAML schema (incl. `callback_mode` + the `loop/` files), artifact layout, validation rules.
 - `docs/gbdt/CATBOOST_HP_REFERENCE.md` — per-parameter "when to change" rubrics; the canonical guide for HP decisions inside the loop.
 - `docs/gbdt/goal.md` — why the experiment-loop framing exists; per-experiment success criteria.
