@@ -1,0 +1,32 @@
+# FS probe: best HP base (d4/λ6/mcw10) + the algorithmic fs_hp_loop (max_iter 3)
+# — the SAME FS mechanism nifty500 (_176, 279->39 helpful) and _147 (neutral-harmful) used.
+# Cross-cell question: which side does nasdaq H=25 land on? (model already self-prunes to 98/279.)
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 4
+    lambda: 6.0
+    subsample: 0.8
+    colsample_bytree: 1.0
+    min_child_weight: 10
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic
+    eval_metric: logloss
+    tree_method: exact
+    n_jobs: 1
+    device: cpu
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42

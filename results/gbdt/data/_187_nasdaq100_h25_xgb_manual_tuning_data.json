@@ -1,0 +1,50 @@
+{
+  "experiment_id": "_187_nasdaq100_h25_xgb_manual_tuning",
+  "title": "Manual XGBoost FS+HP tuning run — nasdaq100 +10%/25d/dd5% (H=25)",
+  "task": 185,
+  "purpose": "Human XGBoost tuning reference + probe which XGBoost knobs move the metric on our panels, to inform the agent-loop decision schema (esp. #184) before extending the agent loop.",
+  "cell": {"universe": "nasdaq100", "direction": "up", "threshold_pct": 10, "horizon_days": 25, "max_drawdown": 0.05},
+  "backend": "xgboost",
+  "panel": {"tickers_kept": 92, "rows": 645189, "base_rate_eval_weighted": 0.2524, "base_rate_test_weighted": 0.2733, "prevalence_train": 0.262},
+  "method": "single-fit-per-iteration (max_iterations:1), analyst edits hp_starting between fits; #181 feature-matrix cache reused across iters (1.3s load vs ~31min build).",
+  "iterations": [
+    {"phase": "A", "config": "d6 l3 (baseline=repl)",  "max_depth": 6, "lambda": 3.0, "subsample": 0.8, "colsample_bytree": 1.0, "min_child_weight": 1, "gamma": 0, "val_brier": 0.16888, "train_val_gap": 0.01304, "eval_roc_auc": 0.634, "test_roc_auc": 0.495, "eval_rprec_weighted": 0.491, "test_rprec_weighted": 0.378, "calib_z": 10.3},
+    {"phase": "A", "config": "d4 l3",  "max_depth": 4, "lambda": 3.0, "val_brier": 0.16881, "train_val_gap": 0.00402, "eval_roc_auc": 0.627, "test_roc_auc": 0.494, "eval_rprec_weighted": 0.488, "test_rprec_weighted": 0.396, "calib_z": 7.47},
+    {"phase": "A", "config": "d8 l3",  "max_depth": 8, "lambda": 3.0, "val_brier": 0.16926, "train_val_gap": 0.01462, "eval_roc_auc": 0.629, "test_roc_auc": 0.489, "eval_rprec_weighted": 0.490, "test_rprec_weighted": 0.374, "calib_z": 6.73},
+    {"phase": "A", "config": "d4 l1.5", "max_depth": 4, "lambda": 1.5, "val_brier": 0.16967, "train_val_gap": 0.00664, "eval_roc_auc": 0.637, "test_roc_auc": 0.502, "eval_rprec_weighted": 0.501, "test_rprec_weighted": 0.399, "calib_z": 13.0},
+    {"phase": "A", "config": "d4 l6",  "max_depth": 4, "lambda": 6.0, "val_brier": 0.16922, "train_val_gap": 0.00163, "eval_roc_auc": 0.629, "test_roc_auc": 0.489, "eval_rprec_weighted": 0.490, "test_rprec_weighted": 0.398, "calib_z": 6.26},
+    {"phase": "B", "config": "d4 l6 colsample0.8", "colsample_bytree": 0.8, "val_brier": 0.16931, "train_val_gap": 0.0054, "eval_roc_auc": 0.632, "test_roc_auc": 0.497, "calib_z": 11.45},
+    {"phase": "B", "config": "d4 l6 subsample1.0", "subsample": 1.0, "val_brier": 0.16907, "train_val_gap": 0.00681, "eval_roc_auc": 0.622, "test_roc_auc": 0.492, "calib_z": 11.63},
+    {"phase": "B", "config": "d4 l6 mcw10", "min_child_weight": 10, "val_brier": 0.16859, "train_val_gap": 0.00171, "eval_roc_auc": 0.634, "test_roc_auc": 0.497, "calib_z": 9.41, "note": "marginal val-best"},
+    {"phase": "B", "config": "d4 l6 gamma1.0", "gamma": 1.0, "val_brier": 0.16932, "train_val_gap": 0.00206, "eval_roc_auc": 0.632, "test_roc_auc": 0.491, "calib_z": 7.17}
+  ],
+  "best_config": {"max_depth": 4, "lambda": 6.0, "subsample": 0.8, "colsample_bytree": 1.0, "min_child_weight": 10, "val_brier": 0.16859, "train_val_gap": 0.00171, "note": "marginal — within the 0.6% HP-ceiling band"},
+  "feature_selection": {
+    "mechanism": "algorithmic fs_hp_loop (max_iter 3) on best HP base",
+    "features_used_by_model": 98,
+    "features_total": 279,
+    "fs_pruned_to": 97,
+    "val_brier_after_fs": 0.16859,
+    "verdict": "exactly neutral (bit-identical val Brier; model self-prunes). nasdaq H=25 = FS-neutral side (like _147); contrast nifty500 _176 where 279->39 helped. FS-helpfulness is cell-dependent.",
+    "top_features_theme": "market-regime signature: parkinson/garman_klass/realized_vol estimators, index_return/runup/drawdown/vol, beta_*, vol cross-sectional z-scores, seasonality (moy_sin/cos) — not stock-specific momentum"
+  },
+  "interaction_constraints": {
+    "probed_here": false,
+    "reason": "TreeSHAP pred_interactions pass exceeds diagnose time budget on the 279-feature US slice; effect predictably neutral on an HP-ceiling/test-invariant cell.",
+    "evidence_cited": "_175 (Phase 8) verified the capability on the sister _147 cell — forbidding the top pair collapsed SHAP interaction->0 and tree co-occurrence 58.94->0 (honored), neutral metric effect."
+  },
+  "findings": {
+    "hp_ceiling": "val Brier in a 0.6% band (0.16859-0.16967) across depth{4,6,8} x lambda{1.5,3,6} x colsample{0.8,1} x subsample{0.8,1} x min_child_weight{1,10} x gamma{0,1}",
+    "val_optimal_neq_generalization_optimal": "capacity+reg control train-val gap (0.0016-0.0146) and calib Z (6.3-13.0) at ~constant val Brier; d4/l6/mcw10 cleanest",
+    "test_hp_invariant": "eval AUC ~0.63 / test AUC ~0.49 across every config — eval->test decay is a regime/data property (corroborates #93), unmovable by tuning",
+    "fs_neutral": "model self-prunes to 98/279; algorithmic FS bit-identical"
+  },
+  "agent_loop_lessons": [
+    "L1: break val-Brier ties with train-val gap + Spiegelhalter Z (a val-only loop can't distinguish d4/l6 gap0.0016 from d8/l3 gap0.0146 at equal val Brier).",
+    "L2: add min_child_weight to the XGBoost knob set — the only distinct knob to (marginally) improve val Brier here; not currently swept.",
+    "L3: the algorithmic FS is safe (bit-identical when unhelpful), so keep it; but it's cell-dependent (helpful on nifty500, neutral here/_147).",
+    "Meta: on HP-ceiling cells recognize the plateau + stop early (the plateau gate does); do NOT chase test generalization via HP — it's a regime property."
+  ],
+  "verdict_note": "User's read (no automated PASS/FAIL). Run achieved its purpose: knob-sensitivity map + 3 actionable agent-loop upgrades. Cell is test-marginal (regime-decay, per #93) -> not a production candidate, but a sound controlled probe. n=1 cell.",
+  "date": "2026-05-29"
+}
