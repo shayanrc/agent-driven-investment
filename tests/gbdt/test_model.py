@@ -23,10 +23,11 @@ from gbdt.model import (
     CatBoostModel,
     GBDTModel,
     XGBoostModel,
+    count_nonfinite,
     hp_tables_for,
     make_model,
 )
-from gbdt.model import _validate_hp
+from gbdt.model import _validate_hp, _sanitize_nonfinite
 
 
 def _toy_dataset(n: int = 500, seed: int = 0):
@@ -396,3 +397,117 @@ def test_xgboost_out_of_range_hp_rejected_on_construction():
 def test_xgboost_pinned_override_rejected_on_construction():
     with pytest.raises(ValueError, match="tree_method"):
         make_model("xgboost", {"n_estimators": 10, "tree_method": "hist"})
+
+
+# ---------------------------------------------------------------------------
+# Non-finite (±inf / overflow) robustness — the V1.2 sp500 DMatrix crash.
+#
+# XGBoost's ``XGDMatrixCreateFromDense`` rejects ``±inf`` ("Input data contains
+# 'inf' or a value too large, while 'missing' is not set to 'inf'"), whereas
+# CatBoost trains on the identical matrix fine. The gbdt feature pipeline can
+# emit ``±inf`` from ratio/division families (e.g. ``stock_return_N`` /
+# ``vol_change_N`` = ``s / s.shift(n) - 1`` on a zero prior-period value for a
+# sparse/halted ticker). The backend must sanitize ``±inf`` → ``NaN`` (missing)
+# on BOTH fit and predict so it tolerates the same matrices CatBoost does. The
+# fix is general (not feature-specific). See ``model._sanitize_nonfinite`` +
+# ``model.count_nonfinite`` + the fail-fast audit in ``gbdt.__main__``.
+# ---------------------------------------------------------------------------
+
+
+def _toy_dataset_with_nonfinite(n: int = 500, seed: int = 0):
+    """Toy dataset salted with ``+inf``, ``-inf``, and an overflow value.
+
+    The overflow (``1e308 * 10`` → ``inf`` under IEEE-754 double) stands in for
+    the "value too large" half of the XGBoost error message.
+    """
+    X, y = _toy_dataset(n, seed=seed)
+    X = X.copy()
+    X.iloc[3, 0] = np.inf
+    X.iloc[7, 1] = -np.inf
+    X.iloc[11, 2] = 1e308 * 10        # → +inf via overflow
+    X.iloc[13, 0] = -1e308 * 10       # → -inf via overflow
+    return X, y
+
+
+def test_sanitize_nonfinite_maps_inf_to_nan_preserves_finite():
+    """``±inf`` (incl. overflow) → ``NaN``; finite values + existing NaN kept."""
+    arr = np.array(
+        [[1.0, np.inf], [-np.inf, 2.0], [np.nan, 1e308 * 10], [3.0, 4.0]],
+        dtype=float,
+    )
+    out = _sanitize_nonfinite(arr)
+    assert not np.isinf(out).any()                 # no ±inf remains
+    assert np.isnan(out[0, 1]) and np.isnan(out[1, 0])  # ±inf → NaN
+    assert np.isnan(out[2, 1])                     # overflow → NaN
+    assert np.isnan(out[2, 0])                     # pre-existing NaN preserved
+    # Finite values are untouched.
+    assert out[0, 0] == 1.0 and out[1, 1] == 2.0
+    assert out[3, 0] == 3.0 and out[3, 1] == 4.0
+    # Caller's array is not mutated in place.
+    assert np.isinf(arr[0, 1])
+
+
+def test_count_nonfinite_flags_inf_columns_only():
+    """``count_nonfinite`` counts ``±inf`` per column (NOT ``NaN``), desc-sorted."""
+    X = pd.DataFrame({
+        "clean": [1.0, 2.0, 3.0, 4.0],
+        "two_inf": [np.inf, 1.0, -np.inf, 2.0],
+        "one_inf": [1.0, np.inf, 2.0, 3.0],
+        "only_nan": [np.nan, 1.0, 2.0, np.nan],   # NaN must NOT be flagged
+    })
+    offenders = count_nonfinite(X)
+    assert offenders == {"two_inf": 2, "one_inf": 1}   # clean + only_nan excluded
+    # Descending-by-count order (two_inf before one_inf).
+    assert list(offenders.keys()) == ["two_inf", "one_inf"]
+    # A clean matrix returns an empty dict.
+    assert count_nonfinite(X[["clean"]]) == {}
+
+
+def test_xgboost_fit_predict_tolerates_nonfinite_like_catboost():
+    """Regression for the sp500 crash: the XGBoost backend must fit + predict on
+    a matrix carrying ``±inf`` / overflow values WITHOUT raising, producing
+    finite, in-range probabilities — matching CatBoost's tolerance of the
+    identical matrix."""
+    X, y = _toy_dataset_with_nonfinite(500, seed=21)
+
+    # Sanity check that this matrix would crash a raw, unsanitized XGBoost fit
+    # (i.e. the test is exercising a real failure mode, not a no-op).
+    import xgboost as xgb
+    with pytest.raises(xgb.core.XGBoostError):
+        xgb.XGBClassifier(n_estimators=10, tree_method="exact").fit(
+            X.values, y
+        )
+
+    m = make_model("xgboost", {"n_estimators": 30, "max_depth": 4, "eta": 0.1})
+    m.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])   # must not raise
+    p = m.predict_proba(X.iloc[350:])                     # incl. inf rows
+    assert p.shape == (150,)
+    assert np.isfinite(p).all()
+    assert ((p >= 0) & (p <= 1)).all()
+
+
+def test_catboost_also_handles_same_nonfinite_matrix():
+    """Cross-backend parity: CatBoost trains on the identical non-finite matrix
+    (it always did) — confirms the XGBoost fix brings it to parity, not that we
+    regressed CatBoost."""
+    X, y = _toy_dataset_with_nonfinite(400, seed=22)
+    m = make_model("catboost", {"iterations": 30, "depth": 4,
+                                "learning_rate": 0.1, "boosting_type": "Plain"})
+    m.fit(X.iloc[:300], y[:300], X.iloc[300:], y[300:])   # must not raise
+    p = m.predict_proba(X.iloc[300:])
+    assert np.isfinite(p).all()
+    assert ((p >= 0) & (p <= 1)).all()
+
+
+def test_xgboost_nonfinite_predict_path_independent_of_fit():
+    """Even if fit data is clean, ``predict_proba`` on a matrix with ``±inf``
+    must not crash (the predict-side DMatrix is sanitized too)."""
+    X_clean, y = _toy_dataset(400, seed=23)
+    m = make_model("xgboost", {"n_estimators": 20, "max_depth": 3, "eta": 0.1})
+    m.fit(X_clean.iloc[:300], y[:300], X_clean.iloc[300:], y[300:])
+    X_dirty = X_clean.iloc[300:].copy()
+    X_dirty.iloc[0, 0] = np.inf
+    X_dirty.iloc[1, 1] = -np.inf
+    p = m.predict_proba(X_dirty)                          # must not raise
+    assert np.isfinite(p).all()
+    assert ((p >= 0) & (p <= 1)).all()
