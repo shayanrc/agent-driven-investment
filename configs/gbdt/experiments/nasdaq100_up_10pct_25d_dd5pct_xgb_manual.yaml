@@ -1,0 +1,54 @@
+# MANUAL XGBoost tuning run — nasdaq100 UP +10% / 25d / dd5% (H=25 cross-market cell).
+#
+# Purpose: a full HAND-DRIVEN FS+HP tuning loop on XGBoost (data-scientist in the
+# loop, file artifacts + belief-update per iteration) — the human reference that
+# future agent-loop changes are validated against, and the probe for WHICH XGBoost
+# knobs actually move the metric on our panels (informs the agent-loop decision
+# schema, esp. task #184 interaction_constraints). Distinct from the agent_file_protocol
+# loop (invB) which ran a near-fixed config; here the analyst sweeps the full knob set.
+#
+# Cell signal (documented, memo _138 / CatBoost): real top-tail signal, weighted
+# R-precision lift ~1.78x base rate; base rate ~14.25% (non-overlapping blocks).
+# Known cell => metric movement is attributable to the KNOB, not signal uncertainty.
+#
+# Mechanism: max_iterations: 1 => a SINGLE fit of exactly `hp_starting`, full
+# diagnostic bundle, no built-in FS/HP search. The analyst edits hp_starting (and
+# features:) between iterations and re-runs; #181 feature-matrix cache makes every
+# resume after iter-0 ~free.
+#
+# Iter-0 = the Phase-7 repl baseline (CatBoost depth-6/lr-0.05/l2-3.0 translated to
+# XGBoost) so iter-0 is directly comparable to the documented CatBoost conclusions.
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 4
+    lambda: 6.0
+    subsample: 0.8
+    colsample_bytree: 1.0
+    min_child_weight: 10
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic     # PINNED_HPS_XGB — no-op match
+    eval_metric: logloss           # PINNED_HPS_XGB — no-op match
+    tree_method: exact             # PINNED_HPS_XGB determinism pin — no-op match
+    n_jobs: 1                      # PINNED_HPS_XGB determinism pin — no-op match
+    device: cpu                    # PINNED_HPS_XGB determinism pin — no-op match
+
+  fs_hp_loop:
+    max_iterations: 1              # single fit — the analyst drives iterations by hand
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
