@@ -1,0 +1,32 @@
+2026-05-29T03:18:47+00:00 [experiment] start spec=nifty50_up_10pct_25d_dd5pct_catboost_phase8.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-gbdt-v12-phase8/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_phase8
+2026-05-29T03:18:47+00:00 [data] start universe=nifty50
+2026-05-29T03:18:49+00:00 [data] complete in 1.7s rows=129401 tickers_kept=46
+2026-05-29T03:18:49+00:00 [features] start
+2026-05-29T03:19:17+00:00 [heartbeat] t=08:49:17 phase=features elapsed_phase=28s elapsed_total=30s rss_mb=407
+2026-05-29T03:19:47+00:00 [heartbeat] t=08:49:47 phase=features elapsed_phase=58s elapsed_total=60s rss_mb=407
+2026-05-29T03:20:17+00:00 [heartbeat] t=08:50:17 phase=features elapsed_phase=88s elapsed_total=90s rss_mb=407
+2026-05-29T03:20:47+00:00 [heartbeat] t=08:50:47 phase=features elapsed_phase=118s elapsed_total=120s rss_mb=411
+2026-05-29T03:21:17+00:00 [heartbeat] t=08:51:17 phase=features elapsed_phase=148s elapsed_total=150s rss_mb=457
+2026-05-29T03:21:48+00:00 [heartbeat] t=08:51:48 phase=features elapsed_phase=178s elapsed_total=180s rss_mb=457
+2026-05-29T03:22:18+00:00 [heartbeat] t=08:52:18 phase=features elapsed_phase=209s elapsed_total=210s rss_mb=462
+2026-05-29T03:22:48+00:00 [heartbeat] t=08:52:48 phase=features elapsed_phase=239s elapsed_total=240s rss_mb=473
+2026-05-29T03:23:18+00:00 [heartbeat] t=08:53:18 phase=features elapsed_phase=269s elapsed_total=270s rss_mb=551
+2026-05-29T03:23:48+00:00 [heartbeat] t=08:53:48 phase=features elapsed_phase=299s elapsed_total=300s rss_mb=551
+2026-05-29T03:24:18+00:00 [heartbeat] t=08:54:18 phase=features elapsed_phase=329s elapsed_total=330s rss_mb=553
+2026-05-29T03:24:48+00:00 [heartbeat] t=08:54:48 phase=features elapsed_phase=359s elapsed_total=361s rss_mb=554
+2026-05-29T03:25:18+00:00 [heartbeat] t=08:55:18 phase=features elapsed_phase=389s elapsed_total=391s rss_mb=556
+2026-05-29T03:25:48+00:00 [heartbeat] t=08:55:48 phase=features elapsed_phase=419s elapsed_total=421s rss_mb=668
+2026-05-29T03:25:48+00:00 [features] complete in 419.2s shape=(129401, 279)
+2026-05-29T03:25:48+00:00 [target] start
+2026-05-29T03:25:50+00:00 [target] complete in 1.4s positive_prevalence=0.221
+2026-05-29T03:25:50+00:00 [uniqueness] start
+2026-05-29T03:25:50+00:00 [uniqueness] complete in 0.4s horizon=25 rows=129401 ESS=128904 inflation=1.00x
+2026-05-29T03:25:50+00:00 [loop] start max_iter=1 callback_mode=default
+2026-05-29T03:26:18+00:00 [heartbeat] t=08:56:18 phase=loop elapsed_phase=28s elapsed_total=451s rss_mb=1184
+2026-05-29T03:26:48+00:00 [heartbeat] t=08:56:48 phase=loop elapsed_phase=58s elapsed_total=481s rss_mb=1185
+2026-05-29T03:27:18+00:00 [heartbeat] t=08:57:18 phase=loop elapsed_phase=88s elapsed_total=511s rss_mb=1186
+2026-05-29T03:27:36+00:00 [loop] LOOP COMPLETE in 106.3s best_iter=0 val_brier=0.1642 reason=cap
+2026-05-29T03:27:36+00:00 [artifact] start
+2026-05-29T03:27:38+00:00 [artifact] complete in 1.4s -> /mnt/122CEE982CEE765F/Workspace/wt-gbdt-v12-phase8/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_phase8
+2026-05-29T03:27:38+00:00 [loop] STOPPED reason=cap
+2026-05-29T03:27:38+00:00 [experiment] complete in 530.5s
