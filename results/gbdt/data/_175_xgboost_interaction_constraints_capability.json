@@ -1,0 +1,153 @@
+{
+  "id": "_175",
+  "artifact": "results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8",
+  "cell": {
+    "universe": "nifty50",
+    "direction": "up",
+    "threshold_pct": 10,
+    "horizon_days": 25,
+    "max_drawdown": 0.05
+  },
+  "shap_rows": 200,
+  "seed": 42,
+  "part1_plumbing": {
+    "in_tunable_ranges_xgb": false,
+    "in_enum_values_xgb": false,
+    "in_pinned_hps_xgb": false,
+    "construction_validator_passes_through": true,
+    "construction_validator_error": null,
+    "decision_path_rejects": true,
+    "decision_path_error": "decision.hp_changes references unknown HP 'interaction_constraints'; not a tunable xgboost HP (see docs/gbdt/XGBOOST_HP_REFERENCE.md)."
+  },
+  "data_build_secs": 394.0,
+  "n_features": 279,
+  "segment_rows": {
+    "train": 36800,
+    "val": 18400,
+    "eval": 9200,
+    "test": 3450
+  },
+  "determinism_bit_identical_refit": true,
+  "refit_matches_artifact": true,
+  "n_trees": 15,
+  "shap_secs_base": 175.6,
+  "top_shap_pairs": [
+    {
+      "a": "index_vol_50",
+      "b": "index_vol_200",
+      "strength": 0.0801307329023257
+    },
+    {
+      "a": "index_vol_200",
+      "b": "garman_klass_200",
+      "strength": 0.06030112116597593
+    },
+    {
+      "a": "index_vol_50",
+      "b": "garman_klass_200",
+      "strength": 0.0471313492761692
+    },
+    {
+      "a": "index_runup_200",
+      "b": "garman_klass_200",
+      "strength": 0.041239317023137115
+    },
+    {
+      "a": "garman_klass_200",
+      "b": "vol_of_vol_200",
+      "strength": 0.03213965141447261
+    },
+    {
+      "a": "beta_200",
+      "b": "garman_klass_100",
+      "strength": 0.024162502957915423
+    },
+    {
+      "a": "index_vol_50",
+      "b": "garman_klass_50",
+      "strength": 0.0224335154669825
+    },
+    {
+      "a": "index_vol_200",
+      "b": "vol_of_vol_200",
+      "strength": 0.02125625649583526
+    },
+    {
+      "a": "runup_50",
+      "b": "vol_of_vol_200",
+      "strength": 0.02009789302246645
+    },
+    {
+      "a": "index_drawdown_200",
+      "b": "garman_klass_200",
+      "strength": 0.020083951747510584
+    },
+    {
+      "a": "index_vol_200",
+      "b": "index_runup_200",
+      "strength": 0.019457670609699565
+    },
+    {
+      "a": "index_vol_200",
+      "b": "garman_klass_50",
+      "strength": 0.018271042000269515
+    },
+    {
+      "a": "index_return_200",
+      "b": "garman_klass_200",
+      "strength": 0.017876204328495078
+    },
+    {
+      "a": "index_vol_200",
+      "b": "beta_100",
+      "strength": 0.01773342696542386
+    },
+    {
+      "a": "index_return_200",
+      "b": "index_runup_200",
+      "strength": 0.017126146739465185
+    }
+  ],
+  "forbidden_pairs": [
+    {
+      "a": "index_vol_50",
+      "b": "index_vol_200"
+    }
+  ],
+  "constraint_injected_into_hp": true,
+  "constraint_string_matches_expected": true,
+  "shap_secs_constrained": 34.4,
+  "part2_effect": {
+    "pair": "index_vol_50|index_vol_200",
+    "shap_interaction_base": 0.0801307329023257,
+    "shap_interaction_constrained": 0.0,
+    "shap_collapse_ratio": 0.0,
+    "cooccurrence_base": 58.94308476800001,
+    "cooccurrence_constrained": 0.0,
+    "honored_shap_collapsed": true,
+    "honored_cooccurrence_zero": true,
+    "all_honored": true
+  },
+  "part3_metrics": {
+    "eval": {
+      "base_rate_weighted": 0.13742789277231082,
+      "brier_weighted_base": 0.1166844117428896,
+      "brier_weighted_constrained": 0.11616955705736737,
+      "brier_unweighted_base": 0.11668441174288961,
+      "brier_unweighted_constrained": 0.1161695570573674,
+      "r_precision_weighted_base": 0.2979423868312757,
+      "r_precision_weighted_constrained": 0.302880658436214,
+      "n_days_with_positives": 211
+    },
+    "test": {
+      "base_rate_weighted": 0.19650238473767886,
+      "brier_weighted_base": 0.14571659960829217,
+      "brier_weighted_constrained": 0.1404115268427446,
+      "brier_unweighted_base": 0.1457165996082921,
+      "brier_unweighted_constrained": 0.14041152684274458,
+      "r_precision_weighted_base": 0.3851132686084142,
+      "r_precision_weighted_constrained": 0.38349514563106796,
+      "n_days_with_positives": 70
+    }
+  }
+}

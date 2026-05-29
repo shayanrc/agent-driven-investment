@@ -1,0 +1,45 @@
+# V1.2 Phase 8 — D6 acceptance cell, XGBoost half (clean single-config finalize).
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
+# Pins the invB (`_149`) end-state best HP (depth 8, the V1.1 agent-loop winner)
+# at max_iterations:1 so the `default` callback finalizes the iter-0 config in one
+# process (no agent loop, no prune) — a canonical depth-8 / 279-feature XGBoost
+# artifact reproducing the invB run for the CatBoost-vs-XGBoost interaction memo.
+# Determinism pins held → the fit is bit-reproducible (V1.2 § 5.1).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+# split omitted - default 800/400/200/100 per ticker (same as _147 / invB).
+# features omitted - full 279-column candidate pool (no pruning; invB kept all 279).
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+
+  hp_starting:
+    n_estimators: 1000
+    eta: 0.05
+    max_depth: 8                                  # invB best checkpoint (iter 1)
+    lambda: 3.0
+    subsample: 0.8
+    colsample_bytree: 1.0
+    grow_policy: depthwise
+    early_stopping_rounds: 75
+    objective: binary:logistic                    # PINNED_HPS_XGB no-op match
+    eval_metric: logloss                          # PINNED_HPS_XGB no-op match
+    tree_method: exact                            # PINNED_HPS_XGB determinism pin
+    n_jobs: 1                                      # PINNED_HPS_XGB determinism pin
+    device: cpu                                    # PINNED_HPS_XGB determinism pin
+
+  fs_hp_loop:
+    callback_mode: default                        # single-process finalize, no agent loop
+    max_iterations: 1                             # finalize the iter-0 (depth-8) config; no prune
+
+random_seed: 42

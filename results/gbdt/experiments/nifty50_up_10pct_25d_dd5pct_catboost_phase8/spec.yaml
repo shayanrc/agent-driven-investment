@@ -1,0 +1,19 @@
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 3.0
+    early_stopping_rounds: 75
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+random_seed: 42

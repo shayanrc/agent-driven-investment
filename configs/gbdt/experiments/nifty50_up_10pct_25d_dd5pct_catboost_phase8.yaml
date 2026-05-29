@@ -1,0 +1,38 @@
+# V1.2 Phase 8 — D6 acceptance cell, CatBoost half (clean single-config finalize).
+#
+# Cell: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
+# Pins the invA (`_174`) end-state best HP (depth 8, lr 0.05, l2 3.0 — the V1.1
+# agent-loop winner; deconfounded depth-8 plateau per the _147 l2-confound
+# correction) at max_iterations:1 so the `default` callback finalizes the iter-0
+# config in one process (no agent loop, no prune) — a canonical depth-8 /
+# 279-feature CatBoost artifact reproducing the invA run, for the apples-to-apples
+# D6 interaction comparison against the XGBoost half.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+# split omitted - default 800/400/200/100 per ticker (same as _147 / invA).
+# features omitted - full 279-column candidate pool (no pruning; invA kept all 279).
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+
+  hp_starting:
+    iterations: 1000
+    learning_rate: 0.05
+    depth: 8                                      # invA best checkpoint (iter 1)
+    l2_leaf_reg: 3.0
+    early_stopping_rounds: 75
+
+  fs_hp_loop:
+    callback_mode: default                        # single-process finalize, no agent loop
+    max_iterations: 1                             # finalize the iter-0 (depth-8) config; no prune
+
+random_seed: 42
