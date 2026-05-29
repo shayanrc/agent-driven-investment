@@ -1,0 +1,704 @@
+{
+  "experiment_name": "nifty50_up_20pct_50d_dd10pct_post_fix",
+  "backend": {
+    "library": "catboost",
+    "model_filename": "model.cbm"
+  },
+  "spec_hash": "sha256:3ecd3dac426af9a2be0315416bd5b87b8ba39eb3aa3db5b7b0989411da8d33a8",
+  "data_hash": "sha256:23d8407d724796a9e82dec5a8750624f55fdebdaa97c381a9a4c9ba22dc1aa44",
+  "preflight": {
+    "cache_db": "/mnt/122CEE982CEE765F/cache_data/processed.db",
+    "cache_db_size": 1025110016,
+    "cache_db_mtime": "2026-05-29T04:24:13.578768+00:00",
+    "data_root": "/mnt/122CEE982CEE765F/cache_data",
+    "code_commit": "25c4386d3d02fcdac9b9e770ce721f983c815758",
+    "code_dirty": true
+  },
+  "data": {
+    "n_tickers_in_universe": 50,
+    "n_tickers_used": 46,
+    "tickers_excluded": [
+      "NSE:ETERNAL",
+      "NSE:JIOFIN",
+      "NSE:MAXHEALTH",
+      "NSE:SHRIRAMFIN"
+    ],
+    "staleness_days_threshold": 20,
+    "stale_tickers": [
+      "NSE:NTPC"
+    ],
+    "n_tickers_stale": 1,
+    "cache_age_days_by_ticker": {
+      "NSE:ADANIENT": 4,
+      "NSE:ADANIPORTS": 4,
+      "NSE:APOLLOHOSP": 4,
+      "NSE:ASIANPAINT": 4,
+      "NSE:AXISBANK": 4,
+      "NSE:BAJAJ-AUTO": 4,
+      "NSE:BAJAJFINSV": 4,
+      "NSE:BAJFINANCE": 4,
+      "NSE:BEL": 4,
+      "NSE:BHARTIARTL": 4,
+      "NSE:CIPLA": 4,
+      "NSE:COALINDIA": 4,
+      "NSE:DRREDDY": 4,
+      "NSE:EICHERMOT": 4,
+      "NSE:GRASIM": 4,
+      "NSE:HCLTECH": 4,
+      "NSE:HDFCBANK": 4,
+      "NSE:HDFCLIFE": 2,
+      "NSE:HINDALCO": 4,
+      "NSE:HINDUNILVR": 4,
+      "NSE:ICICIBANK": 4,
+      "NSE:INDIGO": 4,
+      "NSE:INFY": 4,
+      "NSE:ITC": 4,
+      "NSE:JSWSTEEL": 4,
+      "NSE:KOTAKBANK": 4,
+      "NSE:LT": 4,
+      "NSE:M&M": 4,
+      "NSE:MARUTI": 4,
+      "NSE:NESTLEIND": 4,
+      "NSE:NTPC": 149,
+      "NSE:ONGC": 4,
+      "NSE:POWERGRID": 4,
+      "NSE:RELIANCE": 4,
+      "NSE:SBILIFE": 2,
+      "NSE:SBIN": 4,
+      "NSE:SUNPHARMA": 4,
+      "NSE:TATACONSUM": 4,
+      "NSE:TATASTEEL": 4,
+      "NSE:TCS": 4,
+      "NSE:TECHM": 4,
+      "NSE:TITAN": 4,
+      "NSE:TMPV": 4,
+      "NSE:TRENT": 4,
+      "NSE:ULTRACEMCO": 4,
+      "NSE:WIPRO": 4
+    },
+    "nan_rows_dropped_by_ticker": {},
+    "n_rows_train": 36800,
+    "n_rows_val": 18400,
+    "n_rows_eval": 9200,
+    "n_rows_test": 2300,
+    "positive_prevalence_train": 0.2021195652173913,
+    "positive_prevalence_eval": 0.04728260869565217,
+    "test_split_warning": null,
+    "test_split_projection": {
+      "expected_test_rows": 2300,
+      "per_ticker_usable": 50,
+      "n_tickers": 46,
+      "test_rows_per_ticker": 100,
+      "horizon_days": 50
+    }
+  },
+  "loop": {
+    "n_iterations_run": 3,
+    "best_iteration": 1,
+    "inner_stop_signal": "plateau",
+    "hp_search_active": true,
+    "hp_search_iter_threshold": 5,
+    "max_iterations": 8
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "isotonic",
+    "spiegelhalter_z": -4.814856654831193,
+    "spiegelhalter_p": 1.473055920131472e-06
+  },
+  "sample_uniqueness": {
+    "uniqueness_weighting": true,
+    "horizon_days": 50,
+    "effective_sample_size_per_fold": {
+      "fold_0": {
+        "train": {
+          "ess_kish": 36800.0,
+          "sum_weights": 371.7171717171717,
+          "n_rows": 36800,
+          "overlap_inflation_ratio": 99.0
+        },
+        "val": {
+          "ess_kish": 18400.0,
+          "sum_weights": 185.85858585858585,
+          "n_rows": 18400,
+          "overlap_inflation_ratio": 99.0
+        },
+        "eval": {
+          "ess_kish": 9200.0,
+          "sum_weights": 92.92929292929293,
+          "n_rows": 9200,
+          "overlap_inflation_ratio": 99.0
+        },
+        "test": {
+          "ess_kish": 2300.0,
+          "sum_weights": 23.232323232323232,
+          "n_rows": 2300,
+          "overlap_inflation_ratio": 99.0
+        }
+      }
+    }
+  },
+  "headline_eval": {
+    "brier": 0.05174540339013063,
+    "brier_baseline_baserate": 0.04504696361058602,
+    "brier_improvement_vs_baseline": -0.00669843977954461,
+    "log_loss": 0.2230461388166177,
+    "brier_unweighted": 0.05174540339013062,
+    "brier_baseline_baserate_unweighted": 0.04504696361058601,
+    "brier_improvement_vs_baseline_unweighted": -0.00669843977954461,
+    "effective_sample_size_kish": 9200.0,
+    "sum_weights": 92.92929292929293,
+    "n_rows": 9200,
+    "weighted_prevalence": 0.04728260869565218,
+    "roc_auc": 0.5901851014025234
+  },
+  "headline_test": {
+    "brier": 0.030981597934421057,
+    "brier_baseline_baserate": 0.013719470699432891,
+    "brier_improvement_vs_baseline": -0.017262127234988166,
+    "log_loss": 0.17525246944724182,
+    "brier_unweighted": 0.03098159793442105,
+    "brier_baseline_baserate_unweighted": 0.01371947069943289,
+    "brier_improvement_vs_baseline_unweighted": -0.017262127234988163,
+    "effective_sample_size_kish": 2300.0,
+    "sum_weights": 23.232323232323232,
+    "n_rows": 2300,
+    "weighted_prevalence": 0.013913043478260872,
+    "roc_auc": 0.5547632826278681
+  },
+  "segment_diagnostics": {
+    "eval": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.04728260869565217,
+        "n_rows": 9200,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.09740259740259741,
+            "n_picks_total": 299,
+            "n_positives_in_picks": 15,
+            "n_denom": 154,
+            "n_days_R_lt_k": 145,
+            "n_days_full_k": 299,
+            "n_days_total": 299,
+            "lift": 2.0600089565606807
+          },
+          "5": {
+            "p_at_k": 0.24808184143222506,
+            "n_picks_total": 1102,
+            "n_positives_in_picks": 97,
+            "n_denom": 391,
+            "n_days_R_lt_k": 283,
+            "n_days_full_k": 200,
+            "n_days_total": 299,
+            "lift": 5.246788370520623
+          },
+          "10": {
+            "p_at_k": 0.34660421545667447,
+            "n_picks_total": 2102,
+            "n_positives_in_picks": 148,
+            "n_denom": 427,
+            "n_days_R_lt_k": 295,
+            "n_days_full_k": 200,
+            "n_days_total": 299,
+            "lift": 7.33047995908369
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 0.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 0,
+            "n_denom": 1,
+            "lift": 0.0
+          },
+          "5": {
+            "p_at_k": 0.4,
+            "n_picks": 5,
+            "n_positives_in_picks": 2,
+            "n_denom": 5,
+            "lift": 8.459770114942529
+          },
+          "10": {
+            "p_at_k": 0.2,
+            "n_picks": 10,
+            "n_positives_in_picks": 2,
+            "n_denom": 10,
+            "lift": 4.2298850574712645
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NSE:ADANIENT",
+            "n_picks": 165,
+            "n_positives": 1,
+            "hit_rate": 0.006060606060606061
+          },
+          {
+            "ticker": "NSE:TRENT",
+            "n_picks": 149,
+            "n_positives": 7,
+            "hit_rate": 0.04697986577181208
+          },
+          {
+            "ticker": "NSE:INDIGO",
+            "n_picks": 142,
+            "n_positives": 1,
+            "hit_rate": 0.007042253521126761
+          },
+          {
+            "ticker": "NSE:ADANIPORTS",
+            "n_picks": 131,
+            "n_positives": 28,
+            "hit_rate": 0.21374045801526717
+          },
+          {
+            "ticker": "NSE:NTPC",
+            "n_picks": 97,
+            "n_positives": 4,
+            "hit_rate": 0.041237113402061855
+          },
+          {
+            "ticker": "NSE:HINDALCO",
+            "n_picks": 85,
+            "n_positives": 26,
+            "hit_rate": 0.3058823529411765
+          },
+          {
+            "ticker": "NSE:BEL",
+            "n_picks": 74,
+            "n_positives": 13,
+            "hit_rate": 0.17567567567567569
+          },
+          {
+            "ticker": "NSE:BAJAJFINSV",
+            "n_picks": 39,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HCLTECH",
+            "n_picks": 38,
+            "n_positives": 3,
+            "hit_rate": 0.07894736842105263
+          },
+          {
+            "ticker": "NSE:M&M",
+            "n_picks": 36,
+            "n_positives": 1,
+            "hit_rate": 0.027777777777777776
+          },
+          {
+            "ticker": "NSE:TATASTEEL",
+            "n_picks": 31,
+            "n_positives": 10,
+            "hit_rate": 0.3225806451612903
+          },
+          {
+            "ticker": "NSE:TMPV",
+            "n_picks": 31,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BAJAJ-AUTO",
+            "n_picks": 23,
+            "n_positives": 2,
+            "hit_rate": 0.08695652173913043
+          },
+          {
+            "ticker": "NSE:JSWSTEEL",
+            "n_picks": 15,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ASIANPAINT",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:INFY",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NESTLEIND",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ONGC",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KOTAKBANK",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BAJFINANCE",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:APOLLOHOSP",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HDFCLIFE",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SBILIFE",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:EICHERMOT",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:HINDUNILVR",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TECHM",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2024Q4",
+            "n_picks": 51,
+            "n_positives": 0,
+            "p_at_k": 0.0,
+            "base_rate": 0.04728260869565217,
+            "lift": 0.0
+          },
+          {
+            "quarter": "2025Q1",
+            "n_picks": 127,
+            "n_positives": 34,
+            "p_at_k": 0.2677165354330709,
+            "base_rate": 0.04728260869565217,
+            "lift": 5.662050864331614
+          },
+          {
+            "quarter": "2025Q2",
+            "n_picks": 305,
+            "n_positives": 22,
+            "p_at_k": 0.07213114754098361,
+            "base_rate": 0.04728260869565217,
+            "lift": 1.5255323158093086
+          },
+          {
+            "quarter": "2025Q3",
+            "n_picks": 320,
+            "n_positives": 5,
+            "p_at_k": 0.015625,
+            "base_rate": 0.04728260869565217,
+            "lift": 0.33045977011494254
+          },
+          {
+            "quarter": "2025Q4",
+            "n_picks": 299,
+            "n_positives": 36,
+            "p_at_k": 0.12040133779264214,
+            "base_rate": 0.04728260869565217,
+            "lift": 2.5464190981432364
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.6222222222222222,
+        "mean": 0.12288151302693835,
+        "std": 0.04592678592615872,
+        "n_rows": 9200,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": true
+      }
+    },
+    "test": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.01391304347826087,
+        "n_rows": 2300,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.1,
+            "n_picks_total": 103,
+            "n_positives_in_picks": 2,
+            "n_denom": 20,
+            "n_days_R_lt_k": 83,
+            "n_days_full_k": 103,
+            "n_days_total": 103,
+            "lift": 7.1875
+          },
+          "5": {
+            "p_at_k": 0.25,
+            "n_picks_total": 305,
+            "n_positives_in_picks": 8,
+            "n_denom": 32,
+            "n_days_R_lt_k": 103,
+            "n_days_full_k": 50,
+            "n_days_total": 103,
+            "lift": 17.96875
+          },
+          "10": {
+            "p_at_k": 0.28125,
+            "n_picks_total": 555,
+            "n_positives_in_picks": 9,
+            "n_denom": 32,
+            "n_days_R_lt_k": 103,
+            "n_days_full_k": 50,
+            "n_days_total": 103,
+            "lift": 20.21484375
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 0.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 0,
+            "n_denom": 1,
+            "lift": 0.0
+          },
+          "5": {
+            "p_at_k": 0.4,
+            "n_picks": 5,
+            "n_positives_in_picks": 2,
+            "n_denom": 5,
+            "lift": 28.75
+          },
+          "10": {
+            "p_at_k": 0.2,
+            "n_picks": 10,
+            "n_positives_in_picks": 2,
+            "n_denom": 10,
+            "lift": 14.375
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NSE:NTPC",
+            "n_picks": 50,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ADANIENT",
+            "n_picks": 37,
+            "n_positives": 1,
+            "hit_rate": 0.02702702702702703
+          },
+          {
+            "ticker": "NSE:HINDALCO",
+            "n_picks": 33,
+            "n_positives": 1,
+            "hit_rate": 0.030303030303030304
+          },
+          {
+            "ticker": "NSE:ADANIPORTS",
+            "n_picks": 26,
+            "n_positives": 3,
+            "hit_rate": 0.11538461538461539
+          },
+          {
+            "ticker": "NSE:INDIGO",
+            "n_picks": 25,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ONGC",
+            "n_picks": 20,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ASIANPAINT",
+            "n_picks": 15,
+            "n_positives": 1,
+            "hit_rate": 0.06666666666666667
+          },
+          {
+            "ticker": "NSE:BAJFINANCE",
+            "n_picks": 14,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JSWSTEEL",
+            "n_picks": 12,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TRENT",
+            "n_picks": 11,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BEL",
+            "n_picks": 10,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TATASTEEL",
+            "n_picks": 9,
+            "n_positives": 2,
+            "hit_rate": 0.2222222222222222
+          },
+          {
+            "ticker": "NSE:GRASIM",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:POWERGRID",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:AXISBANK",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TATACONSUM",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KOTAKBANK",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BAJAJFINSV",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CIPLA",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HDFCLIFE",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SBILIFE",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TMPV",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:APOLLOHOSP",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:COALINDIA",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:M&M",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2025Q3",
+            "n_picks": 38,
+            "n_positives": 0,
+            "p_at_k": 0.0,
+            "base_rate": 0.01391304347826087,
+            "lift": 0.0
+          },
+          {
+            "quarter": "2025Q4",
+            "n_picks": 28,
+            "n_positives": 1,
+            "p_at_k": 0.03571428571428571,
+            "base_rate": 0.01391304347826087,
+            "lift": 2.5669642857142856
+          },
+          {
+            "quarter": "2026Q1",
+            "n_picks": 239,
+            "n_positives": 7,
+            "p_at_k": 0.029288702928870293,
+            "base_rate": 0.01391304347826087,
+            "lift": 2.105125523012552
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.6222222222222222,
+        "mean": 0.13822814867428815,
+        "std": 0.048745730421269305,
+        "n_rows": 2300,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": true
+      }
+    }
+  },
+  "wall_time_total_sec": 353.8914680480957
+}
