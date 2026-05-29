@@ -27,6 +27,7 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
 from gbdt import checkpoint as gbdt_checkpoint
 from gbdt import data as gbdt_data
+from gbdt import feature_cache as gbdt_feature_cache
 from gbdt import features as gbdt_features
 from gbdt import loop_observability
 from gbdt import loop_protocol
@@ -796,23 +797,72 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         print(f"[data] WARNING: {test_split_warning}", flush=True)
 
     # -------- Phase 2: features --------
+    # task #181 — per-run feature-matrix cache. The agent_file_protocol loop is
+    # exit-and-resume: every --resume is a fresh process that would otherwise
+    # rebuild this full candidate matrix from scratch (~5 min on nifty50, ~3 h
+    # on sp500). We cache the FULL candidate matrix (FS pruning between
+    # iterations is a column subset of it, applied per-iteration by the loop)
+    # keyed on everything that determines it: universe + target tuple + split +
+    # candidate feature set/version + seed + code commit + a data-snapshot
+    # signature. On a key match (the resume case: same cell, same spec, same
+    # data) we load the parquet and SKIP build_feature_matrix; on any mismatch /
+    # corrupt / absent cache we rebuild and refresh. Correctness is paramount:
+    # the loaded matrix is byte-identical to what the build would produce, so
+    # results + determinism + the finalization-retrain contract are unchanged.
     heartbeat.set_phase("features")
     status.update(phase="features")
-    _milestone("[features] start")
-    t1 = time.time()
     fcfg = spec.get("features", {}) or {}
     lookbacks = tuple(fcfg.get("lookback_windows", gbdt_features.DEFAULT_LOOKBACKS))
     families = fcfg.get("candidates", "all")
     exclude = fcfg.get("exclude") or []
-    X = gbdt_features.build_feature_matrix(
+
+    panel_sig = gbdt_feature_cache.panel_signature(
         panel_obj.panel, panel_obj.index_series,
-        lookbacks=lookbacks,
-        annualization=panel_obj.annualization_factor,
-        families=families, exclude=exclude,
     )
-    # Drop all-NaN columns (some features may produce no values on a short-history ticker).
-    X = X.dropna(axis=1, how="all")
-    _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
+    matrix_key = gbdt_feature_cache.compute_key(
+        universe=target["universe"],
+        target=target,
+        split=split_d,
+        lookbacks=lookbacks,
+        families=families,
+        exclude=exclude,
+        random_seed=spec.get("random_seed", 42),
+        code_commit=preflight.get("code_commit", "unknown"),
+        code_dirty=bool(preflight.get("code_dirty", False)),
+        panel_sig=panel_sig,
+    )
+
+    t1 = time.time()
+    X = None
+    try:
+        X = gbdt_feature_cache.load_cache(out_dir, matrix_key)
+    except Exception as exc:  # never let a cache read crash the run
+        print(f"[features] cache read failed ({exc!r}); rebuilding", flush=True)
+        X = None
+
+    if X is not None:
+        _milestone(
+            f"[features] loaded from cache (key match) in {time.time()-t1:.1f}s "
+            f"shape={X.shape}"
+        )
+    else:
+        _milestone("[features] start (no cache hit — building)")
+        X = gbdt_features.build_feature_matrix(
+            panel_obj.panel, panel_obj.index_series,
+            lookbacks=lookbacks,
+            annualization=panel_obj.annualization_factor,
+            families=families, exclude=exclude,
+        )
+        # Drop all-NaN columns (some features may produce no values on a
+        # short-history ticker). This is part of what the loop consumes, so the
+        # cache MUST persist the post-dropna matrix to stay byte-identical.
+        X = X.dropna(axis=1, how="all")
+        _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
+        try:
+            gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
+            _milestone(f"[features] cache written (key={matrix_key[:12]}…)")
+        except Exception as exc:  # a cache write failure must not fail the run
+            print(f"[features] cache write failed ({exc!r}); continuing", flush=True)
 
     # Fail-fast non-finite audit (runs in seconds, BEFORE the multi-hour FS+HP
     # loop). ``±inf`` from ratio/division families (e.g. ``v / v.shift(n) - 1``
