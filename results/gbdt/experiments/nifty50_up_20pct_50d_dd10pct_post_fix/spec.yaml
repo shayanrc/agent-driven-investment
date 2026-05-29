@@ -1,0 +1,13 @@
+target:
+  universe: nifty50
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 8
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
