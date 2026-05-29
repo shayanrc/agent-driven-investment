@@ -31,7 +31,7 @@ from gbdt import features as gbdt_features
 from gbdt import loop_observability
 from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
-from gbdt.model import _validate_hp, model_filename
+from gbdt.model import _validate_hp, count_nonfinite, model_filename
 from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
@@ -813,6 +813,27 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     # Drop all-NaN columns (some features may produce no values on a short-history ticker).
     X = X.dropna(axis=1, how="all")
     _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
+
+    # Fail-fast non-finite audit (runs in seconds, BEFORE the multi-hour FS+HP
+    # loop). ``±inf`` from ratio/division families (e.g. ``v / v.shift(n) - 1``
+    # on a zero prior-period value for a sparse / halted ticker) crashes
+    # XGBoost's DMatrix construction at iter-0 fit; CatBoost tolerates it. The
+    # XGBoost backend sanitizes ``±inf`` → ``NaN`` at fit/predict time, but we
+    # surface it here so a future run sees the offending columns + counts up
+    # front rather than after a wasted feature build. NaN is the legitimate
+    # missing sentinel and is intentionally NOT flagged.
+    inf_offenders = count_nonfinite(X)
+    if inf_offenders:
+        total_inf = sum(inf_offenders.values())
+        top = list(inf_offenders.items())[:10]
+        top_str = ", ".join(f"{c}={n}" for c, n in top)
+        more = f" (+{len(inf_offenders) - len(top)} more cols)" if len(inf_offenders) > 10 else ""
+        _milestone(
+            f"[features] WARNING: {total_inf} non-finite (±inf) value(s) across "
+            f"{len(inf_offenders)} column(s) in the feature matrix; the XGBoost "
+            f"backend sanitizes these to NaN (missing) at fit/predict, CatBoost "
+            f"routes them to its missing bucket. Top offenders: {top_str}{more}"
+        )
 
     # -------- Phase 3: target --------
     heartbeat.set_phase("target")

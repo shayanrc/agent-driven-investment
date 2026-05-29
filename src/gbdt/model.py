@@ -797,7 +797,11 @@ class XGBoostModel(BaseGBDTModel):
             feat_names = list(X_train.columns)
             self._feature_names = feat_names
 
-        X_tr = _to_2d(X_train)
+        # XGBoost's DMatrix construction rejects ``±inf`` (unlike CatBoost) —
+        # map it to ``NaN`` so it flows through XGBoost's native missing-value
+        # handling. Applied identically on the predict path (``predict_proba``)
+        # so train/inference see the same sanitization. See ``_sanitize_nonfinite``.
+        X_tr = _sanitize_nonfinite(_to_2d(X_train))
         y_tr = np.asarray(y_train).ravel()
         w_tr = (
             np.asarray(train_weight, dtype=float).ravel()
@@ -807,7 +811,8 @@ class XGBoostModel(BaseGBDTModel):
         eval_set = None
         eval_weight = None
         if X_val is not None and y_val is not None:
-            eval_set = [(_to_2d(X_val), np.asarray(y_val).ravel())]
+            eval_set = [(_sanitize_nonfinite(_to_2d(X_val)),
+                         np.asarray(y_val).ravel())]
             if val_weight is not None:
                 eval_weight = [np.asarray(val_weight, dtype=float).ravel()]
 
@@ -841,7 +846,9 @@ class XGBoostModel(BaseGBDTModel):
         """Return ``P(positive)`` as a 1-D array."""
         if not self._fitted:
             raise RuntimeError("model is not fitted")
-        proba = self._model.predict_proba(_to_2d(X))
+        # Mirror ``fit``: sanitize ``±inf`` → ``NaN`` before the DMatrix is built
+        # on the predict path, so inference tolerates the same matrices as fit.
+        proba = self._model.predict_proba(_sanitize_nonfinite(_to_2d(X)))
         # XGBClassifier returns (n, 2) for binary; positive class is col 1.
         return np.asarray(proba)[:, 1]
 
@@ -1006,12 +1013,71 @@ def _to_2d(X: pd.DataFrame | np.ndarray) -> np.ndarray:
     return arr
 
 
+def _sanitize_nonfinite(arr: np.ndarray) -> np.ndarray:
+    """Map ``±inf`` to ``NaN`` so a stricter backend treats them as missing.
+
+    XGBoost's ``XGDMatrixCreateFromDense`` **rejects** ``inf`` outright
+    (``"Input data contains 'inf' or a value too large, while 'missing' is not
+    set to 'inf'"``), whereas CatBoost tolerates ``inf`` / huge values and
+    routes ``NaN`` to a dedicated missing-value bucket. The gbdt feature
+    pipeline can emit ``±inf`` from ratio/division families on degenerate input
+    (e.g. a zero prior-period volume or price on a sparse / halted ticker makes
+    ``v / v.shift(n) - 1`` blow up) — see the V1.2 sp500 crash.
+
+    Replacing ``±inf`` with ``NaN`` is semantically right: ``inf`` means "the
+    denominator was (near-)zero, so this ratio is undefined", which is exactly
+    the *missing* semantics XGBoost's sparsity-aware split finding already
+    handles natively (and what CatBoost's NaN bucket captures). We do **not**
+    clip to a finite rail — that would invent a real, learnable value at the
+    boundary and let the tree split on an artifact instead of routing the row
+    down the missing branch. Returns a float copy with ``±inf`` → ``NaN``
+    (finite values and existing ``NaN``s are untouched). Not done per-feature —
+    the backend is made robust to non-finite values generally.
+    """
+    out = np.asarray(arr, dtype=float)
+    nonfinite = ~np.isfinite(out)
+    # ``~isfinite`` is True for both ``NaN`` and ``±inf``; only the inf subset
+    # needs rewriting (NaN is already the missing sentinel). Operate on a copy
+    # so the caller's array is never mutated in place.
+    if nonfinite.any():
+        out = out.copy()
+        out[np.isinf(out)] = np.nan
+    return out
+
+
+def count_nonfinite(X: pd.DataFrame | np.ndarray) -> dict[str, int]:
+    """Audit a feature matrix for ``±inf`` values (fail-fast helper).
+
+    Returns ``{column_name: inf_count}`` for every column carrying at least one
+    ``±inf``, sorted descending by count. Empty dict when the matrix is clean.
+    ``NaN`` is **not** counted — it is the legitimate missing sentinel both
+    backends accept; only ``±inf`` (which crashes XGBoost's DMatrix
+    construction) is flagged. Callable right after the feature build so a
+    non-finite matrix surfaces in seconds, not after a multi-hour train.
+    """
+    if isinstance(X, pd.DataFrame):
+        cols = list(X.columns)
+        arr = X.values
+    else:
+        arr = np.asarray(X)
+        if arr.ndim == 1:
+            arr = arr.reshape(-1, 1)
+        cols = [f"f{j}" for j in range(arr.shape[1])]
+    arr = np.asarray(arr, dtype=float)
+    per_col = np.isinf(arr).sum(axis=0)
+    offenders = {
+        cols[j]: int(per_col[j]) for j in range(len(cols)) if per_col[j] > 0
+    }
+    return dict(sorted(offenders.items(), key=lambda kv: kv[1], reverse=True))
+
+
 __all__ = [
     "BaseGBDTModel",
     "CatBoostModel",
     "XGBoostModel",
     "GBDTModel",
     "make_model",
+    "count_nonfinite",
     "hp_tables_for",
     "model_filename",
     "PINNED_HPS",
