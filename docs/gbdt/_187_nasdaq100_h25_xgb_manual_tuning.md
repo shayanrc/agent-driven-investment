@@ -8,11 +8,11 @@ Panel: 92 nasdaq100 tickers, 645,189 rows. Splits 800/400/200/100 per ticker. Ba
 
 | iter | max_depth | η | λ | subsample | colsample | nfeat | val Brier | train-val gap | eval AUC | test AUC | eval wR-prec (base 0.252) | test wR-prec (base 0.273) | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 0 | 6 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16888 | +0.01304 | 0.634 | 0.495 | 0.491 (1.94×) | 0.378 (1.38×) | baseline = Phase-7 repl config |
-| 1 | 4 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16881 | +0.00402 | 0.627 | 0.494 | 0.488 (1.93×) | 0.396 (1.45×) | depth↓: overfit gap closed 0.013→0.004, val Brier flat, calib Z 10.3→7.47; test AUC still ≈chance |
-| 2 | 8 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16926 | +0.01462 | 0.629 | 0.489 | 0.490 (1.94×) | 0.374 (1.37×) | depth↑: gap widens to 0.015, val Brier slightly worse; test AUC still ≈chance |
-| 3 | 4 | 0.05 | 1.5 | 0.8 | 1.0 | 279 | 0.16967 | +0.00664 | 0.637 | 0.502 | 0.501 (1.98×) | 0.399 (1.46×) | λ↓ at d4: val Brier slightly worse, gap wider, calib worse (Z 13.0) |
-| 4 | 4 | 0.05 | 6.0 | 0.8 | 1.0 | 279 | 0.16922 | +0.00163 | 0.629 | 0.489 | 0.490 (1.94×) | 0.398 (1.46×) | λ↑ at d4: gap LOWEST (0.0016), calib BEST (Z 6.26), val Brier ~flat |
+| 0 | 6 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16888 | +0.01304 | 0.634 | 0.495 | 0.491 | 0.378 | baseline = Phase-7 repl config |
+| 1 | 4 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16881 | +0.00402 | 0.627 | 0.494 | 0.488 | 0.396 | depth↓: overfit gap closed 0.013→0.004, val Brier flat, calib Z 10.3→7.47; test AUC still ≈chance |
+| 2 | 8 | 0.05 | 3.0 | 0.8 | 1.0 | 279 | 0.16926 | +0.01462 | 0.629 | 0.489 | 0.490 | 0.374 | depth↑: gap widens to 0.015, val Brier slightly worse; test AUC still ≈chance |
+| 3 | 4 | 0.05 | 1.5 | 0.8 | 1.0 | 279 | 0.16967 | +0.00664 | 0.637 | 0.502 | 0.501 | 0.399 | λ↓ at d4: val Brier slightly worse, gap wider, calib worse (Z 13.0) |
+| 4 | 4 | 0.05 | 6.0 | 0.8 | 1.0 | 279 | 0.16922 | +0.00163 | 0.629 | 0.489 | 0.490 | 0.398 | λ↑ at d4: gap LOWEST (0.0016), calib BEST (Z 6.26), val Brier ~flat |
 
 ### Phase A synthesis (capacity × regularization)
 - **Tight HP-ceiling on val Brier:** entire grid spans 0.16881–0.16967 (0.5%), val-best = d4/λ3. Same signature as `_147` — no HP meaningfully moves val Brier.
