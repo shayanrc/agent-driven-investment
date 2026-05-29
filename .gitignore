@@ -33,5 +33,11 @@ results/forecasters/presets/*
 results/forecasters/forecasts/*
 !results/forecasters/forecasts/.gitkeep
 
+# gbdt: per-run feature-matrix cache (task #181) — a build-time optimization
+# for the exit-and-resume agent loop. Derivable from the panel + spec, so it is
+# never committed (the full candidate matrix can be large on heavy panels).
+results/gbdt/experiments/**/_feature_matrix_cache.parquet
+results/gbdt/experiments/**/_feature_matrix_cache.key.json
+
 # Local secrets
 .env
