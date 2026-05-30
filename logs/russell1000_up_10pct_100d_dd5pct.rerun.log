@@ -1,0 +1,33 @@
+[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=1025110016 cache_db_mtime=2026-05-29T04:24:13.578768+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=03bf272d48feefd047db17d509931227d7442e6f code_dirty=True
+[experiment] start spec=russell1000_up_10pct_100d_dd5pct.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
+[data] start universe=russell1000
+[heartbeat] t=22:37:26 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=504
+[data] complete in 42.4s rows=6059743 tickers_kept=889
+[data] WARNING: Test segment expected to be EMPTY: horizon_days=100 >= split.test_rows=100, so every ticker's trailing 100 rows have NaN targets (forward window incomplete). headline_test will be {} and predictions/test.csv will be header-only. Eval segment is still measured. (threshold=100)
+[heartbeat] t=22:37:56 phase=features elapsed_phase=17s elapsed_total=60s rss_mb=1671
+[features] loaded from universe cache (key match) in 11.0s shape=(6059743, 279)
+[heartbeat] t=22:38:26 phase=features elapsed_phase=47s elapsed_total=90s rss_mb=27886
+[heartbeat] t=22:38:56 phase=features elapsed_phase=77s elapsed_total=120s rss_mb=27886
+[features] WARNING: 12616 non-finite (±inf) value(s) across 6 column(s) in the feature matrix; the XGBoost backend sanitizes these to NaN (missing) at fit/predict, CatBoost routes them to its missing bucket. Top offenders: vol_change_5=5432, vol_change_10=2823, vol_change_20=2018, vol_change_50=1258, vol_change_100=706, vol_change_200=379
+[target] start
+[heartbeat] t=22:39:26 phase=target elapsed_phase=3s elapsed_total=150s rss_mb=27886
+[target] complete in 31.2s positive_prevalence=0.408
+[uniqueness] start
+[heartbeat] t=22:39:56 phase=uniqueness elapsed_phase=2s elapsed_total=180s rss_mb=27886
+[uniqueness] complete in 9.4s horizon=100 rows=6059743 ESS=6021404 inflation=1.01x
+[loop] start max_iter=3 callback_mode=default
+[heartbeat] t=22:40:26 phase=loop elapsed_phase=22s elapsed_total=210s rss_mb=27886
+[heartbeat] t=22:40:56 phase=loop elapsed_phase=52s elapsed_total=240s rss_mb=27886
+[heartbeat] t=22:41:26 phase=loop elapsed_phase=82s elapsed_total=270s rss_mb=27886
+[heartbeat] t=22:41:56 phase=loop elapsed_phase=112s elapsed_total=300s rss_mb=27886
+[heartbeat] t=22:42:26 phase=loop elapsed_phase=142s elapsed_total=330s rss_mb=27886
+[heartbeat] t=22:42:56 phase=loop elapsed_phase=172s elapsed_total=360s rss_mb=27886
+[heartbeat] t=22:43:26 phase=loop elapsed_phase=202s elapsed_total=390s rss_mb=27886
+[heartbeat] t=22:43:56 phase=loop elapsed_phase=232s elapsed_total=420s rss_mb=27886
+[heartbeat] t=22:44:26 phase=loop elapsed_phase=262s elapsed_total=450s rss_mb=27886
+[loop] LOOP COMPLETE in 288.8s best_iter=1 val_brier=0.2421 reason=plateau
+[artifact] start
+[heartbeat] t=22:44:56 phase=artifact elapsed_phase=3s elapsed_total=480s rss_mb=27886
+[artifact] complete in 8.2s -> /mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
+[loop] STOPPED reason=plateau
+[experiment] complete in 484.8s
