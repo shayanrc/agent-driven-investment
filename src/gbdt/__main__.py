@@ -29,6 +29,7 @@ from gbdt import checkpoint as gbdt_checkpoint
 from gbdt import data as gbdt_data
 from gbdt import feature_cache as gbdt_feature_cache
 from gbdt import features as gbdt_features
+from gbdt import universe_feature_cache as gbdt_universe_feature_cache
 from gbdt import loop_observability
 from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
@@ -797,18 +798,33 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         print(f"[data] WARNING: {test_split_warning}", flush=True)
 
     # -------- Phase 2: features --------
-    # task #181 — per-run feature-matrix cache. The agent_file_protocol loop is
-    # exit-and-resume: every --resume is a fresh process that would otherwise
-    # rebuild this full candidate matrix from scratch (~5 min on nifty50, ~3 h
-    # on sp500). We cache the FULL candidate matrix (FS pruning between
-    # iterations is a column subset of it, applied per-iteration by the loop)
-    # keyed on everything that determines it: universe + target tuple + split +
-    # candidate feature set/version + seed + code commit + a data-snapshot
-    # signature. On a key match (the resume case: same cell, same spec, same
-    # data) we load the parquet and SKIP build_feature_matrix; on any mismatch /
-    # corrupt / absent cache we rebuild and refresh. Correctness is paramount:
-    # the loaded matrix is byte-identical to what the build would produce, so
-    # results + determinism + the finalization-retrain contract are unchanged.
+    # Two-level feature-matrix cache:
+    #
+    #   1. **Per-run / per-cell cache** (task #181 — :mod:`gbdt.feature_cache`)
+    #      lives in this run's artifact dir. Keyed on everything that determines
+    #      the cell — including the target tuple. Hit ⇒ skip build entirely
+    #      (the --resume case: same cell, same spec, same data).
+    #
+    #   2. **Universe-level shared cache** (task #183 —
+    #      :mod:`gbdt.universe_feature_cache`) lives under ``<data_root>/
+    #      gbdt_feature_cache/``. Keyed identically to #1 EXCEPT the target
+    #      tuple is dropped — every sibling cell in a same-universe sweep
+    #      (e.g. russell1000 across 20 ``(threshold, horizon, drawdown)``)
+    #      hashes to the same key and shares the build. Turns N×build into
+    #      1×build + N×label-derivation.
+    #
+    # Flow: try (1) → try (2) → build. After a build, write BOTH so the next
+    # resume of THIS cell hits the cheaper per-cell layer and the next sibling
+    # cell of this universe hits the shared layer.
+    #
+    # Correctness is paramount in both layers: the loaded matrix is byte-
+    # identical to what the build would produce, so results + determinism +
+    # the finalization-retrain contract are unchanged. On any read error /
+    # corruption / key mismatch / sidecar disagreement, we treat it as a miss
+    # and rebuild — the conservative, correctness-preserving fallback. The
+    # universe cache deliberately reuses the per-cell cache's
+    # ``panel_signature`` + ``feature_code_signature`` helpers so a code or
+    # data change invalidates both layers at once.
     heartbeat.set_phase("features")
     status.update(phase="features")
     fcfg = spec.get("features", {}) or {}
@@ -831,38 +847,89 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         code_dirty=bool(preflight.get("code_dirty", False)),
         panel_sig=panel_sig,
     )
+    universe_key = gbdt_universe_feature_cache.compute_key(
+        universe=target["universe"],
+        split=split_d,
+        lookbacks=lookbacks,
+        families=families,
+        exclude=exclude,
+        random_seed=spec.get("random_seed", 42),
+        code_commit=preflight.get("code_commit", "unknown"),
+        code_dirty=bool(preflight.get("code_dirty", False)),
+        panel_sig=panel_sig,
+    )
+    universe_cache_root = preflight.get("data_root") or str(Path("data").resolve())
 
     t1 = time.time()
     X = None
     try:
         X = gbdt_feature_cache.load_cache(out_dir, matrix_key)
     except Exception as exc:  # never let a cache read crash the run
-        print(f"[features] cache read failed ({exc!r}); rebuilding", flush=True)
+        print(f"[features] per-cell cache read failed ({exc!r}); falling through",
+              flush=True)
         X = None
 
     if X is not None:
         _milestone(
-            f"[features] loaded from cache (key match) in {time.time()-t1:.1f}s "
-            f"shape={X.shape}"
+            f"[features] loaded from per-cell cache (key match) in "
+            f"{time.time()-t1:.1f}s shape={X.shape}"
         )
     else:
-        _milestone("[features] start (no cache hit — building)")
-        X = gbdt_features.build_feature_matrix(
-            panel_obj.panel, panel_obj.index_series,
-            lookbacks=lookbacks,
-            annualization=panel_obj.annualization_factor,
-            families=families, exclude=exclude,
-        )
-        # Drop all-NaN columns (some features may produce no values on a
-        # short-history ticker). This is part of what the loop consumes, so the
-        # cache MUST persist the post-dropna matrix to stay byte-identical.
-        X = X.dropna(axis=1, how="all")
-        _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
+        # Try the shared universe-level cache before paying for a full build.
+        # A hit here saves the ~5 min (nifty50) / ~3 h (sp500/russell1000)
+        # build for every sibling cell after the first in a sweep.
         try:
-            gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
-            _milestone(f"[features] cache written (key={matrix_key[:12]}…)")
-        except Exception as exc:  # a cache write failure must not fail the run
-            print(f"[features] cache write failed ({exc!r}); continuing", flush=True)
+            X = gbdt_universe_feature_cache.load_cache(
+                universe_cache_root, universe_key,
+            )
+        except Exception as exc:
+            print(f"[features] universe cache read failed ({exc!r}); rebuilding",
+                  flush=True)
+            X = None
+
+        if X is not None:
+            _milestone(
+                f"[features] loaded from universe cache (key match) in "
+                f"{time.time()-t1:.1f}s shape={X.shape}"
+            )
+            # Mirror into the per-cell cache so a subsequent --resume of THIS
+            # cell hits the cheaper local layer (no shared-cache touch needed).
+            try:
+                gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
+            except Exception as exc:
+                print(f"[features] per-cell cache write failed ({exc!r}); continuing",
+                      flush=True)
+        else:
+            _milestone("[features] start (no cache hit — building)")
+            X = gbdt_features.build_feature_matrix(
+                panel_obj.panel, panel_obj.index_series,
+                lookbacks=lookbacks,
+                annualization=panel_obj.annualization_factor,
+                families=families, exclude=exclude,
+            )
+            # Drop all-NaN columns (some features may produce no values on a
+            # short-history ticker). This is part of what the loop consumes,
+            # so BOTH caches MUST persist the post-dropna matrix to stay
+            # byte-identical.
+            X = X.dropna(axis=1, how="all")
+            _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
+            try:
+                gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
+                _milestone(f"[features] per-cell cache written (key={matrix_key[:12]}…)")
+            except Exception as exc:  # a cache write failure must not fail the run
+                print(f"[features] per-cell cache write failed ({exc!r}); continuing",
+                      flush=True)
+            try:
+                gbdt_universe_feature_cache.write_cache(
+                    universe_cache_root, X, universe_key,
+                )
+                _milestone(
+                    f"[features] universe cache written (key={universe_key[:12]}…) "
+                    f"at {universe_cache_root}/{gbdt_universe_feature_cache.DEFAULT_CACHE_SUBDIR}/"
+                )
+            except Exception as exc:
+                print(f"[features] universe cache write failed ({exc!r}); continuing",
+                      flush=True)
 
     # Fail-fast non-finite audit (runs in seconds, BEFORE the multi-hour FS+HP
     # loop). ``±inf`` from ratio/division families (e.g. ``v / v.shift(n) - 1``
