@@ -8,7 +8,7 @@
 
 ## Headline
 
-The russell1000 sweep finishes **20/20 cells** with a clean signal floor: **15 cells discriminate on the held-out test window**, **3 cells lack a test window** (H ≥ 100 ate the test split under the 800/400/200/100 walk-forward — same methodology limitation `_177` flagged), **1 cell is ambiguous** (10%/50d), **1 is null** (10%/100d eval-only), and **1 is anti-predictive on eval** (10%/200d, AUC 0.422 with no test window to corroborate). Strongest test-segment cells live where the `_177` US-sweep priors predicted: **short-horizon × high-threshold**. The top three by R-prec lift on test are **40%/10d (42.1×)**, **50%/25d (18.6×)**, **20%/5d (17.7×)** — the rare-but-clean top-pick regime. The systemic eval→test AUC decay observed across nasdaq100 + sp500 in `_177` **replicates uniformly on russell1000**: every cell with a test window loses AUC from eval to test (range −0.022 to −0.144). The decay bites hardest at H = 50–100 in the +10% threshold band — the 10%/50d cell falls into the [0.45, 0.55] null AUC band on test (lift 1.22×, ambiguous), the 10%/100d cell goes null on eval, mirroring the nasdaq100 +10%/25d crossover point seen in `_177` but pushed one horizon-step out (probably the broader panel buying ~1 extra horizon-step before discrimination collapses). **Wall-time vs the #183 PR projection of ~5.6 h: measured ~7.30 h** — cold cell came in at 4h24m (close to the 5h projection), but warm cells averaged ~9 min each (4× the projected ~2 min); the 4× overshoot is dominated by label generation + LdP §4.4 sample-weight computation on the 6.06M-row russell1000 panel, not feature build (cache-skip confirmed by `loop/progress.log`).
+The russell1000 sweep finishes **20/20 cells** with a clean signal floor: **17 of 20 cells discriminate** (12 on the held-out test window, 5 on eval-only with no test window under the current split), **1 cell is ambiguous on test** (10%/50d), **1 is null on eval** (10%/100d), and **1 is anti-predictive on eval** (10%/200d, AUC 0.422). In total **7 cells lack a test window** (H ≥ 100 ate the test split under the 800/400/200/100 walk-forward — same methodology limitation `_177` flagged). Strongest test-segment cells live where the `_177` US-sweep priors predicted: **short-horizon × high-threshold**. The top three by R-prec lift on test are **40%/10d (42.1×)**, **50%/25d (18.6×)**, **20%/5d (17.7×)** — the rare-but-clean top-pick regime. The systemic eval→test AUC decay observed across nasdaq100 + sp500 in `_177` **largely replicates on russell1000**: 12 of 13 test-evaluable cells lose AUC from eval to test (dAUC range **−0.107 to +0.005**); the lone exception is 40%/10d at +0.005 — a flat-to-slightly-positive shift, not a meaningful gain. The decay bites hardest at H = 25–50 in the +10% threshold band — the 10%/50d cell falls into the [0.45, 0.55] null AUC band on test (lift 1.22×, ambiguous), the 10%/100d cell goes null on eval, mirroring the nasdaq100 +10%/25d crossover point seen in `_177` but pushed one horizon-step out (probably the broader panel buying ~1 extra horizon-step before discrimination collapses). **Wall-time vs the #183 PR projection of ~5.6 h: measured ~7.30 h** — cold cell came in at 4h24m (close to the 5h projection), but warm cells averaged ~9 min each (4× the projected ~2 min); the 4× overshoot is dominated by label generation + LdP §4.4 sample-weight computation on the 6.06M-row russell1000 panel, not feature build (cache-skip confirmed by `loop/progress.log`).
 
 ## What's covered
 
@@ -68,9 +68,9 @@ R-precision values cross-checked via `uv run python -m scripts.gbdt.compute_r_pr
 
 ## Per-cell verdicts (compound rule, grouped by signal status)
 
-### Discriminating on test (15 cells)
+### Discriminating (17 cells: 12 on test + 5 on eval-only)
 
-Cells with test AUC > 0.55. Listed by ascending threshold then horizon. Lift quoted in prose only.
+Listed by ascending threshold then horizon. Verdict basis (test vs eval-only) called out per bullet. Lift quoted in prose only.
 
 - **10%/5d**: test AUC 0.762, lift **5.11×** (base 4.98% → R-prec 25.5%). The cleanest +10% short-horizon cell — matches the `_177` snapshot value (5.1× test) on the same single russell1000 data point it had, so this new sweep run reproduces the prior result exactly.
 - **10%/10d**: test AUC 0.695, lift **2.66×** (base 12.6% → 33.4%). Eval AUC 0.786 dropped 0.091 — solid signal but already feeling the eval→test decay.
@@ -105,7 +105,7 @@ Cells with test AUC > 0.55. Listed by ascending threshold then horizon. Lift quo
   2. The cell kept the full 279-feature pool (best_iteration = 0 again). With ~45% base prevalence and inverted features, FS has no clear signal to keep or prune.
   Without a test window this verdict is provisional — it doesn't generalize to a tradable insight, but it does flag "the +10% target at H ≥ 200d is a poorly-posed problem for this feature pool."
 
-### Coverage gap — no test window (3 cells flagged separately above)
+### Coverage gap — no test window (7 cells flagged separately above)
 
 The cells with `H ≥ 100` and the standard 800/400/200/100 split have **zero test rows** because each ticker's trailing 100 rows have NaN targets (forward window incomplete past the test cutoff). russell1000 cells affected: **10%/100d (null)**, **10%/200d (anti-predictive)**, **20%/100d, 40%/100d, 40%/200d, 50%/100d, 50%/200d (all eval-only discriminating)**. The runner emits an explicit warning at data load (`[data] WARNING: Test segment expected to be EMPTY: horizon_days=N >= split.test_rows=100`), so the gap is well-flagged in `report.md` for each affected cell, not silently absent.
 
@@ -117,7 +117,7 @@ This is the **same methodology limitation** `_177` flagged on nasdaq100 +10%/100
 
 ### 1. The eval→test AUC decay is universal and matches `_177` qualitatively
 
-Every cell with a test window loses AUC from eval to test. `dAUC = AUC(test) − AUC(eval)` ranges from **−0.022** (50%/50d) to **−0.144** (`_177`'s nasdaq100 +10%/25d quoted for comparison; russell1000's worst is 10%/50d at −0.098). The decay direction is universal across the russell1000 sweep — there is no test window where AUC went up from eval, confirming `_177`'s diagnosis that the 2024–2026 test window is a harder prevalence regime than the eval window for **all** US universes (nasdaq100, sp500, russell1000).
+12 of 13 cells with a test window lose AUC from eval to test. `dAUC = AUC(test) − AUC(eval)` ranges from **−0.107** (10%/25d, russell1000's worst) to **+0.005** (40%/10d, the lone cell whose test AUC matched/slightly exceeded eval). Excluding the +0.005 outlier, the next-smallest decay is **−0.034** (20%/5d). For comparison `_177`'s worst was −0.144 (nasdaq100 +10%/25d). The decay direction is near-universal across the russell1000 sweep, confirming `_177`'s diagnosis that the 2024–2026 test window is a harder prevalence regime than the eval window for **all** US universes (nasdaq100, sp500, russell1000); the 40%/10d cell is a single counter-example where the very-rare-event lift held up.
 
 Decay magnitude scales with horizon inside fixed-threshold families (10% family, test-evaluable cells only):
 
@@ -233,7 +233,7 @@ These cells corroborate `_177`'s § 1 finding that **the +10% target at H ≥ 25
 
 | `_177` finding | russell1000 sweep evidence |
 |---|---|
-| Universal eval→test AUC decay (every completed cell loses AUC) | **Replicates exactly** — every test-evaluable cell loses AUC, dAUC range −0.022 to −0.098 |
+| Universal eval→test AUC decay (every completed cell loses AUC) | **Largely replicates** — 12 of 13 test-evaluable cells lose AUC; dAUC range −0.107 to +0.005 (40%/10d is the lone +0.005 outlier — extreme-rare-event cell whose test AUC held flat) |
 | Decay magnitude scales with horizon at fixed threshold | **Replicates** — 10% family decay grows 0.06 → 0.09 → 0.11 → 0.10 from 5d → 50d |
 | Short-horizon (5d–10d) sweet spot | **Replicates** — 5d/10d cells stay strongly discriminating across all thresholds |
 | Higher thresholds → higher lift, smaller base, modest absolute R-prec | **Replicates** — +40%/+50% cells hit lift 18–42× on tiny base, +10% cells hit lift 1–5× on larger base |
@@ -248,4 +248,4 @@ The single concrete revision `_188` introduces to `_177`'s priors is the **unive
 
 ## User-facing read (no automated PASS/FAIL)
 
-Of the 20 russell1000 cells, **15 discriminate on the held-out test window**, **1 is borderline on test (10%/50d, ambiguous)**, **1 is null on eval (10%/100d, no test)**, **1 is anti-predictive on eval (10%/200d, no test)**, and **3 are eval-only discriminating** (no test window under the current split: 20%/100d, 40%/{100d,200d}, 50%/{100d,200d}). The short-horizon × high-threshold corner is the production-candidate region — **40%/10d, 50%/25d, 20%/5d** are the standout cells by test-segment R-precision lift (42×, 19×, 18×). The eval→test AUC decay observed in `_177`'s partial US sweep replicates uniformly on russell1000, with the decay crossing into the null AUC band one horizon-step further out (10%/50d vs nasdaq100's 10%/25d). The 7 eval-only cells (H ≥ 100) need the test-split fix before they can be judged. As `_177` noted, the PASS/FAIL call on any individual cell remains a user judgment; this memo characterizes the landscape across the completed russell1000 sweep.
+Of the 20 russell1000 cells, **12 discriminate on the held-out test window**, **5 are eval-only discriminating** (no test window under the current split: 20%/100d, 40%/{100d,200d}, 50%/{100d,200d}), **1 is borderline on test (10%/50d, ambiguous)**, **1 is null on eval (10%/100d, no test)**, **1 is anti-predictive on eval (10%/200d, no test)**. The short-horizon × high-threshold corner is the production-candidate region — **40%/10d, 50%/25d, 20%/5d** are the standout cells by test-segment R-precision lift (42×, 19×, 18×). The eval→test AUC decay observed in `_177`'s partial US sweep largely replicates on russell1000, with the decay crossing into the null AUC band one horizon-step further out (10%/50d vs nasdaq100's 10%/25d). The 7 eval-only cells (H ≥ 100) need the test-split fix before they can be judged. As `_177` noted, the PASS/FAIL call on any individual cell remains a user judgment; this memo characterizes the landscape across the completed russell1000 sweep.
