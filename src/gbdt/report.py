@@ -506,8 +506,9 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
     lines.append(
         "P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide "
         "positive prevalence (constant across rows); regime-dependent "
-        "collapse shows as a quarter where ``lift`` falls toward 1.0 or "
-        "below."
+        "collapse shows as a quarter where ``P@5`` falls toward "
+        "``base_rate`` or below. ``lift`` omitted from the table by project "
+        "reporting convention."
     )
     lines.append("")
     for seg in ("eval", "test"):
@@ -519,13 +520,12 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
             lines.append("_no picks._")
             lines.append("")
             continue
-        lines.append("| quarter | n_picks | n_positives | P@5 | base_rate | lift |")
-        lines.append("|---|---|---|---|---|---|")
+        lines.append("| quarter | n_picks | n_positives | P@5 | base_rate |")
+        lines.append("|---|---|---|---|---|")
         for r in rows:
             lines.append(
                 f"| {r['quarter']} | {r['n_picks']} | {r['n_positives']} | "
-                f"{_fmt(r['p_at_k'])} | {_fmt(r['base_rate'])} | "
-                f"{_fmt(r['lift'], '.3f')} |"
+                f"{_fmt(r['p_at_k'])} | {_fmt(r['base_rate'])} |"
             )
         lines.append("")
 
