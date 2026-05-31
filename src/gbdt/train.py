@@ -253,6 +253,7 @@ def walk_forward_train(
     max_iterations: int = 8,
     plateau_threshold: float = 0.005,
     degradation_gate: float = 0.01,
+    tie_band: float | None = None,
     fs_hp_callback: Optional[Callable] = None,
     random_seed: int = 42,
     sample_weights: pd.Series | None = None,
@@ -386,12 +387,42 @@ def walk_forward_train(
         # (via loop_state_sink) so it can write a complete resume checkpoint
         # before pausing. Inert in default mode (sink is None).
         if loop_state_sink is not None:
+            # L1 from _187: persist per-iter (gap, z) alongside val_briers so
+            # the tie-break logic in best_checkpoint() can see the full
+            # history across an exit-and-resume boundary. Older checkpoints
+            # written before this field default to empty lists on the resume
+            # side, which the resolver treats as None (worst-case).
+            sink_gaps = [
+                (float(b.train_val_gap) if b.train_val_gap is not None else None)
+                for b in history
+            ]
+            sink_zs = [
+                (float(b.spiegelhalter_z) if b.spiegelhalter_z is not None else None)
+                for b in history
+            ]
+            # Prepend any prior-iter (gap, z) carried in from the resume seed
+            # — those slots are not represented in ``history`` (which only
+            # holds bundles built in this process).
+            prior_gap_seed = (
+                list(resume_state.get("train_val_gaps", []))
+                if resume_state is not None else []
+            )
+            prior_z_seed = (
+                list(resume_state.get("spiegelhalter_zs", []))
+                if resume_state is not None else []
+            )
+            n_prior = max(0, len(val_briers) - len(history))
+            sink_gaps = list(prior_gap_seed[:n_prior]) + sink_gaps
+            sink_zs = list(prior_z_seed[:n_prior]) + sink_zs
+
             loop_state_sink.clear()
             loop_state_sink.update({
                 "iter_idx": iter_idx,
                 "current_features": list(current_features),
                 "current_hp": dict(current_hp),
                 "val_briers": list(val_briers),
+                "train_val_gaps": sink_gaps,
+                "spiegelhalter_zs": sink_zs,
                 "hp_history": list(hp_history),
                 "feature_history": [list(f) for f in feature_lists],
                 "hp_lists": [dict(h) for h in hp_lists],
@@ -422,7 +453,62 @@ def walk_forward_train(
         )
 
     # Best checkpoint across the FULL val-Brier history (prior + this-process).
-    best_i = best_checkpoint(val_briers)
+    # L1 from _187: among configs whose val Brier lands inside the tie band
+    # (default 0.5 * plateau_threshold), prefer lower train-val gap, then
+    # |Spiegelhalter Z| closer to 0. ``history`` is the in-process bundles;
+    # resume-seeded prior iterations carry their (gap, z) via the checkpoint
+    # so the tie-break sees the full history when available, otherwise the
+    # prior-iter entry is None and falls back to worst-case (i.e. never wins
+    # a tie over a present-metric config).
+    bundle_by_idx: dict[int, DiagnosticBundle] = {}
+    if resume_state is not None:
+        # Prior iters occupy slots 0..N from the resume seed; in-process
+        # bundles fill the remaining slots starting at len(resume_history).
+        first_in_process = len(val_briers) - len(history)
+    else:
+        first_in_process = 0
+    for offset, b in enumerate(history):
+        bundle_by_idx[first_in_process + offset] = b
+
+    # Resume-seeded prior (gap, z) if the checkpoint carried them; older
+    # checkpoints predating this field default to None and the corresponding
+    # slot is treated as worst-case in tie-breaking.
+    prior_gaps = (
+        list(resume_state.get("train_val_gaps", []))
+        if resume_state is not None else []
+    )
+    prior_zs = (
+        list(resume_state.get("spiegelhalter_zs", []))
+        if resume_state is not None else []
+    )
+
+    def _gap_for(i: int) -> float | None:
+        b = bundle_by_idx.get(i)
+        if b is not None:
+            return float(b.train_val_gap) if b.train_val_gap is not None else None
+        if i < len(prior_gaps):
+            v = prior_gaps[i]
+            return float(v) if v is not None else None
+        return None
+
+    def _z_for(i: int) -> float | None:
+        b = bundle_by_idx.get(i)
+        if b is not None:
+            return float(b.spiegelhalter_z) if b.spiegelhalter_z is not None else None
+        if i < len(prior_zs):
+            v = prior_zs[i]
+            return float(v) if v is not None else None
+        return None
+
+    gaps_seq = [_gap_for(i) for i in range(len(val_briers))]
+    zs_seq = [_z_for(i) for i in range(len(val_briers))]
+    best_i = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps_seq,
+        spiegelhalter_zs=zs_seq,
+        tie_band=tie_band,
+        plateau_threshold=plateau_threshold,
+    )
     best_features = feature_lists[best_i]
     best_hp = hp_lists[best_i]
     best_model = models[best_i]
