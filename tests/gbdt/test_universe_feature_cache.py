@@ -72,8 +72,6 @@ _BASE_KW = dict(
     families="all",
     exclude=[],
     random_seed=42,
-    code_commit="abc123",
-    code_dirty=False,
 )
 
 
@@ -92,7 +90,12 @@ def panel_and_key():
 
 def test_universe_key_signature_excludes_target_tuple():
     """The function signature itself must not accept a ``target`` kwarg —
-    accidentally re-introducing one would defeat the purpose of the layer."""
+    accidentally re-introducing one would defeat the purpose of the layer.
+
+    Also (task #190): the signature must NOT accept ``code_commit`` /
+    ``code_dirty`` — those were dropped to fix the over-strict per-commit
+    invalidation; the feature-code signature now carries a SHA-256 of the
+    ``gbdt.features`` source instead."""
     import inspect
 
     sig = inspect.signature(ufc.compute_key)
@@ -102,10 +105,18 @@ def test_universe_key_signature_excludes_target_tuple():
         "point of the universe-level cache (drop the target tuple from the "
         "key so sibling cells share)."
     )
+    # Task #190 drop: code_commit + code_dirty must be gone (hard break).
+    assert "code_commit" not in params, (
+        "compute_key must not accept code_commit (task #190 dropped it — "
+        "see PRs #86/#87 cold-rebuild incident)."
+    )
+    assert "code_dirty" not in params, (
+        "compute_key must not accept code_dirty (task #190 dropped it)."
+    )
     # And it MUST take every non-target input that determines the build.
     for required in (
         "universe", "split", "lookbacks", "families", "exclude",
-        "random_seed", "code_commit", "code_dirty", "panel_sig",
+        "random_seed", "panel_sig",
     ):
         assert required in params, f"compute_key missing required kwarg: {required!r}"
 
@@ -194,11 +205,44 @@ def test_universe_key_differs_on_changed_seed(panel_and_key):
     assert other != base_key
 
 
-def test_universe_key_differs_on_changed_code_commit(panel_and_key):
+def test_universe_key_stable_across_what_used_to_be_commit_invalidation(panel_and_key):
+    """Task #190 regression guard: pre-#190, ANY commit on main (even one
+    that didn't touch features) flipped the universe-cache key and forced
+    a ~5 h cold rebuild on russell1000 (per PRs #86/#87 incident). Post-#190
+    the key is determined solely by actual feature-build inputs, so
+    re-computing with identical inputs gives the same key."""
     panel, index_df, base_key = panel_and_key
     panel_sig = per_cell_cache.panel_signature(panel, index_df)
-    kw = {**_BASE_KW, "code_commit": "deadbeef"}
-    other = ufc.compute_key(panel_sig=panel_sig, **kw)
+    again = ufc.compute_key(panel_sig=panel_sig, **_BASE_KW)
+    assert again == base_key, (
+        "universe compute_key MUST be stable across what used to be "
+        "commit-level invalidation — task #190 fix."
+    )
+
+
+def test_universe_key_differs_on_changed_features_source(panel_and_key, monkeypatch):
+    """The TARGETED invalidator (task #190): a change to ``gbdt.features``
+    source flows through ``feature_code_signature``'s ``source_sha256`` and
+    flips the cache key. This is what makes "edit features.py → next run
+    rebuilds" work without false positives from unrelated commits."""
+    import inspect as _inspect
+    from gbdt import features as gbdt_features
+
+    panel, index_df, base_key = panel_and_key
+
+    real_getsource = _inspect.getsource
+    def fake_getsource(obj):
+        if obj is gbdt_features:
+            return real_getsource(obj) + "\n# perturbation\n"
+        return real_getsource(obj)
+
+    # The signature helper lives in gbdt.feature_cache and is re-used by
+    # universe_feature_cache (single source of truth), so patching that one
+    # site invalidates both cache keys at once.
+    monkeypatch.setattr("gbdt.feature_cache.inspect.getsource", fake_getsource)
+
+    panel_sig = per_cell_cache.panel_signature(panel, index_df)
+    other = ufc.compute_key(panel_sig=panel_sig, **_BASE_KW)
     assert other != base_key
 
 
@@ -356,3 +400,17 @@ def test_two_target_cells_share_same_universe_cache(tmp_path, panel_and_key):
     # And the loaded matrix is byte-identical to what cell B would have built
     # on its own (the golden snapshot — proves we don't pollute results).
     pd.testing.assert_frame_equal(loaded, X, check_exact=True)
+
+
+# ---------------------------------------------------------------------------
+# (5) Task #190 — SCHEMA_VERSION bump for the code_commit → source_sha256 swap
+# ---------------------------------------------------------------------------
+
+
+def test_schema_version_is_v2():
+    """Task #190 bumped SCHEMA_VERSION v1 → v2 so any v1-keyed parquet on
+    disk (notably the 6.2 G russell1000 cache from PR #85's build) misses
+    cleanly and gets rebuilt under the new key shape. Correctness over
+    reuse — we'd rather rebuild once than risk reusing under an
+    inconsistent key shape."""
+    assert ufc.SCHEMA_VERSION == "v2"

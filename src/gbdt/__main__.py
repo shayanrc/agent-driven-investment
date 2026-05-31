@@ -835,6 +835,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     panel_sig = gbdt_feature_cache.panel_signature(
         panel_obj.panel, panel_obj.index_series,
     )
+    # Note: ``code_commit`` + ``code_dirty`` are still gathered into the
+    # ``preflight`` dict (kept as run metadata in metrics.json — useful for
+    # post-hoc archival fingerprinting), but they are NO LONGER passed to the
+    # cache-key computation. Task #190: the per-commit invalidator was too
+    # coarse (every unrelated commit forced a ~5 h cold rebuild). The
+    # feature-code signature now carries a targeted SHA-256 of
+    # ``gbdt.features`` source, so only edits to features.py invalidate.
     matrix_key = gbdt_feature_cache.compute_key(
         universe=target["universe"],
         target=target,
@@ -843,8 +850,6 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         families=families,
         exclude=exclude,
         random_seed=spec.get("random_seed", 42),
-        code_commit=preflight.get("code_commit", "unknown"),
-        code_dirty=bool(preflight.get("code_dirty", False)),
         panel_sig=panel_sig,
     )
     universe_key = gbdt_universe_feature_cache.compute_key(
@@ -854,8 +859,6 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         families=families,
         exclude=exclude,
         random_seed=spec.get("random_seed", 42),
-        code_commit=preflight.get("code_commit", "unknown"),
-        code_dirty=bool(preflight.get("code_dirty", False)),
         panel_sig=panel_sig,
     )
     universe_cache_root = preflight.get("data_root") or str(Path("data").resolve())

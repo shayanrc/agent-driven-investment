@@ -36,8 +36,12 @@ Design
   definition version, ``random_seed`` (carried for future-proofing — current
   features are deterministic-without-seed, but excluding it would break the
   contract the moment a feature gains a seeded subsampler), the feature-code
-  version signature + code commit, and a data-snapshot signature (panel rows
-  + min/max date + index hash).
+  signature (now including a SHA-256 of the ``gbdt.features`` source — see
+  :func:`gbdt.feature_cache.feature_code_signature`), and a data-snapshot
+  signature (panel rows + min/max date + index hash). The cache is no longer
+  keyed on the git commit (pre-#190 it was, which over-invalidated on every
+  unrelated commit — see PRs #86/#87 cold-rebuild incident); the source hash
+  of ``features.py`` is the targeted invalidator.
 * **Atomicity.** Writes are temp-file + ``os.replace`` so a crash mid-write
   never leaves a half-baked parquet that a later run mistakes for a hit.
   Mirrors the :mod:`gbdt.feature_cache` discipline.
@@ -83,7 +87,12 @@ from gbdt import feature_cache as _per_cell_cache
 
 # Bumped on any breaking change to the cache key composition or the persisted
 # layout, so a stale cache from an older code version never key-matches.
-SCHEMA_VERSION = "v1"
+# v2 (task #190): dropped ``code_commit`` + ``code_dirty`` from the key in
+# step with the per-cell cache; relies on ``feature_code_signature``'s new
+# ``source_sha256`` of ``gbdt.features`` for targeted invalidation. The bump
+# guarantees any v1 parquet on disk (notably the 6.2 G russell1000 cache)
+# misses cleanly and gets rebuilt at the new schema — correctness over reuse.
+SCHEMA_VERSION = "v2"
 
 # Default subdir under ``data_root`` where shared matrices land.
 DEFAULT_CACHE_SUBDIR = "gbdt_feature_cache"
@@ -129,8 +138,6 @@ def compute_key(
     families: Any,
     exclude: Any,
     random_seed: int,
-    code_commit: str,
-    code_dirty: bool,
     panel_sig: dict,
 ) -> str:
     """Compute the deterministic universe-level cache key (SHA-256 hex).
@@ -148,6 +155,12 @@ def compute_key(
     single sources of truth for "what defines a feature build" + "what defines
     a data snapshot", and we deliberately reuse them so a code change to the
     feature engineering invalidates both caches at once.
+
+    Pre-#190 the payload also included ``code_commit`` + ``code_dirty`` (the
+    full git SHA). That over-invalidated every cache on any commit, even
+    commits that didn't touch features (e.g. a runner refactor, a report
+    tweak). The feature-code signature now carries a SHA-256 of the
+    ``gbdt.features`` source instead — targeted, no false positives.
     """
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -171,8 +184,6 @@ def compute_key(
             "code_signature": _per_cell_cache.feature_code_signature(),
         },
         "random_seed": int(random_seed),
-        "code_commit": code_commit,
-        "code_dirty": bool(code_dirty),
         "panel_signature": panel_sig,
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)

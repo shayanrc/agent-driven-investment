@@ -25,10 +25,15 @@ Design
 * **Cache key.** A SHA-256 over a canonical-JSON dict of EVERYTHING that
   determines the matrix: universe, the full target tuple, the split config,
   the candidate feature set + their definition version, ``random_seed``, the
-  feature-code version signature + code commit, and a data-snapshot signature
-  (panel row count + min/max date + a hash of the panel index, plus the index
-  series row count + max date). A mismatch (changed seed/threshold/data/code)
-  or an absent/corrupt cache forces a rebuild + cache refresh.
+  feature-code version signature (which now includes a SHA-256 of the
+  :mod:`gbdt.features` module source — see :func:`feature_code_signature`),
+  and a data-snapshot signature (panel row count + min/max date + a hash of
+  the panel index, plus the index series row count + max date). A mismatch
+  (changed seed/threshold/data/features-source) or an absent/corrupt cache
+  forces a rebuild + cache refresh. NOTE: the cache is no longer keyed on
+  ``git rev-parse HEAD`` — that over-invalidated on any unrelated commit
+  (see PRs #86/#87 + task #190); the targeted ``source_sha256`` of
+  ``features.py`` is the correctness-preserving invalidator.
 
 Correctness contract
 ---------------------
@@ -50,6 +55,7 @@ results, determinism, or the finalization-retrain contract.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from pathlib import Path
 from typing import Any
@@ -58,7 +64,11 @@ import pandas as pd
 
 # Bumped on any breaking change to the cache key composition or the persisted
 # layout, so a stale cache from an older code version never key-matches.
-SCHEMA_VERSION = "v1"
+# v2 (task #190): dropped ``code_commit`` + ``code_dirty`` from the key,
+# added a SHA-256 of ``gbdt.features`` source to ``feature_code_signature``.
+# The bump guarantees any v1 parquet still on disk misses cleanly and gets
+# rebuilt at the new schema (correctness over reuse).
+SCHEMA_VERSION = "v2"
 
 _MATRIX_FILENAME = "_feature_matrix_cache.parquet"
 _KEY_FILENAME = "_feature_matrix_cache.key.json"
@@ -82,15 +92,33 @@ def key_path(run_dir: str | Path) -> Path:
 def feature_code_signature() -> dict[str, Any]:
     """A signature of the feature-definition code.
 
-    Captures the canonical family list, the default lookbacks, and the
-    expected total column count from :mod:`gbdt.features`. Combined with the
-    git ``code_commit`` in the key, this invalidates the cache when the
-    feature engineering changes — even if the spec (and thus the rest of the
-    key) is identical.
+    The TARGETED invalidator is ``source_sha256``: the SHA-256 of the
+    :mod:`gbdt.features` module's source text. Any edit to that file (a new
+    family, a tweaked rolling window, a renamed column, a bugfix to a
+    denominator guard) flips the hash and invalidates the cache. Edits to
+    unrelated modules — runner, calibration, reporting, etc. — leave the
+    hash untouched, so the cache survives them.
+
+    The other three fields (``all_families``, ``default_lookbacks``,
+    ``expected_total_cols``) are coarse shape summaries kept for debugging:
+    if a cache miss is unexpected, comparing two ``feature_code_signature``
+    blobs side-by-side is more informative than comparing two 64-char hex
+    digests. They are cheap to read, deterministic, and orthogonal to the
+    source hash — so the redundancy costs nothing.
+
+    Replaces the pre-#190 combo of ``code_commit`` + the three shape fields,
+    which was simultaneously too coarse (every commit invalidated, even
+    unrelated ones) and too narrow (only macro-shape changes were detected,
+    not in-function bug fixes that left the family list intact).
     """
     from gbdt import features as gbdt_features
 
+    source_sha256 = hashlib.sha256(
+        inspect.getsource(gbdt_features).encode("utf-8"),
+    ).hexdigest()
+
     return {
+        "source_sha256": source_sha256,
         "all_families": list(gbdt_features._ALL_FAMILIES),
         "default_lookbacks": list(gbdt_features.DEFAULT_LOOKBACKS),
         "expected_total_cols": int(gbdt_features.EXPECTED_TOTAL_COLS),
@@ -149,8 +177,6 @@ def compute_key(
     families: Any,
     exclude: Any,
     random_seed: int,
-    code_commit: str,
-    code_dirty: bool,
     panel_sig: dict,
 ) -> str:
     """Compute the deterministic cache key (a SHA-256 hex digest).
@@ -161,6 +187,11 @@ def compute_key(
     ever causes an extra correct rebuild, never an incorrect reuse. On
     ``--resume`` the cell + spec are identical, so the key matches and the
     cache hits.
+
+    Feature-code identity is captured via :func:`feature_code_signature`'s
+    ``source_sha256`` of ``gbdt.features`` — NOT via the git commit, which
+    over-invalidated on any unrelated commit (task #190). Commits that don't
+    touch ``features.py`` now leave the cache intact.
     """
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -190,8 +221,6 @@ def compute_key(
             "code_signature": feature_code_signature(),
         },
         "random_seed": int(random_seed),
-        "code_commit": code_commit,
-        "code_dirty": bool(code_dirty),
         "panel_signature": panel_sig,
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
