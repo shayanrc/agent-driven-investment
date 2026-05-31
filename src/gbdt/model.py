@@ -1124,10 +1124,18 @@ def _sanitize_nonfinite(arr: np.ndarray) -> np.ndarray:
     XGBoost's ``XGDMatrixCreateFromDense`` **rejects** ``inf`` outright
     (``"Input data contains 'inf' or a value too large, while 'missing' is not
     set to 'inf'"``), whereas CatBoost tolerates ``inf`` / huge values and
-    routes ``NaN`` to a dedicated missing-value bucket. The gbdt feature
-    pipeline can emit ``±inf`` from ratio/division families on degenerate input
-    (e.g. a zero prior-period volume or price on a sparse / halted ticker makes
-    ``v / v.shift(n) - 1`` blow up) — see the V1.2 sp500 crash.
+    routes ``NaN`` to a dedicated missing-value bucket.
+
+    **As of PR #182, the gbdt feature pipeline is contractually inf-free at
+    source** — every ratio/division family in ``gbdt.features`` guards its
+    denominator with ``.replace(0, np.nan)`` (zero-denom → NaN, the correct
+    "undefined / missing" sentinel), and ``build_feature_matrix`` asserts no
+    ``±inf`` survives the build. This function is therefore retained as
+    **defense-in-depth**: it ensures the backend never crashes if a future
+    feature family forgets the guard (so the model run degrades to "rows with
+    inf get routed down the missing branch" rather than a hard ``DMatrix``
+    crash). Pre-#182 it was the primary fix for the V1.2 sp500 crash
+    (#180) — now it's the safety net behind the source-side guards.
 
     Replacing ``±inf`` with ``NaN`` is semantically right: ``inf`` means "the
     denominator was (near-)zero, so this ratio is undefined", which is exactly
