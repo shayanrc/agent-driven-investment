@@ -349,7 +349,10 @@ launch_child() {
     # setsid + nohup detaches from the parent's session AND HUP signal. `&`
     # backgrounds; $! is the PID of `setsid`, which (because setsid makes a
     # new session) is also the PGID. Targeting -PGID kills the whole tree.
-    setsid nohup "${env_prefix[@]}" "${cmd[@]}" >> "$LOG_FILE" 2>&1 &
+    # `< /dev/null` explicitly detaches stdin so the child never inherits a
+    # tty (or parent stdin) — belt-and-suspenders with nohup, which only
+    # auto-redirects stdin when it detects a tty.
+    setsid nohup "${env_prefix[@]}" "${cmd[@]}" < /dev/null >> "$LOG_FILE" 2>&1 &
     LAUNCHED_PID=$!
     echo "$LAUNCHED_PID" > "$PID_FILE"
 }
