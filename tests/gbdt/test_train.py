@@ -173,3 +173,83 @@ def test_default_fs_hp_callback_drops_unimportant():
     # but we have 3 so default keeps top-10 = all 3.
     assert set(keep) == {"a", "b", "c"}
     assert "fallback" in why.lower()
+
+
+# ---------------------------------------------------------------------------
+# L1 from _187 — val-Brier tie-break (integration smoke)
+# ---------------------------------------------------------------------------
+
+
+def test_walk_forward_tiebreak_picks_lower_gap_within_band():
+    """Drive a multi-iteration loop where two iters land in the tie band and
+    the lower-gap iter should win. The integration covers: bundles carry
+    ``train_val_gap`` + ``spiegelhalter_z``; ``walk_forward_train`` threads
+    them into ``best_checkpoint``; the chosen ``best_iteration`` exposes a
+    present ``train_val_gap`` + ``spiegelhalter_z`` on its bundle.
+    """
+    panel, X, y = _toy_panel(1600, 3, seed=4)
+
+    # Three iters: all stay close on val Brier (small HP nudges). The wide
+    # tie_band guarantees the tie set spans all of them so the picker chooses
+    # the lowest-gap iter.
+    nudges = [0.05, 0.052, 0.048]
+    seq = iter(nudges[1:])
+
+    def cb(bundle, available):
+        try:
+            lr = next(seq)
+        except StopIteration:
+            lr = 0.05
+        next_hp = dict(bundle.hp)
+        next_hp["learning_rate"] = lr
+        return list(available), next_hp, f"lr={lr}"
+
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=list(X.columns),
+        hp={"iterations": 30, "depth": 3, "boosting_type": "Plain",
+            "learning_rate": nudges[0]},
+        max_iterations=3,
+        plateau_threshold=0.005,
+        degradation_gate=1.0,         # disable degradation gate
+        tie_band=1.0,                 # huge band → all iters tied
+        fs_hp_callback=cb,
+    )
+    assert len(result.iterations) >= 2
+    gaps = [b.train_val_gap for b in result.iterations]
+    zs = [b.spiegelhalter_z for b in result.iterations]
+    assert all(g is not None for g in gaps), "gap should be present per iter"
+    assert all(z is not None for z in zs), "Z should be present per iter"
+    # With tie_band=1.0 the full history is one tie set → winner is the
+    # lowest-gap iter. (Ties broken on |z| then iter idx.)
+    lowest_gap_iter = min(range(len(gaps)), key=lambda i: (gaps[i], abs(zs[i]), i))
+    assert result.best_iteration == lowest_gap_iter
+    # And the selected bundle's gap + z are present in the artifact bundle.
+    chosen = result.iterations[result.best_iteration]
+    assert chosen.train_val_gap is not None
+    assert chosen.spiegelhalter_z is not None
+
+
+def test_walk_forward_tiebreak_disabled_preserves_strict_argmin():
+    """``tie_band=0.0`` reverts to the strict val-Brier argmin even when
+    gap/Z metrics are available — backwards-compatible behaviour."""
+    panel, X, y = _toy_panel(1600, 3, seed=5)
+
+    def cb(bundle, available):
+        next_hp = dict(bundle.hp)
+        return list(available), next_hp, "noop"
+
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=list(X.columns),
+        hp={"iterations": 30, "depth": 3, "boosting_type": "Plain",
+            "learning_rate": 0.05},
+        max_iterations=3,
+        plateau_threshold=0.005,
+        degradation_gate=1.0,
+        tie_band=0.0,                 # disable tie-break
+        fs_hp_callback=cb,
+    )
+    strict_best = min(
+        range(len(result.iterations)),
+        key=lambda i: result.iterations[i].val_brier,
+    )
+    assert result.best_iteration == strict_best
