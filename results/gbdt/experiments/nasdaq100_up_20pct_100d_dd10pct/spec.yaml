@@ -1,0 +1,12 @@
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 20
+  horizon_days: 100
+  max_drawdown: 0.1
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
