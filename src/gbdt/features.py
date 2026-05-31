@@ -71,7 +71,11 @@ def _per_ticker(series: pd.Series, fn) -> pd.Series:
 
 
 def _safe_log_returns(close: pd.Series) -> pd.Series:
-    return _per_ticker(close, lambda s: np.log(s).diff())
+    # Guard: close of 0 (halted/sparse ticker) makes np.log(0) → -inf,
+    # which then propagates through .diff() and pollutes downstream
+    # rolling-std / realized-vol / beta. Replace 0 → NaN so log → NaN and
+    # the NaN flows through cleanly (zero-denom #182).
+    return _per_ticker(close, lambda s: np.log(s.replace(0, np.nan)).diff())
 
 
 def _close(panel: pd.DataFrame) -> pd.Series:
@@ -98,7 +102,11 @@ def stock_return_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     close = _close(panel)
     out = {}
     for N in lookbacks:
-        out[f"stock_return_{N}"] = _per_ticker(close, lambda s, n=N: s / s.shift(n) - 1.0)
+        # Guard: prior close of 0 (sparse/halted ticker) would emit ±inf; route
+        # to NaN so the backend's missing-value path handles it (zero-denom #182).
+        out[f"stock_return_{N}"] = _per_ticker(
+            close, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
+        )
     return pd.DataFrame(out).reindex(panel.index)
 
 
@@ -107,7 +115,8 @@ def index_return_N(index_df: pd.DataFrame, panel: pd.DataFrame,
     iclose = index_df["close"]
     out = {}
     for N in lookbacks:
-        out[f"index_return_{N}"] = iclose / iclose.shift(N) - 1.0
+        # Guard: prior index close of 0 → NaN, not ±inf (zero-denom #182).
+        out[f"index_return_{N}"] = iclose / iclose.shift(N).replace(0, np.nan) - 1.0
     return _broadcast_index_to_panel(pd.DataFrame(out), panel)
 
 
@@ -141,7 +150,8 @@ def realized_vol_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
 def index_vol_N(index_df: pd.DataFrame, panel: pd.DataFrame,
                  lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
                  annualization: int = 250) -> pd.DataFrame:
-    irets = np.log(index_df["close"]).diff()
+    # Guard: index close of 0 → NaN log-return, not -inf (zero-denom #182).
+    irets = np.log(index_df["close"].replace(0, np.nan)).diff()
     sqrt_ann = float(np.sqrt(annualization))
     out = {}
     for N in lookbacks:
@@ -162,7 +172,9 @@ def drawdown_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
     out = {}
     for N in lookbacks:
         rolling_max = _per_ticker(high, lambda s, n=N: s.rolling(n, min_periods=n).max())
-        out[f"drawdown_{N}"] = close / rolling_max - 1.0
+        # Guard: rolling high max of 0 (all-zero highs on a halted ticker) → NaN
+        # not ±inf (zero-denom #182).
+        out[f"drawdown_{N}"] = close / rolling_max.replace(0, np.nan) - 1.0
     return pd.DataFrame(out, index=panel.index)
 
 
@@ -172,7 +184,9 @@ def runup_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS) -
     out = {}
     for N in lookbacks:
         rolling_min = _per_ticker(low, lambda s, n=N: s.rolling(n, min_periods=n).min())
-        out[f"runup_{N}"] = close / rolling_min - 1.0
+        # Guard: rolling low min of 0 (zero-low bar on a sparse / halted
+        # ticker) → NaN, not ±inf (zero-denom #182).
+        out[f"runup_{N}"] = close / rolling_min.replace(0, np.nan) - 1.0
     return pd.DataFrame(out, index=panel.index)
 
 
@@ -182,7 +196,9 @@ def index_drawdown_N(index_df: pd.DataFrame, panel: pd.DataFrame,
     ihigh = index_df["high"]
     out = {}
     for N in lookbacks:
-        out[f"index_drawdown_{N}"] = iclose / ihigh.rolling(N, min_periods=N).max() - 1.0
+        # Guard: index rolling high max of 0 → NaN (zero-denom #182).
+        denom = ihigh.rolling(N, min_periods=N).max().replace(0, np.nan)
+        out[f"index_drawdown_{N}"] = iclose / denom - 1.0
     return _broadcast_index_to_panel(pd.DataFrame(out), panel)
 
 
@@ -192,7 +208,9 @@ def index_runup_N(index_df: pd.DataFrame, panel: pd.DataFrame,
     ilow = index_df["low"]
     out = {}
     for N in lookbacks:
-        out[f"index_runup_{N}"] = iclose / ilow.rolling(N, min_periods=N).min() - 1.0
+        # Guard: index rolling low min of 0 → NaN (zero-denom #182).
+        denom = ilow.rolling(N, min_periods=N).min().replace(0, np.nan)
+        out[f"index_runup_{N}"] = iclose / denom - 1.0
     return _broadcast_index_to_panel(pd.DataFrame(out), panel)
 
 
@@ -331,7 +349,8 @@ def higher_moments(panel: pd.DataFrame,
 def beta_N(panel: pd.DataFrame, index_df: pd.DataFrame,
             lookbacks: Iterable[int] = DEFAULT_LOOKBACKS) -> pd.DataFrame:
     rets = _safe_log_returns(_close(panel))
-    irets = np.log(index_df["close"]).diff()
+    # Guard: index close of 0 → NaN log-return (zero-denom #182).
+    irets = np.log(index_df["close"].replace(0, np.nan)).diff()
     tickers = panel.index.get_level_values("ticker").unique()
 
     out: dict[str, pd.Series] = {}
@@ -359,13 +378,17 @@ def range_vol(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
     h, l, o, c = panel["high"], panel["low"], panel["open"], panel["close"]
     sqrt_ann = float(np.sqrt(annualization))
 
-    ln_hl_sq = (np.log(h / l)) ** 2
+    # Guard: low of 0 (halted/sparse ticker) makes np.log(h/l) → ±inf; route
+    # to NaN so the backend's missing path handles it (zero-denom #182). The
+    # h/l denominator is `l`; `c/o` already had its own guard.
+    l_safe = l.replace(0, np.nan)
+    ln_hl_sq = (np.log(h / l_safe)) ** 2
     out = {}
     for N in lookbacks:
         park_var = _per_ticker(ln_hl_sq, lambda s, n=N: s.rolling(n, min_periods=n).mean())
         out[f"parkinson_{N}"] = np.sqrt(park_var.clip(lower=0.0) / (4.0 * np.log(2.0))) * sqrt_ann
 
-    ln_hl = np.log(h / l)
+    ln_hl = np.log(h / l_safe)
     ln_co = np.log(c / o.replace(0, np.nan))
     gk_term = 0.5 * (ln_hl ** 2) - (2 * np.log(2.0) - 1.0) * (ln_co ** 2)
     for N in lookbacks:
@@ -399,7 +422,11 @@ def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
     out = {}
     for N in lookbacks:
         v = rvol[f"realized_vol_{N}"]
-        out[f"vol_change_{N}"] = _per_ticker(v, lambda s, n=N: s / s.shift(n) - 1.0)
+        # Guard: prior realized_vol of 0 (e.g. a flat-price window with zero
+        # log-return variance) → NaN, not ±inf (zero-denom #182).
+        out[f"vol_change_{N}"] = _per_ticker(
+            v, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
+        )
         out[f"vol_of_vol_{N}"] = _per_ticker(v, lambda s, n=N: s.rolling(n, min_periods=n).std())
         out[f"vol_pct_{N}"] = _per_ticker(
             v, lambda s, n=N: s.rolling(n, min_periods=n)
@@ -477,7 +504,10 @@ def f16_underlying(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     rvol = realized_vol_N(panel, lookbacks, annualization=annualization)
     out = {}
     for N in lookbacks:
-        sr = _per_ticker(close, lambda s, n=N: s / s.shift(n) - 1.0)
+        # Guard: prior close of 0 → NaN, mirroring stock_return_N (#182).
+        sr = _per_ticker(
+            close, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
+        )
         mean = _per_ticker(sr, lambda s, n=N: s.rolling(n, min_periods=n).mean())
         std = _per_ticker(sr, lambda s, n=N: s.rolling(n, min_periods=n).std())
         out[f"stock_return_zscore_{N}"] = (sr - mean) / std.replace(0, np.nan)
@@ -719,6 +749,24 @@ def build_feature_matrix(
         keep = [c for c in out.columns
                 if not any(fnmatch.fnmatch(c, pat) for pat in exclude)]
         out = out[keep]
+
+    # Hard guard (#182): features.py is contractually inf-free at source
+    # (every ratio/division family routes zero-denom → NaN). If a future
+    # family regresses, fail loudly here rather than letting model._sanitize_nonfinite
+    # silently mask it downstream.
+    inf_mask = np.isinf(out.values)
+    if inf_mask.any():
+        per_col = inf_mask.sum(axis=0)
+        offenders = sorted(
+            ((out.columns[j], int(per_col[j])) for j in range(out.shape[1]) if per_col[j] > 0),
+            key=lambda kv: kv[1],
+            reverse=True,
+        )
+        raise AssertionError(
+            "build_feature_matrix emitted ±inf — zero-denominator regression in "
+            "features.py; band-aid in model._sanitize_nonfinite would mask it; "
+            f"fix the family at source. Offending columns: {offenders[:10]}"
+        )
 
     return out
 

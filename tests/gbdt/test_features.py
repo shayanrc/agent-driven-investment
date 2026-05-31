@@ -227,3 +227,231 @@ def test_build_feature_matrix_subset_family():
     assert mat.shape[1] == 2
     assert "stock_return_5" in mat.columns
     assert "stock_return_10" in mat.columns
+
+
+# ---------------------------------------------------------------------------
+# Zero-denominator guards (#182)
+# ---------------------------------------------------------------------------
+#
+# Goal: every ratio/division family in features.py must map a zero denominator
+# to NaN, NOT ±inf. NaN is the correct "undefined / missing" sentinel both
+# CatBoost (NaN bucket) and XGBoost (sparsity-aware split) understand;
+# ±inf crashes XGBoost's DMatrix construction (V1.2 sp500 +50%/100d, #180).
+# The downstream band-aid `_sanitize_nonfinite` is kept as defense-in-depth
+# but features.py is now contractually inf-free at source.
+
+
+def _zero_denom_panel(n_rows: int = 60, zero_at: int = 30) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build a minimal (date, ticker) panel with a deliberate zero OHLCV row.
+
+    One ticker ("BAD") has every OHLCV column set to 0.0 at row ``zero_at``
+    (simulating a halted-stock bar / corrupted feed); the other ("GOOD") is
+    a clean monotone series. The index_df has a parallel zero row at the
+    same date so index-side guards are exercised too.
+    """
+    dates = pd.date_range("2020-01-01", periods=n_rows, freq="B")
+    frames = []
+    for t in ("BAD", "GOOD"):
+        close = np.linspace(100.0, 160.0, n_rows)
+        high = close * 1.01
+        low = close * 0.99
+        open_ = close * 1.001
+        volume = np.full(n_rows, 1_000_000.0)
+        if t == "BAD":
+            # All OHLC + volume = 0 at zero_at. Triggers zero-denom in
+            # everything that divides by a prior close/high/low/volume.
+            for arr in (close, high, low, open_, volume):
+                arr[zero_at] = 0.0
+        frames.append(pd.DataFrame({
+            "date": dates, "ticker": t,
+            "open": open_, "high": high, "low": low, "close": close,
+            "adj_close": close, "volume": volume,
+        }))
+    panel = pd.concat(frames, ignore_index=True).set_index(["date", "ticker"]).sort_index()
+
+    iclose = np.linspace(1000.0, 1200.0, n_rows)
+    iclose[zero_at] = 0.0
+    ihigh = iclose * 1.005
+    ilow = iclose * 0.995
+    iopen = iclose * 1.001
+    # ihigh/ilow share the 0 at zero_at so rolling max/min hits 0 too
+    ihigh[zero_at] = 0.0
+    ilow[zero_at] = 0.0
+    iopen[zero_at] = 0.0
+    index_df = pd.DataFrame(
+        {"open": iopen, "high": ihigh, "low": ilow, "close": iclose,
+         "adj_close": iclose, "volume": np.ones(n_rows)},
+        index=pd.Index(dates, name="date"),
+    )
+    return panel, index_df
+
+
+def _assert_no_inf(col: pd.Series, name: str) -> None:
+    inf_count = int(np.isinf(col.values).sum())
+    assert inf_count == 0, (
+        f"{name}: expected zero ±inf after zero-denom guard, found {inf_count}"
+    )
+
+
+def test_zerodenom_f1_stock_return():
+    """F1 stock_return_N: prior close == 0 must yield NaN, not ±inf."""
+    panel, _ = _zero_denom_panel(n_rows=60, zero_at=30)
+    sr = F.stock_return_N(panel, lookbacks=(5,))
+    # At BAD row 35 the denominator is BAD's close at row 30 (== 0).
+    bad_date_35 = panel.index.get_level_values("date").unique()[35]
+    val = sr.loc[(bad_date_35, "BAD"), "stock_return_5"]
+    assert np.isnan(val), f"expected NaN at zero-denom row, got {val}"
+    _assert_no_inf(sr["stock_return_5"], "stock_return_5")
+
+
+def test_zerodenom_f1_index_return():
+    """F1 index_return_N: prior index close == 0 must yield NaN."""
+    panel, idx = _zero_denom_panel(n_rows=60, zero_at=30)
+    ir = F.index_return_N(idx, panel, lookbacks=(5,))
+    bad_date_35 = panel.index.get_level_values("date").unique()[35]
+    val = ir.loc[(bad_date_35, "BAD"), "index_return_5"]
+    assert np.isnan(val), f"expected NaN, got {val}"
+    _assert_no_inf(ir["index_return_5"], "index_return_5")
+
+
+def test_zerodenom_f6_drawdown():
+    """F6 drawdown_N: rolling high max == 0 over the window must yield NaN."""
+    panel, _ = _zero_denom_panel(n_rows=60, zero_at=30)
+    # Use a small window that lands entirely on the BAD zero row so the
+    # rolling-max-of-highs equals 0. Window of length 1 at zero_at exposes this.
+    dd = F.drawdown_N(panel, lookbacks=(1,))
+    bad_date_30 = panel.index.get_level_values("date").unique()[30]
+    val = dd.loc[(bad_date_30, "BAD"), "drawdown_1"]
+    assert np.isnan(val), f"expected NaN at zero-high row, got {val}"
+    _assert_no_inf(dd["drawdown_1"], "drawdown_1")
+
+
+def test_zerodenom_f6_runup():
+    """F6 runup_N: rolling low min == 0 must yield NaN."""
+    panel, _ = _zero_denom_panel(n_rows=60, zero_at=30)
+    ru = F.runup_N(panel, lookbacks=(5,))
+    # Window [26..30] for BAD contains the zero-low row → rolling min = 0.
+    bad_date_30 = panel.index.get_level_values("date").unique()[30]
+    val = ru.loc[(bad_date_30, "BAD"), "runup_5"]
+    assert np.isnan(val), f"expected NaN, got {val}"
+    _assert_no_inf(ru["runup_5"], "runup_5")
+
+
+def test_zerodenom_f6_index_drawdown():
+    """F6 index_drawdown_N: index rolling high max == 0 must yield NaN."""
+    panel, idx = _zero_denom_panel(n_rows=60, zero_at=30)
+    idd = F.index_drawdown_N(idx, panel, lookbacks=(1,))
+    bad_date_30 = panel.index.get_level_values("date").unique()[30]
+    val = idd.loc[(bad_date_30, "BAD"), "index_drawdown_1"]
+    assert np.isnan(val), f"expected NaN, got {val}"
+    _assert_no_inf(idd["index_drawdown_1"], "index_drawdown_1")
+
+
+def test_zerodenom_f6_index_runup():
+    """F6 index_runup_N: index rolling low min == 0 must yield NaN."""
+    panel, idx = _zero_denom_panel(n_rows=60, zero_at=30)
+    iru = F.index_runup_N(idx, panel, lookbacks=(5,))
+    bad_date_30 = panel.index.get_level_values("date").unique()[30]
+    val = iru.loc[(bad_date_30, "BAD"), "index_runup_5"]
+    assert np.isnan(val), f"expected NaN, got {val}"
+    _assert_no_inf(iru["index_runup_5"], "index_runup_5")
+
+
+def test_zerodenom_f11_range_vol_zero_low():
+    """F11 range_vol: low == 0 must yield NaN in parkinson/garman_klass."""
+    panel, _ = _zero_denom_panel(n_rows=60, zero_at=30)
+    rv = F.range_vol(panel, lookbacks=(5,), annualization=250)
+    # parkinson_5 + garman_klass_5 are rolling means containing the zero row.
+    _assert_no_inf(rv["parkinson_5"], "parkinson_5")
+    _assert_no_inf(rv["garman_klass_5"], "garman_klass_5")
+
+
+def test_zerodenom_f13_vol_change_zero_prior_vol():
+    """F13 vol_change_N: prior realized_vol == 0 must yield NaN.
+
+    Construct a panel whose log-returns are all identical (e.g. constant
+    geometric growth) for a stretch — realized_vol over that window = 0,
+    so vol_change at t+N divides by 0.
+    """
+    dates = pd.date_range("2020-01-01", periods=80, freq="B")
+    # Strictly geometric: log-returns are constant → rolling std == 0.
+    close = 100.0 * np.exp(np.arange(80) * 0.01)
+    high = close * 1.001
+    low = close * 0.999
+    open_ = close * 1.0005
+    volume = np.full(80, 1_000_000.0)
+    df = pd.DataFrame({
+        "date": dates, "ticker": "FLAT",
+        "open": open_, "high": high, "low": low, "close": close,
+        "adj_close": close, "volume": volume,
+    })
+    panel = df.set_index(["date", "ticker"]).sort_index()
+    vr = F.vol_regime(panel, lookbacks=(5,), annualization=250)
+    _assert_no_inf(vr["vol_change_5"], "vol_change_5")
+
+
+def test_zerodenom_f16_native_stock_return_zscore():
+    """F16 stock_return_zscore_N: prior close == 0 must NOT propagate ±inf."""
+    panel, _ = _zero_denom_panel(n_rows=60, zero_at=30)
+    f16 = F.f16_underlying(panel, lookbacks=(5,), annualization=250)
+    _assert_no_inf(f16["stock_return_zscore_5"], "stock_return_zscore_5")
+    _assert_no_inf(f16["realized_vol_zscore_5"], "realized_vol_zscore_5")
+
+
+def test_build_feature_matrix_no_inf_with_zero_denom_panel():
+    """End-to-end: full feature build on a zero-denom panel emits zero ±inf,
+    AND the build-boundary assert does not trip."""
+    panel, idx = _zero_denom_panel(n_rows=240, zero_at=120)
+    mat = F.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,
+                                  annualization=250, families="all")
+    inf_count = int(np.isinf(mat.values).sum())
+    assert inf_count == 0, (
+        f"build_feature_matrix emitted {inf_count} ±inf on zero-denom fixture; "
+        "every ratio family must guard its denominator at source (#182)."
+    )
+
+
+def test_build_feature_matrix_assert_trips_on_synthetic_inf():
+    """The build-boundary assert MUST trip if a future family regresses.
+
+    We can't easily inject an inf via the public pipeline (every family is now
+    guarded), so this monkeypatches one family to deliberately return ±inf and
+    confirms build_feature_matrix raises AssertionError with the contract message.
+    Defends the assert against future drift.
+    """
+    panel, idx = _synth_panel_with_index(120, 2, seed=11)
+
+    original = F.stock_return_N
+    def _evil(panel, lookbacks=F.DEFAULT_LOOKBACKS):
+        out = original(panel, lookbacks)
+        # Plant an inf in the first usable cell
+        out.iloc[10, 0] = np.inf
+        return out
+
+    import gbdt.features as Fmod
+    Fmod.stock_return_N = _evil
+    try:
+        with pytest.raises(AssertionError, match="zero-denominator regression"):
+            F.build_feature_matrix(panel, idx, lookbacks=(5,), families=["F2"])
+    finally:
+        Fmod.stock_return_N = original
+
+
+# ---------------------------------------------------------------------------
+# Defense-in-depth: _sanitize_nonfinite still works on a synthetic inf array.
+# Features no longer emit inf at source (#182), so the band-aid path goes
+# uncovered by feature-build tests. This direct test keeps it exercised.
+# ---------------------------------------------------------------------------
+
+
+def test_sanitize_nonfinite_still_handles_synthetic_inf():
+    from gbdt.model import _sanitize_nonfinite
+    arr = np.array([[1.0, np.inf, 2.0], [np.nan, -np.inf, 3.0]])
+    out = _sanitize_nonfinite(arr)
+    # ±inf → NaN; existing NaN preserved; finite untouched
+    assert np.isnan(out[0, 1])
+    assert np.isnan(out[1, 1])
+    assert np.isnan(out[1, 0])
+    assert out[0, 0] == 1.0
+    assert out[1, 2] == 3.0
+    assert not np.isinf(out).any()
