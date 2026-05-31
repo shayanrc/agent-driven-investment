@@ -37,7 +37,11 @@ from typing import Any
 
 from gbdt.checkpoint import _LOOP_SUBDIR
 from gbdt.diagnose_payload import build_diagnose_payload
-from gbdt.model import hp_tables_for
+from gbdt.model import (
+    STRUCTURED_HP_KEYS_XGB,
+    _interaction_constraints_to_indices,
+    hp_tables_for,
+)
 
 # Bumped on any breaking change to the request/decision file shapes
 # (plan § 12 R6). Tracks the checkpoint schema independently.
@@ -308,6 +312,36 @@ def validate_decision(
                 f"pinned HPs ({sorted(pinned_names)}) are never overridable "
                 f"(see CLAUDE.md gbdt §)."
             )
+        # Structured (non-scalar) XGBoost HPs (#184): the agent loop may
+        # propose ``interaction_constraints`` as a list-of-list-of-feature-
+        # names. Validate its shape + that every name is in ``known_features``
+        # by delegating to the same helper the backend uses at fit time
+        # (gbdt.model._interaction_constraints_to_indices). CatBoost stays
+        # symmetric — these keys are never tunable there and the existing
+        # "unknown HP" path correctly rejects them below.
+        if backend == "xgboost" and name in STRUCTURED_HP_KEYS_XGB:
+            try:
+                _interaction_constraints_to_indices(value, known_features)
+            except ValueError as exc:
+                msg = str(exc)
+                # A bare-name ValueError (the helper's "unknown feature" form)
+                # carries only the offending feature name — decorate it.
+                if msg == value or (
+                    isinstance(value, list) and any(msg == s for g in value
+                                                    if isinstance(g, list)
+                                                    for s in g
+                                                    if isinstance(s, str))
+                ):
+                    raise DecisionError(
+                        f"decision.hp_changes[{name!r}] references unknown "
+                        f"feature {msg!r}; it is not in the current active "
+                        f"feature set ({len(known_features)} features)."
+                    ) from exc
+                raise DecisionError(
+                    f"decision.hp_changes[{name!r}]: {msg}"
+                ) from exc
+            continue
+
         is_numeric = name in tunable_ranges
         is_enum = name in enum_values
         if not (is_numeric or is_enum):

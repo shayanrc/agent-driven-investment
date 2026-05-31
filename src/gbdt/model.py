@@ -161,6 +161,38 @@ ENUM_HP_VALUES_XGB: dict[str, tuple[str, ...]] = {
     "sampling_method": ("uniform", "gradient_based"),
 }
 
+# Suggested *candidate values* the agent should consider per knob, beyond the
+# raw range. These are NOT enforced — the validator still range-checks via
+# ``TUNABLE_HP_RANGES_XGB`` — but they are the curated grid the loop's tuning
+# playbook points at (e.g. ``min_child_weight`` is the L2 lesson from
+# ``docs/gbdt/_187_nasdaq100_h25_xgb_manual_tuning.md``: the manual run
+# identified ``mcw=10`` as the only distinct XGBoost knob to nudge val Brier
+# on that cell, with ``1`` the XGBoost default and ``5`` the middle anchor).
+#
+# CatBoost intentionally has no parallel registry — its candidate grids are
+# already exhaustively described in ``CATBOOST_HP_REFERENCE.md`` § "Suggested
+# per-iteration agent prompt"; this XGBoost-only registry surfaces the lessons
+# captured in ``_187`` directly to the agent loop.
+KNOB_CANDIDATES_XGB: dict[str, tuple[float | int, ...]] = {
+    "min_child_weight": (1, 5, 10),  # _187 L2 — mcw=10 was the val-best
+}
+
+# Structured (non-scalar) HPs the agent loop is allowed to propose for the
+# XGBoost backend. Unlike ``TUNABLE_HP_RANGES_XGB`` / ``ENUM_HP_VALUES_XGB``
+# these carry a *shape* (list-of-list-of-strings, dicts, etc.) and need a
+# bespoke structural validator in :func:`gbdt.loop_protocol.validate_decision`
+# rather than a numeric-range or enum check. They are deliberately
+# **XGBoost-only**; the symmetric CatBoost-only ``monotone_constraints`` is
+# already rejected by the loop's whitelist and stays so.
+#
+# ``interaction_constraints``: list of constraint *groups* (each a list of
+# feature names) — features may only co-split within a shared group. Default
+# (absent / ``None`` / empty list) ⇒ no constraint (current behaviour). The
+# XGBoost capability + per-cell motivation are documented in
+# ``docs/gbdt/_175_xgboost_interaction_constraints_h25.md`` (Phase-8 demo) and
+# ``docs/gbdt/V1.2_xgboost_feature_interactions_plan.md`` § 3.2 / § 8.
+STRUCTURED_HP_KEYS_XGB: frozenset[str] = frozenset({"interaction_constraints"})
+
 # Pinned: never overridable from a spec. For XGBoost the load-bearing pins are
 # the determinism knobs (``tree_method``/``n_jobs``/``device``) that replace
 # ``has_time``'s "never-override" role (plan § 5.1/§ 5.3). The construction-time
@@ -332,6 +364,60 @@ def _validate_hp(hp: dict, backend: str = "catboost") -> dict:
         out[k] = v
 
     _range_enum_check(out, tunable, enum_values, doc)
+    return out
+
+
+def _interaction_constraints_to_indices(
+    groups: Any, feat_names: list[str] | None
+) -> list[list[int]]:
+    """Translate an ``interaction_constraints`` value from list-of-list-of-strings
+    (the agent-loop ergonomic form) to list-of-list-of-ints (the form XGBoost's
+    booster resolves against a name-less matrix).
+
+    Already-integer groups pass through; mixed groups (some names, some ints)
+    raise. An empty outer list / ``None`` is returned untouched as an empty
+    list (XGBoost reads "no constraint" semantics from that). Unknown names
+    raise :class:`ValueError` with the offending name embedded so the model.py
+    caller can decorate the message.
+    """
+    if groups is None:
+        return []
+    if not isinstance(groups, (list, tuple)):
+        raise ValueError(
+            f"interaction_constraints must be a list of groups, got "
+            f"{type(groups).__name__}"
+        )
+    if len(groups) == 0:
+        return []
+    name_to_idx: dict[str, int] = {}
+    if feat_names is not None:
+        name_to_idx = {name: i for i, name in enumerate(feat_names)}
+    out: list[list[int]] = []
+    for g in groups:
+        if not isinstance(g, (list, tuple)):
+            raise ValueError(
+                f"each interaction_constraints group must be a list, got "
+                f"{type(g).__name__}"
+            )
+        idx_group: list[int] = []
+        for item in g:
+            if isinstance(item, bool):  # bool is a subclass of int
+                raise ValueError(
+                    f"interaction_constraints group entries must be feature "
+                    f"names or indices, got bool {item!r}"
+                )
+            if isinstance(item, int):
+                idx_group.append(int(item))
+            elif isinstance(item, str):
+                if item not in name_to_idx:
+                    raise ValueError(item)
+                idx_group.append(name_to_idx[item])
+            else:
+                raise ValueError(
+                    f"interaction_constraints group entries must be strings "
+                    f"or ints, got {type(item).__name__} ({item!r})"
+                )
+        out.append(idx_group)
     return out
 
 
@@ -825,6 +911,25 @@ class XGBoostModel(BaseGBDTModel):
         # ``early_stopping_rounds`` is set without one.
         if eval_set is None:
             early_stopping_rounds = None
+
+        # ``interaction_constraints`` agent-loop ergonomic form is a list of
+        # lists of *feature names* — but ``_to_2d`` strips names off the matrix
+        # we feed XGBoost, so the booster's name-based resolution would fail.
+        # Translate name-groups → integer-index groups against
+        # ``self._feature_names`` here (the JSON-string-of-ints form already
+        # produced by ``gbdt.interactions._interaction_constraints_from_forbidden``
+        # is left untouched — that path stays exactly as ``_175`` verified).
+        ic = model_hp.get("interaction_constraints")
+        if ic is not None and not isinstance(ic, str):
+            try:
+                model_hp["interaction_constraints"] = (
+                    _interaction_constraints_to_indices(ic, feat_names)
+                )
+            except ValueError as exc:
+                raise ValueError(
+                    f"interaction_constraints contains a feature name not in "
+                    f"the model's feature set: {exc}"
+                ) from exc
 
         model = xgb.XGBClassifier(
             early_stopping_rounds=early_stopping_rounds,
