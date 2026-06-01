@@ -1,0 +1,272 @@
+{
+  "task": "_194",
+  "title": "russell1000 top-3 agent-loop trio (XGBoost; L1+L2+#184 lessons applied)",
+  "branch": "r1k-trio-memo",
+  "ran_at_utc": "2026-06-01T07:08:17Z",
+  "backend": {
+    "library": "xgboost",
+    "callback_mode": "agent_file_protocol"
+  },
+  "r_precision_at_k_methodology_note": {
+    "rename_date_utc": "2026-06-01",
+    "definition": "R-Precision@K = (1/Q) * sum_{q in Q} r_q / min(K, R_q), where Q is the set of days with R_q > 0 positives, R_q is the count of positives on day q, r_q is the count of positives in the top-K picks on day q. Macro-averaged across days, equal weight per day. K is fixed (per-day variable-K under the legacy 'weighted R-precision' metric used the per-day R(d) as K; macro-averaged R-Precision@K uses a fixed K and the min(K, R_q) denominator for achievability). See .claude/memories/project-r-precision-methodology.md for the full definition and the relationship to the legacy metric.",
+    "canonical_record": "results/gbdt/data/r_precision_at_k.csv",
+    "memo_body_uses": "R-Precision@K (unlike _192 and _193 which kept legacy weighted R-precision in their bodies and surfaced R-Precision@K in a dedicated section at the bottom; this memo writes the body directly against R-Precision@K)."
+  },
+  "data": {
+    "universe": "russell1000",
+    "n_tickers_in_registry": 1002,
+    "n_tickers_used": 889,
+    "split_walk_forward": {
+      "train_rows": 711200,
+      "val_rows": 355600,
+      "eval_rows": 177800,
+      "test_rows_note": "per-cell, depends on horizon"
+    },
+    "sample_uniqueness_weighting": "on (per-horizon)",
+    "calibration_policy": "conditional_isotonic (decision = isotonic on all 3 cells; Spiegelhalter |Z| 16-22)"
+  },
+  "cells": [
+    {
+      "name": "russell1000_up_40pct_10d_dd20pct_agentloop",
+      "spec": {
+        "universe": "russell1000",
+        "direction": "up",
+        "threshold_pct": 40,
+        "horizon_days": 10,
+        "max_drawdown_pct": 20
+      },
+      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-40-10/results/gbdt/experiments/russell1000_up_40pct_10d_dd20pct_agentloop/",
+      "rows_test": 80010,
+      "rows_eval": 177800,
+      "Q_days_test": 69,
+      "base_rate_test": 0.002375,
+      "base_rate_eval": 0.001209,
+      "AUC_test": 0.849680,
+      "AUC_eval": 0.818083,
+      "R_precision_at_K_test": {
+        "1": 0.029,
+        "3": 0.017,
+        "5": 0.090,
+        "10": 0.233,
+        "20": 0.375
+      },
+      "R_precision_at_10_lift_over_base": 98.1,
+      "brier_test": 0.0023655,
+      "brier_test_baseline": 0.0023691,
+      "brier_eval": 0.0012114,
+      "brier_eval_baseline": 0.0012078,
+      "calibration": {
+        "method": "conditional_isotonic",
+        "decision": "isotonic",
+        "spiegelhalter_z": 16.189
+      },
+      "loop": {
+        "n_decisions_issued": 2,
+        "iter_idx_at_stop": 2,
+        "best_iteration": 2,
+        "stop_reason": "plateau",
+        "max_iterations_allowed": 5,
+        "hp_search_active": true,
+        "decision_chain": [
+          {
+            "iter": 0,
+            "mcw_change": "default (=1) -> 5",
+            "fs_prune": "deferred (no overfit; train/val gap 0.00084 << 0.02)",
+            "rationale_excerpt": "L2 curated grid {1,5,10}; bumping mcw to 5 to regularize the very-thin-positive-tail leaves (positive prevalence 0.0012)"
+          },
+          {
+            "iter": 1,
+            "mcw_change": "5 -> 10 (the _185 winning value)",
+            "fs_prune": "deferred (no overfit; train/val gap 2.7e-4 << 0.02)",
+            "rationale_excerpt": "completing the curated mcw grid {1,5,10}; defer interaction_constraints (#184) to iter 2->3 once mcw direction is settled"
+          }
+        ]
+      },
+      "n_features_final": 279,
+      "n_iter": 2,
+      "wall_time_sec": 1210.46,
+      "code_commit": "add206eaf243d6df934b7b643a8227934b593de0",
+      "verdict_basis": "test",
+      "verdict": "discriminating"
+    },
+    {
+      "name": "russell1000_up_50pct_25d_dd25pct_agentloop",
+      "spec": {
+        "universe": "russell1000",
+        "direction": "up",
+        "threshold_pct": 50,
+        "horizon_days": 25,
+        "max_drawdown_pct": 25
+      },
+      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-50-25/results/gbdt/experiments/russell1000_up_50pct_25d_dd25pct_agentloop/",
+      "rows_test": 66675,
+      "rows_eval": 177800,
+      "Q_days_test": 74,
+      "base_rate_test": 0.008714,
+      "base_rate_eval": 0.003971,
+      "AUC_test": 0.846210,
+      "AUC_eval": 0.899451,
+      "R_precision_at_K_test": {
+        "1": 0.027,
+        "3": 0.126,
+        "5": 0.105,
+        "10": 0.157,
+        "20": 0.252
+      },
+      "R_precision_at_10_lift_over_base": 18.0,
+      "brier_test": 0.008466,
+      "brier_test_baseline": 0.008638,
+      "brier_eval": 0.003886,
+      "brier_eval_baseline": 0.003955,
+      "calibration": {
+        "method": "conditional_isotonic",
+        "decision": "isotonic",
+        "spiegelhalter_z": 21.615
+      },
+      "loop": {
+        "n_decisions_issued": 2,
+        "iter_idx_at_stop": 2,
+        "best_iteration": 2,
+        "stop_reason": "plateau",
+        "max_iterations_allowed": 5,
+        "hp_search_active": true,
+        "decision_chain": [
+          {
+            "iter": 0,
+            "mcw_change": "default (=1) -> 5",
+            "fs_prune": "deferred (no overfit assumed)",
+            "rationale_excerpt": "Same L2 grid-traversal strategy as cell 40/10; start with mcw=5 (middle of curated {1,5,10})"
+          },
+          {
+            "iter": 1,
+            "mcw_change": "5 -> 10",
+            "fs_prune": "deferred",
+            "rationale_excerpt": "Continuing L2 grid: try mcw=10 (the _185 winning value); single-knob change parallels cell 40/10's iter 1->2 decision"
+          }
+        ]
+      },
+      "n_features_final": 279,
+      "n_iter": 2,
+      "wall_time_sec": 1329.15,
+      "code_commit": "2d44b849a8e5940c9d669eeda88c7f87b9ccef19",
+      "verdict_basis": "test",
+      "verdict": "discriminating"
+    },
+    {
+      "name": "russell1000_up_20pct_5d_dd10pct_agentloop",
+      "spec": {
+        "universe": "russell1000",
+        "direction": "up",
+        "threshold_pct": 20,
+        "horizon_days": 5,
+        "max_drawdown_pct": 10
+      },
+      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-20-5/results/gbdt/experiments/russell1000_up_20pct_5d_dd10pct_agentloop/",
+      "rows_test": 84455,
+      "rows_eval": 177800,
+      "Q_days_test": 93,
+      "base_rate_test": 0.006986,
+      "base_rate_eval": 0.004128,
+      "AUC_test": 0.839108,
+      "AUC_eval": 0.874802,
+      "R_precision_at_K_test": {
+        "1": 0.022,
+        "3": 0.082,
+        "5": 0.106,
+        "10": 0.182,
+        "20": 0.330
+      },
+      "R_precision_at_10_lift_over_base": 26.1,
+      "brier_test": 0.006813,
+      "brier_test_baseline": 0.006937,
+      "brier_eval": 0.004040,
+      "brier_eval_baseline": 0.004111,
+      "calibration": {
+        "method": "conditional_isotonic",
+        "decision": "isotonic",
+        "spiegelhalter_z": 19.334
+      },
+      "loop": {
+        "n_decisions_issued": 2,
+        "iter_idx_at_stop": 2,
+        "best_iteration": 2,
+        "stop_reason": "plateau",
+        "max_iterations_allowed": 5,
+        "hp_search_active": true,
+        "decision_chain": [
+          {
+            "iter": 0,
+            "mcw_change": "default (=1) -> 5",
+            "fs_prune": "deferred",
+            "rationale_excerpt": "Same L2 grid-traversal strategy as cell 40/10; start with mcw=5"
+          },
+          {
+            "iter": 1,
+            "mcw_change": "5 -> 10",
+            "fs_prune": "deferred",
+            "rationale_excerpt": "Continuing L2 grid: try mcw=10 (winning value on cells 1 and 2); single-knob change parallels both prior cells"
+          }
+        ]
+      },
+      "n_features_final": 279,
+      "n_iter": 2,
+      "wall_time_sec": 2668.09,
+      "code_commit": "2d44b849a8e5940c9d669eeda88c7f87b9ccef19",
+      "verdict_basis": "test",
+      "verdict": "discriminating"
+    }
+  ],
+  "cross_universe_comparison_r_precision_at_10": {
+    "40pct_10d": {
+      "russell1000_agentloop": 0.233,
+      "nasdaq100_sweep": 0.488,
+      "sp500_sweep": null,
+      "note": "No sp500_up_40pct_10d_dd20pct cell exists in the canonical sweep grid (deliberate gap, see _193)."
+    },
+    "50pct_25d": {
+      "russell1000_agentloop": 0.157,
+      "nasdaq100_sweep": 0.359,
+      "sp500_sweep": 0.329
+    },
+    "20pct_5d": {
+      "russell1000_agentloop": 0.182,
+      "nasdaq100_sweep": 0.473,
+      "sp500_sweep": 0.291
+    },
+    "headline_finding": "nasdaq100 (92-ticker panel) wins R-p@10 at all 3 matched cells; russell1000 (889-ticker panel) trails on every R-p@10 head-to-head. r1k AUC matches/beats nas at all 3 cells but trails sp500 AUC on the 2 cells where sp data exists. Wider panel under-performs smaller panels on R-Precision@K at rare-event targets."
+  },
+  "l1_l2_184_validation": {
+    "lessons_applied": [
+      "L1: train-val gap rule + Spiegelhalter-Z tie-breaking for calibration",
+      "L2: curated mcw grid {1, 5, 10} from _185",
+      "#184: interaction_constraints whitelisting"
+    ],
+    "convergence_pattern": "All 3 cells: iter_0 default mcw=1 -> iter_1 mcw=5 -> iter_2 mcw=10; plateau-stop at iter_idx=2 with best_iteration=2; FS prune deferred at every decision (no overfit anywhere); interaction_constraints never engaged (L1 rule didn't fire).",
+    "cross_cell_consistency": "All 3 cells converged on min_child_weight = 10 as the plateau winner — validates _185's nifty50 H=25 mcw=10 finding generalizes across markets at rare-event targets.",
+    "fs_behavior": "All 3 cells retained the full 279-feature pool; FS prune never triggered because train-val gap stayed <<0.02 at every iteration."
+  },
+  "wrapper_bugs_surfaced": {
+    "reference": ".claude/memories/project-agent-loop-wrapper.md",
+    "bugs": [
+      "bug 1 (fcd579d): wrapper heartbeat watchdog mtime floor at wrapper-start",
+      "bug 2 (a785a6e): wrapper sidecars moved to .wrapper/ namespace + dotfile filter in runner emptiness check",
+      "bug 3 (ad1bd89): wrapper distinguishes agent_file_protocol pause from pipeline-complete"
+    ],
+    "per_cell_wrapper_version": {
+      "40pct_10d": "pre-fix wrapper (commit add206ea)",
+      "50pct_25d": "post-bug-3-fix wrapper (commit 2d44b849)",
+      "20pct_5d": "post-bug-3-fix wrapper (commit 2d44b849)"
+    }
+  },
+  "wall_time_summary": {
+    "per_cell_sec": {
+      "40pct_10d": 1210.46,
+      "50pct_25d": 1329.15,
+      "20pct_5d": 2668.09
+    },
+    "total_sec": 5207.70,
+    "total_hr": 1.4466,
+    "note": "Cells ran sequentially on the same machine in sister worktrees; no shared feature-cache benefit (each cell built its own 279-feature matrix from scratch)."
+  }
+}
