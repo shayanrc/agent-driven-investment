@@ -64,7 +64,8 @@ def compute_row(name: str, path: Path) -> dict | None:
     df = pd.read_csv(path)
     if "y_pred" in df.columns and "p_calibrated" not in df.columns:
         df["p_calibrated"] = df["y_pred"]
-    if not {"p_calibrated", "y_true", "date"}.issubset(df.columns) or len(df) == 0:
+    required = {"p_calibrated", "y_true", "date", "ticker"}
+    if not required.issubset(df.columns) or len(df) == 0:
         return None
     out = {
         "experiment": name,
@@ -75,7 +76,19 @@ def compute_row(name: str, path: Path) -> dict | None:
         out["AUC"] = float(roc_auc_score(df["y_true"], df["p_calibrated"]))
     except Exception:
         out["AUC"] = float("nan")
-    by_day = list(df.sort_values("p_calibrated", ascending=False).groupby("date"))
+    # Tie-break: (p_calibrated desc, ticker asc) stable mergesort — matches
+    # compute_r_precision.py + src/gbdt/topk_diagnostics.py + the methodology
+    # memory's tie-break convention. Sorting by p_calibrated alone leaves order
+    # of equal-p rows determined by row order in the CSV, which is data-dependent
+    # and can shift R-Precision@1 by 3x on cells with many tied p values.
+    by_day = [
+        (d, g.sort_values(
+            by=["p_calibrated", "ticker"],
+            ascending=[False, True],
+            kind="mergesort",
+        ))
+        for d, g in df.groupby("date")
+    ]
     Q = None
     for K in KS:
         ratios = []

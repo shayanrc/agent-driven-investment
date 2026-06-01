@@ -97,6 +97,6 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nifty50_up_10pct_25d_dd5pct_xgb_acceptance | 3450 | 17.9% | 0.656 | 0.257 | 0.252 | 0.260 | 0.324 | 0.506 |
+| nifty50_up_10pct_25d_dd5pct_xgb_acceptance | 3450 | 17.9% | 0.656 | 0.257 | 0.271 | 0.297 | 0.275 | 0.615 |
 
 Cross-links: `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (CatBoost answer key), `docs/gbdt/_148_xgboost_a6_replication.md` (sweep-mode A6), `[[project-r-precision-methodology]]`, `XGBOOST_HP_REFERENCE.md`, `[[project-xgboost-training-essentials]]`, `[[project-xgboost-interaction-analysis]]`.

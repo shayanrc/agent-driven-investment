@@ -259,8 +259,8 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
 | russell1000_up_10pct_5d_dd5pct | 84455 | 5.0% | 0.762 | 0.263 | 0.260 | 0.274 | 0.236 | 0.237 |
-| russell1000_up_20pct_5d_dd10pct_agentloop | 84455 | 0.7% | 0.839 | 0.054 | 0.072 | 0.104 | 0.182 | 0.318 |
-| russell1000_up_40pct_10d_dd20pct_agentloop | 80010 | 0.2% | 0.850 | 0.014 | 0.029 | 0.093 | 0.214 | 0.350 |
-| russell1000_up_50pct_25d_dd25pct_agentloop | 66675 | 0.9% | 0.846 | 0.081 | 0.113 | 0.113 | 0.145 | 0.243 |
+| russell1000_up_20pct_5d_dd10pct_agentloop | 84455 | 0.7% | 0.839 | 0.022 | 0.082 | 0.106 | 0.182 | 0.330 |
+| russell1000_up_40pct_10d_dd20pct_agentloop | 80010 | 0.2% | 0.850 | 0.029 | 0.017 | 0.090 | 0.233 | 0.375 |
+| russell1000_up_50pct_25d_dd25pct_agentloop | 66675 | 0.9% | 0.846 | 0.027 | 0.126 | 0.105 | 0.157 | 0.252 |
 
 The canonical CSV carries the russell1000 +10%/5d sweep cell plus the three subsequent agentloop re-runs (the standout 20%/5d, 40%/10d, 50%/25d cells from the body table). The other 16 sweep cells are not in the post-2026-06-01 canonical CSV and remain under the legacy weighted R-precision figures in the body master table.

@@ -270,16 +270,16 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
 | sp500_up_50pct_25d_dd25pct | 36,450 | 0.91% | 0.913 | 0.279 | 0.139 | 0.187 | 0.329 | 0.494 |
-| sp500_up_50pct_50d_dd25pct | 24,300 | 2.57% | 0.903 | 0.680 | 0.407 | 0.328 | 0.259 | 0.395 |
-| sp500_up_40pct_25d_dd20pct | 36,450 | 1.82% | 0.896 | 0.280 | 0.222 | 0.215 | 0.232 | 0.394 |
-| sp500_up_40pct_50d_dd20pct | 24,300 | 4.02% | 0.862 | 0.100 | 0.313 | 0.312 | 0.286 | 0.276 |
-| sp500_up_20pct_5d_dd10pct | 46,170 | 0.60% | 0.846 | 0.195 | 0.142 | 0.180 | 0.318 | 0.419 |
-| sp500_up_20pct_10d_dd10pct | 43,740 | 2.26% | 0.835 | 0.270 | 0.285 | 0.261 | 0.291 | 0.391 |
-| sp500_up_10pct_5d_dd5pct | 46,170 | 4.32% | 0.781 | 0.274 | 0.309 | 0.320 | 0.324 | 0.331 |
-| sp500_up_20pct_25d_dd10pct | 36,450 | 8.86% | 0.775 | 0.467 | 0.458 | 0.459 | 0.415 | 0.398 |
-| sp500_up_20pct_50d_dd10pct | 24,300 | 13.67% | 0.727 | 0.360 | 0.280 | 0.288 | 0.342 | 0.353 |
-| sp500_up_10pct_10d_dd5pct | 43,740 | 11.30% | 0.711 | 0.467 | 0.459 | 0.462 | 0.440 | 0.405 |
-| sp500_up_10pct_25d_dd5pct | 36,450 | 26.38% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
-| sp500_up_10pct_50d_dd5pct | 24,300 | 29.60% | 0.400 | 0.380 | 0.387 | 0.332 | 0.306 | 0.311 |
+| sp500_up_50pct_50d_dd25pct | 24,300 | 2.57% | 0.903 | 0.800 | 0.527 | 0.432 | 0.286 | 0.385 |
+| sp500_up_40pct_25d_dd20pct | 36,450 | 1.82% | 0.896 | 0.280 | 0.251 | 0.221 | 0.279 | 0.404 |
+| sp500_up_40pct_50d_dd20pct | 24,300 | 4.02% | 0.862 | 0.180 | 0.360 | 0.288 | 0.302 | 0.270 |
+| sp500_up_20pct_5d_dd10pct | 46,170 | 0.60% | 0.846 | 0.220 | 0.140 | 0.161 | 0.291 | 0.412 |
+| sp500_up_20pct_10d_dd10pct | 43,740 | 2.26% | 0.835 | 0.382 | 0.260 | 0.252 | 0.313 | 0.397 |
+| sp500_up_10pct_5d_dd5pct | 46,170 | 4.32% | 0.781 | 0.284 | 0.309 | 0.339 | 0.336 | 0.333 |
+| sp500_up_20pct_25d_dd10pct | 36,450 | 8.86% | 0.775 | 0.600 | 0.484 | 0.461 | 0.409 | 0.386 |
+| sp500_up_20pct_50d_dd10pct | 24,300 | 13.67% | 0.727 | 0.640 | 0.387 | 0.316 | 0.374 | 0.317 |
+| sp500_up_10pct_10d_dd5pct | 43,740 | 11.30% | 0.711 | 0.489 | 0.474 | 0.464 | 0.433 | 0.413 |
+| sp500_up_10pct_25d_dd5pct | 36,450 | 26.38% | 0.590 | 0.333 | 0.427 | 0.421 | 0.449 | 0.426 |
+| sp500_up_10pct_50d_dd5pct | 24,300 | 29.60% | 0.400 | 0.040 | 0.247 | 0.300 | 0.322 | 0.329 |
 
-The body's "11 discriminate / 0 ambiguous / 0 null / 1 anti-predictive" verdict holds under R-Precision@K: AUC is the dominant classifier and the 10%/50d cell (AUC 0.400, R-p@10 = 0.306) sits clearly in the anti-predictive band — R-Precision@K can't rescue it. **The top-tail story stays strong**: 50%/50d gets the most extreme R-Precision@1 of any cell in the project at 0.680 (1 in ~1.5 top-picks is a hit, base 2.57%) — note that this falls to 0.394 at K=20, showing the model's confidence concentrates sharply in the top 1-3 names per day, not across a wider band.
+The body's "11 discriminate / 0 ambiguous / 0 null / 1 anti-predictive" verdict holds under R-Precision@K: AUC is the dominant classifier and the 10%/50d cell (AUC 0.400, R-p@10 = 0.322) sits clearly in the anti-predictive band — R-Precision@K can't rescue it. **The top-tail story stays strong**: 50%/50d gets the most extreme R-Precision@1 of any cell in the project at 0.800 (4 in 5 top-picks is a hit, base 2.57%) — note that this falls to 0.385 at K=20, showing the model's confidence concentrates sharply in the top 1-3 names per day, not across a wider band.
