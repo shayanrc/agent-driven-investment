@@ -255,7 +255,7 @@ Of the 20 nasdaq100 cells, **11 discriminate on the held-out test window** (10%/
 
 ## R-Precision@K (current methodology — added 2026-06-01)
 
-Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed on the 13 test-evaluable nasdaq100 cells from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`); sorted by AUC descending. The 7 cells without a test window (H ≥ 100) are excluded.
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt — defined as `R-Precision@K = (1/Q) · Σ_q r_q / min(K, R_q)` over the Q days where R_q > 0 (R_q = positives on day q; r_q = positives caught in top-K picks on day q; macro-averaged, equal weight per day; K fixed). Recomputed on the 13 test-evaluable nasdaq100 cells from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`); sorted by AUC descending. The 7 cells without a test window (H ≥ 100) are excluded.
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|

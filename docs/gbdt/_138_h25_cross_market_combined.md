@@ -171,7 +171,7 @@ Cross-links: PR #28 (nasdaq H=25), PR #27 (uniqueness-fix Sweep #1 rerun), PR #4
 
 ## R-Precision@K (current methodology — added 2026-06-01)
 
-Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`):
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt — defined as `R-Precision@K = (1/Q) · Σ_q r_q / min(K, R_q)` over the Q days where R_q > 0 (R_q = positives on day q; r_q = positives caught in top-K picks on day q; macro-averaged, equal weight per day; K fixed). Recomputed from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`):
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
