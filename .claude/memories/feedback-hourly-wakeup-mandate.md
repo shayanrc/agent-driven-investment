@@ -8,7 +8,7 @@ metadata:
 At each hourly wakeup (the recurring cron, task #94), run a brief **health-check + triage pass and then ACT**. **Always include the current wall-clock time at the top of the response** — run `date '+%Y-%m-%d %H:%M %Z'` and surface it, so elapsed-time between wakeups is concrete (not estimated from heartbeat counters).
 
 - Check open PRs, background agents/tasks, running experiments/sweeps (e.g. #107), and disk (≥ 10 GB free).
-- **For any running sweep, surface the best-cell-so-far** per `[[feedback-sweep-best-cell-reporting]]` (cell name + weighted R-prec test lift + base rate, NOT just `N/M done`). If 0 cells done: "0 done — no best yet."
+- **For any running sweep, surface the best-cell-so-far** per `[[feedback-sweep-best-cell-reporting]]` (cell name + R-Precision@10 test lift + base rate, NOT just `N/M done`). If 0 cells done: "0 done — no best yet."
 - **Cache health-checks MUST target the scratch cache** with `--data-root /mnt/122CEE982CEE765F/cache_data` (e.g. `uv run python -m scripts.data_pipelines.skill_runner health --data-root /mnt/122CEE982CEE765F/cache_data`). The main checkout's `data/processed.db-wal` is filesystem-corrupted (see `[[project-nse-data-quirks]]` § 3) — never query or poke the main checkout's `data/`.
 - Fire the autonomous review/fix/merge sub-agent for any assistant-authored PR not already in a review cycle — except the HOLD-for-user categories (CLAUDE.md / spec / policy / SKILL.md / memories). See `[[feedback-auto-fire-review-merge]]`.
 - Troubleshoot stalled runs (dead process, stale heartbeat, no new cell in > 1 h) or low disk per the disk-wedge + sweep-recovery playbooks (`[[feedback-disk-wedge-pattern]]`).
