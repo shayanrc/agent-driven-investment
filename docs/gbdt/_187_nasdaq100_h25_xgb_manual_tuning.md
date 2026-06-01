@@ -85,6 +85,6 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nasdaq100_up_10pct_25d_dd5pct | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+| nasdaq100_up_10pct_25d_dd5pct (CatBoost reference) | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
 
-The canonical CSV carries the canonical nasdaq100 +10%/25d cell artifact; the manual-tuning iter-0..8 probes were val-only excursions and are not separate cells in the CSV.
+The row above is the canonical CatBoost-backend nasdaq100 +10%/25d cell — included as the reference baseline this memo's manual XGBoost tuning was comparing against. The memo's actual XGBoost manual-tuning finalize artifact is not in the canonical CSV (the manual-tuning run dir was not preserved as a standalone experiment under `results/gbdt/experiments/` per its by-design "diagnostics-only" framing); iter-0..8 probes within the memo were val-only excursions and are likewise not separate cells.

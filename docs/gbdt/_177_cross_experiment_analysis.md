@@ -155,5 +155,6 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 | nifty500_up_30pct_50d_dd15pct (standalone) | 18800 | 5.7% | 0.715 | 0.431 | 0.275 | 0.220 | 0.202 | 0.202 |
 | nifty50_up_10pct_25d_dd5pct (standalone, `_138`-C/`_174`) | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
 | sp500_up_10pct_25d_dd5pct (standalone, `_138`-B) | 36450 | 26.4% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
+| nifty100_up_10pct_25d_dd5pct (standalone, `_138`-D) | 3525 | 18.8% | 0.689 | 0.239 | 0.235 | 0.246 | 0.349 | 0.503 |
 
-The canonical CSV does not carry the `nasdaq100_up_10pct_100d_dd5pct` cell (the no-test-window 100d cell) nor the `_138`-D nifty100 H=25 cell, both referenced in the body tables above.
+The canonical CSV does not carry the `nasdaq100_up_10pct_100d_dd5pct` cell (the no-test-window 100d cell referenced in the body master table) — the cell completed feature build but the H=100 walk-forward ate the test split, leaving no `predictions/test.csv`. All other body-referenced cells, including `_138`-D nifty100 H=25, are present above.
