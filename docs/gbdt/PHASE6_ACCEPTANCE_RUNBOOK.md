@@ -28,10 +28,10 @@ This file is the **runbook** — what you (or a supervised agent) execute to run
 | `monotone_contraindicated` | **Every** monotone config (iters 5–9) is worse than baseline; best monotone +0.0012. | all monotone > baseline AND best-monotone harm ≥ 0.0010. |
 | `no_overfit_baseline` | Iter-0 train/val gap −0.0048 (val below train) ⇒ no overfit ⇒ FS hurts. | iter-0 gap ≤ +0.02 (the memo's no-overfit threshold / lesson 1). |
 | `prevalence_drift_ceiling` | train 0.280 → val 0.204 → eval 0.138, declining — the calibration ceiling. | train−eval prevalence decline ≥ 0.05 (observed 0.142). |
-| `ranking_robust` | Ranking strong + robust: weighted R-precision ~2.1× throughout. | lift ≥ 1.5× base rate. |
+| `ranking_robust` | Ranking strong + robust: legacy weighted R-precision ~2.1× throughout (~1.8× under R-Precision@10 — the post-2026-06-01 headline metric; see `[[project-r-precision-methodology]]`). | lift ≥ 1.5× base rate. |
 | `final_features_not_collapsed` | FS neutral-to-harmful — best model keeps a substantial set (all-279 / 88-feat). | final feature count ≥ 80 (no aggressive prune). |
 
-**SKIP vs FAIL.** A check **SKIPs** (does not fail) when the data it needs isn't in the artifacts — e.g. the loop never explored a monotone constraint (`monotone_contraindicated`), or `metrics.json` doesn't carry R-precision (`ranking_robust`, which then points you at `scripts/gbdt/compute_r_precision.py`). The overall verdict is **PASS iff no check FAILED**; SKIPs are surfaced loudly so a *complete* acceptance resolves them. The acceptance is only fully demonstrated when the agent has explored depth, lr, FS, **and** at least one monotone-constraint iteration (so the contraindication check is evaluable, not skipped).
+**SKIP vs FAIL.** A check **SKIPs** (does not fail) when the data it needs isn't in the artifacts — e.g. the loop never explored a monotone constraint (`monotone_contraindicated`), or `metrics.json` doesn't carry R-precision (`ranking_robust`, which then points you at `scripts/gbdt/compute_r_precision.py` — that script emits both legacy weighted R-precision and the current R-Precision@K at K ∈ {1, 3, 5, 10, 20}). The overall verdict is **PASS iff no check FAILED**; SKIPs are surfaced loudly so a *complete* acceptance resolves them. The acceptance is only fully demonstrated when the agent has explored depth, lr, FS, **and** at least one monotone-constraint iteration (so the contraindication check is evaluable, not skipped).
 
 ---
 
@@ -108,7 +108,7 @@ It prints a PASS/FAIL/SKIP table (one row per finding, with the observed value, 
 uv run python -m scripts.gbdt.compute_r_precision \
   results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_acceptance/predictions/test.csv
 ```
-then confirm the weighted R-precision lift is ≥ 1.5× (the memo saw ~2.1×). (The check reads R-precision from `metrics.json` if present; otherwise verify the lift manually against the `ranking_robust` tolerance.)
+then confirm the R-Precision@10 lift is ≥ 1.5× (the post-2026-06-01 form — `_147` was originally reported at ~2.1× under the legacy weighted form, which lands at ~1.8× under R-Precision@10; either way clears the threshold). The script emits both the current R-Precision@K and the legacy weighted form. The check reads R-precision from `metrics.json` if present; otherwise verify the lift manually against the `ranking_robust` tolerance.
 
 **If `monotone_contraindicated` SKIPs:** the loop never tried a monotone constraint. Drive one more iteration that applies `monotone_constraints` on the clean vol estimators (as `_147` iter 5 did), then re-run the check. The acceptance is only *fully* demonstrated when this check is evaluable, not skipped.
 
