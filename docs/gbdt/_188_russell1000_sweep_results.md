@@ -1,5 +1,7 @@
 # Task #188 — russell1000 sweep results (20 cells, post-#183 shared feature cache)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Date**: 2026-05-30.
 **Branch**: `gbdt-russell1000-sweep-results`.
 **Data**: `results/gbdt/data/_188_russell1000_sweep_results_data.json` (machine-readable master table + per-cell classifications).
@@ -249,3 +251,16 @@ The single concrete revision `_188` introduces to `_177`'s priors is the **unive
 ## User-facing read (no automated PASS/FAIL)
 
 Of the 20 russell1000 cells, **12 discriminate on the held-out test window**, **5 are eval-only discriminating** (no test window under the current split: 20%/100d, 40%/{100d,200d}, 50%/{100d,200d}), **1 is borderline on test (10%/50d, ambiguous)**, **1 is null on eval (10%/100d, no test)**, **1 is anti-predictive on eval (10%/200d, no test)**. The short-horizon × high-threshold corner is the production-candidate region — **40%/10d, 50%/25d, 20%/5d** are the standout cells by test-segment R-precision lift (42×, 19×, 18×). The eval→test AUC decay observed in `_177`'s partial US sweep largely replicates on russell1000, with the decay crossing into the null AUC band one horizon-step further out (10%/50d vs nasdaq100's 10%/25d). The 7 eval-only cells (H ≥ 100) need the test-split fix before they can be judged. As `_177` noted, the PASS/FAIL call on any individual cell remains a user judgment; this memo characterizes the landscape across the completed russell1000 sweep.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| russell1000_up_10pct_5d_dd5pct | 84455 | 5.0% | 0.762 | 0.263 | 0.260 | 0.274 | 0.236 | 0.237 |
+| russell1000_up_20pct_5d_dd10pct_agentloop | 84455 | 0.7% | 0.839 | 0.054 | 0.072 | 0.104 | 0.182 | 0.318 |
+| russell1000_up_40pct_10d_dd20pct_agentloop | 80010 | 0.2% | 0.850 | 0.014 | 0.029 | 0.093 | 0.214 | 0.350 |
+| russell1000_up_50pct_25d_dd25pct_agentloop | 66675 | 0.9% | 0.846 | 0.081 | 0.113 | 0.113 | 0.145 | 0.243 |
+
+The canonical CSV carries the russell1000 +10%/5d sweep cell plus the three subsequent agentloop re-runs (the standout 20%/5d, 40%/10d, 50%/25d cells from the body table). The other 16 sweep cells are not in the post-2026-06-01 canonical CSV and remain under the legacy weighted R-precision figures in the body master table.

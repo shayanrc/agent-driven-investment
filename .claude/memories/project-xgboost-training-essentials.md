@@ -19,7 +19,7 @@ What the gbdt XGBoost backend (#165, `docs/gbdt/V1.2_xgboost_feature_interaction
 
 **3. Built-ins.**
 - L1 (`alpha`) + L2 (`lambda`) regularization built in. Automatic **missing-value direction learning** (sparsity-aware split finding) — no imputation needed. Objective `binary:logistic` for the binary target; raw output is margin → probability via sigmoid. **Calibration is unchanged** — `src/gbdt/calibration.py` operates purely on `(y_val, p_raw)` arrays and never touches the model object, so XGBoost's raw probabilities flow through the identical Spiegelhalter-gated isotonic/Platt path.
-- XGBoost supports `interaction_constraints` + `monotone_constraints` (**CatBoost does NOT** — see [[project-gbdt-tuning-playbook]] #4). `interaction_constraints` is a Phase-4 **causal-ablation** tool (forbid the top SHAP pairs, retrain, confirm Brier/R-prec degradation tracks the SHAP magnitude) — never on the hot FS+HP loop.
+- XGBoost supports `interaction_constraints` + `monotone_constraints` (**CatBoost does NOT** — see [[project-gbdt-tuning-playbook]] #4). `interaction_constraints` is a Phase-4 **causal-ablation** tool (forbid the top SHAP pairs, retrain, confirm Brier / R-Precision@K degradation tracks the SHAP magnitude) — never on the hot FS+HP loop.
 
 **4. Portability.** Models export as JSON / UBJ (`.ubj` recommended binary); the `backend.library: xgboost` spec field already exists (default.yaml + EXPERIMENT_SPEC.md) and currently rejects non-catboost — V1.2 lifts that. `/gbdt-diagnose`'s model loader needs backend dispatch (currently hard-codes `CatBoostClassifier().load_model("model.cbm")`).
 

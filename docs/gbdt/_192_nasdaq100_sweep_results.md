@@ -1,5 +1,7 @@
 # Task #192 — nasdaq100 sweep results (20 cells, post-#183 + #87 agent-loop trio)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the 13 test-evaluable cells recomputed under the new metric (plus `r_precision_at_k.csv` for the canonical record), plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Date**: 2026-05-31.
 **Branch**: `gbdt-nasdaq100-sweep-results`.
 **Data**: `results/gbdt/data/_192_nasdaq100_sweep_results_data.json` (machine-readable master table + per-cell classifications).
@@ -248,3 +250,27 @@ The key concrete revision this memo introduces is to **`_188` § 4 (universe eff
 ## User-facing read (no automated PASS/FAIL)
 
 Of the 20 nasdaq100 cells, **11 discriminate on the held-out test window** (10%/5d, 10%/10d, 20%/{5d, 10d, 25d, 50d}, 40%/{10d, 25d, 50d}, 50%/{25d, 50d} — strongest lift first within group), **5 are eval-only discriminating** (no test window under the current split: 20%/100d, 40%/{100d, 200d}, 50%/{100d, 200d}), **4 are ambiguous** (10%/{25d, 50d} on test, 10%/{100d, 200d} on eval-only), **0 null**, **0 anti-predictive**. The short-horizon × high-threshold corner is the production-candidate region — **40%/10d (lift 20.70×), 20%/5d (19.17×), 50%/25d (14.35×)** are the standout cells by test-segment R-precision lift. The eval→test AUC decay observed in `_177` + `_188` fully replicates on nasdaq100 with no exception, with the +10% target crossing into the null AUC band one horizon-step earlier than russell1000 (10%/25d vs 10%/50d), confirming the "smaller panel → earlier crossover" inverse of `_188`'s "wider panel → later crossover" reading. The 7 eval-only cells (H ≥ 100) need the test-split fix before they can be judged. As `_177` + `_188` noted, the PASS/FAIL call on any individual cell remains a user judgment; this memo characterizes the landscape across the completed nasdaq100 sweep and updates the cross-universe panel-width hypothesis from `_188`.
+
+---
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed on the 13 test-evaluable nasdaq100 cells from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`); sorted by AUC descending. The 7 cells without a test window (H ≥ 100) are excluded.
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nasdaq100_up_20pct_10d_dd10pct | 8,280 | 4.30% | 0.781 | 0.197 | 0.204 | 0.280 | 0.492 | 0.670 |
+| nasdaq100_up_10pct_5d_dd5pct | 8,740 | 7.14% | 0.768 | 0.278 | 0.293 | 0.316 | 0.445 | 0.601 |
+| nasdaq100_up_50pct_25d_dd25pct | 6,900 | 2.91% | 0.761 | 0.269 | 0.240 | 0.233 | 0.324 | 0.502 |
+| nasdaq100_up_20pct_5d_dd10pct | 8,740 | 1.29% | 0.756 | 0.200 | 0.263 | 0.321 | 0.479 | 0.577 |
+| nasdaq100_up_40pct_50d_dd20pct | 4,600 | 5.54% | 0.753 | 0.471 | 0.507 | 0.515 | 0.496 | 0.567 |
+| nasdaq100_up_40pct_10d_dd20pct | 8,280 | 0.72% | 0.751 | 0.061 | 0.076 | 0.147 | 0.483 | 0.549 |
+| nasdaq100_up_50pct_50d_dd25pct | 4,600 | 4.04% | 0.748 | 0.157 | 0.301 | 0.456 | 0.493 | 0.516 |
+| nasdaq100_up_40pct_25d_dd20pct | 6,900 | 4.26% | 0.724 | 0.107 | 0.182 | 0.180 | 0.368 | 0.439 |
+| nasdaq100_up_20pct_25d_dd10pct | 6,900 | 11.75% | 0.709 | 0.171 | 0.197 | 0.280 | 0.414 | 0.518 |
+| nasdaq100_up_20pct_50d_dd10pct | 4,600 | 14.02% | 0.665 | 0.451 | 0.255 | 0.278 | 0.277 | 0.369 |
+| nasdaq100_up_10pct_10d_dd5pct | 8,280 | 15.16% | 0.657 | 0.436 | 0.457 | 0.435 | 0.444 | 0.521 |
+| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.29% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+| nasdaq100_up_10pct_50d_dd5pct | 4,600 | 26.52% | 0.475 | 0.471 | 0.438 | 0.451 | 0.469 | 0.487 |
+
+Under R-Precision@K the body narrative classifications still hold qualitatively: the 11 "discriminate on test" cells all have R-p@10 lift > 1.5× over their base rate; the 2 "ambiguous on test" cells (+10%/25d and +10%/50d) have AUC in the null band and R-p@10 lift ≤ 1.86×, sitting near the compound-rule threshold. The +10%/25d cell with AUC 0.511 + R-p@10 lift 1.86× is the H=25 nasdaq cell of `_138` — same "hidden top-tail signal" classification under the current metric.

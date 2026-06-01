@@ -1,5 +1,7 @@
 # _174 — Investigation A: agent-driven FS+HP loop (CatBoost) vs the `_147` answer key
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Task**: V1.1 Phase-6 acceptance — drive the **automated** `agent_file_protocol`
 FS+HP loop (the agent acting as the data scientist each iteration via the real
 exit-and-resume CLI) on the nifty50 UP +10% / 25d / dd5% cell, and check whether
@@ -184,3 +186,13 @@ a confound the hand-driven loop carried. Both backends land on the depth-8 plate
 - The monotone-probe run dir
   (`…/nifty50_up_10pct_25d_dd5pct_catboost_monotone_probe/`) holds the iter-5
   config's full artifact.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_10pct_25d_dd5pct_catboost_phase8 | 3450 | 17.9% | 0.729 | 0.171 | 0.205 | 0.213 | 0.328 | 0.559 |
+
+The canonical CSV does not carry the `..._catboost_loop` (invA acceptance) artifact directly; the matched-cell + matched-backend CatBoost end-state in the CSV is the `_catboost_phase8` finalize (the same depth-8 / 279-feat config — see `_175`), used here as the closest-available reference row.

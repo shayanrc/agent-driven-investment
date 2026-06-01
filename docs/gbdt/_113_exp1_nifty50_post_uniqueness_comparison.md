@@ -1,5 +1,7 @@
 # Task #113 — Exp 1 (nifty50) post-uniqueness-fix re-run + methodology comparison
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cell**: `nifty50_up_20pct_50d_dd10pct` (NIFTY 50, +20% in 50 trading days, max-drawdown 10%; default callback mode, `fs_hp_loop.max_iterations=8`)
 
 **Why this re-run**: PR #18 (López de Prado §4.4) shipped sample-uniqueness weighting as the default on 2026-05-26 — overlapping-label samples are now weighted by their uniqueness. Exp 1 had been run with the old (biased) methodology and its artifact frozen. This is the **second and final half of task #113**; the first (Sweep #1, `nasdaq100_up_10pct_100d_dd5pct`) landed as #121 / memo `docs/gbdt/_113_sweep1_post_uniqueness_comparison.md`. Exp 1 was the only other affected experiment.
@@ -90,6 +92,16 @@ As in the Sweep #1 (H=100) case, `ess_kish == n_rows` because the interior overl
 - **Cell verdict** (the reader's call, not automated): **discriminating top-tail signal, calibrated via isotonic.** AUC > 0.55 on both eval and test; weighted R-precision lift > 2.6× on both segments post-fix. The cell ranks the top tail meaningfully above base rate. Aggregate Brier sits just below the base-rate baseline, which is the expected rare-cell pattern, not a disqualifier. If shipped, it must ship the **isotonic** calibrator (the native gate fails post-fix).
 - **Methodology verdict**: the PR #18 sample-uniqueness fix is correctly wired at H=50 (overlap inflation 99×) and materially changes this cell — it flips the calibration decision native → isotonic, moves the best checkpoint iter0 → iter1, and strengthens the measured top-tail ranking. Unlike Sweep #1 (which was a null cell where the fix only improved calibration of noise), here the fix operates on a cell with genuine signal and the net effect is a stronger, better-calibrated artifact.
 - **Did the fix change this cell's conclusions?** **Yes on calibration and ranking, no on the signal verdict.** One sentence: *the cell discriminates both before and after, but the uniqueness fix flips its calibration from native to isotonic, shifts the best checkpoint from iter 0 to iter 1, and strengthens the measured top-tail ranking (eval R-precision lift 2.66× → 3.35×, test 0.88× → 2.63×) — all on a provably constant data split.*
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_20pct_50d_dd10pct | 2300 | 1.4% | 0.435 | 0.050 | 0.017 | 0.058 | 0.325 | 0.533 |
+
+The canonical CSV carries only the post-fix run of this cell; the BEFORE/AFTER comparison is in the body table above.
 
 ## Cross-links
 

@@ -1,5 +1,7 @@
 # Investigation B — agent-DRIVEN FS+HP loop on XGBoost (nifty50 H=25)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cell**: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
 **Date**: 2026-05-29.
 **Branch**: `invB-nifty50-h25-xgboost-loop`.
@@ -88,5 +90,13 @@ This agent-driven loop lands at test AUC 0.656, eval AUC 0.658, test R-prec 0.40
 - Loop decisions: `results/gbdt/experiments/.../loop/iter_{0..5}_decision.json` (the lab-notebook entries).
 - R-precision recomputed: `uv run python -m scripts.gbdt.compute_r_precision results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/predictions/{eval,test}.csv`.
 - Headline numbers: `results/gbdt/data/_149_invB_xgboost_agentloop_data.json`.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_10pct_25d_dd5pct_xgb_acceptance | 3450 | 17.9% | 0.656 | 0.257 | 0.252 | 0.260 | 0.324 | 0.506 |
 
 Cross-links: `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (CatBoost answer key), `docs/gbdt/_148_xgboost_a6_replication.md` (sweep-mode A6), `[[project-r-precision-methodology]]`, `XGBOOST_HP_REFERENCE.md`, `[[project-xgboost-training-essentials]]`, `[[project-xgboost-interaction-analysis]]`.
