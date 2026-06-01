@@ -495,6 +495,61 @@ test_F_setsid_actually_detaches() {
 }
 
 # ----------------------------------------------------------------------
+# Test G — stale_progress_log_not_treated_as_stall: pre-existing progress.log
+# from a prior run has mtime far in the past. The watchdog must floor mtime
+# at wrapper-start so a stub that exits cleanly (and never writes a heartbeat
+# of its own) is NOT mis-killed. Regression test for #193 bug 1.
+# ----------------------------------------------------------------------
+test_G_stale_progress_log_not_killed() {
+    local name="G_stale_progress_log_not_killed"
+    local d
+    d="$(make_tmpdir "$name")"
+    local spec="$d/spec.yaml"
+    echo "target: {universe: x}" > "$spec"
+    local stub
+    stub="$(make_stub exit_ok "$d")"
+    local out="$d/work"
+    mkdir -p "$out/loop"
+    # Pre-existing heartbeat file with mtime ~1 hour ago (well past the 3s
+    # stall threshold below). The stub never touches it.
+    printf 'stale heartbeat\n' > "$out/loop/progress.log"
+    touch -d '1 hour ago' "$out/loop/progress.log"
+    local rc=0
+
+    # Stub sleeps 5s then exits 0. heartbeat-stall=10s + monitor=1s means
+    # WITHOUT the bug-1 fix the watchdog would SIGTERM within ~1-2s (age was
+    # ~3600s vs threshold 10s) and the wrapper would record
+    # heartbeat_stalled_killed. With the fix, mtime is floored at
+    # wrapper-start so age never exceeds 5s; child exits cleanly.
+    STUB_SLEEP=5 \
+    WRAPPER_TEST_STUB_CMD="$stub" \
+    WRAPPER_TEST_SKIP_DISK_CHECK=1 \
+    WRAPPER_MONITOR_INTERVAL_SECS=1 \
+        timeout 30 bash "$WRAPPER" \
+            --spec "$spec" \
+            --out-dir "$out" \
+            --max-retries 0 \
+            --heartbeat-stall-secs 10 \
+        || rc=$?
+
+    local fail=0 detail=""
+    if [[ "$rc" -ne 0 ]]; then
+        fail=1; detail="wrapper exit=$rc, expected 0 (child should have exited cleanly)"
+    elif [[ ! -f "$out/wrapper.log" ]]; then
+        fail=1; detail="wrapper.log not written"
+    elif grep -q "heartbeat stalled" "$out/wrapper.log"; then
+        fail=1; detail="wrapper killed child on stale-mtime — bug-1 fix regressed"
+    else
+        local st; st="$(status_state "$out/wrapper.status")"
+        if [[ "$st" != "exited_ok" ]]; then
+            fail=1; detail="state=$st, expected exited_ok"
+        fi
+    fi
+    cleanup_tmpdir "$d"
+    record_result "$name" "$fail" "$detail"
+}
+
+# ----------------------------------------------------------------------
 # Run all tests
 # ----------------------------------------------------------------------
 
@@ -509,6 +564,7 @@ test_C_exits_fail_with_checkpoint
 test_D_heartbeat_stall
 test_E_idempotent_double_launch
 test_F_setsid_actually_detaches
+test_G_stale_progress_log_not_killed
 
 echo
 echo "==== Summary ===="
