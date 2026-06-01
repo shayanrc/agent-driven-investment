@@ -76,6 +76,8 @@ record_result() {
 #                           $fail_count failures then exit 0.
 #   heartbeat_stall       — write initial progress.log, then sleep forever.
 #   detach_marker         — sleep $sleep, write detach_marker file, exit 0.
+#   paused_at_iter        — mkdir $STUB_LOOP_DIR; write iter_$STUB_PAUSE_AT_N_request.json;
+#                           exit 0. Mimics V1.1 agent_file_protocol pause.
 make_stub() {
     local mode="$1"
     local tmpdir="$2"
@@ -134,6 +136,24 @@ STUB
 #!/usr/bin/env bash
 sleep "${STUB_SLEEP:-2}"
 touch "${STUB_MARKER_FILE}"
+exit 0
+STUB
+            ;;
+        paused_at_iter)
+            cat > "$stub" <<'STUB'
+#!/usr/bin/env bash
+# Mimics V1.1 agent_file_protocol pause: write iter_N_request.json then exit 0.
+# Set STUB_LOOP_DIR (e.g. $out/loop) and STUB_PAUSE_AT_N (e.g. 0).
+mkdir -p "${STUB_LOOP_DIR}"
+n="${STUB_PAUSE_AT_N:-0}"
+cat > "${STUB_LOOP_DIR}/iter_${n}_request.json" <<EOF
+{
+  "iter": ${n},
+  "kind": "fs_hp_decision",
+  "stub": true
+}
+EOF
+sleep "${STUB_SLEEP:-1}"
 exit 0
 STUB
             ;;
@@ -604,6 +624,100 @@ test_H_sidecars_under_dotwrapper() {
 }
 
 # ----------------------------------------------------------------------
+# Test I — paused_awaiting_decision: child writes iter_N_request.json and
+# exits 0 (mimics V1.1 agent_file_protocol pause). Wrapper MUST detect the
+# pending request, write state `paused_awaiting_decision`, and exit 0 —
+# NOT mark `exited_ok` and terminate the loop. Regression for #193 bug 3.
+# ----------------------------------------------------------------------
+test_I_paused_awaiting_decision() {
+    local name="I_paused_awaiting_decision"
+    local d
+    d="$(make_tmpdir "$name")"
+    local spec="$d/spec.yaml"
+    echo "target: {universe: x}" > "$spec"
+    local stub
+    stub="$(make_stub paused_at_iter "$d")"
+    local out="$d/work"
+    local rc=0
+
+    STUB_SLEEP=1 \
+    STUB_LOOP_DIR="$out/loop" \
+    STUB_PAUSE_AT_N=0 \
+    WRAPPER_TEST_STUB_CMD="$stub" \
+    WRAPPER_TEST_SKIP_DISK_CHECK=1 \
+    WRAPPER_MONITOR_INTERVAL_SECS=1 \
+        timeout 30 bash "$WRAPPER" \
+            --spec "$spec" \
+            --out-dir "$out" \
+            --max-retries 0 \
+            --heartbeat-stall-secs 0 \
+        || rc=$?
+
+    local fail=0 detail=""
+    if [[ "$rc" -ne 0 ]]; then
+        fail=1; detail="wrapper exit=$rc, expected 0 (paused IS a clean exit)"
+    elif [[ ! -f "$out/.wrapper/status.json" ]]; then
+        fail=1; detail=".wrapper/status.json not written"
+    elif [[ ! -f "$out/loop/iter_0_request.json" ]]; then
+        fail=1; detail="stub failed to write iter_0_request.json — test setup bug"
+    else
+        local st; st="$(status_state "$out/.wrapper/status.json")"
+        if [[ "$st" != "paused_awaiting_decision" ]]; then
+            fail=1; detail="state=$st, expected paused_awaiting_decision"
+        fi
+    fi
+    cleanup_tmpdir "$d"
+    record_result "$name" "$fail" "$detail"
+}
+
+# ----------------------------------------------------------------------
+# Test J — paused_request_with_matching_decision_is_done: a request.json
+# that has its corresponding decision.json is NOT a pending pause — the
+# runner would have consumed the decision and moved on. Child exits 0 with
+# only matched-decision request files → wrapper writes `exited_ok`.
+# Guards against false pause detection when prior iters' artifacts exist.
+# ----------------------------------------------------------------------
+test_J_matched_decision_is_done() {
+    local name="J_matched_decision_is_done"
+    local d
+    d="$(make_tmpdir "$name")"
+    local spec="$d/spec.yaml"
+    echo "target: {universe: x}" > "$spec"
+    local stub
+    stub="$(make_stub exit_ok "$d")"
+    local out="$d/work"
+    # Pre-populate iter_0_request + matching decision (mimics a completed
+    # iter that won't trigger pause detection).
+    mkdir -p "$out/loop"
+    printf '{"iter":0}\n' > "$out/loop/iter_0_request.json"
+    printf '{"iter":0,"should_stop":true}\n' > "$out/loop/iter_0_decision.json"
+    local rc=0
+
+    STUB_SLEEP=1 \
+    WRAPPER_TEST_STUB_CMD="$stub" \
+    WRAPPER_TEST_SKIP_DISK_CHECK=1 \
+    WRAPPER_MONITOR_INTERVAL_SECS=1 \
+        timeout 30 bash "$WRAPPER" \
+            --spec "$spec" \
+            --out-dir "$out" \
+            --max-retries 0 \
+            --heartbeat-stall-secs 0 \
+        || rc=$?
+
+    local fail=0 detail=""
+    if [[ "$rc" -ne 0 ]]; then
+        fail=1; detail="wrapper exit=$rc, expected 0"
+    else
+        local st; st="$(status_state "$out/.wrapper/status.json")"
+        if [[ "$st" != "exited_ok" ]]; then
+            fail=1; detail="state=$st, expected exited_ok (matched decision means no pending pause)"
+        fi
+    fi
+    cleanup_tmpdir "$d"
+    record_result "$name" "$fail" "$detail"
+}
+
+# ----------------------------------------------------------------------
 # Run all tests
 # ----------------------------------------------------------------------
 
@@ -620,6 +734,8 @@ test_E_idempotent_double_launch
 test_F_setsid_actually_detaches
 test_G_stale_progress_log_not_killed
 test_H_sidecars_under_dotwrapper
+test_I_paused_awaiting_decision
+test_J_matched_decision_is_done
 
 echo
 echo "==== Summary ===="
