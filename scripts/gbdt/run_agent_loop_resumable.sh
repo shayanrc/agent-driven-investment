@@ -38,6 +38,20 @@
 #
 # Idempotent on relaunch: if a prior wrapper for the same --out-dir is still
 # alive, the second invocation refuses with a clear error.
+#
+# Agent-loop pause semantics (#193 bug 3). The V1.1 callback_mode runner
+# uses exit code 0 for TWO distinct outcomes:
+#   (i)  pipeline complete (metrics.json + predictions/ + report.md written)
+#   (ii) paused at iter N awaiting an agent decision
+#        (loop/iter_N_request.json written, no metrics.json yet)
+# The wrapper distinguishes them by scanning loop/ for the highest
+# iter_*_request.json without a matching iter_*_decision.json. Pause →
+# state "paused_awaiting_decision" + exit 0; complete → state "exited_ok"
+# + exit 0. Both are terminal from the wrapper's perspective; the
+# orchestrator (Claude / sub-agent / chain waiter) drives the next iter
+# by writing the decision file and re-invoking the wrapper with --resume.
+# Eight distinct states are written: the 7 pre-bug-3 ones plus
+# paused_awaiting_decision.
 
 set -euo pipefail
 
@@ -86,6 +100,13 @@ Optional:
   -h, --help                     Show this help and exit 0.
 
 Extra args after `--` are passed verbatim to `python -m gbdt experiment <spec>`.
+
+Agent-loop pause: under `--callback-mode agent_file_protocol`, the runner
+exits 0 when it pauses for an agent decision. The wrapper detects this
+and writes state `paused_awaiting_decision` to .wrapper/status.json
+(distinct from `exited_ok`), then exits 0. The orchestrator must write
+loop/iter_N_decision.json and re-invoke the wrapper with `--resume` to
+continue the loop.
 
 Examples:
   scripts/gbdt/run_agent_loop_resumable.sh \
@@ -248,6 +269,39 @@ read_run_id_from_checkpoint() {
 
 checkpoint_exists() {
     [[ -f "$CHECKPOINT_PRIMARY" ]] || [[ -f "$CHECKPOINT_FALLBACK" ]]
+}
+
+# Detect whether the runner exited because it paused awaiting an agent
+# decision (#193 bug 3). The V1.1 agent_file_protocol contract: pause
+# writes loop/iter_N_request.json; the agent writes loop/iter_N_decision.json
+# and re-invokes with --resume. A pending request without a matching decision
+# means the wrapper's child paused — exit code 0 does NOT mean "done."
+#
+# Returns the highest iter N with a pending request (printed to stdout)
+# and exit 0 if a pause is detected; exit 1 otherwise (no stdout).
+# Uses a simple find+sort+suffix-strip pipeline; no jq.
+detect_pause_state() {
+    local loop_dir="$OUT_DIR/loop"
+    [[ -d "$loop_dir" ]] || return 1
+    local req n latest_n=""
+    # Order doesn't matter; we just need the highest pending N.
+    for req in "$loop_dir"/iter_*_request.json; do
+        [[ -f "$req" ]] || continue
+        n="$(basename "$req" .json)"  # iter_N_request
+        n="${n#iter_}"
+        n="${n%_request}"
+        [[ "$n" =~ ^[0-9]+$ ]] || continue
+        if [[ ! -f "$loop_dir/iter_${n}_decision.json" ]]; then
+            if [[ -z "$latest_n" ]] || (( n > latest_n )); then
+                latest_n="$n"
+            fi
+        fi
+    done
+    if [[ -n "$latest_n" ]]; then
+        printf '%s\n' "$latest_n"
+        return 0
+    fi
+    return 1
 }
 
 # Atomic status write — temp + mv (rename). Survives partial writes; readers
@@ -500,6 +554,17 @@ while true; do
     fi
 
     if [[ "$exit_code" -eq 0 ]]; then
+        # Distinguish pipeline-complete from agent_file_protocol pause
+        # (#193 bug 3). A pending iter_N_request.json without a matching
+        # iter_N_decision.json means the runner paused and is awaiting an
+        # agent decision — the wrapper exits clean, but the orchestrator
+        # must write the decision and re-invoke with --resume to continue.
+        pause_at="$(detect_pause_state || true)"
+        if [[ -n "$pause_at" ]]; then
+            write_status "paused_awaiting_decision" "$CHILD_PID" "$attempt" "$STARTED_AT"
+            log_line "child paused at iter ${pause_at} awaiting decision (resume via --resume ${RUN_ID} after writing loop/iter_${pause_at}_decision.json)"
+            exit 0
+        fi
         write_status "exited_ok" "$CHILD_PID" "$attempt" "$STARTED_AT"
         log_line "child exited cleanly (exit 0) — done"
         exit 0
