@@ -4,7 +4,7 @@
 # Drives the wrapper against a tiny mock python child (no real gbdt run —
 # the wrapper exposes a WRAPPER_TEST_STUB_CMD hook for this). Each test
 # isolates itself under tests/gbdt/tmp/test_<name>_<pid>/ and asserts via
-# the atomic-written wrapper.status JSON.
+# the atomic-written .wrapper/status.json.
 #
 # Run directly: bash tests/gbdt/test_run_agent_loop_resumable.sh
 # Or via pytest: uv run pytest tests/gbdt/test_run_agent_loop_resumable.py
@@ -150,9 +150,9 @@ cleanup_tmpdir() {
     # Aggressively kill any lingering children from the test (idempotency
     # check would otherwise persist). Best-effort.
     local d="$1"
-    if [[ -f "$d/work/wrapper.pid" ]]; then
+    if [[ -f "$d/work/.wrapper/pid" ]]; then
         local pgid
-        pgid="$(cat "$d/work/wrapper.pid" 2>/dev/null || true)"
+        pgid="$(cat "$d/work/.wrapper/pid" 2>/dev/null || true)"
         if [[ -n "$pgid" ]] && kill -0 "$pgid" 2>/dev/null; then
             kill -KILL -"$pgid" 2>/dev/null || true
         fi
@@ -187,10 +187,10 @@ test_A_exits_ok() {
     local fail=0 detail=""
     if [[ "$rc" -ne 0 ]]; then
         fail=1; detail="wrapper exit=$rc, expected 0"
-    elif [[ ! -f "$out/wrapper.status" ]]; then
-        fail=1; detail="wrapper.status not written"
+    elif [[ ! -f "$out/.wrapper/status.json" ]]; then
+        fail=1; detail=".wrapper/status.json not written"
     else
-        local st; st="$(status_state "$out/wrapper.status")"
+        local st; st="$(status_state "$out/.wrapper/status.json")"
         if [[ "$st" != "exited_ok" ]]; then
             fail=1; detail="state=$st, expected exited_ok"
         fi
@@ -227,14 +227,14 @@ test_B_exits_fail_no_checkpoint() {
     local fail=0 detail=""
     if [[ "$rc" -eq 0 ]]; then
         fail=1; detail="wrapper exit=0, expected non-zero"
-    elif [[ ! -f "$out/wrapper.status" ]]; then
-        fail=1; detail="wrapper.status not written"
+    elif [[ ! -f "$out/.wrapper/status.json" ]]; then
+        fail=1; detail=".wrapper/status.json not written"
     else
-        local st; st="$(status_state "$out/wrapper.status")"
+        local st; st="$(status_state "$out/.wrapper/status.json")"
         if [[ "$st" != "exited_failed" ]]; then
             fail=1; detail="state=$st, expected exited_failed"
         fi
-        local at; at="$(status_attempt "$out/wrapper.status")"
+        local at; at="$(status_attempt "$out/.wrapper/status.json")"
         if [[ "$at" != "1" ]]; then
             fail=1; detail="$detail; attempt=$at, expected 1 (no restart)"
         fi
@@ -279,14 +279,14 @@ test_C_exits_fail_with_checkpoint() {
     local fail=0 detail=""
     if [[ "$rc" -eq 0 ]]; then
         fail=1; detail="wrapper exit=0, expected non-zero"
-    elif [[ ! -f "$out/wrapper.status" ]]; then
-        fail=1; detail="wrapper.status not written"
+    elif [[ ! -f "$out/.wrapper/status.json" ]]; then
+        fail=1; detail=".wrapper/status.json not written"
     else
-        local st; st="$(status_state "$out/wrapper.status")"
+        local st; st="$(status_state "$out/.wrapper/status.json")"
         if [[ "$st" != "max_retries_hit" ]]; then
             fail=1; detail="state=$st, expected max_retries_hit"
         fi
-        local at; at="$(status_attempt "$out/wrapper.status")"
+        local at; at="$(status_attempt "$out/.wrapper/status.json")"
         if [[ "$at" != "2" ]]; then
             fail=1; detail="$detail; final attempt=$at, expected 2"
         fi
@@ -303,7 +303,7 @@ test_C_exits_fail_with_checkpoint() {
 # Test D — heartbeat_stall: progress.log frozen → wrapper kills + restarts.
 # Use max_retries=1 so the wrapper does the kill, sees no retry slot,
 # emits heartbeat_stalled_killed then exited_failed (no checkpoint here).
-# Verify the heartbeat_stalled_killed state appears in wrapper.log even
+# Verify the heartbeat_stalled_killed state appears in .wrapper/log even
 # if the final state is different (it's a transient state).
 # ----------------------------------------------------------------------
 test_D_heartbeat_stall() {
@@ -334,14 +334,14 @@ test_D_heartbeat_stall() {
     local fail=0 detail=""
     if [[ "$rc" -eq 0 ]]; then
         fail=1; detail="wrapper exit=0, expected non-zero (was stall-killed)"
-    elif [[ ! -f "$out/wrapper.log" ]]; then
-        fail=1; detail="wrapper.log not written"
+    elif [[ ! -f "$out/.wrapper/log" ]]; then
+        fail=1; detail=".wrapper/log not written"
     else
-        if ! grep -q "heartbeat stalled" "$out/wrapper.log"; then
-            fail=1; detail="wrapper.log lacks 'heartbeat stalled' line"
+        if ! grep -q "heartbeat stalled" "$out/.wrapper/log"; then
+            fail=1; detail=".wrapper/log lacks 'heartbeat stalled' line"
         fi
         # Final state should be exited_failed (max_retries=0 → no restart).
-        local st; st="$(status_state "$out/wrapper.status")"
+        local st; st="$(status_state "$out/.wrapper/status.json")"
         if [[ "$st" != "exited_failed" ]]; then
             fail=1; detail="$detail; state=$st, expected exited_failed"
         fi
@@ -376,12 +376,12 @@ test_E_idempotent_double_launch() {
         >/dev/null 2>&1 &
     local first_wrapper_pid=$!
 
-    # Wait for wrapper.pid to appear and the recorded PID to be alive.
+    # Wait for .wrapper/pid to appear and the recorded PID to be alive.
     local waited=0
     while [[ "$waited" -lt 20 ]]; do
-        if [[ -f "$out/wrapper.pid" ]]; then
+        if [[ -f "$out/.wrapper/pid" ]]; then
             local child_pid
-            child_pid="$(cat "$out/wrapper.pid" 2>/dev/null || true)"
+            child_pid="$(cat "$out/.wrapper/pid" 2>/dev/null || true)"
             if [[ -n "$child_pid" ]] && kill -0 "$child_pid" 2>/dev/null; then
                 break
             fi
@@ -457,7 +457,7 @@ test_F_setsid_actually_detaches() {
     # Wait for the wrapper to launch its child.
     local waited=0
     while [[ "$waited" -lt 10 ]]; do
-        if [[ -f "$out/wrapper.pid" ]]; then
+        if [[ -f "$out/.wrapper/pid" ]]; then
             break
         fi
         sleep 1
@@ -535,14 +535,68 @@ test_G_stale_progress_log_not_killed() {
     local fail=0 detail=""
     if [[ "$rc" -ne 0 ]]; then
         fail=1; detail="wrapper exit=$rc, expected 0 (child should have exited cleanly)"
-    elif [[ ! -f "$out/wrapper.log" ]]; then
-        fail=1; detail="wrapper.log not written"
-    elif grep -q "heartbeat stalled" "$out/wrapper.log"; then
+    elif [[ ! -f "$out/.wrapper/log" ]]; then
+        fail=1; detail=".wrapper/log not written"
+    elif grep -q "heartbeat stalled" "$out/.wrapper/log"; then
         fail=1; detail="wrapper killed child on stale-mtime — bug-1 fix regressed"
     else
-        local st; st="$(status_state "$out/wrapper.status")"
+        local st; st="$(status_state "$out/.wrapper/status.json")"
         if [[ "$st" != "exited_ok" ]]; then
             fail=1; detail="state=$st, expected exited_ok"
+        fi
+    fi
+    cleanup_tmpdir "$d"
+    record_result "$name" "$fail" "$detail"
+}
+
+# ----------------------------------------------------------------------
+# Test H — sidecars_under_dotwrapper: wrapper state files MUST live in
+# <out-dir>/.wrapper/ (not directly under out-dir), so the runner's
+# emptiness check (which filters dotfile entries) does not refuse to
+# start on a fresh launch without --overwrite. Regression for #193 bug 2.
+# ----------------------------------------------------------------------
+test_H_sidecars_under_dotwrapper() {
+    local name="H_sidecars_under_dotwrapper"
+    local d
+    d="$(make_tmpdir "$name")"
+    local spec="$d/spec.yaml"
+    echo "target: {universe: x}" > "$spec"
+    local stub
+    stub="$(make_stub exit_ok "$d")"
+    local out="$d/work"
+    local rc=0
+
+    STUB_SLEEP=1 \
+    WRAPPER_TEST_STUB_CMD="$stub" \
+    WRAPPER_TEST_SKIP_DISK_CHECK=1 \
+    WRAPPER_MONITOR_INTERVAL_SECS=1 \
+        bash "$WRAPPER" \
+            --spec "$spec" \
+            --out-dir "$out" \
+            --max-retries 0 \
+            --heartbeat-stall-secs 0 \
+        || rc=$?
+
+    local fail=0 detail=""
+    if [[ "$rc" -ne 0 ]]; then
+        fail=1; detail="wrapper exit=$rc, expected 0"
+    elif [[ ! -d "$out/.wrapper" ]]; then
+        fail=1; detail="$out/.wrapper directory not created"
+    elif [[ ! -f "$out/.wrapper/pid" ]]; then
+        fail=1; detail=".wrapper/pid not written"
+    elif [[ ! -f "$out/.wrapper/status.json" ]]; then
+        fail=1; detail=".wrapper/status.json not written"
+    elif [[ ! -f "$out/.wrapper/log" ]]; then
+        fail=1; detail=".wrapper/log not written"
+    else
+        # Critical: top-level out_dir must NOT contain any non-dot entries
+        # from the wrapper itself. Any visible entry would re-trip the
+        # runner's emptiness check.
+        local visible
+        visible="$(find "$out" -maxdepth 1 -mindepth 1 ! -name '.*' -printf '%f\n' 2>/dev/null)"
+        if [[ -n "$visible" ]]; then
+            fail=1
+            detail="out-dir top level contains non-dot entries: $(echo "$visible" | tr '\n' ',')"
         fi
     fi
     cleanup_tmpdir "$d"
@@ -565,6 +619,7 @@ test_D_heartbeat_stall
 test_E_idempotent_double_launch
 test_F_setsid_actually_detaches
 test_G_stale_progress_log_not_killed
+test_H_sidecars_under_dotwrapper
 
 echo
 echo "==== Summary ===="
