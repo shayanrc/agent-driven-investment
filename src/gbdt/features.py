@@ -121,9 +121,18 @@ def index_return_N(index_df: pd.DataFrame, panel: pd.DataFrame,
 
 
 def rel_strength_N(panel: pd.DataFrame, index_df: pd.DataFrame,
-                    lookbacks: Iterable[int] = DEFAULT_LOOKBACKS) -> pd.DataFrame:
-    sr = stock_return_N(panel, lookbacks)
-    ir = index_return_N(index_df, panel, lookbacks)
+                    lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
+                    *,
+                    sr: pd.DataFrame | None = None,
+                    ir: pd.DataFrame | None = None) -> pd.DataFrame:
+    """``sr`` / ``ir`` may be supplied by callers that have already computed
+    F2 (``stock_return_N``) / F1 (``index_return_N``). Default-None preserves
+    the standalone-call contract.
+    """
+    if sr is None:
+        sr = stock_return_N(panel, lookbacks)
+    if ir is None:
+        ir = index_return_N(index_df, panel, lookbacks)
     out = {}
     for N in lookbacks:
         out[f"rel_strength_{N}"] = sr[f"stock_return_{N}"] - ir[f"index_return_{N}"]
@@ -417,8 +426,14 @@ def sma_distance_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
 
 
 def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
-                annualization: int = 250) -> pd.DataFrame:
-    rvol = realized_vol_N(panel, lookbacks, annualization=annualization)
+                annualization: int = 250,
+                *,
+                rvol: pd.DataFrame | None = None) -> pd.DataFrame:
+    """``rvol`` may be supplied by callers that have already computed F4
+    (``realized_vol_N``). Default-None preserves the standalone-call contract.
+    """
+    if rvol is None:
+        rvol = realized_vol_N(panel, lookbacks, annualization=annualization)
     out = {}
     for N in lookbacks:
         v = rvol[f"realized_vol_{N}"]
@@ -441,9 +456,18 @@ def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
 
 
 def cross_sectional_rank_z(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
-                             annualization: int = 250) -> pd.DataFrame:
-    sr = stock_return_N(panel, lookbacks)
-    rv = realized_vol_N(panel, lookbacks, annualization=annualization)
+                             annualization: int = 250,
+                             *,
+                             sr: pd.DataFrame | None = None,
+                             rv: pd.DataFrame | None = None) -> pd.DataFrame:
+    """``sr`` / ``rv`` may be supplied by callers that have already computed
+    F2 (``stock_return_N``) / F4 (``realized_vol_N``). Default-None preserves
+    the standalone-call contract.
+    """
+    if sr is None:
+        sr = stock_return_N(panel, lookbacks)
+    if rv is None:
+        rv = realized_vol_N(panel, lookbacks, annualization=annualization)
     out = {}
     for N in lookbacks:
         for src_col, prefix in (
@@ -498,10 +522,17 @@ def calendar_features(panel: pd.DataFrame) -> pd.DataFrame:
 
 
 def f16_underlying(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
-                    annualization: int = 250) -> pd.DataFrame:
-    """The 12 native F16 z-scores (6 stock_return_zscore + 6 realized_vol_zscore)."""
+                    annualization: int = 250,
+                    *,
+                    rvol: pd.DataFrame | None = None) -> pd.DataFrame:
+    """The 12 native F16 z-scores (6 stock_return_zscore + 6 realized_vol_zscore).
+
+    ``rvol`` may be supplied by callers that have already computed F4
+    (``realized_vol_N``). Default-None preserves the standalone-call contract.
+    """
     close = _close(panel)
-    rvol = realized_vol_N(panel, lookbacks, annualization=annualization)
+    if rvol is None:
+        rvol = realized_vol_N(panel, lookbacks, annualization=annualization)
     out = {}
     for N in lookbacks:
         # Guard: prior close of 0 → NaN, mirroring stock_return_N (#182).
@@ -681,6 +712,16 @@ def build_feature_matrix(
 
     pieces: list[pd.DataFrame] = []
 
+    # Holds completed family results so later families can reuse upstream
+    # computes (F3 ← F1+F2; F13 ← F4; F14 ← F2+F4; F16 ← F4+F7+F14) instead
+    # of recomputing them. F7 + F4 + cross_sectional_rank_z + realized_vol
+    # are the heavy hitters on sp500 (3.6M rows × 6 lookbacks). When a
+    # selected lambda fires, ``_ALL_FAMILIES`` ordering guarantees its
+    # dependencies are already in ``computed``; if a dependency family is
+    # de-selected, the ``.get()`` returns ``None`` and the helper falls
+    # back to its standalone codepath.
+    computed: dict[str, pd.DataFrame] = {}
+
     # Build the (family, callable) plan so progress logging walks a
     # known total. ``_ALL_FAMILIES`` is the canonical order; preserving it
     # keeps the log lines deterministic across runs.
@@ -690,7 +731,10 @@ def build_feature_matrix(
     if "F2" in sel:
         plan.append(("F2", lambda: stock_return_N(panel, lookbacks)))
     if "F3" in sel:
-        plan.append(("F3", lambda: rel_strength_N(panel, index_df, lookbacks)))
+        plan.append(("F3", lambda: rel_strength_N(
+            panel, index_df, lookbacks,
+            sr=computed.get("F2"), ir=computed.get("F1"),
+        )))
     if "F4" in sel:
         plan.append(("F4", lambda: realized_vol_N(panel, lookbacks, annualization)))
     if "F5" in sel:
@@ -713,20 +757,21 @@ def build_feature_matrix(
     if "F12" in sel:
         plan.append(("F12", lambda: sma_distance_N(panel, lookbacks)))
     if "F13" in sel:
-        plan.append(("F13", lambda: vol_regime(panel, lookbacks, annualization)))
+        plan.append(("F13", lambda: vol_regime(
+            panel, lookbacks, annualization, rvol=computed.get("F4"),
+        )))
     if "F14" in sel:
-        plan.append(("F14", lambda: cross_sectional_rank_z(panel, lookbacks, annualization)))
+        plan.append(("F14", lambda: cross_sectional_rank_z(
+            panel, lookbacks, annualization,
+            sr=computed.get("F2"), rv=computed.get("F4"),
+        )))
     if "F15" in sel:
         plan.append(("F15", lambda: calendar_features(panel)))
-    # Holds completed family results so F16 can reuse F7 + F14 instead of
-    # recomputing them. F7 is the heavy hitter — ~137 min on sp500 (3.6M rows
-    # × 6 lookbacks); without reuse F16 doubled the per-cell features cost.
-    # If F7/F14 aren't selected the dict lookups return None and
-    # f16_meta_underlying_columns falls back to its standalone codepath.
-    computed: dict[str, pd.DataFrame] = {}
     if "F16" in sel:
         def _build_f16() -> pd.DataFrame:
-            f16_nat = f16_underlying(panel, lookbacks, annualization)
+            f16_nat = f16_underlying(
+                panel, lookbacks, annualization, rvol=computed.get("F4"),
+            )
             underlyings = f16_meta_underlying_columns(
                 panel, lookbacks, annualization,
                 f16_nat=f16_nat,
