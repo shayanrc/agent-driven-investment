@@ -260,6 +260,111 @@ def test_build_feature_matrix_does_not_recompute_f7_f14_for_f16(monkeypatch):
     assert n_xs[0] == 1, f"cross_sectional_rank_z fired {n_xs[0]} times; expected 1 (F16 must reuse F14)"
 
 
+# ---------------------------------------------------------------------------
+# Inter-family reuse (patches B-E): byte-equivalence of standalone vs threaded
+# helpers, plus an aggregate spy-count test for F1/F2/F4 dependencies.
+# ---------------------------------------------------------------------------
+
+
+def test_rel_strength_threaded_kwargs_equal_standalone():
+    """F3 rel_strength_N — threading pre-computed sr (F2) + ir (F1) must yield
+    a result byte-identical to the standalone call. Guards patch E."""
+    panel, idx = _synth_panel_with_index(220, 3, seed=21)
+    standalone = F.rel_strength_N(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS)
+    pre_sr = F.stock_return_N(panel, F.DEFAULT_LOOKBACKS)
+    pre_ir = F.index_return_N(idx, panel, F.DEFAULT_LOOKBACKS)
+    threaded = F.rel_strength_N(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,
+                                 sr=pre_sr, ir=pre_ir)
+    pd.testing.assert_frame_equal(standalone, threaded)
+
+
+def test_vol_regime_threaded_kwargs_equal_standalone():
+    """F13 vol_regime — threading pre-computed rvol (F4) must yield a result
+    byte-identical to the standalone call. Guards patch B."""
+    panel, _ = _synth_panel_with_index(220, 3, seed=22)
+    standalone = F.vol_regime(panel, lookbacks=F.DEFAULT_LOOKBACKS, annualization=250)
+    pre_rvol = F.realized_vol_N(panel, F.DEFAULT_LOOKBACKS, annualization=250)
+    threaded = F.vol_regime(panel, lookbacks=F.DEFAULT_LOOKBACKS, annualization=250,
+                             rvol=pre_rvol)
+    pd.testing.assert_frame_equal(standalone, threaded)
+
+
+def test_cross_sectional_rank_z_threaded_kwargs_equal_standalone():
+    """F14 cross_sectional_rank_z — threading pre-computed sr (F2) + rv (F4)
+    must yield a result byte-identical to the standalone call. Guards patch C."""
+    panel, _ = _synth_panel_with_index(220, 3, seed=23)
+    standalone = F.cross_sectional_rank_z(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                           annualization=250)
+    pre_sr = F.stock_return_N(panel, F.DEFAULT_LOOKBACKS)
+    pre_rv = F.realized_vol_N(panel, F.DEFAULT_LOOKBACKS, annualization=250)
+    threaded = F.cross_sectional_rank_z(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                         annualization=250, sr=pre_sr, rv=pre_rv)
+    pd.testing.assert_frame_equal(standalone, threaded)
+
+
+def test_f16_underlying_threaded_kwargs_equal_standalone():
+    """F16 f16_underlying — threading pre-computed rvol (F4) must yield a
+    result byte-identical to the standalone call. Guards patch D."""
+    panel, _ = _synth_panel_with_index(220, 3, seed=24)
+    standalone = F.f16_underlying(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                    annualization=250)
+    pre_rvol = F.realized_vol_N(panel, F.DEFAULT_LOOKBACKS, annualization=250)
+    threaded = F.f16_underlying(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                 annualization=250, rvol=pre_rvol)
+    pd.testing.assert_frame_equal(standalone, threaded)
+
+
+def test_build_feature_matrix_does_not_recompute_F1_F2_F4_dependencies(monkeypatch):
+    """When all families are selected, build_feature_matrix must reuse F1's
+    index_return_N, F2's stock_return_N, and F4's realized_vol_N inside
+    downstream families (F3 ← F1+F2; F13 ← F4; F14 ← F2+F4; F16 ← F4 via
+    f16_underlying). Each underlying call must fire exactly once. Prevents
+    regression of the patch-B/C/D/E redundancies that cost ~15-25 min/sp500-cell.
+    """
+    from gbdt import features as F_mod
+    panel, idx = _synth_panel_with_index(220, 3, seed=25)
+
+    counters = {"stock_return_N": 0, "realized_vol_N": 0, "index_return_N": 0}
+    real_sr = F_mod.stock_return_N
+    real_rv = F_mod.realized_vol_N
+    real_ir = F_mod.index_return_N
+
+    def spy_sr(*a, **kw):
+        counters["stock_return_N"] += 1
+        return real_sr(*a, **kw)
+
+    def spy_rv(*a, **kw):
+        counters["realized_vol_N"] += 1
+        return real_rv(*a, **kw)
+
+    def spy_ir(*a, **kw):
+        counters["index_return_N"] += 1
+        return real_ir(*a, **kw)
+
+    monkeypatch.setattr(F_mod, "stock_return_N", spy_sr)
+    monkeypatch.setattr(F_mod, "realized_vol_N", spy_rv)
+    monkeypatch.setattr(F_mod, "index_return_N", spy_ir)
+
+    F_mod.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,
+                                annualization=250, families="all")
+
+    # stock_return_N: F2 + (F3 reuses) + (F14 reuses) = 1
+    assert counters["stock_return_N"] == 1, (
+        f"stock_return_N fired {counters['stock_return_N']} times; "
+        "expected 1 (F3 + F14 must reuse F2)"
+    )
+    # realized_vol_N: F4 + (F13 reuses) + (F14 reuses) + (F16 reuses via f16_underlying) = 1
+    assert counters["realized_vol_N"] == 1, (
+        f"realized_vol_N fired {counters['realized_vol_N']} times; "
+        "expected 1 (F13 + F14 + F16/f16_underlying must reuse F4)"
+    )
+    # index_return_N: F1 + (F3 reuses) = 1
+    assert counters["index_return_N"] == 1, (
+        f"index_return_N fired {counters['index_return_N']} times; "
+        "expected 1 (F3 must reuse F1)"
+    )
+
+
 def test_build_feature_matrix_exclude_glob():
     panel, idx = _synth_panel_with_index(220, 3, seed=7)
     mat = F.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,
