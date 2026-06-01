@@ -26,10 +26,15 @@
 # (cold-features build on r1k ~ 3h is one heartbeat-emitting phase but
 # heartbeat fires regardless of progress, so a 30-min stall is unambiguous).
 #
-# State is exposed via:
-#   <out-dir>/wrapper.pid     — child PGID (kill -TERM -$(cat ...) targets it)
-#   <out-dir>/wrapper.status  — atomic-written JSON with current state
-#   <out-dir>/wrapper.log     — append-only wrapper + child stdout/stderr
+# State is exposed via a dotfile namespace inside out-dir so it does NOT
+# contaminate the runner's non-empty-dir check on fresh launches (#193 bug 2):
+#   <out-dir>/.wrapper/pid          — child PGID (kill -TERM -$(cat ...) targets it)
+#   <out-dir>/.wrapper/status.json  — atomic-written JSON with current state
+#   <out-dir>/.wrapper/log          — append-only wrapper + child stdout/stderr
+#
+# (Pre-#193 versions wrote <out-dir>/wrapper.{pid,status,log} directly under
+# out-dir — visible to the runner's emptiness check, forcing callers to pass
+# --overwrite on first launch even though nothing else was in out-dir yet.)
 #
 # Idempotent on relaunch: if a prior wrapper for the same --out-dir is still
 # alive, the second invocation refuses with a clear error.
@@ -47,9 +52,11 @@ Usage: run_agent_loop_resumable.sh --spec <path> --out-dir <path> [OPTIONS] [-- 
 Required:
   --spec <path>                  Path to the gbdt experiment YAML spec.
   --out-dir <path>               Artifact dir for this cell. The wrapper writes
-                                 wrapper.pid / wrapper.status / wrapper.log here
-                                 alongside the experiment's loop/, predictions/,
-                                 metrics.json, etc.
+                                 its own .wrapper/{pid,status.json,log} sidecar
+                                 dir inside out-dir, alongside the experiment's
+                                 loop/, predictions/, metrics.json, etc. The
+                                 .wrapper/ namespace is invisible to the
+                                 runner's emptiness check.
 
 Optional:
   --data-root <path>             Passed through to `python -m gbdt` as the
@@ -67,7 +74,7 @@ Optional:
                                  older than N seconds. Default 1800 (30min).
                                  Set 0 to disable the watchdog.
   --log-file <path>              Wrapper + child output log. Default
-                                 <out-dir>/wrapper.log.
+                                 <out-dir>/.wrapper/log.
   --run-id <id>                  Override the run-id used for --resume.
                                  Default is basename(spec without .yaml).
   --no-overwrite                 Do NOT pass --overwrite to the runner on the
@@ -180,9 +187,14 @@ if ! [[ "$HEARTBEAT_STALL_SECS" =~ ^[0-9]+$ ]]; then
     exit 2
 fi
 
+# Sidecar state lives in a dotfile namespace (#193 bug 2): the runner's
+# emptiness check filters dotfile entries, so .wrapper/ does not block
+# fresh-launch start-up.
+WRAPPER_STATE_DIR="$OUT_DIR/.wrapper"
+
 # Defaults that depend on parsed values.
 if [[ -z "$LOG_FILE" ]]; then
-    LOG_FILE="$OUT_DIR/wrapper.log"
+    LOG_FILE="$WRAPPER_STATE_DIR/log"
 fi
 
 # RUN_ID derives from the spec filename stem (matches gbdt.__main__'s
@@ -195,8 +207,8 @@ else
     RUN_ID="${RUN_ID%.yml}"
 fi
 
-PID_FILE="$OUT_DIR/wrapper.pid"
-STATUS_FILE="$OUT_DIR/wrapper.status"
+PID_FILE="$WRAPPER_STATE_DIR/pid"
+STATUS_FILE="$WRAPPER_STATE_DIR/status.json"
 PROGRESS_LOG="$OUT_DIR/loop/progress.log"
 CHECKPOINT_PRIMARY="$OUT_DIR/loop/checkpoint.json"
 CHECKPOINT_FALLBACK="$OUT_DIR/checkpoint.json"
@@ -269,7 +281,7 @@ EOF
 # Idempotency guard: refuse to start a second wrapper for the same out-dir
 # if a prior wrapper's recorded PGID is alive AND its status is "running"
 # (or "starting" / "restarting"). The user can force-kill via
-# `kill -TERM -$(cat .../wrapper.pid)`.
+# `kill -TERM -$(cat <out-dir>/.wrapper/pid)`.
 check_idempotent() {
     if [[ ! -f "$STATUS_FILE" ]] || [[ ! -f "$PID_FILE" ]]; then
         return 0
@@ -437,6 +449,10 @@ monitor_child() {
 
 check_idempotent
 
+# Sidecar state dir must exist before write_status / log_line are called.
+# When the user passes --log-file pointing elsewhere, this also creates
+# WRAPPER_STATE_DIR (needed for PID_FILE + STATUS_FILE which always live in it).
+mkdir -p "$WRAPPER_STATE_DIR"
 mkdir -p "$(dirname "$LOG_FILE")"
 : > "$LOG_FILE.startmark" 2>/dev/null || true
 rm -f "$LOG_FILE.startmark"

@@ -221,6 +221,21 @@ def _strip_internal_keys(spec: dict) -> dict:
     )}
 
 
+def _has_runner_artifacts(out_dir: Path) -> bool:
+    """Return True if ``out_dir`` contains anything the runner would treat
+    as a prior artifact (so a fresh launch without ``--overwrite`` must
+    refuse to clobber it).
+
+    Dotfile entries are ignored: they belong to supervising tools (e.g.
+    the ``.wrapper/`` sidecar dir written by
+    ``scripts/gbdt/run_agent_loop_resumable.sh`` post-#193 bug 2), not to
+    the runner. Treating a dir as "empty" when only dotfiles are present
+    lets the wrapper write its state before invoking the runner without
+    forcing callers to pass ``--overwrite``.
+    """
+    return any(p for p in out_dir.iterdir() if not p.name.startswith("."))
+
+
 def _project_test_rows(
     panel: pd.DataFrame,
     *,
@@ -671,7 +686,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     if (
         resume is None
         and out_dir.exists()
-        and any(out_dir.iterdir())
+        and _has_runner_artifacts(out_dir)
         and not overwrite
     ):
         print(f"[experiment] artifact dir already exists at {out_dir}", file=sys.stderr)
