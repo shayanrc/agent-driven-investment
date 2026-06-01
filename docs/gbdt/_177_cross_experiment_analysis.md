@@ -141,20 +141,20 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nasdaq100_up_10pct_5d_dd5pct | 8740 | 7.1% | 0.768 | 0.278 | 0.293 | 0.316 | 0.445 | 0.601 |
-| nasdaq100_up_10pct_10d_dd5pct | 8280 | 15.2% | 0.657 | 0.436 | 0.457 | 0.435 | 0.444 | 0.521 |
-| nasdaq100_up_10pct_25d_dd5pct | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
-| nasdaq100_up_20pct_5d_dd10pct | 8740 | 1.3% | 0.756 | 0.200 | 0.263 | 0.321 | 0.479 | 0.577 |
+| nasdaq100_up_10pct_5d_dd5pct | 8740 | 7.1% | 0.768 | 0.278 | 0.304 | 0.369 | 0.456 | 0.607 |
+| nasdaq100_up_10pct_10d_dd5pct | 8280 | 15.2% | 0.657 | 0.479 | 0.488 | 0.470 | 0.462 | 0.536 |
+| nasdaq100_up_10pct_25d_dd5pct | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.538 | 0.507 | 0.508 |
+| nasdaq100_up_20pct_5d_dd10pct | 8740 | 1.3% | 0.756 | 0.156 | 0.226 | 0.343 | 0.473 | 0.589 |
 | nasdaq100_up_20pct_10d_dd10pct | 8280 | 4.3% | 0.781 | 0.197 | 0.204 | 0.280 | 0.492 | 0.670 |
-| nasdaq100_up_40pct_10d_dd20pct | 8280 | 0.7% | 0.751 | 0.061 | 0.076 | 0.147 | 0.483 | 0.549 |
-| sp500_up_10pct_5d_dd5pct | 46170 | 4.3% | 0.781 | 0.274 | 0.309 | 0.320 | 0.324 | 0.331 |
-| sp500_up_10pct_10d_dd5pct | 43740 | 11.3% | 0.711 | 0.467 | 0.459 | 0.462 | 0.440 | 0.405 |
-| sp500_up_20pct_5d_dd10pct | 46170 | 0.6% | 0.846 | 0.195 | 0.142 | 0.180 | 0.318 | 0.419 |
-| sp500_up_20pct_10d_dd10pct | 43740 | 2.3% | 0.835 | 0.270 | 0.285 | 0.261 | 0.291 | 0.391 |
+| nasdaq100_up_40pct_10d_dd20pct | 8280 | 0.7% | 0.751 | 0.030 | 0.111 | 0.195 | 0.488 | 0.539 |
+| sp500_up_10pct_5d_dd5pct | 46170 | 4.3% | 0.781 | 0.284 | 0.309 | 0.339 | 0.336 | 0.333 |
+| sp500_up_10pct_10d_dd5pct | 43740 | 11.3% | 0.711 | 0.489 | 0.474 | 0.464 | 0.433 | 0.413 |
+| sp500_up_20pct_5d_dd10pct | 46170 | 0.6% | 0.846 | 0.220 | 0.140 | 0.161 | 0.291 | 0.412 |
+| sp500_up_20pct_10d_dd10pct | 43740 | 2.3% | 0.835 | 0.382 | 0.260 | 0.252 | 0.313 | 0.397 |
 | russell1000_up_10pct_5d_dd5pct | 84455 | 5.0% | 0.762 | 0.263 | 0.260 | 0.274 | 0.236 | 0.237 |
-| nifty500_up_30pct_50d_dd15pct (standalone) | 18800 | 5.7% | 0.715 | 0.431 | 0.275 | 0.220 | 0.202 | 0.202 |
-| nifty50_up_10pct_25d_dd5pct (standalone, `_138`-C/`_174`) | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
-| sp500_up_10pct_25d_dd5pct (standalone, `_138`-B) | 36450 | 26.4% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
-| nifty100_up_10pct_25d_dd5pct (standalone, `_138`-D) | 3525 | 18.8% | 0.689 | 0.239 | 0.235 | 0.246 | 0.349 | 0.503 |
+| nifty500_up_30pct_50d_dd15pct (standalone) | 18800 | 5.7% | 0.715 | 0.431 | 0.242 | 0.231 | 0.213 | 0.199 |
+| nifty50_up_10pct_25d_dd5pct (standalone, `_138`-C/`_174`) | 3450 | 17.9% | 0.733 | 0.257 | 0.252 | 0.294 | 0.368 | 0.607 |
+| sp500_up_10pct_25d_dd5pct (standalone, `_138`-B) | 36450 | 26.4% | 0.590 | 0.333 | 0.427 | 0.421 | 0.449 | 0.426 |
+| nifty100_up_10pct_25d_dd5pct (standalone, `_138`-D) | 3525 | 18.8% | 0.689 | 0.225 | 0.268 | 0.347 | 0.400 | 0.509 |
 
 The canonical CSV does not carry the `nasdaq100_up_10pct_100d_dd5pct` cell (the no-test-window 100d cell referenced in the body master table) — the cell completed feature build but the H=100 walk-forward ate the test split, leaving no `predictions/test.csv`. All other body-referenced cells, including `_138`-D nifty100 H=25, are present above.

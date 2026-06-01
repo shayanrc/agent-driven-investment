@@ -123,9 +123,9 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nifty50_up_10pct_25d_dd5pct (CatBoost ref) | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
-| nifty50_up_10pct_25d_dd5pct_xgb_acceptance (XGBoost) | 3450 | 17.9% | 0.656 | 0.257 | 0.252 | 0.260 | 0.324 | 0.506 |
-| nasdaq100_up_10pct_25d_dd5pct (CatBoost ref) | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+| nifty50_up_10pct_25d_dd5pct (CatBoost ref) | 3450 | 17.9% | 0.733 | 0.257 | 0.252 | 0.294 | 0.368 | 0.607 |
+| nifty50_up_10pct_25d_dd5pct_xgb_acceptance (XGBoost) | 3450 | 17.9% | 0.656 | 0.257 | 0.271 | 0.297 | 0.275 | 0.615 |
+| nasdaq100_up_10pct_25d_dd5pct (CatBoost ref) | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.538 | 0.507 | 0.508 |
 
 The canonical CSV does not carry the original `..._xgb_repl` finalize artifacts; the closest in-CSV XGBoost run on the matched nifty50 cell is the `_xgb_acceptance` (invB / `_149`) cell, included here as the XGBoost-side reference. The nasdaq100 XGBoost A6 run is similarly absent from the canonical CSV; the CatBoost reference row is the most recent CSV-recorded snapshot of that cell.
 

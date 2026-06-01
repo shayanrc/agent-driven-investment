@@ -175,15 +175,15 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
-| sp500_up_10pct_25d_dd5pct | 36,450 | 26.4% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
-| nifty50_up_10pct_25d_dd5pct | 3,450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
-| nifty100_up_10pct_25d_dd5pct | 3,525 | 18.8% | 0.689 | 0.239 | 0.235 | 0.246 | 0.349 | 0.503 |
+| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.538 | 0.507 | 0.508 |
+| sp500_up_10pct_25d_dd5pct | 36,450 | 26.4% | 0.590 | 0.333 | 0.427 | 0.421 | 0.449 | 0.426 |
+| nifty50_up_10pct_25d_dd5pct | 3,450 | 17.9% | 0.733 | 0.257 | 0.252 | 0.294 | 0.368 | 0.607 |
+| nifty100_up_10pct_25d_dd5pct | 3,525 | 18.8% | 0.689 | 0.225 | 0.268 | 0.347 | 0.400 | 0.509 |
 
 The compound-rule classification holds under R-Precision@10 (lift vs base, in prose per CLAUDE.md convention):
 - **Cell A nasdaq (AUC 0.511, R-p@10 lift 1.86×)** — the original "hidden top-tail signal" finding. AUC band [0.45, 0.55] + R-p@10 lift > 1.5× ⇒ investigate, don't dismiss. Same verdict as the legacy memo.
-- **Cell B sp500 (AUC 0.590, R-p@10 lift 1.53×)** — AUC above the null band; discriminating cell. Same verdict.
-- **Cell C nifty50 (AUC 0.733, R-p@10 lift 1.61×)** — discriminating. Same verdict.
-- **Cell D nifty100 (AUC 0.689, R-p@10 lift 1.85×)** — discriminating. Same verdict.
+- **Cell B sp500 (AUC 0.590, R-p@10 lift 1.70×)** — AUC above the null band; discriminating cell. Same verdict.
+- **Cell C nifty50 (AUC 0.733, R-p@10 lift 2.06×)** — discriminating. Same verdict.
+- **Cell D nifty100 (AUC 0.689, R-p@10 lift 2.12×)** — discriminating. Same verdict.
 
 The body narrative's verdicts ("SIGNAL" on all 4 cells under different K mixes) stay intact; the R-Precision@K table just expresses them on the current canonical metric.

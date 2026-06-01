@@ -260,17 +260,17 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
 | nasdaq100_up_20pct_10d_dd10pct | 8,280 | 4.30% | 0.781 | 0.197 | 0.204 | 0.280 | 0.492 | 0.670 |
-| nasdaq100_up_10pct_5d_dd5pct | 8,740 | 7.14% | 0.768 | 0.278 | 0.293 | 0.316 | 0.445 | 0.601 |
-| nasdaq100_up_50pct_25d_dd25pct | 6,900 | 2.91% | 0.761 | 0.269 | 0.240 | 0.233 | 0.324 | 0.502 |
-| nasdaq100_up_20pct_5d_dd10pct | 8,740 | 1.29% | 0.756 | 0.200 | 0.263 | 0.321 | 0.479 | 0.577 |
-| nasdaq100_up_40pct_50d_dd20pct | 4,600 | 5.54% | 0.753 | 0.471 | 0.507 | 0.515 | 0.496 | 0.567 |
-| nasdaq100_up_40pct_10d_dd20pct | 8,280 | 0.72% | 0.751 | 0.061 | 0.076 | 0.147 | 0.483 | 0.549 |
-| nasdaq100_up_50pct_50d_dd25pct | 4,600 | 4.04% | 0.748 | 0.157 | 0.301 | 0.456 | 0.493 | 0.516 |
-| nasdaq100_up_40pct_25d_dd20pct | 6,900 | 4.26% | 0.724 | 0.107 | 0.182 | 0.180 | 0.368 | 0.439 |
-| nasdaq100_up_20pct_25d_dd10pct | 6,900 | 11.75% | 0.709 | 0.171 | 0.197 | 0.280 | 0.414 | 0.518 |
-| nasdaq100_up_20pct_50d_dd10pct | 4,600 | 14.02% | 0.665 | 0.451 | 0.255 | 0.278 | 0.277 | 0.369 |
-| nasdaq100_up_10pct_10d_dd5pct | 8,280 | 15.16% | 0.657 | 0.436 | 0.457 | 0.435 | 0.444 | 0.521 |
-| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.29% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
-| nasdaq100_up_10pct_50d_dd5pct | 4,600 | 26.52% | 0.475 | 0.471 | 0.438 | 0.451 | 0.469 | 0.487 |
+| nasdaq100_up_10pct_5d_dd5pct | 8,740 | 7.14% | 0.768 | 0.278 | 0.304 | 0.369 | 0.456 | 0.607 |
+| nasdaq100_up_50pct_25d_dd25pct | 6,900 | 2.91% | 0.761 | 0.308 | 0.247 | 0.243 | 0.359 | 0.502 |
+| nasdaq100_up_20pct_5d_dd10pct | 8,740 | 1.29% | 0.756 | 0.156 | 0.226 | 0.343 | 0.473 | 0.589 |
+| nasdaq100_up_40pct_50d_dd20pct | 4,600 | 5.54% | 0.753 | 0.549 | 0.513 | 0.519 | 0.503 | 0.567 |
+| nasdaq100_up_40pct_10d_dd20pct | 8,280 | 0.72% | 0.751 | 0.030 | 0.111 | 0.195 | 0.488 | 0.539 |
+| nasdaq100_up_50pct_50d_dd25pct | 4,600 | 4.04% | 0.748 | 0.235 | 0.268 | 0.465 | 0.495 | 0.513 |
+| nasdaq100_up_40pct_25d_dd20pct | 6,900 | 4.26% | 0.724 | 0.161 | 0.176 | 0.189 | 0.403 | 0.433 |
+| nasdaq100_up_20pct_25d_dd10pct | 6,900 | 11.75% | 0.709 | 0.158 | 0.224 | 0.302 | 0.433 | 0.524 |
+| nasdaq100_up_20pct_50d_dd10pct | 4,600 | 14.02% | 0.665 | 0.451 | 0.314 | 0.361 | 0.291 | 0.389 |
+| nasdaq100_up_10pct_10d_dd5pct | 8,280 | 15.16% | 0.657 | 0.479 | 0.488 | 0.470 | 0.462 | 0.536 |
+| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.29% | 0.511 | 0.537 | 0.526 | 0.538 | 0.507 | 0.508 |
+| nasdaq100_up_10pct_50d_dd5pct | 4,600 | 26.52% | 0.475 | 0.671 | 0.557 | 0.569 | 0.515 | 0.518 |
 
-Under R-Precision@K the body narrative classifications still hold qualitatively: the 11 "discriminate on test" cells all have R-p@10 lift > 1.5× over their base rate; the 2 "ambiguous on test" cells (+10%/25d and +10%/50d) have AUC in the null band and R-p@10 lift ≤ 1.86×, sitting near the compound-rule threshold. The +10%/25d cell with AUC 0.511 + R-p@10 lift 1.86× is the H=25 nasdaq cell of `_138` — same "hidden top-tail signal" classification under the current metric.
+Under R-Precision@K the body narrative classifications still hold qualitatively: the 11 "discriminate on test" cells all have R-p@10 lift > 1.5× over their base rate; the 2 "ambiguous on test" cells (+10%/25d and +10%/50d) have AUC in the null band and R-p@10 lift in the ~1.86–1.94× range, sitting near the compound-rule "hidden top-tail signal" threshold. The +10%/25d cell with AUC 0.511 + R-p@10 lift 1.86× is the H=25 nasdaq cell of `_138` — same "hidden top-tail signal" classification under the current metric.

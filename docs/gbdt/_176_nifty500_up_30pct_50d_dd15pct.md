@@ -94,6 +94,6 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nifty500_up_30pct_50d_dd15pct | 18800 | 5.7% | 0.715 | 0.431 | 0.275 | 0.220 | 0.202 | 0.202 |
+| nifty500_up_30pct_50d_dd15pct | 18800 | 5.7% | 0.715 | 0.431 | 0.242 | 0.231 | 0.213 | 0.199 |
 
 Cross-links: `[[project-r-precision-methodology]]`, `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (nifty50 single-universe comparator), `docs/gbdt/_138_h25_cross_market_combined.md` (H=25 cross-market corpus).

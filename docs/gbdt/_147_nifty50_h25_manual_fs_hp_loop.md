@@ -172,7 +172,7 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nifty50_up_10pct_25d_dd5pct | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
+| nifty50_up_10pct_25d_dd5pct | 3450 | 17.9% | 0.733 | 0.257 | 0.252 | 0.294 | 0.368 | 0.607 |
 
 The canonical CSV row tracks the iter-0 / all-279 baseline (the documented headline) — the iter-1..9 probes were val-only excursions and are not separate cells.
 

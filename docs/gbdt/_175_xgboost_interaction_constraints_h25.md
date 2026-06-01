@@ -91,7 +91,7 @@ Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the 
 
 | cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
 |---|---|---|---|---|---|---|---|---|
-| nifty50_up_10pct_25d_dd5pct_xgb_phase8 | 3450 | 17.9% | 0.639 | 0.186 | 0.200 | 0.218 | 0.273 | 0.465 |
+| nifty50_up_10pct_25d_dd5pct_xgb_phase8 | 3450 | 17.9% | 0.639 | 0.314 | 0.329 | 0.266 | 0.257 | 0.536 |
 | nifty50_up_10pct_25d_dd5pct_catboost_phase8 | 3450 | 17.9% | 0.729 | 0.171 | 0.205 | 0.213 | 0.328 | 0.559 |
 
 The canonical CSV carries the Phase-8 unconstrained finalize artifacts; the in-memo constrained vs unconstrained ablation tables stay anchored to the legacy weighted R-precision metric in the body.
