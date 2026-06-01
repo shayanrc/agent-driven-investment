@@ -365,6 +365,60 @@ def test_build_feature_matrix_does_not_recompute_F1_F2_F4_dependencies(monkeypat
     )
 
 
+def test_dollar_move_rank_raw_true_matches_raw_false():
+    """The raw=True rewrite of _dollar_move_rank_N must produce numerically
+    identical output to a raw=False reference. raw=True hands a numpy array
+    to the callback instead of building a Series per window; per-window math
+    is a scalar comparison + mean, so the two paths are mathematically
+    equivalent. Guards against silent regression of the win-A perf patch.
+    """
+    panel, _ = _synth_panel_with_index(180, 3, seed=21)
+    lookbacks = (5, 10, 20)
+    patched = F._dollar_move_rank_N(panel, lookbacks)
+
+    # Reference: replicate the pre-patch raw=False codepath inline.
+    close = panel["close"]
+    vol = panel["volume"].astype(float)
+    dm = close.diff().abs() * vol
+    reference = {}
+    for N in lookbacks:
+        reference[f"dollar_move_rank_{N}"] = F._per_ticker(
+            dm, lambda s, n=N: s.rolling(n, min_periods=n)
+                                .apply(lambda w: (w.iloc[-1] >= w).mean(), raw=False),
+        )
+
+    for N in lookbacks:
+        col = f"dollar_move_rank_{N}"
+        pd.testing.assert_series_equal(patched[col].rename(None),
+                                        reference[col].rename(None),
+                                        check_names=False)
+
+
+def test_vol_pct_raw_true_matches_raw_false():
+    """Same byte-equivalence check for vol_regime's vol_pct_{N} output —
+    raw=True numpy callback vs raw=False Series callback must agree.
+    """
+    panel, idx = _synth_panel_with_index(180, 3, seed=22)
+    lookbacks = (5, 20)
+    patched = F.vol_regime(panel, lookbacks=lookbacks, annualization=250)
+
+    # Reference: build realized_vol then walk vol_pct via raw=False.
+    rvol = F.realized_vol_N(panel, lookbacks, annualization=250)
+    reference_cols = {}
+    for N in lookbacks:
+        v = rvol[f"realized_vol_{N}"]
+        reference_cols[f"vol_pct_{N}"] = F._per_ticker(
+            v, lambda s, n=N: s.rolling(n, min_periods=n)
+                                .apply(lambda w: (w.iloc[-1] >= w).mean(), raw=False),
+        )
+
+    for N in lookbacks:
+        col = f"vol_pct_{N}"
+        pd.testing.assert_series_equal(patched[col].rename(None),
+                                        reference_cols[col].rename(None),
+                                        check_names=False)
+
+
 def test_build_feature_matrix_exclude_glob():
     panel, idx = _synth_panel_with_index(220, 3, seed=7)
     mat = F.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,

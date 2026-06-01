@@ -301,9 +301,14 @@ def _dollar_move_rank_N(panel: pd.DataFrame, lookbacks):
     dm = close.diff().abs() * vol
     out = {}
     for N in lookbacks:
+        # ``raw=True`` hands a numpy array to the callback instead of building
+        # a Series per window. Numerically identical (per-window math is a
+        # scalar comparison + mean), but the per-window Series construction
+        # cost dominated on wide panels — on sp500 (3.6M rows × 6 lookbacks)
+        # this single function is the largest contributor to F7's wall-clock.
         out[f"dollar_move_rank_{N}"] = _per_ticker(
             dm, lambda s, n=N: s.rolling(n, min_periods=n)
-                                .apply(lambda w: (w.iloc[-1] >= w).mean(), raw=False),
+                                .apply(lambda w: (w[-1] >= w).mean(), raw=True),
         )
     return out
 
@@ -443,9 +448,12 @@ def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
             v, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
         )
         out[f"vol_of_vol_{N}"] = _per_ticker(v, lambda s, n=N: s.rolling(n, min_periods=n).std())
+        # ``raw=True`` — see _dollar_move_rank_N for the rationale (same
+        # per-window scalar comparison + mean; numpy slice replaces per-window
+        # Series construction).
         out[f"vol_pct_{N}"] = _per_ticker(
             v, lambda s, n=N: s.rolling(n, min_periods=n)
-                                .apply(lambda w: (w.iloc[-1] >= w).mean(), raw=False),
+                                .apply(lambda w: (w[-1] >= w).mean(), raw=True),
         )
     return pd.DataFrame(out, index=panel.index)
 
