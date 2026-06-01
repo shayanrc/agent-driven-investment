@@ -1,5 +1,7 @@
 # nifty500 +30% / 50d / dd15% — H=50 broad-universe signal cell
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cell**: nifty500 UP +30% within 50 trading days, max_drawdown 15%.
 **Date**: 2026-05-29.
 **Branch**: `gbdt-exp-nifty500-30-50-dd15`.
@@ -85,5 +87,13 @@ The broad-universe angle is the interesting part: this cell's R-prec lift exceed
 - `model.cbm` + `calibration.pkl` are **not committed** (binaries, reproducible from spec + seed + data; matches the #78 convention); `_feature_matrix_cache.parquet` / `.key.json` are gitignored.
 - Weighted R-precision recomputed via `uv run python -m scripts.gbdt.compute_r_precision results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct/predictions/{eval,test}.csv`.
 - Machine-readable headline: `results/gbdt/data/_176_nifty500_up_30pct_50d_dd15pct_data.json`.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty500_up_30pct_50d_dd15pct | 18800 | 5.7% | 0.715 | 0.431 | 0.275 | 0.220 | 0.202 | 0.202 |
 
 Cross-links: `[[project-r-precision-methodology]]`, `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (nifty50 single-universe comparator), `docs/gbdt/_138_h25_cross_market_combined.md` (H=25 cross-market corpus).

@@ -1,67 +1,87 @@
 ---
 name: project-r-precision-methodology
-description: R-precision (per-day variable K) is the headline cross-cell metric for gbdt experiments. P@k as a secondary diagnostic MUST use min(R(d), k) denominator. Always report raw values + base rate, never lift columns in tables.
+description: R-Precision@K (per-day fixed K, macro-averaged) is the headline cross-cell metric for gbdt experiments. Renamed 2026-06-01 from the prior weighted variant. Compound (AUC, R-Precision@10 lift) null/signal rule + compute_r_precision.py.
 metadata:
   type: project
 ---
 
-When comparing gbdt experiment cells **across different universes/markets** (e.g. nasdaq100 vs nifty50 vs sp500), use weighted R-precision as the headline metric, not fixed-K P@k or AUC alone.
+When comparing gbdt experiment cells **across different universes/markets** (e.g. nasdaq100 vs nifty50 vs sp500), use **R-Precision@K** as the headline metric, not AUC alone.
 
-## What R-precision is
+## Definition — R-Precision@K (post-2026-06-01)
 
-For each day in the test (or eval) segment:
-- `R(d)` = number of actual positives that day
-- Sort items by `p_calibrated` descending (tie-break: `ticker` ascending, stable mergesort — matches the runner's per-day P@k convention)
-- Take the top R(d) items
-- `r_precision(d) = correct_picks / R(d)`
+Per-day fixed K, macro-averaged across days:
 
-Two aggregates:
-- **Mean unweighted**: `mean over days of r_precision(d)`
-- **Weighted** (preferred for cross-cell comparison): `sum(correct@R) / sum(R)` = global recall@R = global precision@R (they're equal when k=R per day)
+```
+R-Precision@K = (1 / Q) · Σ_{q=1..Q}  r_q / min(K, R_q)
+```
 
-## P@k (when reported as secondary diagnostic)
+where for each test day q:
+- `R_q` = number of actual positives that day (`y_true == 1`)
+- `r_q` = positives caught in the top-K picks on day q (sorted by `p_calibrated` descending, tie-break `ticker` ascending, stable mergesort — matches the runner's per-day P@k convention)
+- `Q` = number of days with `R_q > 0` (days with no positives are skipped — `min(K, 0)` is ill-defined and the day contributes no information)
+- `K` is a fixed integer; the **standard reporting K is `{1, 3, 5, 10, 20}`**.
 
-For each day:
-- Same sort + tie-break as R-precision
-- Take top k items
-- `p_at_k(d) = (positives in top k) / min(R(d), k)` — **the `min(R(d), k)` denominator is mandatory**
+Notes:
+- The denominator `min(K, R_q)` is what makes this **R-Precision** rather than plain P@K — on days where `R_q < K`, you can't catch more than `R_q` positives even in principle, so the achievable precision ceiling is `R_q / min(K, R_q) = 1`. Penalizing days with `R_q < K` for not catching `K` positives would mis-normalize on staggered panels.
+- The aggregation is **macro** (mean of per-day ratios) — each day gets equal weight. This matches the question "how reliable is the model on a typical day?"
 
-Two aggregates:
-- **Weighted** (preferred): `sum(positives_in_top_k) / sum(min(R(d), k))`
-- Mean unweighted: average of per-day values, skipping zero-denominator days
+## Relationship to the prior "weighted R-precision" (now legacy)
 
-## The `min(R(d), k)` denominator is mandatory — pre-2026-05-28 bug
+Pre-2026-06-01, the project used a single "weighted R-precision" headline computed as:
 
-Earlier P@k code (the original `src/gbdt/topk_diagnostics.py` + the original `scripts/gbdt/compute_r_precision.py` P@k path + the original H=25 memo's tables) used `denominator = min(k, n_tickers_in_day)` — count of picks actually made. On staggered panels where R(d) often falls below k, this dragged P@k down for reasons unrelated to model skill: a day with 1 ticker and 0 positives would still get hits=0, picks=1 in the aggregate, when R(d)=0 means there was nothing to find.
+```
+weighted R-precision = Σ_q (positives caught in top R_q) / Σ_q R_q  =  Σ_q r_q^{K=R_q} / Σ_q R_q
+```
 
-The correct denominator is `min(R(d), k)` — count of achievable positives. When R(d) ≥ k it equals k (standard P@k). When R(d) < k it equals R(d) (recall-at-R for that day). Aggregates as `sum(positives_in_top_k) / sum(min(R(d), k))`.
+— per-day **variable** K (always K = R(d)), with **micro** (sum/sum) aggregation. It's a different metric:
 
-**Concrete impact** of the bug on the H=25 cross-market memo (corrected 2026-05-28):
-- nifty50 test P@1 OLD: 0.119 (looked "anti-predictive" at 0.67× base). CORRECTED: 0.257 (1.44× base — actual signal).
-- nifty50 test P@10 OLD: 0.222. CORRECTED: 0.426 (since 124/151 test days had R(d) < 10).
-- The original memo's "NSE anti-predictive top / skip top 1-2 trading rule" was a bug artifact and is withdrawn.
-- sp500 was unaffected (R(d) mean = 128, always > k for our k ∈ {1,3,5,10}).
-- R-precision was always correct (denominator IS R(d) by definition).
+| Property | weighted R-precision (legacy) | R-Precision@K (current) |
+|---|---|---|
+| K per day | variable, K = R(d) | fixed (typically 1, 3, 5, 10, 20) |
+| Aggregation | micro (Σ/Σ) | macro (mean of per-day ratios) |
+| Per-day weight | proportional to R(d) | equal across days |
+| Interpretation | average picked-positive rate over Σ R(d) picks | average per-day precision-at-K |
 
-## Why R-precision is the cross-cell headline (not P@k)
+**They are NOT comparable as a single number** — high-R(d) days get heavy weight in the legacy metric and equal weight in the current one. For most cells the two land within ~30% of each other, but the direction of divergence depends on whether high-R(d) days are easier or harder for the model.
 
-- **Panel-invariant**: nasdaq100 has ~20 positives/day, nifty50 has ~9, sp500 has ~128. Fixed P@5 even with the correct denominator still depends on whether k is above or below R(d). R-precision adapts K per day, so cross-cell comparison is apples-to-apples.
-- **Matches trading semantics**: "pick R(d) items each day sized to the day's signal" is closer to a real strategy than "always pick exactly 5".
-- **Self-normalizing**: range [0,1]; baseline (random picker) = `R(d)/n(d)` = per-day base rate.
+**All numbers in memos written before 2026-06-01 use the legacy formula** unless explicitly updated. New memos use R-Precision@K. The post-hoc CSV at `results/gbdt/data/r_precision_at_k.csv` carries R-Precision@{1,3,5,10,20} for every cell that has predictions in `results/gbdt/experiments/*/predictions/test.csv`, allowing apples-to-apples comparison across the historical record.
 
-## Reporting conventions (project-wide, codified in CLAUDE.md)
+## The P@K denominator (still mandatory) — pre-2026-05-28 bug
 
-- Tables show **raw metric values + base rate**, NOT lift columns. Lift compresses two values into one and loses the scale.
-- Lift is OK in narrative prose ("nasdaq P@1 was 1.97× base rate").
-- Every memo that reports top-K metrics should include a **"how to read this + formulas" subsection** near the top so the reader knows the exact denominator and tie-break convention used.
-- All P@k computations (memo, runner, post-hoc scripts) MUST use `min(R(d), k)`. Anything else is a bug.
+Earlier P@K code used `denominator = min(k, n_tickers_in_day)` — count of picks actually made. This silently mis-normalized on staggered panels where R(d) < k for many days. The correct denominator is `min(R(d), k)` — count of achievable positives. Aggregates as `sum(positives_in_top_k) / sum(min(R(d), k))` for the micro form, or as the per-day-ratio mean for the macro form.
+
+**Concrete impact** on the H=25 cross-market memo (corrected 2026-05-28):
+- nifty50 test P@1 OLD: 0.119 (looked "anti-predictive"). CORRECTED: 0.257 (signal).
+- The "NSE anti-predictive top / skip top 1-2" rule was a bug artifact and was withdrawn.
+
+The R-Precision@K formula above already bakes in the correct denominator.
+
+## Why R-Precision@K is the cross-cell headline
+
+- **Trades off K precisely**: panel-invariance comes from K being a real trading-rule knob — "how many names per day do I want to size for?" Reporting at K ∈ {1, 3, 5, 10, 20} gives the full precision-vs-K curve, which is what a portfolio manager actually needs to set position sizing against.
+- **Day-equal weighting matches the implicit decision unit**: each trading day is one decision occasion. Macro averaging avoids overweighting calendar windows that happen to be positive-dense.
+- **Self-normalizing**: range [0, 1]; baseline (random picker) = base rate; **lift = R-Precision@K / base_rate** is reported in narrative prose.
+
+## Reporting conventions (codified in CLAUDE.md)
+
+- Tables show **raw R-Precision@K values + base rate**, NOT lift columns. Lift compresses two values into one and loses the scale.
+- Lift is OK in narrative prose ("nasdaq H=25 R-Precision@10 was 1.86× base rate").
+- Every memo that reports top-K metrics should include a **"how to read this + formulas" subsection** near the top so the reader knows the exact denominator, K values, and tie-break convention used.
+- Standard K set: `{1, 3, 5, 10, 20}`. Other K values may be added for specific analyses; never DROP a K from the standard set without justification.
+- P@K = R-Precision@K (same denominator). Use "R-Precision@K" consistently — the legacy "P@k" terminology survived in some code paths but the corrected formula is identical.
 
 ## Operational recipe
 
-Post-hoc computation script: `scripts/gbdt/compute_r_precision.py`
+Canonical post-hoc computation script: `scripts/gbdt/compute_r_precision.py`
 - Takes a `predictions/{test,eval}.csv` path
-- Emits R-precision (always correct) and P@k (with corrected denominator post-2026-05-28)
+- Emits R-Precision@K at K ∈ {1, 3, 5, 10, 20} (macro)
+- Also emits the legacy weighted R-precision for cross-walk to pre-2026-06-01 memos
 - Uses stable mergesort for tie-breaking (matches `src/gbdt/topk_diagnostics.py`)
+
+Canonical cell-by-cell registry: `results/gbdt/data/r_precision_at_k.csv` — all completed experiments × {R-Precision@1, @3, @5, @10, @20} + AUC + base_rate + Q_days. Regenerate after any new experiment via:
+```bash
+uv run python -m scripts.gbdt.regenerate_r_precision_at_k_csv
+```
 
 Cross-cell anti-predictive analysis: `scripts/gbdt/nse_anti_predictive_cross_cell.py`
 - Per-ticker pick/hit/anti-score
@@ -69,25 +89,30 @@ Cross-cell anti-predictive analysis: `scripts/gbdt/nse_anti_predictive_cross_cel
 
 ## Runner integration
 
-`src/gbdt/topk_diagnostics.py::compute_top_k_metrics` was fixed in the same PR as this memo update (2026-05-28). All metrics.json files from runs BEFORE that PR have the buggy `p_at_k` values — re-compute post-hoc via `compute_r_precision.py` rather than trusting the cached `metrics.json::segment_diagnostics::top_k_metrics::per_day::*::p_at_k` field for pre-fix runs.
+`src/gbdt/topk_diagnostics.py::compute_top_k_metrics` was fixed in PR #28 (2026-05-28) to use the correct `min(R(d), k)` denominator. metrics.json files from runs BEFORE that PR have buggy `p_at_k` values — re-compute post-hoc via `compute_r_precision.py` rather than trusting the cached field. Post-fix artifacts have `formula_version: "v2_min_R_d_k"`; pre-fix implicitly have `"v1_picks_made"` (buggy).
 
-`segment_diagnostics::top_k_metrics::per_day::*` includes a `formula_version` field after the fix: `"v2_min_R_d_k"` (corrected). Pre-fix artifacts implicitly have `"v1_picks_made"` (buggy).
+The runner emits the **micro-aggregated** P@K in `metrics.json::segment_diagnostics::top_k_metrics::per_day::*::p_at_k`. The R-Precision@K (macro) numbers in memos come from the post-hoc CSV, not from runner metrics.json. This will be unified in a future runner pass — for now, treat the post-hoc CSV as the source of truth for cross-cell R-Precision@K headlines.
 
-## The CLAUDE.md compound rule
+## The CLAUDE.md compound rule (post-rename)
 
 Per the gbdt § What-not-to-do section:
-- AUC ∈ [0.45, 0.55] **AND** weighted R-prec lift < 1.2× = null signal flagged
-- AUC ∈ [0.45, 0.55] **AND** weighted R-prec lift > 1.5× = **top-tail signal hidden by AUC** — investigate, don't dismiss
+- AUC ∈ [0.45, 0.55] **AND** R-Precision@10 lift < 1.2× = null signal flagged
+- AUC ∈ [0.45, 0.55] **AND** R-Precision@10 lift > 1.5× = **top-tail signal hidden by AUC** — investigate the prediction-extreme regime, don't dismiss
 
-The old "AUC ∈ [0.45, 0.55] = null" rule misclassified nasdaq H=25 (AUC=0.51, R-prec lift 1.46×) as null. Compound rule held up across all 4 H=25 cells in memo #138.
+The old "AUC ∈ [0.45, 0.55] = null" rule misclassified nasdaq H=25 (AUC=0.51, R-Precision@10 = 0.507 / base 0.273 = 1.86× lift) as null. Compound rule held up across all 4 H=25 cells in memo #138.
+
+**Threshold calibration caveat**: the 1.2× / 1.5× thresholds were originally calibrated against the legacy weighted R-precision metric. They remain serviceable for R-Precision@10 because the two metrics divergence is bounded (~30% typical), and the H=25 cells re-classify the same way under either metric. As more cells accumulate, the thresholds may want re-calibration — but the COMPOUND form (AUC + top-tail metric) is the durable lesson, not the specific threshold.
 
 ## Discovered + revised
 
-2026-05-27 — original H=25 cross-market memo surfaced the cross-cell P@k apples-to-oranges problem and established R-precision as the primary metric.
+2026-05-27 — original H=25 cross-market memo surfaced the cross-cell P@k apples-to-oranges problem and established R-precision (per-day variable K) as the primary metric.
 
 2026-05-28 — user-flagged that the P@k formula in the original memo (and in the runner) used the wrong denominator. Revision: corrected formula, withdrew the "NSE inverted" narrative, codified "raw not lift" reporting convention in CLAUDE.md, fixed runner code.
 
+2026-06-01 — user-flagged that the project's "weighted R-precision" (per-day variable K, micro aggregation) was NOT the metric they had been mentally computing. Renamed to R-Precision@K with fixed K and macro aggregation per the user's stated formula. All memos + CLAUDE.md updated; legacy weighted R-precision preserved for cross-walk.
+
 See:
-- `docs/gbdt/_138_h25_cross_market_combined.md` — the memo (post-correction).
+- `docs/gbdt/_138_h25_cross_market_combined.md` — the memo (post-correction, with R-Precision@K appended 2026-06-01).
+- `results/gbdt/data/r_precision_at_k.csv` — canonical cell registry.
 - `[[project-gbdt-uniqueness-weights]]` — related methodology fix (LdP §4.4 weighting).
-- `[[feedback-agent-pkill-antipattern]]` — process-coordination lesson from the same memo's experimental work.
+- `[[feedback-agent-pkill-antipattern]]` — process-coordination lesson from the H=25 memo's experimental work.

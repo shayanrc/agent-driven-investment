@@ -1,5 +1,7 @@
 # A6 — XGBoost backend replication gate (V1.2 Phase 7)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Verdict (overall): A6 PASS — both cells reproduce the CatBoost conclusions within tolerance. Phase 8 (interaction experiments) is unblocked.**
 
 **Date**: 2026-05-29.
@@ -114,5 +116,17 @@ Neither cell flips a verdict and neither collapses the ranking signal. The XGBoo
 - CatBoost references: `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (nifty50); `docs/gbdt/_138_h25_cross_market_combined.md` + `results/gbdt/experiments/nasdaq100_up_10pct_25d_dd5pct/` (nasdaq, direct metric comparison).
 - R-precision recomputed: `uv run python -m scripts.gbdt.compute_r_precision <preds.csv> --pk` on each `predictions/{test,eval}.csv`.
 - Headline numbers backing this memo: `results/gbdt/data/_148_xgboost_a6_replication_data.json`.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_10pct_25d_dd5pct (CatBoost ref) | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
+| nifty50_up_10pct_25d_dd5pct_xgb_acceptance (XGBoost) | 3450 | 17.9% | 0.656 | 0.257 | 0.252 | 0.260 | 0.324 | 0.506 |
+| nasdaq100_up_10pct_25d_dd5pct (CatBoost ref) | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+
+The canonical CSV does not carry the original `..._xgb_repl` finalize artifacts; the closest in-CSV XGBoost run on the matched nifty50 cell is the `_xgb_acceptance` (invB / `_149`) cell, included here as the XGBoost-side reference. The nasdaq100 XGBoost A6 run is similarly absent from the canonical CSV; the CatBoost reference row is the most recent CSV-recorded snapshot of that cell.
 
 Cross-links: `[[project-r-precision-methodology]]`, PR #28 (nasdaq H=25 top-tail finding), PR #48 (V1.1 agent loop), V1.2 Phase 5 (XGBoost runner wiring), V1.2 Phase 6 (calibration + persistence verification).

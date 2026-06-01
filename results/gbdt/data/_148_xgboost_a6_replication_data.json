@@ -1,4 +1,11 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "id": "_148",
   "name": "xgboost_a6_replication",
   "phase": "V1.2 Phase 7 (A6 replication gate)",
@@ -16,17 +23,51 @@
     "nifty50_up_10pct_25d_dd5pct": {
       "reference_doc": "docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md",
       "reference_run": "iter-0 / all-279 CatBoost baseline (documented headline)",
-      "base_rate": {"test": 0.1963, "eval": 0.1378},
+      "base_rate": {
+        "test": 0.1963,
+        "eval": 0.1378
+      },
       "catboost": {
-        "test": {"auc": 0.733, "brier": 0.1383, "brier_baseline": 0.1470, "r_precision_weighted": 0.416, "r_precision_lift": 2.12},
-        "eval": {"auc": 0.646, "brier": 0.1173, "brier_baseline": 0.1149, "r_precision_weighted": 0.300, "r_precision_lift": 2.18},
-        "calibration": {"decision": "native/isotonic (tree-count sensitive at iter 0)", "spiegelhalter_z_note": "5.93 raw pre-stop; flip is a tree-count side effect per _147 memo"},
+        "test": {
+          "auc": 0.733,
+          "brier": 0.1383,
+          "brier_baseline": 0.147,
+          "r_precision_weighted": 0.416,
+          "r_precision_lift": 2.12
+        },
+        "eval": {
+          "auc": 0.646,
+          "brier": 0.1173,
+          "brier_baseline": 0.1149,
+          "r_precision_weighted": 0.3,
+          "r_precision_lift": 2.18
+        },
+        "calibration": {
+          "decision": "native/isotonic (tree-count sensitive at iter 0)",
+          "spiegelhalter_z_note": "5.93 raw pre-stop; flip is a tree-count side effect per _147 memo"
+        },
         "verdict": "SIGNAL (AUC-visible)"
       },
       "xgboost": {
-        "test": {"auc": 0.6670, "brier": 0.1435, "brier_baseline": 0.1470, "r_precision_weighted": 0.4013, "r_precision_lift": 2.044},
-        "eval": {"auc": 0.5916, "brier": 0.1178, "brier_baseline": 0.1149, "r_precision_weighted": 0.2715, "r_precision_lift": 1.970},
-        "calibration": {"decision": "isotonic", "spiegelhalter_z": -4.896, "gate_fired": true},
+        "test": {
+          "auc": 0.667,
+          "brier": 0.1435,
+          "brier_baseline": 0.147,
+          "r_precision_weighted": 0.4013,
+          "r_precision_lift": 2.044
+        },
+        "eval": {
+          "auc": 0.5916,
+          "brier": 0.1178,
+          "brier_baseline": 0.1149,
+          "r_precision_weighted": 0.2715,
+          "r_precision_lift": 1.97
+        },
+        "calibration": {
+          "decision": "isotonic",
+          "spiegelhalter_z": -4.896,
+          "gate_fired": true
+        },
         "verdict": "SIGNAL (AUC-visible)"
       },
       "a6": "PASS",
@@ -35,21 +76,54 @@
     "nasdaq100_up_10pct_25d_dd5pct": {
       "reference_doc": "docs/gbdt/_138_h25_cross_market_combined.md (Cell A)",
       "reference_run": "results/gbdt/experiments/nasdaq100_up_10pct_25d_dd5pct/",
-      "base_rate": {"test": 0.2733, "eval": 0.2524},
+      "base_rate": {
+        "test": 0.2733,
+        "eval": 0.2524
+      },
       "catboost": {
-        "test": {"auc": 0.5111, "brier": 0.2061, "brier_baseline": 0.1984, "r_precision_weighted": 0.3994, "r_precision_lift": 1.461},
-        "eval": {"auc": 0.6549, "r_precision_weighted": 0.5121, "r_precision_lift": 2.029},
-        "calibration": {"decision": "native", "spiegelhalter_z": 1.588, "gate_fired": false},
+        "test": {
+          "auc": 0.5111,
+          "brier": 0.2061,
+          "brier_baseline": 0.1984,
+          "r_precision_weighted": 0.3994,
+          "r_precision_lift": 1.461
+        },
+        "eval": {
+          "auc": 0.6549,
+          "r_precision_weighted": 0.5121,
+          "r_precision_lift": 2.029
+        },
+        "calibration": {
+          "decision": "native",
+          "spiegelhalter_z": 1.588,
+          "gate_fired": false
+        },
         "verdict": "SIGNAL (top-tail hidden by null test AUC)"
       },
       "xgboost": {
-        "test": {"auc": 0.4951, "brier": 0.2052, "brier_baseline": 0.1984, "r_precision_weighted": 0.3776, "r_precision_lift": 1.382},
-        "eval": {"auc": 0.6335, "brier": 0.2045, "brier_baseline": 0.1872, "r_precision_weighted": 0.4907, "r_precision_lift": 1.944},
-        "calibration": {"decision": "isotonic", "spiegelhalter_z": 10.327, "gate_fired": true},
+        "test": {
+          "auc": 0.4951,
+          "brier": 0.2052,
+          "brier_baseline": 0.1984,
+          "r_precision_weighted": 0.3776,
+          "r_precision_lift": 1.382
+        },
+        "eval": {
+          "auc": 0.6335,
+          "brier": 0.2045,
+          "brier_baseline": 0.1872,
+          "r_precision_weighted": 0.4907,
+          "r_precision_lift": 1.944
+        },
+        "calibration": {
+          "decision": "isotonic",
+          "spiegelhalter_z": 10.327,
+          "gate_fired": true
+        },
         "verdict": "SIGNAL (top-tail hidden by null test AUC)"
       },
       "a6": "PASS",
-      "a6_notes": "Both: test AUC inside [0.45,0.55] null band, eval AUC above it. Test individually ambiguous under compound rule (lift 1.2-1.5x); eval decisive (lift ~2x). Verdict structure identical. Calibration DIFFERS (CatBoost native z=1.59 / XGBoost isotonic z=10.33) — backend-native-surface property the conditional-isotonic gate is designed to absorb; isotonic is order-preserving so cross-cell ranking comparable is unchanged. Within tolerance."
+      "a6_notes": "Both: test AUC inside [0.45,0.55] null band, eval AUC above it. Test individually ambiguous under compound rule (lift 1.2-1.5x); eval decisive (lift ~2x). Verdict structure identical. Calibration DIFFERS (CatBoost native z=1.59 / XGBoost isotonic z=10.33) \u2014 backend-native-surface property the conditional-isotonic gate is designed to absorb; isotonic is order-preserving so cross-cell ranking comparable is unchanged. Within tolerance."
     }
   },
   "calibration_divergence_flag": {

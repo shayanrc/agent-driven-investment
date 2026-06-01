@@ -1,4 +1,11 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "id": "_175",
   "artifact": "results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8",
   "cell": {

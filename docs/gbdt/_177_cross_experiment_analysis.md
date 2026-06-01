@@ -1,5 +1,7 @@
 # Task #177 — Cross-experiment analysis of completed gbdt cells
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Date**: 2026-05-29.
 **Branch**: `gbdt-sweep-cross-experiment-analysis`.
 **Data**: `results/gbdt/data/_177_cross_experiment_analysis_data.json` (machine-readable master table + classifications).
@@ -132,3 +134,26 @@ Final feature counts cluster at 25–65 on most cells (full 279 retained on only
 ## User-facing read (no automated PASS/FAIL)
 
 Of the 12 completed cells, **10 are clearly discriminating on the held-out test window, 1 is borderline (nasdaq +10%/25d), and 1 is unevaluable on test (nasdaq +10%/100d)**. The short-horizon US sweep is producing real, tradable top-tail signal; the open risks are (a) the universal eval→test AUC decay — which is a generalization-gap reality to price in, not a bug — and (b) the long-horizon test-split gap that needs fixing before H ≥ 50 cells can be judged. This is a **snapshot of ~21% of the sweep**; whether the russell1000 and remaining-threshold cells hold the same pattern is the open question the full sweep will answer. The PASS/FAIL call on any individual cell remains yours to read from its `report.md` — this memo characterizes the landscape, it does not gate.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nasdaq100_up_10pct_5d_dd5pct | 8740 | 7.1% | 0.768 | 0.278 | 0.293 | 0.316 | 0.445 | 0.601 |
+| nasdaq100_up_10pct_10d_dd5pct | 8280 | 15.2% | 0.657 | 0.436 | 0.457 | 0.435 | 0.444 | 0.521 |
+| nasdaq100_up_10pct_25d_dd5pct | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+| nasdaq100_up_20pct_5d_dd10pct | 8740 | 1.3% | 0.756 | 0.200 | 0.263 | 0.321 | 0.479 | 0.577 |
+| nasdaq100_up_20pct_10d_dd10pct | 8280 | 4.3% | 0.781 | 0.197 | 0.204 | 0.280 | 0.492 | 0.670 |
+| nasdaq100_up_40pct_10d_dd20pct | 8280 | 0.7% | 0.751 | 0.061 | 0.076 | 0.147 | 0.483 | 0.549 |
+| sp500_up_10pct_5d_dd5pct | 46170 | 4.3% | 0.781 | 0.274 | 0.309 | 0.320 | 0.324 | 0.331 |
+| sp500_up_10pct_10d_dd5pct | 43740 | 11.3% | 0.711 | 0.467 | 0.459 | 0.462 | 0.440 | 0.405 |
+| sp500_up_20pct_5d_dd10pct | 46170 | 0.6% | 0.846 | 0.195 | 0.142 | 0.180 | 0.318 | 0.419 |
+| sp500_up_20pct_10d_dd10pct | 43740 | 2.3% | 0.835 | 0.270 | 0.285 | 0.261 | 0.291 | 0.391 |
+| russell1000_up_10pct_5d_dd5pct | 84455 | 5.0% | 0.762 | 0.263 | 0.260 | 0.274 | 0.236 | 0.237 |
+| nifty500_up_30pct_50d_dd15pct (standalone) | 18800 | 5.7% | 0.715 | 0.431 | 0.275 | 0.220 | 0.202 | 0.202 |
+| nifty50_up_10pct_25d_dd5pct (standalone, `_138`-C/`_174`) | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
+| sp500_up_10pct_25d_dd5pct (standalone, `_138`-B) | 36450 | 26.4% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
+
+The canonical CSV does not carry the `nasdaq100_up_10pct_100d_dd5pct` cell (the no-test-window 100d cell) nor the `_138`-D nifty100 H=25 cell, both referenced in the body tables above.

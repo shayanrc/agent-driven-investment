@@ -1,6 +1,13 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "experiment_id": "_174_invA_catboost_agentloop",
-  "title": "Investigation A — agent-driven FS+HP loop (CatBoost) vs _147 answer key",
+  "title": "Investigation A \u2014 agent-driven FS+HP loop (CatBoost) vs _147 answer key",
   "cell": {
     "universe": "nifty50",
     "direction": "up",
@@ -19,12 +26,60 @@
     "tickers_kept": 46
   },
   "iterations": [
-    {"iter": 0, "depth": 6, "lr": 0.05, "nfeat": 279, "val_brier": 0.16417, "train_val_gap": -0.00477, "monotone": false},
-    {"iter": 1, "depth": 8, "lr": 0.05, "nfeat": 279, "val_brier": 0.16326, "train_val_gap": 0.00436, "monotone": false},
-    {"iter": 2, "depth": 4, "lr": 0.05, "nfeat": 279, "val_brier": 0.16608, "train_val_gap": -0.00992, "monotone": false},
-    {"iter": 3, "depth": 8, "lr": 0.02, "nfeat": 279, "val_brier": 0.16447, "train_val_gap": -0.00215, "monotone": false},
-    {"iter": 4, "depth": 8, "lr": 0.05, "nfeat": 141, "val_brier": 0.16497, "train_val_gap": -0.00628, "monotone": false},
-    {"iter": 5, "depth": 8, "lr": 0.05, "nfeat": 279, "val_brier": 0.16500, "train_val_gap": -0.00375, "monotone": true}
+    {
+      "iter": 0,
+      "depth": 6,
+      "lr": 0.05,
+      "nfeat": 279,
+      "val_brier": 0.16417,
+      "train_val_gap": -0.00477,
+      "monotone": false
+    },
+    {
+      "iter": 1,
+      "depth": 8,
+      "lr": 0.05,
+      "nfeat": 279,
+      "val_brier": 0.16326,
+      "train_val_gap": 0.00436,
+      "monotone": false
+    },
+    {
+      "iter": 2,
+      "depth": 4,
+      "lr": 0.05,
+      "nfeat": 279,
+      "val_brier": 0.16608,
+      "train_val_gap": -0.00992,
+      "monotone": false
+    },
+    {
+      "iter": 3,
+      "depth": 8,
+      "lr": 0.02,
+      "nfeat": 279,
+      "val_brier": 0.16447,
+      "train_val_gap": -0.00215,
+      "monotone": false
+    },
+    {
+      "iter": 4,
+      "depth": 8,
+      "lr": 0.05,
+      "nfeat": 141,
+      "val_brier": 0.16497,
+      "train_val_gap": -0.00628,
+      "monotone": false
+    },
+    {
+      "iter": 5,
+      "depth": 8,
+      "lr": 0.05,
+      "nfeat": 279,
+      "val_brier": 0.165,
+      "train_val_gap": -0.00375,
+      "monotone": true
+    }
   ],
   "final_model": {
     "depth": 8,
@@ -40,13 +95,21 @@
     "eval_brier_baseline_baserate": 0.11494,
     "test_roc_auc": 0.7063,
     "test_brier": 0.14183,
-    "prevalence_train": 0.280,
+    "prevalence_train": 0.28,
     "prevalence_eval": 0.133
   },
   "r_precision_weighted": {
     "method": "per_day_variable_K",
-    "eval": {"weighted": 0.2986, "base_rate_weighted": 0.1378, "lift": 2.167},
-    "test": {"weighted": 0.3948, "base_rate_weighted": 0.1963, "lift": 2.012}
+    "eval": {
+      "weighted": 0.2986,
+      "base_rate_weighted": 0.1378,
+      "lift": 2.167
+    },
+    "test": {
+      "weighted": 0.3948,
+      "base_rate_weighted": 0.1963,
+      "lift": 2.012
+    }
   },
   "acceptance_check_147": {
     "overall_pass": true,
@@ -54,11 +117,30 @@
     "n_fail": 0,
     "n_skip": 0,
     "exit_code": 0,
-    "pass": ["hp_ceiling_band", "hp_ceiling_spread", "depth_optimal", "no_meaningful_improvement", "monotone_contraindicated", "no_overfit_baseline", "prevalence_drift_ceiling", "ranking_robust", "final_features_not_collapsed"],
+    "pass": [
+      "hp_ceiling_band",
+      "hp_ceiling_spread",
+      "depth_optimal",
+      "no_meaningful_improvement",
+      "monotone_contraindicated",
+      "no_overfit_baseline",
+      "prevalence_drift_ceiling",
+      "ranking_robust",
+      "final_features_not_collapsed"
+    ],
     "fail": [],
     "original_run_before_correction": {
-      "overall_pass": false, "n_pass": 4, "n_fail": 5, "exit_code": 1,
-      "fail": ["hp_ceiling_band", "hp_ceiling_spread", "depth_optimal", "no_meaningful_improvement", "monotone_contraindicated"]
+      "overall_pass": false,
+      "n_pass": 4,
+      "n_fail": 5,
+      "exit_code": 1,
+      "fail": [
+        "hp_ceiling_band",
+        "hp_ceiling_spread",
+        "depth_optimal",
+        "no_meaningful_improvement",
+        "monotone_contraindicated"
+      ]
     },
     "root_cause_of_original_fails": "NOT data drift (depth-4/depth-6 reproduce _147 to 4dp -> identical data). _147's depth-8 iteration confounded depth 6->8 AND l2_leaf_reg 3.0->1.5 in one step, so its depth-8 (0.1652, overfit @48 trees) was at l2=1.5 while depth-4/6 used l2=3.0. The automated loop re-ran depth-8 with l2 held at 3.0 -> 0.16326 (marginally below depth-6; gap +0.0044, no overfit). Depth 6/8 are a within-noise plateau, not a 6-peaked inverted-U. invB (_149, XGBoost) independently found the same depth-8 optimum.",
     "resolution": "answer key deconfounded (depth_curve[8] 0.1652->0.1633; depth_optimal:6 -> {6,8} plateau + depth-4 underfit arm; ceiling_brier_lo 0.1641->0.1632; hp_band_width_max 0.0020->0.0030; meaningful_improvement 0.0005->0.0010; monotone check references best-unconstrained not iter-0). _147 annotated with the l2-confound correction. Re-run -> PASS 9/0. Unit tests updated, 12/12 pass.",

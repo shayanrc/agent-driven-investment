@@ -1,5 +1,7 @@
 # XGBoost `interaction_constraints` — capability, effect, and causal-ablation on the D6 cell
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cell**: nifty50 UP +10% within 25 trading days, max_drawdown 5% (the `_147` answer-key / D6 acceptance cell).
 **Date**: 2026-05-29.
 **Branch**: `gbdt-v12-phase8-interactions`.
@@ -82,5 +84,16 @@ The calibration story matches across backends (both isotonic, eval Brier ≈ bas
 - **Fits**: `uv run python -m gbdt experiment configs/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8.yaml` (+ `..._catboost_phase8.yaml`). Artifacts at `results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_{xgb,catboost}_phase8/` (model binaries are gitignored per repo policy; specs + metrics + reports are tracked).
 - **Verification + ablation**: `uv run python -m scripts.gbdt.phase8_interaction_constraints_verify` → `results/gbdt/data/_175_xgboost_interaction_constraints_capability.json` (raw evidence). A full-row alternative variant is `scripts/gbdt/interaction_constraints_capability_check.py` (left in place; slower at full SHAP rows — same three-part design).
 - **Headline JSON**: `results/gbdt/data/_175_xgboost_interaction_constraints_h25_data.json`.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_10pct_25d_dd5pct_xgb_phase8 | 3450 | 17.9% | 0.639 | 0.186 | 0.200 | 0.218 | 0.273 | 0.465 |
+| nifty50_up_10pct_25d_dd5pct_catboost_phase8 | 3450 | 17.9% | 0.729 | 0.171 | 0.205 | 0.213 | 0.328 | 0.559 |
+
+The canonical CSV carries the Phase-8 unconstrained finalize artifacts; the in-memo constrained vs unconstrained ablation tables stay anchored to the legacy weighted R-precision metric in the body.
 
 Cross-links: `docs/gbdt/_147_nifty50_h25_manual_fs_hp_loop.md` (CatBoost answer key), `_174` (invA CatBoost agent loop — `monotone_constraints` rejection precedent), `_149` (invB XGBoost agent loop — same D6 cell), `docs/gbdt/V1.2_xgboost_feature_interactions_plan.md`, `docs/gbdt/XGBOOST_HP_REFERENCE.md` (line 19 — interaction_constraints out of the loop schema), `[[project-r-precision-methodology]]`, `[[project-xgboost-interaction-analysis]]`.

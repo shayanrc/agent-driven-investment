@@ -1,5 +1,7 @@
 # Manual XGBoost FS+HP tuning — nasdaq100 +10% / 25d / dd5% (H=25)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Task #185.** Hand-driven (data-scientist-in-the-loop) XGBoost tuning loop. Purpose: the human XGBoost reference + probe which XGBoost knobs move the metric on our panels, to inform the agent-loop decision schema (esp. #184 interaction_constraints) BEFORE extending the agent loop again. Single-fit-per-iteration (`max_iterations: 1`); analyst edits `hp_starting` between fits; #181 feature-matrix cache makes post-iter-0 fits ~free. Cell signal documented in `_138` (CatBoost). Backend: XGBoost.
 
 Panel: 92 nasdaq100 tickers, 645,189 rows. Splits 800/400/200/100 per ticker. Base rate ~25% (common-event cell). Calibration: conditional_isotonic.
@@ -76,3 +78,13 @@ Deferred a full nasdaq re-probe: the TreeSHAP `pred_interactions` pass exceeds t
 **Iter 1 (depth-4).** Confirms depth-6 mildly overfits: gap 0.013→0.004 **at zero val-Brier cost** (0.16888→0.16881) and better calibration (Z 10.3→7.47). eval AUC/R-prec ~flat; **test AUC stays ≈chance (0.494)** — capacity reduction did NOT recover test generalization, so the test-window non-discrimination looks like a regime/data property, not an overfit artifact. val Brier is on a plateau across depth (echoes `_147`'s HP-ceiling). depth-4 strictly dominates depth-6 here (same val Brier, less overfit, better calibrated) but unlocks no new signal. Next: depth-8 to close the bracket (expect gap widens, val Brier flat).
 
 **Iter 2 (depth-8) → depth bracket complete.** Monotone capacity→overfit: gap 0.0040 (d4) → 0.0130 (d6) → 0.0146 (d8); val Brier 0.16881 / 0.16888 / 0.16926 (d4 marginally best). **depth-4 is the pick** (lowest val Brier + least overfit). This is the OPPOSITE of `_147` (which wanted depth-8) — optimal depth is cell-dependent, so the agent loop must explore depth DOWN as well as up. test AUC flat ~0.49 across all depths → test non-discrimination is capacity-invariant (regime/data property, reaffirmed). Proceeding to λ probes at depth-4 (λ 1.5 / 6.0) — expect another HP-ceiling plateau on val Brier.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nasdaq100_up_10pct_25d_dd5pct | 6900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+
+The canonical CSV carries the canonical nasdaq100 +10%/25d cell artifact; the manual-tuning iter-0..8 probes were val-only excursions and are not separate cells in the CSV.

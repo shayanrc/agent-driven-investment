@@ -1,5 +1,7 @@
 # nifty50 H=25 — hand-driven FS+HP loop (agent-as-data-scientist)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the cells in this memo recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cell**: nifty50 UP +10% within 25 trading days, max_drawdown 5%.
 **Date**: 2026-05-28.
 **Branch**: `gbdt-nifty50-manual-hp-loop`.
@@ -163,5 +165,15 @@ The ranking signal is strong (2.1× R-precision) but the *calibrated probability
 - Analysis scripts: `scripts/gbdt/{monotonic_feature_analysis,interaction_before_after,pdp_and_corr,monotone_1d_audit,pruned_feature_investigation}.py`.
 - Figures: `results/gbdt/experiments/nifty50_{interaction_before_after,pdp_before_after,feature_corr_heatmap}.png`.
 - Cached in-sample matrix: `results/gbdt/experiments/_nifty50_insample_matrix.parquet`.
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv`:
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nifty50_up_10pct_25d_dd5pct | 3450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
+
+The canonical CSV row tracks the iter-0 / all-279 baseline (the documented headline) — the iter-1..9 probes were val-only excursions and are not separate cells.
 
 Cross-links: `[[project-r-precision-methodology]]`, `docs/gbdt/_138_h25_cross_market_combined.md` (the cross-market context), PR #48 (the V1.1 agent-loop design this rehearses).

@@ -1,5 +1,7 @@
 # Task #138 — H=25 cross-market combined memo (4 cells)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the 4 cells recomputed under the new metric, plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Cells**: 4 H=25 cross-market replications of the H=25 short-horizon signal pattern first surfaced in PR #28.
 
 | Cell | Universe | Direction | Threshold | Horizon | Drawdown | Status |
@@ -164,3 +166,24 @@ The compound rule (AUC + weighted R-precision lift) stands; all 4 cells in this 
 - **Plan verdict**: 12-cell short-horizon US sweep proceeds. V2 per-ticker features remains the prime candidate for the next architecture iteration — the cross-market over-pick cohort is the V2-features motivating case.
 
 Cross-links: PR #28 (nasdaq H=25), PR #27 (uniqueness-fix Sweep #1 rerun), PR #43 (original memo + R-precision methodology — see Erratum at top), task #107 (sweep — revise scope), `[[project-r-precision-methodology]]` (updated formula), `[[feedback-agent-pkill-antipattern]]` (concurrent-process lesson from the sp500 retry work).
+
+---
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`):
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| nasdaq100_up_10pct_25d_dd5pct | 6,900 | 27.3% | 0.511 | 0.537 | 0.526 | 0.536 | 0.507 | 0.508 |
+| sp500_up_10pct_25d_dd5pct | 36,450 | 26.4% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
+| nifty50_up_10pct_25d_dd5pct | 3,450 | 17.9% | 0.733 | 0.229 | 0.252 | 0.235 | 0.288 | 0.609 |
+| nifty100_up_10pct_25d_dd5pct | 3,525 | 18.8% | 0.689 | 0.239 | 0.235 | 0.246 | 0.349 | 0.503 |
+
+The compound-rule classification holds under R-Precision@10 (lift vs base, in prose per CLAUDE.md convention):
+- **Cell A nasdaq (AUC 0.511, R-p@10 lift 1.86×)** — the original "hidden top-tail signal" finding. AUC band [0.45, 0.55] + R-p@10 lift > 1.5× ⇒ investigate, don't dismiss. Same verdict as the legacy memo.
+- **Cell B sp500 (AUC 0.590, R-p@10 lift 1.53×)** — AUC above the null band; discriminating cell. Same verdict.
+- **Cell C nifty50 (AUC 0.733, R-p@10 lift 1.61×)** — discriminating. Same verdict.
+- **Cell D nifty100 (AUC 0.689, R-p@10 lift 1.85×)** — discriminating. Same verdict.
+
+The body narrative's verdicts ("SIGNAL" on all 4 cells under different K mixes) stay intact; the R-Precision@K table just expresses them on the current canonical metric.

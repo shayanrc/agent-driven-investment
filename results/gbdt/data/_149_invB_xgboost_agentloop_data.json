@@ -1,6 +1,13 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "id": "_149",
-  "title": "Investigation B — agent-driven FS+HP loop on XGBoost (nifty50 H=25)",
+  "title": "Investigation B \u2014 agent-driven FS+HP loop on XGBoost (nifty50 H=25)",
   "date": "2026-05-29",
   "branch": "invB-nifty50-h25-xgboost-loop",
   "cell": {
@@ -21,7 +28,11 @@
     "split": "800/400/200/100",
     "uniqueness_weighting": true,
     "overlap_inflation": 49.0,
-    "prevalence_by_segment": {"train": 0.280, "val": 0.204, "eval": 0.133},
+    "prevalence_by_segment": {
+      "train": 0.28,
+      "val": 0.204,
+      "eval": 0.133
+    },
     "prevalence_drift_train_minus_eval": 0.147
   },
   "loop": {
@@ -29,17 +40,56 @@
     "inner_stop_signal": "agent_should_stop",
     "best_iteration": 1,
     "max_iterations": 10,
-    "hp_ceiling_band_val_brier": [0.16350, 0.16461],
+    "hp_ceiling_band_val_brier": [
+      0.1635,
+      0.16461
+    ],
     "hp_ceiling_spread": 0.00111,
     "best_improvement_over_baseline": 0.00052,
     "no_overfit_baseline_gap": -0.011859,
     "iterations": [
-      {"iter": 0, "lever": "baseline depth6 eta0.05 lambda3.0", "val_brier": 0.16402, "train_val_gap": -0.011859, "early_stop": 13},
-      {"iter": 1, "lever": "max_depth=8", "val_brier": 0.16350, "train_val_gap": -0.008154, "early_stop": 15},
-      {"iter": 2, "lever": "max_depth=4", "val_brier": 0.16447, "train_val_gap": -0.017587, "early_stop": 12},
-      {"iter": 3, "lever": "depth8 eta=0.02 es=150", "val_brier": 0.16367, "train_val_gap": -0.013406, "early_stop": 29},
-      {"iter": 4, "lever": "depth8 lambda=10 min_child_weight=20", "val_brier": 0.16461, "train_val_gap": -0.021542, "early_stop": 20},
-      {"iter": 5, "lever": "depth8 colsample_bytree=0.7", "val_brier": 0.16351, "train_val_gap": -0.012335, "early_stop": 12}
+      {
+        "iter": 0,
+        "lever": "baseline depth6 eta0.05 lambda3.0",
+        "val_brier": 0.16402,
+        "train_val_gap": -0.011859,
+        "early_stop": 13
+      },
+      {
+        "iter": 1,
+        "lever": "max_depth=8",
+        "val_brier": 0.1635,
+        "train_val_gap": -0.008154,
+        "early_stop": 15
+      },
+      {
+        "iter": 2,
+        "lever": "max_depth=4",
+        "val_brier": 0.16447,
+        "train_val_gap": -0.017587,
+        "early_stop": 12
+      },
+      {
+        "iter": 3,
+        "lever": "depth8 eta=0.02 es=150",
+        "val_brier": 0.16367,
+        "train_val_gap": -0.013406,
+        "early_stop": 29
+      },
+      {
+        "iter": 4,
+        "lever": "depth8 lambda=10 min_child_weight=20",
+        "val_brier": 0.16461,
+        "train_val_gap": -0.021542,
+        "early_stop": 20
+      },
+      {
+        "iter": 5,
+        "lever": "depth8 colsample_bytree=0.7",
+        "val_brier": 0.16351,
+        "train_val_gap": -0.012335,
+        "early_stop": 12
+      }
     ]
   },
   "final_config": {
@@ -61,8 +111,34 @@
     "spiegelhalter_p": 9.9e-05
   },
   "metrics": {
-    "eval": {"base_rate": 0.1325, "brier": 0.11447, "brier_baseline": 0.11494, "improvement": 0.00048, "roc_auc": 0.65757, "weighted_r_precision": 0.3175, "weighted_r_precision_lift": 2.304, "p_at_k": {"1": 0.2133, "5": 0.2584, "10": 0.3247}},
-    "test": {"base_rate": 0.1791, "brier": 0.14079, "brier_baseline": 0.14704, "improvement": 0.00625, "roc_auc": 0.65614, "weighted_r_precision": 0.4078, "weighted_r_precision_lift": 2.078, "p_at_k": {"1": 0.2571, "5": 0.3815, "10": 0.3930}}
+    "eval": {
+      "base_rate": 0.1325,
+      "brier": 0.11447,
+      "brier_baseline": 0.11494,
+      "improvement": 0.00048,
+      "roc_auc": 0.65757,
+      "weighted_r_precision": 0.3175,
+      "weighted_r_precision_lift": 2.304,
+      "p_at_k": {
+        "1": 0.2133,
+        "5": 0.2584,
+        "10": 0.3247
+      }
+    },
+    "test": {
+      "base_rate": 0.1791,
+      "brier": 0.14079,
+      "brier_baseline": 0.14704,
+      "improvement": 0.00625,
+      "roc_auc": 0.65614,
+      "weighted_r_precision": 0.4078,
+      "weighted_r_precision_lift": 2.078,
+      "p_at_k": {
+        "1": 0.2571,
+        "5": 0.3815,
+        "10": 0.393
+      }
+    }
   },
   "tolerance_verdict": {
     "reproduces_147_within_tolerance": true,

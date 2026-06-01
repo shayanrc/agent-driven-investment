@@ -1,4 +1,11 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "task": 113,
   "comparison": "exp1_nifty50_up_20pct_50d_dd10pct_post_uniqueness_fix",
   "cell": "nifty50_up_20pct_50d_dd10pct",
@@ -7,36 +14,71 @@
     "direction": "up",
     "threshold_pct": 20,
     "horizon_days": 50,
-    "max_drawdown": 0.10,
+    "max_drawdown": 0.1,
     "backend": "catboost",
     "callback_mode": "default",
     "random_seed": 42
   },
   "before_artifact": "project_mgmt/archives/biased_baselines/nifty50_up_20pct_50d_dd10pct_pre_uniqueness_fix/",
   "after_artifact": "results/gbdt/experiments/nifty50_up_20pct_50d_dd10pct_post_fix/",
-  "methodology_fix": "PR #18 — Lopez de Prado section 4.4 sample-uniqueness weighting (default since 2026-05-26)",
+  "methodology_fix": "PR #18 \u2014 Lopez de Prado section 4.4 sample-uniqueness weighting (default since 2026-05-26)",
   "data_constancy_check": {
     "before_n_tickers_used": 46,
     "after_n_tickers_used": 46,
     "tickers_excluded_constant": true,
-    "tickers_excluded": ["NSE:ETERNAL", "NSE:JIOFIN", "NSE:MAXHEALTH", "NSE:SHRIRAMFIN"],
+    "tickers_excluded": [
+      "NSE:ETERNAL",
+      "NSE:JIOFIN",
+      "NSE:MAXHEALTH",
+      "NSE:SHRIRAMFIN"
+    ],
     "split_rows": {
-      "before": {"train": 36800, "val": 18400, "eval": 9200, "test": 2300},
-      "after": {"train": 36800, "val": 18400, "eval": 9200, "test": 2300},
+      "before": {
+        "train": 36800,
+        "val": 18400,
+        "eval": 9200,
+        "test": 2300
+      },
+      "after": {
+        "train": 36800,
+        "val": 18400,
+        "eval": 9200,
+        "test": 2300
+      },
       "identical": true
     },
     "total_panel_rows_after_back_extend": 129401,
-    "comment_on_back_extend": "The #167 NSE back-extend grew the full panel (129401 rows total), but the walk-forward split takes a fixed 1600 rows/ticker from the MOST RECENT data, so the eval/test windows are unaffected — the added rows are older history beyond the recent split window. Split row counts are bit-identical and ticker set is unchanged.",
+    "comment_on_back_extend": "The #167 NSE back-extend grew the full panel (129401 rows total), but the walk-forward split takes a fixed 1600 rows/ticker from the MOST RECENT data, so the eval/test windows are unaffected \u2014 the added rows are older history beyond the recent split window. Split row counts are bit-identical and ticker set is unchanged.",
     "eval_window": {
-      "before": {"start": "2024-10-17", "end": "2025-12-26", "positives": 439, "prevalence": 0.0477},
-      "after": {"start": "2024-10-17", "end": "2025-12-30", "positives": 435, "prevalence": 0.0473}
+      "before": {
+        "start": "2024-10-17",
+        "end": "2025-12-26",
+        "positives": 439,
+        "prevalence": 0.0477
+      },
+      "after": {
+        "start": "2024-10-17",
+        "end": "2025-12-30",
+        "positives": 435,
+        "prevalence": 0.0473
+      }
     },
     "test_window": {
-      "before": {"start": "2025-08-06", "end": "2026-03-09", "positives": 32, "prevalence": 0.0139},
-      "after": {"start": "2025-08-06", "end": "2026-03-11", "positives": 32, "prevalence": 0.0139}
+      "before": {
+        "start": "2025-08-06",
+        "end": "2026-03-09",
+        "positives": 32,
+        "prevalence": 0.0139
+      },
+      "after": {
+        "start": "2025-08-06",
+        "end": "2026-03-11",
+        "positives": 32,
+        "prevalence": 0.0139
+      }
     },
     "window_shift_note": "Same start date both segments; end shifted ~2-4 trading days because the post-fix run executed 3 days later than the baseline and the +50d label horizon at the recent edge recomputes (4 fewer eval positives, 439 -> 435; test positives unchanged at 32). Immaterial to the comparison.",
-    "verdict": "DATA CONSTANT — the methodology comparison is apples-to-apples; the back-extend did NOT confound."
+    "verdict": "DATA CONSTANT \u2014 the methodology comparison is apples-to-apples; the back-extend did NOT confound."
   },
   "before": {
     "spec_hash": "sha256:14cd0d82ba0e0eb46713bac71177977d139526db48fbd88e07edc8ade22c2119",
@@ -77,7 +119,7 @@
     "base_rate_eval_weighted_rprec": 0.06375494650447018,
     "base_rate_test_weighted_rprec": 0.03571428571428571,
     "positive_prevalence_train": 0.2021195652173913,
-    "val_brier_best": 0.1150,
+    "val_brier_best": 0.115,
     "calibration_spiegelhalter_z": -4.814856654831193,
     "calibration_spiegelhalter_p": 1.473055920131472e-06,
     "calibration_decision": "isotonic",
@@ -104,5 +146,5 @@
     "after_test_rprec_lift_weighted": 2.63
   },
   "signal_rule_applied": "CLAUDE.md compound rule: AUC>0.55 => discriminating. eval AUC 0.56->0.59 (both >0.55); test AUC 0.44->0.55. Weighted R-precision lift well above 1.5x post-fix on both segments => real top-tail signal, strengthened by the fix.",
-  "headline": "The sample-uniqueness fix did NOT overturn the signal verdict (this cell discriminates in both runs) but it DID change two conclusions: (1) calibration flipped from native (z=0.85) to isotonic (z=-4.81) — post-fix raw probabilities are under-confident and need the isotonic layer; (2) top-tail ranking strengthened — eval weighted R-precision 0.171->0.214 and test 0.031->0.094 (test flipped from below-base-rate to clear signal), and best_iteration moved 0->1. Panel size was CONSTANT (same 46 tickers, identical 36800/18400/9200/2300 split rows); the #167 back-extend did not confound."
+  "headline": "The sample-uniqueness fix did NOT overturn the signal verdict (this cell discriminates in both runs) but it DID change two conclusions: (1) calibration flipped from native (z=0.85) to isotonic (z=-4.81) \u2014 post-fix raw probabilities are under-confident and need the isotonic layer; (2) top-tail ranking strengthened \u2014 eval weighted R-precision 0.171->0.214 and test 0.031->0.094 (test flipped from below-base-rate to clear signal), and best_iteration moved 0->1. Panel size was CONSTANT (same 46 tickers, identical 36800/18400/9200/2300 split rows); the #167 back-extend did not confound."
 }

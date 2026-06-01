@@ -1,5 +1,7 @@
 # Task #193 — sp500 sweep results (17 cells, post-#190 + #182 cache — ~30× speedup vs cold)
 
+> **Methodology note (2026-06-01)**: Numbers in this memo's body use the legacy "weighted R-precision" metric (per-day variable K = R(d), micro-aggregated). The project headline metric was renamed 2026-06-01 to **R-Precision@K** (per-day fixed K, macro-aggregated via `(1/Q)·Σ r_q/min(K,R_q)`). See the "R-Precision@K (current methodology)" section at the bottom of this memo for the 12 test-evaluable cells recomputed under the new metric (plus `r_precision_at_k.csv` for the canonical record), plus `.claude/memories/project-r-precision-methodology.md` for the full definition + relationship.
+
 **Date**: 2026-05-31.
 **Branch**: `gbdt-sp500-sweep`.
 **Data**: `results/gbdt/data/_193_sp500_sweep_results_data.json` (machine-readable master table + per-cell classifications).
@@ -258,3 +260,26 @@ The two key concrete revisions this memo introduces:
 ## User-facing read (no automated PASS/FAIL)
 
 Of the 17 sp500 cells, **11 discriminate on the held-out test window** (10%/{5d, 10d, 25d}, 20%/{5d, 10d, 25d, 50d}, 40%/{25d, 50d}, 50%/{25d, 50d} — strongest lift first within group), **5 are eval-only discriminating** (no test window under the current split: 20%/100d, 40%/{100d, 200d}, 50%/{100d, 200d}), **0 are ambiguous, 0 null**, and **1 is anti-predictive on test** (10%/50d at AUC 0.400 — the first sub-0.45 cell across all three US sweeps). The short-horizon × high-threshold corner is the production-candidate region — **50%/25d (lift 27.45×), 20%/5d (26.29×), 40%/25d (16.32×)** are the standout cells by test-segment R-precision lift. The eval→test AUC decay observed in `_177` / `_188` / `_192` fully replicates on sp500 with no exception. The cross-universe finding is the headline analytical surprise: **sp500 wins lift on 11 of 12 matched test cells AND AUC on 11 of 12** vs both nasdaq100 and russell1000 — the 486-ticker mid-cap-heavy panel is the lift-and-AUC sweet spot. Operationally, the post-#190+#182 cache delivered **~31.5× end-to-end speedup** on warm cells (cold 2h39m → warm mean 5 min) and **~1700× on features phase alone**, saving ~40.8 h of compute across the 16 warm cells. The 5 eval-only cells (H ≥ 100) need the test-split fix before they can be judged. As `_177` + `_188` + `_192` noted, the PASS/FAIL call on any individual cell remains a user judgment; this memo characterizes the landscape across the completed sp500 sweep and updates the cross-universe panel-size hypothesis to "sp500 dominates" on the matched grid.
+
+---
+
+## R-Precision@K (current methodology — added 2026-06-01)
+
+Per `.claude/memories/project-r-precision-methodology.md`, R-Precision@K is the post-2026-06-01 headline cross-cell metric for gbdt. Recomputed on the 12 test-evaluable sp500 cells from each cell's `predictions/test.csv` (source: `results/gbdt/data/r_precision_at_k.csv`); sorted by AUC descending. The 5 cells without a test window (H ≥ 100) are excluded.
+
+| cell | rows | base | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---|---|---|---|---|---|---|
+| sp500_up_50pct_25d_dd25pct | 36,450 | 0.91% | 0.913 | 0.279 | 0.139 | 0.187 | 0.329 | 0.494 |
+| sp500_up_50pct_50d_dd25pct | 24,300 | 2.57% | 0.903 | 0.680 | 0.407 | 0.328 | 0.259 | 0.395 |
+| sp500_up_40pct_25d_dd20pct | 36,450 | 1.82% | 0.896 | 0.280 | 0.222 | 0.215 | 0.232 | 0.394 |
+| sp500_up_40pct_50d_dd20pct | 24,300 | 4.02% | 0.862 | 0.100 | 0.313 | 0.312 | 0.286 | 0.276 |
+| sp500_up_20pct_5d_dd10pct | 46,170 | 0.60% | 0.846 | 0.195 | 0.142 | 0.180 | 0.318 | 0.419 |
+| sp500_up_20pct_10d_dd10pct | 43,740 | 2.26% | 0.835 | 0.270 | 0.285 | 0.261 | 0.291 | 0.391 |
+| sp500_up_10pct_5d_dd5pct | 46,170 | 4.32% | 0.781 | 0.274 | 0.309 | 0.320 | 0.324 | 0.331 |
+| sp500_up_20pct_25d_dd10pct | 36,450 | 8.86% | 0.775 | 0.467 | 0.458 | 0.459 | 0.415 | 0.398 |
+| sp500_up_20pct_50d_dd10pct | 24,300 | 13.67% | 0.727 | 0.360 | 0.280 | 0.288 | 0.342 | 0.353 |
+| sp500_up_10pct_10d_dd5pct | 43,740 | 11.30% | 0.711 | 0.467 | 0.459 | 0.462 | 0.440 | 0.405 |
+| sp500_up_10pct_25d_dd5pct | 36,450 | 26.38% | 0.590 | 0.373 | 0.391 | 0.373 | 0.404 | 0.403 |
+| sp500_up_10pct_50d_dd5pct | 24,300 | 29.60% | 0.400 | 0.380 | 0.387 | 0.332 | 0.306 | 0.311 |
+
+The body's "11 discriminate / 0 ambiguous / 0 null / 1 anti-predictive" verdict holds under R-Precision@K: AUC is the dominant classifier and the 10%/50d cell (AUC 0.400, R-p@10 = 0.306) sits clearly in the anti-predictive band — R-Precision@K can't rescue it. **The top-tail story stays strong**: 50%/50d gets the most extreme R-Precision@1 of any cell in the project at 0.680 (1 in ~1.5 top-picks is a hit, base 2.57%) — note that this falls to 0.394 at K=20, showing the model's confidence concentrates sharply in the top 1-3 names per day, not across a wider band.

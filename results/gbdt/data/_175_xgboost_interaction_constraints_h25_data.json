@@ -1,11 +1,18 @@
 {
+  "r_precision_at_k_methodology_note": {
+    "as_of": "2026-06-01",
+    "metric_renamed_to": "R-Precision@K",
+    "headline_definition": "(1/Q) * sum_q r_q / min(K, R_q)  over days q where R_q > 0; K in {1, 3, 5, 10, 20}",
+    "relationship_to_legacy_fields": "The *_r_precision_* keys below (and any 'weighted_r_precision' fields) record the pre-2026-06-01 weighted R-precision (per-day variable K = R(d), micro-aggregated). That is a different metric \u2014 not a special case of R-Precision@K. See `.claude/memories/project-r-precision-methodology.md`.",
+    "canonical_r_precision_at_k_csv": "results/gbdt/data/r_precision_at_k.csv  (per-cell rows \u00d7 K in {1,3,5,10,20}, plus AUC + base_rate)"
+  },
   "id": "_175",
-  "title": "XGBoost interaction_constraints — capability + causal-ablation on the D6 cell (nifty50 H=25)",
+  "title": "XGBoost interaction_constraints \u2014 capability + causal-ablation on the D6 cell (nifty50 H=25)",
   "date": "2026-05-29",
   "branch": "gbdt-v12-phase8-interactions",
-  "plan": "docs/gbdt/V1.2_xgboost_feature_interactions_plan.md (§ 8 Phase 8, D6)",
+  "plan": "docs/gbdt/V1.2_xgboost_feature_interactions_plan.md (\u00a7 8 Phase 8, D6)",
   "memo": "docs/gbdt/_175_xgboost_interaction_constraints_h25.md",
-  "n_caveat": "n=1 — one cell (nifty50 up/+10%/25d/dd5%). Single forbidden pair. Verdict is the user's to read.",
+  "n_caveat": "n=1 \u2014 one cell (nifty50 up/+10%/25d/dd5%). Single forbidden pair. Verdict is the user's to read.",
   "cell": {
     "universe": "nifty50",
     "direction": "up",
@@ -15,14 +22,12 @@
   },
   "backend": "xgboost",
   "xgboost_version": "3.2.0",
-
   "headline_answer": {
-    "can_run_interaction_constraints_today": "YES — no new plumbing needed",
+    "can_run_interaction_constraints_today": "YES \u2014 no new plumbing needed",
     "how": "interaction_constraints flows through the construction/spec path (XGBoostModel ctor -> _validate_hp_xgb -> xgb.XGBClassifier(**hp) -> booster) untouched, because _validate_hp_xgb only range/enum-checks KNOWN HP keys; an unknown structured key passes through. The sanctioned surface is gbdt.interactions.ablate_interactions, which injects it post-construction. Verified the booster receives it (save_config shows interaction_constraints stored) and honors it.",
-    "what_blocks_the_loop_path": "The agent-loop decision path (loop_protocol.validate_decision) REJECTS interaction_constraints as an 'unknown HP' — it is not in TUNABLE_HP_RANGES_XGB / ENUM_HP_VALUES_XGB / PINNED_HPS_XGB. This is BY DESIGN (V1.2 plan § 7; XGBOOST_HP_REFERENCE.md line 19): interaction_constraints is a Phase-4 read-only causal-ablation tool, never a per-iteration FS+HP knob. Exactly symmetric to monotone_constraints on CatBoost (see _174 § 'Iteration 5'). So it is NOT a per-iteration loop knob, but IS runnable via the ablation surface / spec hp_starting.",
-    "plumbing_added_this_branch": "NONE — the capability was already present (V1.2 Phases 1-5, on main). This branch added only the two finalize specs + the verification runner + this analysis. Flagged explicitly so the reviewer knows no src/gbdt/ behavior changed."
+    "what_blocks_the_loop_path": "The agent-loop decision path (loop_protocol.validate_decision) REJECTS interaction_constraints as an 'unknown HP' \u2014 it is not in TUNABLE_HP_RANGES_XGB / ENUM_HP_VALUES_XGB / PINNED_HPS_XGB. This is BY DESIGN (V1.2 plan \u00a7 7; XGBOOST_HP_REFERENCE.md line 19): interaction_constraints is a Phase-4 read-only causal-ablation tool, never a per-iteration FS+HP knob. Exactly symmetric to monotone_constraints on CatBoost (see _174 \u00a7 'Iteration 5'). So it is NOT a per-iteration loop knob, but IS runnable via the ablation surface / spec hp_starting.",
+    "plumbing_added_this_branch": "NONE \u2014 the capability was already present (V1.2 Phases 1-5, on main). This branch added only the two finalize specs + the verification runner + this analysis. Flagged explicitly so the reviewer knows no src/gbdt/ behavior changed."
   },
-
   "plumbing_probe": {
     "in_tunable_ranges_xgb": false,
     "in_enum_values_xgb": false,
@@ -33,27 +38,44 @@
     "booster_receives_and_stores_constraint": true,
     "catboost_exposes_interaction_constraints": false
   },
-
   "determinism": {
     "bit_identical_refit": true,
     "refit_matches_on_disk_artifact": true,
-    "note": "Refitting the depth-8 / 279-feat config twice (tree_method=exact, n_jobs=1, device=cpu, seed=42) gives bit-identical eval predictions; the refit reproduces the on-disk model.ubj. The § 5.1 finalization-retrain contract holds."
+    "note": "Refitting the depth-8 / 279-feat config twice (tree_method=exact, n_jobs=1, device=cpu, seed=42) gives bit-identical eval predictions; the refit reproduces the on-disk model.ubj. The \u00a7 5.1 finalization-retrain contract holds."
   },
-
   "interaction_structure": {
     "method": "native TreeSHAP pred_interactions (dense reference), F=279, 200-row seeded sub-sample",
     "shap_pass_secs": 175.6,
     "n_trees": 15,
     "top_shap_pairs_mean_abs_interaction": [
-      {"a": "index_vol_50", "b": "index_vol_200", "strength": 0.080131},
-      {"a": "index_vol_200", "b": "garman_klass_200", "strength": 0.060301},
-      {"a": "index_vol_50", "b": "garman_klass_200", "strength": 0.047131},
-      {"a": "index_runup_200", "b": "garman_klass_200", "strength": 0.041239},
-      {"a": "garman_klass_200", "b": "vol_of_vol_200", "strength": 0.032140}
+      {
+        "a": "index_vol_50",
+        "b": "index_vol_200",
+        "strength": 0.080131
+      },
+      {
+        "a": "index_vol_200",
+        "b": "garman_klass_200",
+        "strength": 0.060301
+      },
+      {
+        "a": "index_vol_50",
+        "b": "garman_klass_200",
+        "strength": 0.047131
+      },
+      {
+        "a": "index_runup_200",
+        "b": "garman_klass_200",
+        "strength": 0.041239
+      },
+      {
+        "a": "garman_klass_200",
+        "b": "vol_of_vol_200",
+        "strength": 0.03214
+      }
     ],
-    "reading": "Top interactions are long-window vol-estimator x index-regime pairs — the same 'interaction-driven cell' structure _147/_174/_149 found (vol x regime conditional)."
+    "reading": "Top interactions are long-window vol-estimator x index-regime pairs \u2014 the same 'interaction-driven cell' structure _147/_174/_149 found (vol x regime conditional)."
   },
-
   "ablation_verification": {
     "forbidden_pair": "index_vol_50 | index_vol_200",
     "constraint_injected_into_hp": true,
@@ -68,7 +90,6 @@
     "all_honored": true,
     "reading": "The constraint TOOK EFFECT and was HONORED, not silently ignored: the forbidden pair's SHAP interaction collapsed 0.0801 -> 0.0 AND its gain-weighted tree-path co-occurrence dropped 58.94 -> exactly 0 (it never co-splits in the constrained model)."
   },
-
   "metrics_constrained_vs_unconstrained": {
     "calibration": "both isotonic (fresh isotonic fit on val for each model; conditional-isotonic Z-test rejects native on this cell)",
     "eval": {
@@ -84,26 +105,35 @@
       "brier_weighted_unconstrained": 0.14572,
       "brier_weighted_constrained": 0.14041,
       "r_precision_weighted_unconstrained": 0.38511,
-      "r_precision_weighted_constrained": 0.38350,
+      "r_precision_weighted_constrained": 0.3835,
       "n_days_with_positives": 70
     },
-    "reading": "Forbidding the TOP SHAP-interaction pair did NOT degrade metrics — it slightly IMPROVED Brier (eval -0.0005, test -0.0053) and left R-precision ~flat (eval +0.005, test -0.002). The SHAP->causal-contribution link is real (the pair's interaction collapsed to 0), but on THIS cell the top interaction was not net-positive for predictability: forbidding it acted as mild regularization. Consistent with _147/_174/_149's no-overfit, FS/constraints-neutral-to-harmful regime — heavy regularization HURTS here, but forbidding ONE redundant vol-vol co-split is benign-to-helpful. A genuinely load-bearing interaction would have degraded; this one was redundant (index_vol_50 and index_vol_200 are correlated lookbacks of the same index-vol signal)."
+    "reading": "Forbidding the TOP SHAP-interaction pair did NOT degrade metrics \u2014 it slightly IMPROVED Brier (eval -0.0005, test -0.0053) and left R-precision ~flat (eval +0.005, test -0.002). The SHAP->causal-contribution link is real (the pair's interaction collapsed to 0), but on THIS cell the top interaction was not net-positive for predictability: forbidding it acted as mild regularization. Consistent with _147/_174/_149's no-overfit, FS/constraints-neutral-to-harmful regime \u2014 heavy regularization HURTS here, but forbidding ONE redundant vol-vol co-split is benign-to-helpful. A genuinely load-bearing interaction would have degraded; this one was redundant (index_vol_50 and index_vol_200 are correlated lookbacks of the same index-vol signal)."
   },
-
   "catboost_contrast": {
     "can_measure_interactions": true,
     "measure_method": "native split-pair co-occurrence get_feature_importance(type='Interaction')",
     "top_catboost_cooccurrence_pairs": [
-      {"a": "index_return_100", "b": "index_vol_200", "strength": 1.1426},
-      {"a": "index_vol_200", "b": "stock_return_zscore_50_outside_band_1", "strength": 0.9598},
-      {"a": "parkinson_200", "b": "garman_klass_200", "strength": 0.8760}
+      {
+        "a": "index_return_100",
+        "b": "index_vol_200",
+        "strength": 1.1426
+      },
+      {
+        "a": "index_vol_200",
+        "b": "stock_return_zscore_50_outside_band_1",
+        "strength": 0.9598
+      },
+      {
+        "a": "parkinson_200",
+        "b": "garman_klass_200",
+        "strength": 0.876
+      }
     ],
     "can_constrain_interactions": false,
-    "reading": "CatBoost MEASURES the same vol x index-regime interaction family but exposes NO interaction_constraints knob — confirming the V1.2 rationale: the constrained-vs-unconstrained ablation above is impossible on CatBoost. That contrast is the point of moving to XGBoost."
+    "reading": "CatBoost MEASURES the same vol x index-regime interaction family but exposes NO interaction_constraints knob \u2014 confirming the V1.2 rationale: the constrained-vs-unconstrained ablation above is impossible on CatBoost. That contrast is the point of moving to XGBoost."
   },
-
-  "user_facing_verdict": "NO automated PASS/FAIL. The capability question is answered YES (runnable today via the ablation/spec path; blocked from the loop schema by design). The ablation confirms the SHAP->causal mechanism (forbidden pair's interaction verifiably collapses). On this n=1 cell the top interaction was redundant, so forbidding it was neutral-to-mildly-beneficial — itself an informative finding about the cell's regularization regime, NOT evidence the tooling is wrong.",
-
+  "user_facing_verdict": "NO automated PASS/FAIL. The capability question is answered YES (runnable today via the ablation/spec path; blocked from the loop schema by design). The ablation confirms the SHAP->causal mechanism (forbidden pair's interaction verifiably collapses). On this n=1 cell the top interaction was redundant, so forbidding it was neutral-to-mildly-beneficial \u2014 itself an informative finding about the cell's regularization regime, NOT evidence the tooling is wrong.",
   "reproduce": {
     "fits": "uv run python -m gbdt experiment configs/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8.yaml (and ..._catboost_phase8.yaml)",
     "verification": "uv run python -m scripts.gbdt.phase8_interaction_constraints_verify",
