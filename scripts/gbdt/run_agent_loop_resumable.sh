@@ -410,6 +410,13 @@ monitor_child() {
         if [[ "$HEARTBEAT_STALL_SECS" -gt 0 && -f "$PROGRESS_LOG" ]]; then
             local mtime now age
             mtime="$(stat -c %Y "$PROGRESS_LOG" 2>/dev/null || echo 0)"
+            # Floor mtime at wrapper start: a progress.log carried over from
+            # a prior run has mtime far in the past and would trip the
+            # watchdog on the first MONITOR_INTERVAL tick. Treat pre-existing
+            # heartbeats as "no heartbeat yet" rather than as a stall.
+            if [[ "$mtime" -lt "$WRAPPER_START_EPOCH" ]]; then
+                mtime="$WRAPPER_START_EPOCH"
+            fi
             now="$(date +%s)"
             age=$(( now - mtime ))
             if [[ "$age" -gt "$HEARTBEAT_STALL_SECS" ]]; then
@@ -435,6 +442,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 rm -f "$LOG_FILE.startmark"
 
 STARTED_AT="$(iso_now)"
+WRAPPER_START_EPOCH=$(date +%s)
 log_line "==== wrapper start ===="
 log_line "spec=$SPEC"
 log_line "out_dir=$OUT_DIR"
