@@ -210,6 +210,56 @@ def test_build_feature_matrix_total_col_count():
     )
 
 
+def test_f16_meta_underlying_columns_threaded_kwargs_equal_standalone():
+    """Threading pre-computed f16_nat/f7/xs into f16_meta_underlying_columns
+    yields a result byte-identical to the standalone call. Guards the #198
+    no-redundant-recompute patch — if the kwargs path diverged from the
+    self-contained path the byte-identical feature cache contract breaks.
+    """
+    panel, idx = _synth_panel_with_index(220, 3, seed=11)
+    standalone = F.f16_meta_underlying_columns(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                                 annualization=250)
+    pre_nat = F.f16_underlying(panel, F.DEFAULT_LOOKBACKS, annualization=250)
+    pre_f7 = F.volume_family(panel, F.DEFAULT_LOOKBACKS)
+    pre_xs = F.cross_sectional_rank_z(panel, F.DEFAULT_LOOKBACKS, annualization=250)
+    threaded = F.f16_meta_underlying_columns(panel, lookbacks=F.DEFAULT_LOOKBACKS,
+                                              annualization=250,
+                                              f16_nat=pre_nat, f7=pre_f7, xs=pre_xs)
+    pd.testing.assert_frame_equal(standalone, threaded)
+
+
+def test_build_feature_matrix_does_not_recompute_f7_f14_for_f16(monkeypatch):
+    """When F7, F14, and F16 are all selected, build_feature_matrix must reuse
+    F7's volume_family and F14's cross_sectional_rank_z results inside F16
+    instead of recomputing them. Each underlying call must fire exactly once.
+    Prevents regression of the #198 redundancy that cost 137 min/sp500-cell.
+    """
+    from gbdt import features as F_mod
+    panel, idx = _synth_panel_with_index(220, 3, seed=12)
+
+    n_vol = [0]
+    n_xs = [0]
+    real_vol = F_mod.volume_family
+    real_xs = F_mod.cross_sectional_rank_z
+
+    def spy_vol(*a, **kw):
+        n_vol[0] += 1
+        return real_vol(*a, **kw)
+
+    def spy_xs(*a, **kw):
+        n_xs[0] += 1
+        return real_xs(*a, **kw)
+
+    monkeypatch.setattr(F_mod, "volume_family", spy_vol)
+    monkeypatch.setattr(F_mod, "cross_sectional_rank_z", spy_xs)
+
+    F_mod.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,
+                                annualization=250,
+                                families=["F7", "F14", "F16"])
+    assert n_vol[0] == 1, f"volume_family fired {n_vol[0]} times; expected 1 (F16 must reuse F7)"
+    assert n_xs[0] == 1, f"cross_sectional_rank_z fired {n_xs[0]} times; expected 1 (F16 must reuse F14)"
+
+
 def test_build_feature_matrix_exclude_glob():
     panel, idx = _synth_panel_with_index(220, 3, seed=7)
     mat = F.build_feature_matrix(panel, idx, lookbacks=F.DEFAULT_LOOKBACKS,

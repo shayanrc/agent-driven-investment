@@ -603,6 +603,10 @@ def f16_meta_underlying_columns(
     panel: pd.DataFrame,
     lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
     annualization: int = 250,
+    *,
+    f16_nat: pd.DataFrame | None = None,
+    f7: pd.DataFrame | None = None,
+    xs: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Return the 31 z-score columns F16's meta layer operates on.
 
@@ -613,10 +617,18 @@ def f16_meta_underlying_columns(
       6 F14 vol_xs_zscore_N
       6 F16 native stock_return_zscore_N
       6 F16 native realized_vol_zscore_N
+
+    ``f16_nat`` / ``f7`` / ``xs`` may be supplied by callers that have already
+    computed those families (e.g. ``build_feature_matrix`` orchestrating F7,
+    F14, and F16 in one walk). Default-None preserves the standalone-call
+    contract — the function is self-contained when invoked directly.
     """
-    f16_nat = f16_underlying(panel, lookbacks, annualization=annualization)
-    f7 = volume_family(panel, lookbacks)
-    xs = cross_sectional_rank_z(panel, lookbacks, annualization=annualization)
+    if f16_nat is None:
+        f16_nat = f16_underlying(panel, lookbacks, annualization=annualization)
+    if f7 is None:
+        f7 = volume_family(panel, lookbacks)
+    if xs is None:
+        xs = cross_sectional_rank_z(panel, lookbacks, annualization=annualization)
 
     keep_f7 = [f"dollar_move_zscore_{N}" for N in lookbacks] + ["dollar_move_xs_zscore"]
     keep_xs = [f"return_xs_zscore_{N}" for N in lookbacks] + [f"vol_xs_zscore_{N}" for N in lookbacks]
@@ -706,10 +718,21 @@ def build_feature_matrix(
         plan.append(("F14", lambda: cross_sectional_rank_z(panel, lookbacks, annualization)))
     if "F15" in sel:
         plan.append(("F15", lambda: calendar_features(panel)))
+    # Holds completed family results so F16 can reuse F7 + F14 instead of
+    # recomputing them. F7 is the heavy hitter — ~137 min on sp500 (3.6M rows
+    # × 6 lookbacks); without reuse F16 doubled the per-cell features cost.
+    # If F7/F14 aren't selected the dict lookups return None and
+    # f16_meta_underlying_columns falls back to its standalone codepath.
+    computed: dict[str, pd.DataFrame] = {}
     if "F16" in sel:
         def _build_f16() -> pd.DataFrame:
             f16_nat = f16_underlying(panel, lookbacks, annualization)
-            underlyings = f16_meta_underlying_columns(panel, lookbacks, annualization)
+            underlyings = f16_meta_underlying_columns(
+                panel, lookbacks, annualization,
+                f16_nat=f16_nat,
+                f7=computed.get("F7"),
+                xs=computed.get("F14"),
+            )
             meta = signed_days_outside_band_meta(
                 underlyings, sigmas=(1.0, 2.0, 3.0),
             )
@@ -721,7 +744,9 @@ def build_feature_matrix(
     last_log_time = t_start
     any_emit = False
     for i, (fam, fn) in enumerate(plan, start=1):
-        pieces.append(fn())
+        result = fn()
+        computed[fam] = result
+        pieces.append(result)
         now = time.time()
         # Time-based throttle: emit at most once per
         # _FEATURES_PROGRESS_THROTTLE_SEC seconds. To guarantee at least
