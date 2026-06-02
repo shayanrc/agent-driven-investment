@@ -183,8 +183,8 @@ def test_validate_hp_xgboost_applies_pins_and_ranges():
     out = _validate_hp({"n_estimators": 1000, "max_depth": 6, "eta": 0.05},
                        backend="xgboost")
     assert out["objective"] == "binary:logistic"  # XGBoost pin applied
-    assert out["tree_method"] == "exact"
-    assert out["n_jobs"] == 1 and out["device"] == "cpu"
+    assert out["tree_method"] == "hist"
+    assert out["n_jobs"] == 8 and out["device"] == "cpu"
 
 
 def test_validate_hp_xgboost_rejects_out_of_range():
@@ -194,8 +194,14 @@ def test_validate_hp_xgboost_rejects_out_of_range():
 
 def test_validate_hp_xgboost_rejects_pinned_override():
     # V1.2 Phase 3: determinism knobs hard-fail with a determinism-specific msg.
+    # ``exact`` is now the non-pin value (the pin flipped to ``hist`` for the
+    # 15–90× speedup with byte-identical reproduction at fixed n_jobs on this
+    # machine).
     with pytest.raises(ValueError, match="determinism"):
-        _validate_hp({"tree_method": "hist"}, backend="xgboost")
+        _validate_hp({"tree_method": "exact"}, backend="xgboost")
+    # A different n_jobs also raises (the pin is fixed at 8).
+    with pytest.raises(ValueError, match="determinism"):
+        _validate_hp({"n_jobs": 1}, backend="xgboost")
     # Policy pins (objective / eval_metric) reject too, generic message.
     with pytest.raises(ValueError, match="objective"):
         _validate_hp({"objective": "reg:squarederror"}, backend="xgboost")
@@ -269,8 +275,8 @@ def test_xgboost_deterministic_pins_applied_on_construction():
     m = make_model("xgboost", {"n_estimators": 10, "max_depth": 3})
     assert m.hp["objective"] == "binary:logistic"
     assert m.hp["eval_metric"] == "logloss"
-    assert m.hp["tree_method"] == "exact"
-    assert m.hp["n_jobs"] == 1
+    assert m.hp["tree_method"] == "hist"
+    assert m.hp["n_jobs"] == 8
     assert m.hp["device"] == "cpu"
     assert m.hp["seed"] == 42                # default random_seed mirrored to seed
     # A custom seed threads through to both spellings.
@@ -330,16 +336,48 @@ def test_xgboost_bit_identity_determinism():
     assert np.array_equal(p_a, p_b)        # bit-identical, not merely close
 
 
+def test_xgboost_booster_bytes_hash_match_across_runs():
+    """A2 guard, stricter half: two fits with the pinned ``hist + n_jobs=8``
+    config produce **byte-identical booster blobs** (``Booster.save_raw()``
+    hashes match). This is the stronger version of
+    ``test_xgboost_bit_identity_determinism`` — it pins the *serialized model
+    bytes*, not just downstream ``predict_proba`` output — and is the contract
+    that justified pinning ``hist + n_jobs=8`` as the determinism knobs (the
+    swap from ``exact + n_jobs=1`` was empirically verified byte-identical
+    across 2 fits × 4 configs on this machine while delivering a 15–90×
+    speedup).
+
+    A regression here means the hist/n_jobs combo lost its byte-deterministic
+    property — e.g. a future XGBoost version changed the multi-thread reduction
+    order — and the finalization-retrain contract would silently break."""
+    import hashlib
+
+    X, y = _toy_dataset(500, seed=24)
+    hp = {"n_estimators": 60, "max_depth": 5, "eta": 0.1,
+          "early_stopping_rounds": 10}
+    m_a = make_model("xgboost", dict(hp))
+    m_a.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])
+    m_b = make_model("xgboost", dict(hp))
+    m_b.fit(X.iloc[:350], y[:350], X.iloc[350:], y[350:])
+    blob_a = m_a._model.get_booster().save_raw()
+    blob_b = m_b._model.get_booster().save_raw()
+    assert hashlib.sha256(blob_a).hexdigest() == hashlib.sha256(blob_b).hexdigest()
+
+
 def test_xgboost_nondeterministic_override_raises():
-    """A2 guard, negative half (plan § 8): a ``tree_method="hist", n_jobs=4``
-    override — the canonical non-deterministic combo — hard-fails at
+    """A2 guard, negative half (plan § 8): an ``n_jobs=4`` override (or any
+    other value at a determinism knob other than the pin) hard-fails at
     construction with a determinism-specific message, so it can never reach
-    predict-time and silently corrupt the finalization retrain."""
+    predict-time and silently corrupt the finalization retrain. ``hist`` +
+    ``n_jobs=8`` is the *current* pin (was ``exact`` + ``n_jobs=1`` before the
+    speedup swap — the contract is "value must match the pin", not "must be
+    exact + nj=1")."""
     with pytest.raises(ValueError, match="determinism"):
         make_model("xgboost",
-                   {"n_estimators": 10, "tree_method": "hist", "n_jobs": 4})
-    # Each individual determinism knob also hard-fails on its own.
-    for knob, bad in (("tree_method", "hist"), ("n_jobs", 4), ("device", "cuda")):
+                   {"n_estimators": 10, "tree_method": "exact", "n_jobs": 4})
+    # Each individual determinism knob also hard-fails on its own when the
+    # value differs from the pin (the pin is ``hist`` / ``8`` / ``cpu``).
+    for knob, bad in (("tree_method", "exact"), ("n_jobs", 4), ("device", "cuda")):
         with pytest.raises(ValueError, match=knob):
             make_model("xgboost", {"n_estimators": 10, knob: bad})
 
@@ -347,10 +385,10 @@ def test_xgboost_nondeterministic_override_raises():
 def test_xgboost_same_pinned_value_is_noop():
     """Passing the SAME pinned determinism value is a no-op, not an error
     (the hard-fail triggers only on a DIFFERENT value)."""
-    m = make_model("xgboost", {"n_estimators": 10, "tree_method": "exact",
-                               "n_jobs": 1, "device": "cpu"})
-    assert m.hp["tree_method"] == "exact"
-    assert m.hp["n_jobs"] == 1 and m.hp["device"] == "cpu"
+    m = make_model("xgboost", {"n_estimators": 10, "tree_method": "hist",
+                               "n_jobs": 8, "device": "cpu"})
+    assert m.hp["tree_method"] == "hist"
+    assert m.hp["n_jobs"] == 8 and m.hp["device"] == "cpu"
 
 
 def test_xgboost_evals_result_normalized_shape():
@@ -396,7 +434,7 @@ def test_xgboost_out_of_range_hp_rejected_on_construction():
 
 def test_xgboost_pinned_override_rejected_on_construction():
     with pytest.raises(ValueError, match="tree_method"):
-        make_model("xgboost", {"n_estimators": 10, "tree_method": "hist"})
+        make_model("xgboost", {"n_estimators": 10, "tree_method": "exact"})
 
 
 # ---------------------------------------------------------------------------

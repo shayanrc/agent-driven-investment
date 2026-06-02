@@ -292,9 +292,11 @@ def test_validate_xgboost_rejects_has_time_as_unknown():
 
 
 def test_validate_xgboost_rejects_pinned_determinism_knob():
-    # tree_method is an XGBoost determinism pin — never overridable.
+    # tree_method is an XGBoost determinism pin — never overridable. The pin
+    # is ``hist`` (post the speedup swap), so ``exact`` is the value an agent
+    # might propose and that must be rejected.
     with pytest.raises(DecisionError, match="pinned"):
-        validate_decision({"hp_changes": {"tree_method": "hist"}}, spec=None,
+        validate_decision({"hp_changes": {"tree_method": "exact"}}, spec=None,
                           known_features=_KNOWN, backend="xgboost")
 
 

@@ -123,8 +123,9 @@ def test_xgboost_spec_rejects_out_of_range_hp():
 def test_xgboost_spec_rejects_determinism_pin_override():
     # Overriding an XGBoost determinism pin (tree_method) in hp_starting is a
     # hard-fail at parse time (the Phase-3 determinism guarantee, plan § 5.1).
+    # ``exact`` is the off-pin value (pin is ``hist`` post the speedup swap).
     spec = _xgb_spec()
-    spec["backend"]["hp_starting"] = {"eta": 0.3, "tree_method": "hist"}
+    spec["backend"]["hp_starting"] = {"eta": 0.3, "tree_method": "exact"}
     with pytest.raises(ValueError, match="hp_starting is invalid"):
         _validate_spec(spec)
 
