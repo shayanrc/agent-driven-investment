@@ -652,3 +652,145 @@ def test_load_and_apply_resume_should_stop_sets_force_stop(tmp_path):
                               "rationale": "plateau, stopping"}))
     rs = _load_and_apply_resume(out_dir, spec={}, run_id="cell_x")
     assert rs["force_stop"] is True
+
+
+# ---------------------------------------------------------------------------
+# Task #204 — disable_plateau gate in walk_forward_train
+#
+# In default (sweep) mode the runner auto-stops on a single-knob val_brier
+# plateau; in agent_file_protocol mode the agent should be allowed to pivot
+# to a different knob first. The gate lives on walk_forward_train's
+# ``disable_plateau`` kwarg, set by run_experiment from callback_mode.
+# These tests exercise the kwarg directly with mocked training so we can
+# control the val_brier history precisely.
+# ---------------------------------------------------------------------------
+
+
+def _patch_fit_with_briers(monkeypatch, briers):
+    """Patch model + bundle + finalization so iter_idx i emits val_brier=briers[i].
+
+    Also stubs ``_fit_one`` (the finalization retrain) + calibration helpers so
+    the post-loop emit doesn't require a real fitted model — these tests only
+    care about which inner_stop_signal is reached.
+    """
+    import numpy as np
+
+    import gbdt.train as T
+
+    class _FakeModel:
+        def fit(self, *a, **k):
+            return None
+
+        def predict_proba(self, X):
+            # 1-D P(positive) per BaseGBDTModel contract — calibration / metrics
+            # don't affect inner_stop_signal, which is what these tests assert on.
+            # Use a non-degenerate distribution so spiegelhalter_z variance > 0
+            # and conditional_isotonic doesn't divide by zero.
+            n = len(X)
+            return np.linspace(0.2, 0.8, n)
+
+    monkeypatch.setattr(T, "make_model", lambda *a, **k: _FakeModel())
+    monkeypatch.setattr(T, "_fit_one",
+                        lambda *a, **k: _FakeModel(), raising=False)
+
+    def _fake_bundle(**kwargs):
+        i = kwargs["iter_idx"]
+        vb = briers[i] if i < len(briers) else briers[-1]
+        return _toy_bundle(iter_n=i, val_brier=vb)
+
+    monkeypatch.setattr(T, "build_diagnostic_bundle", _fake_bundle)
+
+
+def _noop_callback(bundle, available):
+    """FS+HP callback that proposes no changes — keeps loop alive so plateau
+    or cap is what stops it."""
+    return list(available), dict(bundle.hp), "noop"
+
+
+def test_walk_forward_default_mode_plateau_fires(monkeypatch):
+    """Default (sweep) mode: tiny val_brier improvements MUST trigger plateau-stop.
+
+    History [0.30, 0.28, 0.279, 0.278]: d_last=0.001, d_prev=0.001, both <
+    plateau_threshold=0.005 → plateau fires at iter 3.
+    """
+    briers = [0.30, 0.28, 0.279, 0.278, 0.277, 0.276]
+    _patch_fit_with_briers(monkeypatch, briers)
+    panel, X, y = _toy_panel()
+
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=["sig", "n1", "n2"],
+        hp=dict(_TINY_HP), split=_TINY_SPLIT, max_iterations=8,
+        plateau_threshold=0.005,
+        fs_hp_callback=_noop_callback,
+        # disable_plateau defaults to False — explicit for the test contract.
+        disable_plateau=False,
+    )
+    assert result.inner_stop_signal == "plateau"
+    assert len(result.iterations) == 4  # iters 0..3; plateau at 3
+
+
+def test_walk_forward_agent_mode_plateau_suppressed_runs_to_cap(monkeypatch):
+    """Agent mode (disable_plateau=True): same tiny-improvement history MUST
+    NOT trigger plateau-stop — the loop runs to ``max_iterations`` (cap)
+    because the noop callback never proposes a structural pivot. In the real
+    runner the agent would write a should_stop decision and the loop would
+    finalize via force_stop instead; here we just prove plateau is gated off
+    and ``cap`` (or another non-plateau signal) takes over.
+    """
+    briers = [0.30, 0.28, 0.279, 0.278, 0.277, 0.276]
+    _patch_fit_with_briers(monkeypatch, briers)
+    panel, X, y = _toy_panel()
+
+    # max_iterations=5 so the loop terminates promptly under cap, not plateau.
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=["sig", "n1", "n2"],
+        hp=dict(_TINY_HP), split=_TINY_SPLIT, max_iterations=5,
+        plateau_threshold=0.005,
+        fs_hp_callback=_noop_callback,
+        disable_plateau=True,
+    )
+    assert result.inner_stop_signal == "cap"
+    assert len(result.iterations) == 5  # ran past the plateau window
+
+
+def test_walk_forward_agent_mode_degradation_still_fires(monkeypatch):
+    """Agent mode: degradation_gate MUST still fire — regression off best val
+    is a real stop signal the agent can't recover from without backtracking,
+    so the runner keeps that gate active in both modes.
+
+    History [0.30, 0.25, 0.30]: latest 0.30 > 1.01*0.25 → degradation at iter 2.
+    """
+    briers = [0.30, 0.25, 0.30, 0.30, 0.30]
+    _patch_fit_with_briers(monkeypatch, briers)
+    panel, X, y = _toy_panel()
+
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=["sig", "n1", "n2"],
+        hp=dict(_TINY_HP), split=_TINY_SPLIT, max_iterations=8,
+        plateau_threshold=0.005,
+        degradation_gate=0.01,
+        fs_hp_callback=_noop_callback,
+        disable_plateau=True,
+    )
+    assert result.inner_stop_signal == "degradation"
+    assert len(result.iterations) == 3  # iters 0..2; degradation at 2
+
+
+def test_runner_disable_plateau_gate_present_in_source():
+    """Source-level contract: ``run_experiment`` MUST gate ``disable_plateau``
+    on ``callback_mode == "agent_file_protocol"`` and forward it as a kwarg to
+    ``walk_forward_train``. End-to-end mocking of ``run_experiment`` would
+    require stubbing panel + feature build + calibration; instead we assert
+    the wiring is present in source so a future refactor that accidentally
+    drops it (e.g. by hardcoding ``disable_plateau=False`` or removing the
+    kwarg) fails this test loudly. The behaviour itself is covered by the
+    unit + ``walk_forward_train`` integration tests above.
+    """
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[2] / "src" / "gbdt" / "__main__.py"
+    text = src.read_text()
+    # Gate computed from callback_mode.
+    assert 'disable_plateau = (callback_mode == "agent_file_protocol")' in text
+    # Forwarded to walk_forward_train.
+    assert "disable_plateau=disable_plateau," in text
