@@ -1,0 +1,85 @@
+# V1.3 Option A — A4 RE-VALIDATION: agent-driven FS+HP loop on cell-5 with V1.3
+# bundle signals enabled, AFTER bugfix PR #114 (calibrated in-loop oracle +
+# tie_band decoupled from plateau_threshold).
+#
+# This is the re-validation of memo _222 / PR #113, which ran on a buggy V1.3
+# where `eval_r_precision_at_k` was computed on RAW predictions (not calibrated,
+# mismatching the canonical CSV scoring path). The agent navigated correctly
+# (to a 5-tree depth-2 model, within 1 tree of the _211 manual winner) but the
+# in-loop oracle was wrong: raw R-p@1 = 0.7143 (would have PASSED) but
+# calibrated R-p@1 = 0.4714 (FAILED by 0.243).
+#
+# With PR #114 the in-loop oracle is now CALIBRATED (matching the canonical
+# scoring path). The question: does the loop now navigate to a model whose
+# calibrated R-p@1 actually clears the PASS floor?
+#
+# Cell: nasdaq100 UP +10% within 50 trading days, max_drawdown 5% (rolling
+# intraday). This is the anti-AUC strong-top-1 cell from _211_cell5_manual_tuning_xgb.md
+# — sweep AUC=0.475 (in [0.46, 0.54]) AND R-Precision@10 lift = 1.94× (> 1.8×), so
+# V1.3 Option A's anti_auc_flag should fire as "true" at iter_0, auto-disabling
+# the L1 tie-break (#187) + the val_brier auto-plateau gate.
+#
+# Purpose: A4 acceptance test for V1.3 Option A (plan
+# docs/gbdt/V1.3_option_a_loop_anti_auc_integration_plan.md § 2.2). The agent (this
+# session) drives the loop using the new V1.3 bundle fields:
+#   - anti_auc_flag (set true at iter_0)
+#   - eval_r_precision_at_k (primary optimization signal on anti-AUC cells)
+#   - degenerate_sink_warning (pivot-away alarm when val_brier approaches the
+#     trivial constant-predictor)
+#   - weighted_base_rate_brier + eval_segment_size (context)
+#
+# Acceptance gates (per the parent brief + plan § 2.2):
+#   - PASS floor: test R-p@1 >= 0.6714 (sweep baseline)
+#   - STRETCH:    test R-p@1 >= 0.75 (within 10% of manual track 0.829)
+#   - FAIL:       test R-p@1 < 0.6714 (V1.3 Option A insufficient — promote
+#                 #213 V1.3 Option B scout phase)
+#
+# Backend: XGBoost (cell-5 manual winner is XGBoost — 6 trees, max_depth=2; the
+# tiny-model regime CatBoost defaults don't reach). hp_starting is OMITTED so
+# XGBoost runs from library defaults (n_estimators=100, eta=0.3, max_depth=6, no ES)
+# — the doctrinal-honest test of whether the loop, with the V1.3 runtime signals,
+# can navigate to the tiny-model regime on its own.
+#
+# plateau_threshold: 0.0001 disables the runner's single-knob auto-plateau even
+# though anti_auc_flag=true will also auto-disable val_brier plateau in
+# inner_stop_check (per the V1.3 implementation) — belt-and-suspenders against
+# bug #204 silent exits before the agent can pivot knobs.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 50
+  max_drawdown: 0.05                              # numeric, e.g. 0.05 not "5%"
+
+# split omitted -> default 800/400/200/100 per ticker.
+# features omitted -> start with the full 279-column candidate pool; the agent prunes per playbook rule 1.
+
+backend:
+  library: xgboost                                # cell-5 manual winner (XGBoost); tiny-model regime path.
+  calibration_method: conditional_isotonic        # Spiegelhalter Z on val -> ship native or isotonic.
+
+  # hp_starting INTENTIONALLY omitted -> XGBoost library defaults
+  # (n_estimators=100, eta=0.3, max_depth=6, no early stopping). The V1.3 A4 test
+  # is whether the agent, with the new bundle signals, can navigate from these
+  # defaults to the tiny-model regime (max_depth=2 + eta=0.1 + ES) the manual
+  # track found wins this cell. If the loop needs the manual track's iter-0
+  # baseline planted to succeed, that's a finding for V1.3 Option B (scout phase).
+
+  fs_hp_loop:
+    callback_mode: agent_file_protocol            # V1.1 — this session drives each iteration via exit-and-resume.
+    max_iterations: 16                            # validator cap; agent will should_stop earlier on convergence.
+    plateau_threshold: 0.0001                     # DISABLE single-knob auto-plateau (#204 workaround + V1.3 belt-and-suspenders).
+    degradation_gate: 0.05                        # loosened so the agent's `should_stop` drives termination.
+    degenerate_sink_threshold: 1.05               # V1.3 D5 default; warn when val_brier <= 1.05 * weighted_base_rate_brier.
+    # tie_band set EXPLICITLY (overrides the 0.5 * plateau_threshold default of 0.00005, which would
+    # collapse the V1.3 eval-R-p@1 tie-break window on anti-AUC cells where val_brier sits near baseline
+    # for every config). 0.005 is the natural-default-plateau-threshold's tie band -- catches the cluster
+    # of val_brier-at-baseline configs the loop produces on this cell, lets eval R-p@1 pick the winner.
+    tie_band: 0.005
+
+random_seed: 42

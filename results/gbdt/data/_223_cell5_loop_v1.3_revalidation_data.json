@@ -1,0 +1,110 @@
+{
+  "memo_id": "_223",
+  "title": "cell-5 agent loop V1.3 re-validation (post bugfix PR #114)",
+  "branch": "gbdt-v1.3-a4-revalidation",
+  "date": "2026-06-02",
+  "cross_references": {
+    "prior_attempt_memo": "_222",
+    "prior_attempt_pr": 113,
+    "bugfix_pr": 114,
+    "v1.3_implementation_pr": 112,
+    "manual_track_memo": "_211",
+    "plan": "docs/gbdt/V1.3_option_a_loop_anti_auc_integration_plan.md"
+  },
+  "cell": {
+    "universe": "nasdaq100",
+    "direction": "up",
+    "threshold_pct": 10,
+    "horizon_days": 50,
+    "max_drawdown": 0.05
+  },
+  "acceptance": {
+    "pass_floor_r_p_at_1": 0.6714,
+    "stretch_target_r_p_at_1": 0.75,
+    "test_r_p_at_1_calibrated": 0.7143,
+    "verdict": "PASS",
+    "margin_vs_pass_floor_abs": 0.0429
+  },
+  "headline_metrics_test_calibrated": {
+    "n_rows": 4600,
+    "Q_days": 70,
+    "base_rate": 0.265217,
+    "test_auc": 0.467695,
+    "r_precision_at_1": 0.714286,
+    "r_precision_at_3": 0.538095,
+    "r_precision_at_5": 0.483571,
+    "r_precision_at_10": 0.455933,
+    "r_precision_at_20": 0.469482,
+    "test_brier": 0.203726,
+    "test_brier_baseline_baserate": 0.194877,
+    "test_brier_improvement_vs_baseline": -0.008849
+  },
+  "headline_metrics_eval_calibrated": {
+    "n_rows": 18400,
+    "Q_days": 244,
+    "base_rate": 0.353804,
+    "eval_auc": 0.580438,
+    "r_precision_at_1": 0.713115,
+    "r_precision_at_3": 0.610656,
+    "r_precision_at_5": 0.550820,
+    "r_precision_at_10": 0.523770,
+    "r_precision_at_20": 0.561629,
+    "eval_brier": 0.224883,
+    "eval_brier_baseline_baserate": 0.228627,
+    "eval_brier_improvement_vs_baseline": 0.003744
+  },
+  "winning_config": {
+    "backend": "xgboost",
+    "max_depth": 2,
+    "eta": 0.1,
+    "n_estimators": 500,
+    "early_stopping_rounds": 30,
+    "colsample_bytree": 0.3,
+    "min_child_weight": 5,
+    "best_iter_trees": 7,
+    "n_features": 190,
+    "calibration_decision": "native",
+    "spiegelhalter_z": 1.556,
+    "spiegelhalter_p": 0.120
+  },
+  "loop_trajectory_calibrated_r_p_at_1": [
+    {"iter": 0, "r_p_at_1": 0.5697, "val_brier": 0.2628, "trees": null, "hp_change": "xgb defaults (depth=6, eta=0.3, no ES)"},
+    {"iter": 1, "r_p_at_1": 0.5082, "val_brier": 0.2251, "trees": 5, "hp_change": "FS prune 89 + depth=3 + eta=0.1 + nest=500 + ES=30"},
+    {"iter": 2, "r_p_at_1": 0.5820, "val_brier": 0.2246, "trees": 4, "hp_change": "max_depth=2"},
+    {"iter": 3, "r_p_at_1": 0.5820, "val_brier": 0.2247, "trees": 3, "hp_change": "colsample_bytree=0.4"},
+    {"iter": 4, "r_p_at_1": 0.6230, "val_brier": 0.2246, "trees": 9, "hp_change": "colsample_bytree=0.3"},
+    {"iter": 5, "r_p_at_1": 0.5861, "val_brier": 0.2248, "trees": 2, "hp_change": "colsample_bytree=0.2"},
+    {"iter": 6, "r_p_at_1": 0.6107, "val_brier": 0.2245, "trees": 11, "hp_change": "eta=0.05 + revert cs=0.3"},
+    {"iter": 7, "r_p_at_1": 0.7131, "val_brier": 0.2245, "trees": 9, "hp_change": "eta=0.1 + min_child_weight=5 (WINNER)"},
+    {"iter": 8, "r_p_at_1": 0.7131, "val_brier": 0.2246, "trees": 8, "hp_change": "min_child_weight=10"},
+    {"iter": 9, "r_p_at_1": 0.6107, "val_brier": 0.2246, "trees": 4, "hp_change": "max_depth=3"},
+    {"iter": 10, "r_p_at_1": 0.5861, "val_brier": 0.2242, "trees": 3, "hp_change": "revert depth=2 + subsample=0.7"},
+    {"iter": 11, "r_p_at_1": 0.7090, "val_brier": 0.2243, "trees": 8, "hp_change": "revert subsample=1.0 + lambda=5"}
+  ],
+  "knob_families_explored": [
+    "capacity (max_depth 2/3)",
+    "feature subsampling (colsample_bytree 0.2/0.3/0.4/1.0)",
+    "learning rate (eta 0.05/0.1)",
+    "leaf regularization (min_child_weight 1/5/10)",
+    "row subsampling (subsample 0.7/1.0)",
+    "L2 regularization (lambda 1/5)"
+  ],
+  "v1.3_bundle_sanity": {
+    "anti_auc_flag": "true",
+    "auto_disabled": {"l1_tie_break": "anti_auc_flag=true", "val_brier_plateau": "anti_auc_flag=true"},
+    "tie_band_effective": 0.005,
+    "eval_r_precision_at_k_calibrated": true,
+    "in_loop_signal_matches_canonical_scoring": true
+  },
+  "comparison_to_prior_run_222": {
+    "prior_test_r_p_at_1_calibrated": 0.4714,
+    "prior_test_r_p_at_1_raw_advisory": 0.7143,
+    "this_run_test_r_p_at_1_calibrated": 0.7143,
+    "delta_calibrated_abs": 0.2429,
+    "mechanism": "Prior run's chosen model (5-tree mcw=1) had Spiegelhalter |z|=2.23 triggering isotonic which collapsed 218 raw -> 7 distinct calibrated values. This run's winning model (7-tree mcw=5) has |z|=1.56 below the 2.0 threshold so calibration decision = 'native' (pass-through), preserving 225 distinct prediction values and the raw rank order."
+  },
+  "wall_clock_total_sec": 17.09,
+  "wall_clock_total_with_setup_min_approx": 25,
+  "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
+  "canonical_csv_row": "nasdaq100_up_10pct_50d_dd5pct_loop_v1.3_revalidation,4600,70,0.265217,0.467695,0.714286,0.538095,0.483571,0.455933,0.469482"
+}
