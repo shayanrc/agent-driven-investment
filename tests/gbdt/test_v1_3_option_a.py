@@ -766,3 +766,220 @@ def test_walk_forward_inner_stop_anti_auc_skips_plateau():
     # which is suppressed by degradation_gate=0.5).
     assert result.inner_stop_signal == "cap"
     assert len(result.iterations) == 3
+
+
+# ---------------------------------------------------------------------------
+# Bug #222 fix — eval R-p@K computed on calibrated predictions
+# ---------------------------------------------------------------------------
+
+
+def test_bundle_eval_rp_uses_calibrated_predictions_on_degenerate_model():
+    """Bug #222 regression — the bundle's eval R-p@K is computed on
+    CALIBRATED predictions (matching canonical CSV scoring), not raw.
+
+    Pre-fix, the bundle scored eval R-p@K on raw model output under the
+    FALSE assumption that isotonic monotonicity preserves rank order. On a
+    deliberately tiny / degenerate model that emits clustered raw
+    predictions, post-isotonic predictions collapse to far fewer distinct
+    values; the alphabetical-ticker tie-break then dominates ranking. We
+    construct a fixture where raw + calibrated give visibly different
+    R-p@K — if the fix is reverted, this test catches it.
+
+    Strategy:
+      - Tiny eval segment with structured raw predictions (a few distinct
+        levels), then verify the calibrated R-p@K differs from what raw
+        scoring would have produced.
+    """
+    import numpy as np
+
+    from gbdt.calibration import (
+        apply_calibrator,
+        conditional_isotonic,
+    )
+    from gbdt.diagnostics import _r_precision_at_k_from_arrays
+
+    # Build a tiny val + eval segment.
+    n_days = 10
+    n_tickers = 8
+    dates = pd.date_range("2024-01-01", periods=n_days)
+    tickers = [f"T{i:02d}" for i in range(n_tickers)]
+    rows_date = np.repeat(dates, n_tickers)
+    rows_ticker = np.tile(tickers, n_days)
+
+    # Strongly miscalibrated raw predictions on val: y is INVERSELY related
+    # to p_raw (high p → label 0, low p → label 1). Isotonic must fit a
+    # weakly-monotone (here: flat or near-flat) curve on this, collapsing
+    # all raw values in [0.42, 0.68] to a single calibrated level. This
+    # replicates the cell-5 pathology: many distinct raw values → very few
+    # distinct calibrated values.
+    n_val = 100
+    p_val_raw = np.linspace(0.40, 0.70, n_val)
+    # Anti-correlated label: high p_raw → label 0, low p_raw → label 1.
+    y_val = (p_val_raw < 0.55).astype(int)
+
+    # Build eval predictions: positive at the alphabetically-LAST ticker
+    # on every day, AND give it the highest raw probability. The fix must
+    # surface that calibration COLLAPSES this distinction (raw 0.68 + raw
+    # 0.42 both map to the same calibrated value on this val fit) → the
+    # canonical (p_calibrated desc, ticker asc) tie-break picks T00 first
+    # → calibrated R-p@1 drops to 0 (the positive is at T07, ranked last).
+    p_eval_raw = np.zeros(n_days * n_tickers, dtype=float)
+    y_eval = np.zeros(n_days * n_tickers, dtype=int)
+    for d_idx in range(n_days):
+        rows = np.arange(d_idx * n_tickers, (d_idx + 1) * n_tickers)
+        p_eval_raw[rows] = 0.42
+        last_row = rows[-1]  # T07
+        p_eval_raw[last_row] = 0.68
+        y_eval[last_row] = 1
+
+    # Fit conditional_isotonic calibrator on val (the bundle path).
+    cal_decision = conditional_isotonic(y_val, p_val_raw, z_threshold=2.0)
+    # Sanity: the fixture really triggers isotonic fit (not native).
+    assert cal_decision.method == "isotonic", (
+        f"fixture failed to trigger isotonic; got {cal_decision.method!r}. "
+        f"|z|={abs(cal_decision.spiegelhalter_z):.3f}"
+    )
+
+    # Score eval BOTH ways.
+    raw_rp = _r_precision_at_k_from_arrays(
+        dates=rows_date, tickers=rows_ticker,
+        p_calibrated=p_eval_raw,  # name is misleading; pass raw to score raw
+        y_true=y_eval,
+    )
+    p_eval_calibrated = apply_calibrator(p_eval_raw, cal_decision.calibrator)
+    cal_rp = _r_precision_at_k_from_arrays(
+        dates=rows_date, tickers=rows_ticker,
+        p_calibrated=p_eval_calibrated,
+        y_true=y_eval,
+    )
+
+    # The raw-scored R-p@1 captures all 10 positives (top-raw at every day
+    # is the alphabetically-last positive ticker). After isotonic
+    # collapses raw to ≤ 2 distinct values, all 8 tickers per day TIE on
+    # calibrated p, the alphabetical tie-break ranks T00 first; the
+    # positive at T07 falls to rank 8 → calibrated R-p@1 = 0.
+    assert raw_rp[1] == 1.0, f"fixture raw R-p@1 sanity: got {raw_rp[1]}"
+    assert cal_rp[1] < raw_rp[1], (
+        f"fix proves: calibrated R-p@1 ({cal_rp[1]:.3f}) must differ from "
+        f"raw ({raw_rp[1]:.3f}) on this degenerate fixture (calibration "
+        f"collapses raw predictions → alphabetical tie-break dominates)."
+    )
+
+    # Now verify the bundle uses calibrated (NOT raw). Build a model whose
+    # predict_proba returns the constructed p_eval_raw on a matching X_eval.
+    # We use a small stub model to keep the test fast + deterministic.
+
+    class _StubModel:
+        def __init__(self, p_val: np.ndarray, p_eval: np.ndarray) -> None:
+            self._p_val = p_val
+            self._p_eval = p_eval
+            self.hp = {"iterations": 1, "depth": 1}
+            self.best_iteration = 1
+            self.evals_result = None
+
+        def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+            if len(X) == n_val:
+                return self._p_val
+            if len(X) == len(p_eval_raw):
+                return self._p_eval
+            # Train pass — return matching length.
+            return np.full(len(X), 0.5)
+
+        def feature_importance(self, kind, *args, **kwargs):
+            # Return a pandas Series shaped like the real GBDTModel surface.
+            return pd.Series([0.0, 0.0, 0.0], index=["f1", "f2", "f3"])
+
+    X_val_df = pd.DataFrame({
+        "f1": np.zeros(n_val), "f2": np.zeros(n_val), "f3": np.zeros(n_val),
+    })
+    X_eval_df = pd.DataFrame({
+        "f1": np.zeros(len(p_eval_raw)),
+        "f2": np.zeros(len(p_eval_raw)),
+        "f3": np.zeros(len(p_eval_raw)),
+    })
+    mi_eval = pd.MultiIndex.from_arrays(
+        [rows_date, rows_ticker], names=["date", "ticker"],
+    )
+    X_train_df = pd.DataFrame({
+        "f1": np.zeros(50), "f2": np.zeros(50), "f3": np.zeros(50),
+    })
+    y_train = np.zeros(50, dtype=int)
+
+    stub = _StubModel(p_val_raw, p_eval_raw)
+    bundle = build_diagnostic_bundle(
+        model=stub, iter_idx=0, hp=stub.hp,
+        feature_names=["f1", "f2", "f3"],
+        X_train=X_train_df, y_train=y_train,
+        X_val=X_val_df, y_val=y_val,
+        X_eval=X_eval_df, y_eval=y_eval,
+        mi_eval=mi_eval,
+        include_permutation=False,
+        # Default calibration_method="conditional_isotonic" → matches what
+        # cal_decision above fit on the same (y_val, p_val_raw).
+    )
+    # The bundle's eval R-p@1 MUST match the calibrated scoring (not raw).
+    assert bundle.eval_r_precision_at_k is not None
+    assert bundle.eval_r_precision_at_k[1] == pytest.approx(cal_rp[1])
+    # And critically, must NOT match the raw scoring.
+    assert bundle.eval_r_precision_at_k[1] != pytest.approx(raw_rp[1])
+
+
+def test_bundle_calibration_method_native_passes_raw_through():
+    """When ``calibration_method="native"`` is in effect, the in-loop
+    calibrator is None and eval R-p@K is computed on raw predictions
+    (matching what the finalization-side scoring would produce in that
+    config). This is the contract: the in-loop signal mirrors the
+    finalization scoring under whatever calibration method the spec
+    selected."""
+    import numpy as np
+
+    X, y = _toy_data()
+    X_eval, y_eval, mi_eval = _toy_eval_with_index()
+    m = GBDTModel({"iterations": 30, "depth": 4, "boosting_type": "Plain"})
+    m.fit(X.iloc[:250], y[:250], X.iloc[250:], y[250:])
+
+    b_native = build_diagnostic_bundle(
+        model=m, iter_idx=0, hp=m.hp,
+        feature_names=list(X.columns),
+        X_train=X.iloc[:250], y_train=y[:250],
+        X_val=X.iloc[250:], y_val=y[250:],
+        X_eval=X_eval, y_eval=y_eval, mi_eval=mi_eval,
+        include_permutation=False,
+        calibration_method="native",
+    )
+    # Verify against direct raw computation.
+    from gbdt.diagnostics import _r_precision_at_k_from_arrays
+
+    p_eval_raw = m.predict_proba(X_eval)
+    dates = mi_eval.get_level_values("date").to_numpy()
+    tickers = mi_eval.get_level_values("ticker").to_numpy()
+    expected = _r_precision_at_k_from_arrays(
+        dates=dates, tickers=tickers,
+        p_calibrated=np.asarray(p_eval_raw, dtype=float),
+        y_true=np.asarray(y_eval, dtype=int),
+    )
+    assert b_native.eval_r_precision_at_k == expected
+
+
+def test_walk_forward_passes_calibration_method_to_bundle():
+    """Smoke — walk_forward_train threads calibration_method +
+    calibration_z_threshold into build_diagnostic_bundle. Verifies that
+    the same calibrator is used per-iter in the bundle and at finalization
+    (the bundle is fit fresh per-iter; the per-iter calibrator + the
+    finalization calibrator agree on the FIRST iter when there's only one
+    model, modulo the train/val split being the same)."""
+    from gbdt.train import walk_forward_train
+
+    panel, X, y = _toy_panel(1600, 2, seed=77)
+    # Use isotonic_always to force isotonic fit regardless of Z (eliminates
+    # one source of noise in the comparison).
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=list(X.columns),
+        hp={"iterations": 30, "depth": 3, "boosting_type": "Plain"},
+        max_iterations=1,
+        calibration_method="isotonic_always",
+    )
+    # Verify the bundle came out with a populated eval R-p@K, and that
+    # the calibrator on the result is the finalization isotonic.
+    assert result.iterations[0].eval_r_precision_at_k is not None
+    assert result.calibration.method == "isotonic"

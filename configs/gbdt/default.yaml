@@ -341,9 +341,13 @@ backend:
     # L1 from _187: absolute val-Brier tie band for best-checkpoint selection.
     # Configs whose val Brier falls within [min_val_brier, min_val_brier + tie_band]
     # are "tied with best"; among ties prefer lower train-val gap, then |Spiegelhalter
-    # Z| closer to 0. Default = unset -> 0.5 * plateau_threshold (0.0025). Set to 0.0
-    # to disable tie-breaking (revert to strict val-Brier argmin).
-    # tie_band: 0.0025
+    # Z| closer to 0. Default = unset -> fixed absolute 0.005 (decoupled from
+    # plateau_threshold per bug #223 / memo _222; the pre-2026-06-02 fallback
+    # was 0.5 * plateau_threshold, which collapsed to 0.00005 noise level
+    # when the SKILL.md-recommended #204 workaround set plateau_threshold to
+    # 0.0001). Set to 0.0 to disable tie-breaking (revert to strict val-Brier
+    # argmin).
+    # tie_band: 0.005
 
   # Iteration-0 HP starting values. The agent starts here and explores
   # bounded by the ranges in CATBOOST_HP_REFERENCE.md per parameter.

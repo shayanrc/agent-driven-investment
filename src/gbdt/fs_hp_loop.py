@@ -26,15 +26,29 @@ Brier. To break ties:
 3. When the tie set is a singleton (no other config within the band), the
    strict val-Brier winner is returned unchanged — backwards-compatible.
 
-The default ``tie_band`` is ``0.5 × plateau_threshold`` (= 0.0025 absolute
-val Brier at the default ``plateau_threshold=0.005``). Rationale: this is
-**half the per-iteration improvement floor** the plateau gate already
-considers "no further movement worth chasing" — so any cluster of configs
-inside it is, by the loop's own definition, val-Brier-equivalent. The
-``_187`` motivating cell spans 0.00108 absolute val Brier across 9 configs,
-well within the default band; the d4/λ6/mcw10 hygiene config (gap 0.0017,
-``|z|=9.4``) wins over the d8/λ3 overfit config (gap 0.0146, ``|z|=13.0``)
-at ~equal val Brier — which is the L1 fix.
+The default ``tie_band`` is a **fixed absolute value** ``0.005`` (see
+:data:`DEFAULT_TIE_BAND_ABSOLUTE`), decoupled from ``plateau_threshold``
+per bug #223 / memo ``_222`` § "A spec-patch note". The earlier default
+``0.5 × plateau_threshold`` was pathologically narrow on anti-AUC cells:
+the SKILL.md-recommended task #204 workaround sets
+``plateau_threshold=0.0001`` to disable the val_brier plateau gate, which
+collapsed the derived tie band to ``0.00005`` — well below the typical
+val_brier cluster span on those cells (typically 0.001–0.005 absolute).
+The fixed default ``0.005`` matches the historic v1 ``plateau_threshold``
+(``0.005``) at the level the ``_187`` motivating evidence was calibrated
+on, and is spec-overridable via ``backend.fs_hp_loop.tie_band`` as before.
+
+The ``_187`` motivating cell spans 0.00108 absolute val Brier across 9
+configs, well within the default band; the d4/λ6/mcw10 hygiene config
+(gap 0.0017, ``|z|=9.4``) wins over the d8/λ3 overfit config (gap 0.0146,
+``|z|=13.0``) at ~equal val Brier — the L1 fix.
+
+The :data:`DEFAULT_TIE_BAND_FRACTION` constant (``0.5``) is retained for
+back-compat — external code that explicitly wants the historic
+plateau-fraction behavior can still construct it via ``_resolve_tie_band``
+with ``tie_band=DEFAULT_TIE_BAND_FRACTION * plateau_threshold``. The
+default behavior of :func:`_resolve_tie_band` no longer consults
+``plateau_threshold`` automatically (#223).
 """
 
 from __future__ import annotations
@@ -106,26 +120,38 @@ def inner_stop_check(
     return False, None
 
 
-# Default tie band as a fraction of plateau_threshold. See module docstring
-# for rationale.
+# Historical fraction used by the pre-#223 default (``0.5 ×
+# plateau_threshold``). Retained for external callers that want to opt back in;
+# no longer consulted by :func:`_resolve_tie_band`'s default path.
 DEFAULT_TIE_BAND_FRACTION = 0.5
+
+# Fixed absolute default tie band — decoupled from ``plateau_threshold`` per
+# bug #223 / memo ``_222``. Matches the historic v1 ``plateau_threshold``
+# value (the level the ``_187`` motivating evidence was calibrated against).
+DEFAULT_TIE_BAND_ABSOLUTE = 0.005
 
 
 def _resolve_tie_band(
     tie_band: float | None,
-    plateau_threshold: float | None,
+    plateau_threshold: float | None = None,
 ) -> float:
     """Resolve the effective tie band.
 
     - Explicit ``tie_band`` (including 0.0 to disable tie-breaking) wins.
-    - Otherwise fall back to ``DEFAULT_TIE_BAND_FRACTION * plateau_threshold``.
-    - If neither is supplied, return 0.0 (no tie-breaking; strict argmin).
+    - Otherwise return :data:`DEFAULT_TIE_BAND_ABSOLUTE` (fixed ``0.005``).
+      Decoupled from ``plateau_threshold`` per bug #223 / memo ``_222`` —
+      the prior ``0.5 × plateau_threshold`` fallback collapsed to noise
+      level (``0.00005``) under the SKILL.md-recommended #204 workaround
+      (``plateau_threshold=0.0001``).
+
+    The ``plateau_threshold`` argument is accepted for backwards-compatible
+    call signatures but is no longer used in the default path. External
+    callers that need the historic plateau-fraction behavior can compute
+    it explicitly via ``DEFAULT_TIE_BAND_FRACTION * plateau_threshold``.
     """
     if tie_band is not None:
         return float(tie_band)
-    if plateau_threshold is not None:
-        return float(plateau_threshold) * DEFAULT_TIE_BAND_FRACTION
-    return 0.0
+    return DEFAULT_TIE_BAND_ABSOLUTE
 
 
 def best_checkpoint(
@@ -154,8 +180,13 @@ def best_checkpoint(
 
     ``effective_tie_band`` is resolved via :func:`_resolve_tie_band` from the
     explicit ``tie_band`` argument (overrides everything; pass ``0.0`` to
-    disable tie-breaking) or, failing that, from ``plateau_threshold``
-    scaled by :data:`DEFAULT_TIE_BAND_FRACTION`.
+    disable tie-breaking). When ``tie_band`` is not supplied, the resolver
+    returns the fixed :data:`DEFAULT_TIE_BAND_ABSOLUTE` (``0.005``) —
+    decoupled from ``plateau_threshold`` per bug #223 / memo ``_222`` (the
+    historic ``0.5 × plateau_threshold`` fallback collapsed to noise
+    level under the SKILL.md-recommended ``plateau_threshold=0.0001``
+    workaround on anti-AUC cells). The ``plateau_threshold`` argument is
+    accepted for back-compat call signatures but is no longer consulted.
 
     When the tie set is a singleton (no other iteration's val Brier falls
     inside the band, ignoring rounding noise), the strict val-Brier winner
@@ -244,4 +275,5 @@ __all__ = [
     "inner_stop_check",
     "best_checkpoint",
     "DEFAULT_TIE_BAND_FRACTION",
+    "DEFAULT_TIE_BAND_ABSOLUTE",
 ]

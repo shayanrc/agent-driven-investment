@@ -26,6 +26,7 @@ from __future__ import annotations
 import pytest
 
 from gbdt.fs_hp_loop import (
+    DEFAULT_TIE_BAND_ABSOLUTE,
     DEFAULT_TIE_BAND_FRACTION,
     _resolve_tie_band,
     best_checkpoint,
@@ -166,30 +167,53 @@ def test_resolve_tie_band_zero_explicit_disables():
     assert _resolve_tie_band(tie_band=0.0, plateau_threshold=0.005) == 0.0
 
 
-def test_resolve_tie_band_falls_back_to_plateau_fraction():
-    out = _resolve_tie_band(tie_band=None, plateau_threshold=0.005)
-    assert out == pytest.approx(0.005 * DEFAULT_TIE_BAND_FRACTION)
+def test_resolve_tie_band_default_is_fixed_absolute_when_only_plateau_set():
+    """Bug #223 fix: ``plateau_threshold`` is NO LONGER consulted by the
+    resolver's default path. Even with a tiny plateau_threshold (the #204
+    workaround), the tie band stays at the fixed absolute default — it
+    cannot collapse to noise level."""
+    out = _resolve_tie_band(tie_band=None, plateau_threshold=0.0001)
+    assert out == DEFAULT_TIE_BAND_ABSOLUTE  # = 0.005, NOT 0.00005
 
 
-def test_resolve_tie_band_returns_zero_when_neither_set():
-    assert _resolve_tie_band(tie_band=None, plateau_threshold=None) == 0.0
+def test_resolve_tie_band_default_when_only_plateau_005():
+    # The historic plateau_threshold=0.005 used to derive tie_band=0.0025.
+    # Now the resolver ignores plateau_threshold by default and returns the
+    # fixed 0.005 absolute — slightly wider than the old derived 0.0025,
+    # in the same ballpark, and matches the historic-v1 plateau value
+    # itself (the level the L1 motivating evidence was calibrated against).
+    assert _resolve_tie_band(tie_band=None, plateau_threshold=0.005) == 0.005
+
+
+def test_resolve_tie_band_default_when_neither_set_is_absolute():
+    """Decoupling: with neither knob set, return the fixed absolute default."""
+    assert _resolve_tie_band(tie_band=None, plateau_threshold=None) == DEFAULT_TIE_BAND_ABSOLUTE
+    # Calling without the kwarg at all hits the same default.
+    assert _resolve_tie_band(tie_band=None) == DEFAULT_TIE_BAND_ABSOLUTE
+
+
+def test_resolve_tie_band_default_constant_value():
+    """Pin the absolute default value so accidental edits surface as
+    test failures (matches the historic plateau_threshold default — the
+    level the ``_187`` motivating evidence was calibrated against)."""
+    assert DEFAULT_TIE_BAND_ABSOLUTE == 0.005
 
 
 def test_best_checkpoint_explicit_tie_band_overrides_plateau_default():
-    # plateau_threshold-derived default would be 0.0025; pass tie_band=0.05
-    # to explicitly widen the band and bring iter 2 into the tie set.
+    # Default tie_band (now fixed 0.005, decoupled from plateau_threshold):
+    # iter 2 at 0.240 is OUTSIDE the band [0.200, 0.205] → strict winner iter 0.
     val_briers = [0.200, 0.30, 0.240]
     gaps = [0.05, 0.05, 0.001]
     zs = [5.0, 5.0, 0.5]
 
-    # With default (fraction-of-plateau) tie_band, iter 2 is outside the band
+    # With default tie_band (0.005), iter 2 is outside the band [0.200, 0.205]
     # → strict winner iter 0.
     assert (
         best_checkpoint(
             val_briers,
             train_val_gaps=gaps,
             spiegelhalter_zs=zs,
-            plateau_threshold=0.005,  # default → tie_band=0.0025
+            plateau_threshold=0.005,  # ignored by default-resolver post-#223
         )
         == 0
     )
@@ -203,6 +227,50 @@ def test_best_checkpoint_explicit_tie_band_overrides_plateau_default():
             plateau_threshold=0.005,
         )
         == 2
+    )
+
+
+def test_best_checkpoint_anti_auc_workaround_does_not_collapse_tie_band():
+    """Bug #223 regression test — the SKILL.md-recommended #204 workaround
+    sets plateau_threshold=0.0001. Pre-fix, this collapsed the derived
+    tie_band to 0.00005, narrower than the typical val_brier cluster span
+    on anti-AUC cells. Post-fix, the tie_band stays at the fixed absolute
+    default (0.005) and the val_brier cluster is correctly tied.
+
+    Fixture mirrors the V1.3 A4 cell-5 trajectory (memo ``_222``): val_brier
+    range 0.2243–0.2251 (0.0008 absolute spread). All 9 iters land within
+    0.005 of min → all tied; among ties the higher eval R-p@1 wins per V1.3.
+    Pre-fix, derived tie_band=0.00005 → only the strict argmin (iter 8,
+    R-p@1=0.643) was returned — the user's manual mid-loop spec patch was
+    the only thing that saved the cell-5 run. This test prevents regression
+    of that surprise."""
+    val_briers = [0.2628, 0.2251, 0.2246, 0.2247, 0.2246, 0.2248,
+                  0.2243, 0.2246, 0.2243, 0.2245]
+    eval_rp1 = [0.484, 0.508, 0.602, 0.627, 0.717, 0.586, 0.602, 0.717,
+                0.643, 0.713]
+    # Strict val-Brier argmin: tied between iter 6 + iter 8 (both 0.2243);
+    # min picks iter 6. The V1.3 cell-5 finding: iter 4 (eval R-p@1=0.717)
+    # is the right pick because it's tied within tie_band of the val-Brier
+    # min AND has the highest eval R-p@1.
+    # Apply the SKILL.md-recommended workaround (plateau_threshold=0.0001).
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=None, spiegelhalter_zs=None,
+        plateau_threshold=0.0001,  # #204 workaround — tie_band MUST NOT collapse to 5e-5
+        anti_auc_flag="true",
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    # Post-fix: iter 4 (or any other R-p@1=0.717 iter within the band) wins.
+    # iter 4 is structurally first among ties; eval R-p@1 ties broken by
+    # val_brier (lower wins) → iter 4 (0.2246) beats iter 7 (0.2246) only
+    # by index after the val_brier tie itself. Implementation detail: among
+    # multiple max-rp1 ties, val_brier asc then index asc; iter 4 and iter 7
+    # both at 0.2246, iter 4 comes first → iter 4.
+    assert out == 4, (
+        f"expected iter 4 (R-p@1=0.717, val_brier=0.2246, within tie_band of "
+        f"min 0.2243); got iter {out} with R-p@1={eval_rp1[out]}, "
+        f"val_brier={val_briers[out]}. The pre-#223-fix derived tie_band "
+        f"(0.00005) would have collapsed to iter 6 / 8 only."
     )
 
 
