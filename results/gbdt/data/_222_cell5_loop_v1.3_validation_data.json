@@ -1,0 +1,181 @@
+{
+  "task": "_222",
+  "title": "V1.3 Option A A4 acceptance — cell-5 agent loop validation",
+  "branch": "gbdt-v1.3-a4-cell5-validation",
+  "ran_at_utc": "2026-06-02T22:00:00Z",
+  "validates": "PR #112 (V1.3 Option A: eval R-p@K + anti-AUC flag + degenerate-sink warning in iter bundle); plan docs/gbdt/V1.3_option_a_loop_anti_auc_integration_plan.md acceptance sub-criterion A4",
+  "spec": "configs/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3.yaml",
+  "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3",
+  "backend": {
+    "library": "xgboost",
+    "callback_mode": "agent_file_protocol",
+    "fit_pins": {
+      "tree_method": "hist",
+      "n_jobs": 8,
+      "device": "cpu",
+      "objective": "binary:logistic",
+      "eval_metric": "logloss",
+      "seed": 42
+    }
+  },
+  "r_precision_at_k_methodology_note": {
+    "definition": "R-Precision@K = (1/Q) * sum_{q in Q} r_q / min(K, R_q), where Q is the set of days with R_q > 0 positives, R_q is the count of positives on day q, r_q is the count of positives in the top-K picks on day q. Macro-averaged across days, equal weight per day. Tie-break for sorting predictions: (p_calibrated desc, ticker asc) stable mergesort. See .claude/memories/project-r-precision-methodology.md.",
+    "canonical_record": "results/gbdt/data/r_precision_at_k.csv",
+    "canonical_csv_row_added": "nasdaq100_up_10pct_50d_dd5pct_loop_v1.3"
+  },
+  "headline": "V1.3 Option A A4 acceptance: FAIL on the canonical (calibrated) metric, PASS on raw predictions. The agent loop with V1.3 enabled navigated cleanly to the tiny-model regime cell-5 demands (depth=2 + eta=0.1 + ES=30 + nest=500 + colsample_bytree=0.3; best_iter=5 trees, <=20 leaves; matches the _211 manual winner's 6-tree, depth=2 architecture). Eval R-p@1 trajectory across 10 iters: 0.484 (defaults) -> 0.508 (depth=3+eta=0.1+ES) -> 0.602 (depth=2) -> 0.627 (cs=0.4) -> 0.717 (cs=0.3; ceiling). Five structurally-different knob families explored per playbook rule 9 (capacity, slow-LR+ES, col-subsampling, row-subsampling, L2, mcw); finalization picked the eval-R-p@1 ceiling iter via the V1.3 tie-break (after spec was patched to tie_band=0.005 so the band actually catches the val_brier-near-baseline cluster). Test R-p@1 (calibrated, canonical): 0.4714 -- BELOW the 0.6714 sweep floor. Test R-p@1 (raw): 0.7143 -- ABOVE the floor. Gap is the isotonic-calibration-collapse problem (218 distinct raw values collapse to 7 distinct calibrated values; 50/80 test days have ties at calibrated top-1 broken alphabetically by ticker). The agent was navigating with eval R-p@K computed on RAW model output (per diagnostics.py:511-514 -- the comment claims 'isotonic is monotone, rank order is the same' which is FALSE for piecewise-constant isotonic on tiny models). This is a V1.3 implementation finding distinct from the agent's reasoning quality.",
+  "cell": {
+    "name": "cell-5 nasdaq100_up_10pct_50d_dd5pct",
+    "spec": {
+      "universe": "nasdaq100",
+      "direction": "up",
+      "threshold_pct": 10,
+      "horizon_days": 50,
+      "max_drawdown_pct": 5
+    },
+    "anti_auc_anomaly_per_sweep": {
+      "sweep_test_AUC": 0.475014,
+      "sweep_test_R_p_at_10_lift": 1.94,
+      "v1.3_flag_thresholds_D4": "AUC in [0.46, 0.54] AND R-p@10 lift > 1.8x",
+      "anti_auc_flag_value_at_iter_0": "true",
+      "auto_disabled_at_iter_0": {
+        "l1_tie_break": "anti_auc_flag=true",
+        "val_brier_plateau": "anti_auc_flag=true"
+      }
+    },
+    "n_tickers_used": 92,
+    "n_rows_test": 4600,
+    "Q_days_test_with_positives": 70,
+    "base_rate_test": 0.265217
+  },
+  "headline_test_calibrated_canonical": {
+    "AUC": 0.457353,
+    "R_precision_at_K": {
+      "1": 0.471429,
+      "3": 0.504762,
+      "5": 0.509286,
+      "10": 0.475873,
+      "20": 0.488615
+    }
+  },
+  "headline_test_raw_advisory": {
+    "note": "Raw predictions (pre-isotonic). Not the canonical-CSV metric. Surfaced because the V1.3 in-loop signal (eval R-p@K) is computed on raw predictions per diagnostics.py:511-514, and the gap vs canonical reveals an isotonic-collapse pathology on tiny-model anti-AUC cells. See memo body sec 4.",
+    "AUC": 0.463846,
+    "R_precision_at_K": {
+      "1": 0.714286,
+      "3": 0.538095,
+      "5": 0.483571,
+      "10": 0.455873,
+      "20": 0.450398
+    }
+  },
+  "comparison_table": {
+    "sweep_catboost": {
+      "test_R_p_at_1": 0.671429,
+      "test_AUC": 0.475014,
+      "source": "results/gbdt/data/r_precision_at_k.csv row nasdaq100_up_10pct_50d_dd5pct"
+    },
+    "agent_loop_pre_v1.3_mcw10_gamma1_calibrated": {
+      "test_R_p_at_1": 0.457143,
+      "test_AUC": 0.477152,
+      "source": "results/gbdt/data/r_precision_at_k.csv row nasdaq100_up_10pct_50d_dd5pct_agentloop"
+    },
+    "manual_xgboost_calibrated": {
+      "test_R_p_at_1": 0.828571,
+      "test_AUC": 0.471669,
+      "source": "results/gbdt/data/r_precision_at_k.csv row nasdaq100_up_10pct_50d_dd5pct_manual_xgb"
+    },
+    "v1.3_loop_calibrated": {
+      "test_R_p_at_1": 0.471429,
+      "test_AUC": 0.457353,
+      "source": "results/gbdt/data/r_precision_at_k.csv row nasdaq100_up_10pct_50d_dd5pct_loop_v1.3 (THIS RUN)"
+    },
+    "v1.3_loop_raw_advisory": {
+      "test_R_p_at_1": 0.714286,
+      "test_AUC": 0.463846,
+      "source": "computed in-memo from predictions/test.csv p_raw column"
+    }
+  },
+  "acceptance_per_plan_section_2.2": {
+    "A1_bundle_fields_populated": {
+      "verdict": "PASS",
+      "evidence": "iter_0_request.json::diagnostics has anti_auc_flag='true', eval_r_precision_at_k={'1':0.484,'3':0.475,'5':0.472,'10':0.495,'20':0.518}, degenerate_sink_warning=False (iter_0), weighted_base_rate_brier=0.2253, eval_segment_size=18400. All 10 iter bundles carry the same 5 V1.3 fields."
+    },
+    "A2_auto_disable_triggers": {
+      "verdict": "PASS",
+      "evidence": "loop/checkpoint.json::auto_disabled = {'l1_tie_break': 'anti_auc_flag=true', 'val_brier_plateau': 'anti_auc_flag=true'} from iter_0 onward."
+    },
+    "A3_agent_navigation": {
+      "verdict": "PASS",
+      "evidence": "All 10 iter decision JSON files reference eval_r_precision_at_k[1] (or eval R-p@1) in the rationale -- 100% rate vs the 50% threshold. The trajectory drove every knob choice."
+    },
+    "A4_test_outcome": {
+      "verdict": "FAIL (canonical) / PASS (raw)",
+      "calibrated_test_R_p_at_1": 0.471429,
+      "raw_test_R_p_at_1": 0.714286,
+      "pass_floor": 0.671429,
+      "stretch_target": 0.75,
+      "manual_track_test_R_p_at_1": 0.828571,
+      "evidence": "predictions/test.csv -- canonical (calibrated) per project-r-precision-methodology fails by -0.20 absolute (-30% vs floor). Raw passes floor by +0.043 absolute. The model architecture matches the manual winner but the calibrated-rank decay is different (alphabetical tie-break luck).",
+      "note": "A4 is the headline. Under the canonical methodology this is a FAIL -- V1.3 Option A as implemented does NOT clear the sweep floor when scored as the canonical CSV scores. Per plan section 2.2, this triggers the V1.3 Option B (scout response-curve phase) promotion path."
+    },
+    "A5_non_anti_auc_regression": {
+      "verdict": "NOT RUN -- out of scope for A4 sub-agent (handled by separate A5 validation)"
+    },
+    "A6_determinism": {
+      "verdict": "PARTIAL (incidentally confirmed)",
+      "evidence": "iter_7 (lambda=1.0=XGB default, subsample=1.0=revert) reproduced iter_4 byte-identically: same eval R-p@K (0.7172/0.6161/0.5533/0.5266/0.5645), same val_brier (0.22458), same train_brier (0.22128), same best_iter (9), same top-10 feature importance values. Free A6 evidence -- a different code path through the loop produced bit-identical predictions on the same config."
+    },
+    "overall_A4_verdict": "FAIL on canonical (calibrated). The V1.3 doctrine successfully drove the agent to the right model architecture (matched manual winner: depth=2 + eta=0.1 + ES + col-subsampling tiny-model); the test calibrated-rank decay is a separate isotonic-calibration-on-tiny-models pathology that V1.3 Option A doesn't address. Recommend promoting #213 (V1.3 Option B scout response-curve phase) AND filing a separate ticket for the isotonic-collapse issue (the bundle's eval R-p@K should be computed on calibrated, not raw, predictions to match the canonical-CSV signal the agent is being optimized against)."
+  },
+  "per_iter_trajectory": [
+    {"iter": 0, "hp_changes": "(XGB defaults)", "best_iter_tree_count": null, "train_brier": 0.0961, "val_brier": 0.2628, "train_val_gap": 0.1667, "eval_r_p_at_1": 0.4836, "eval_r_p_at_10": 0.4949, "degenerate_sink_warning": false, "rationale_summary": "iter_0 baseline -- XGB defaults (depth=6, eta=0.3, no ES) overfit severely; expected."},
+    {"iter": 1, "hp_changes": "FS cliff cut 279->190 + max_depth=3 + eta=0.1 + n_estimators=500 + ES=30", "best_iter_tree_count": 5, "train_brier": 0.2201, "val_brier": 0.2251, "train_val_gap": 0.0050, "eval_r_p_at_1": 0.5082, "eval_r_p_at_10": 0.5779, "degenerate_sink_warning": true, "rationale_summary": "Hit tiny-model regime. Gap collapsed to 0.005 (no_overfit). Val brier at baseline (sink warning advisory)."},
+    {"iter": 2, "hp_changes": "max_depth=2", "best_iter_tree_count": 4, "train_brier": 0.2256, "val_brier": 0.2246, "train_val_gap": -0.0010, "eval_r_p_at_1": 0.6025, "eval_r_p_at_10": 0.5598, "degenerate_sink_warning": true, "rationale_summary": "Capacity reduction to depth=2 won big (+0.094 R-p@1)."},
+    {"iter": 3, "hp_changes": "colsample_bytree=0.4", "best_iter_tree_count": 3, "train_brier": 0.2267, "val_brier": 0.2247, "train_val_gap": -0.0020, "eval_r_p_at_1": 0.6270, "eval_r_p_at_10": 0.5402, "degenerate_sink_warning": true, "rationale_summary": "Feature subsampling 0.4 + tinier model (3 trees)."},
+    {"iter": 4, "hp_changes": "colsample_bytree=0.3", "best_iter_tree_count": 9, "train_brier": 0.2213, "val_brier": 0.2246, "train_val_gap": 0.0033, "eval_r_p_at_1": 0.7172, "eval_r_p_at_10": 0.5266, "degenerate_sink_warning": true, "rationale_summary": "WINNER. Mapping colsample curve: 0.4=0.627 -> 0.3=0.717."},
+    {"iter": 5, "hp_changes": "colsample_bytree=0.2", "best_iter_tree_count": 2, "train_brier": 0.2282, "val_brier": 0.2248, "train_val_gap": -0.0034, "eval_r_p_at_1": 0.5861, "eval_r_p_at_10": 0.5643, "degenerate_sink_warning": true, "rationale_summary": "colsample=0.2 HURT (curve bottomed). Revert."},
+    {"iter": 6, "hp_changes": "colsample_bytree=0.3, subsample=0.7", "best_iter_tree_count": 5, "train_brier": 0.2251, "val_brier": 0.2243, "train_val_gap": -0.0008, "eval_r_p_at_1": 0.6025, "eval_r_p_at_10": 0.5496, "degenerate_sink_warning": true, "rationale_summary": "Row subsampling pivot HURT. Revert."},
+    {"iter": 7, "hp_changes": "subsample=1.0, lambda=1.0", "best_iter_tree_count": 9, "train_brier": 0.2213, "val_brier": 0.2246, "train_val_gap": 0.0033, "eval_r_p_at_1": 0.7172, "eval_r_p_at_10": 0.5266, "degenerate_sink_warning": true, "rationale_summary": "BYTE-IDENTICAL to iter_4 (lambda=1.0 is XGB default; free A6 evidence). Curve has 2 ties at the ceiling."},
+    {"iter": 8, "hp_changes": "lambda=5.0", "best_iter_tree_count": 8, "train_brier": 0.2232, "val_brier": 0.2243, "train_val_gap": 0.0011, "eval_r_p_at_1": 0.6434, "eval_r_p_at_10": 0.5266, "degenerate_sink_warning": true, "rationale_summary": "L2 pivot HURT. Revert."},
+    {"iter": 9, "hp_changes": "lambda=1.0, min_child_weight=5", "best_iter_tree_count": 9, "train_brier": 0.2213, "val_brier": 0.2245, "train_val_gap": 0.0032, "eval_r_p_at_1": 0.7131, "eval_r_p_at_10": 0.5238, "degenerate_sink_warning": true, "rationale_summary": "mcw=5 essentially neutral (-0.004). 5 knob families explored. STOP."},
+    {"iter": 10, "hp_changes": "(should_stop=true; updated spec tie_band=0.005)", "best_iter_tree_count": null, "train_brier": null, "val_brier": null, "train_val_gap": null, "eval_r_p_at_1": null, "eval_r_p_at_10": null, "degenerate_sink_warning": null, "rationale_summary": "Finalization. Re-fit iter_4 winner; isotonic applied (Spiegelhalter |z|=2.23 > 2.0)."}
+  ],
+  "finalized_config": {
+    "max_depth": 2,
+    "eta": 0.1,
+    "n_estimators": 500,
+    "early_stopping_rounds": 30,
+    "colsample_bytree": 0.3,
+    "subsample": 1.0,
+    "lambda": 1.0,
+    "feature_count_kept": 190,
+    "best_iter_trees": 5,
+    "max_leaves_upper_bound": 20,
+    "match_manual_winner_architecture": true,
+    "manual_winner_for_reference": "max_depth=2 + eta=0.1 + n_estimators=500 + ES=30 + colsample_bytree=0.4 + FS=top-130 + scale_pos_weight=1.0 (default), best_iter=6 trees"
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "isotonic",
+    "spiegelhalter_z": 2.227,
+    "spiegelhalter_p": 0.026,
+    "distinct_raw_predictions_test": 218,
+    "distinct_calibrated_predictions_test": 7,
+    "n_test_days_with_calibrated_top1_ties": 50,
+    "n_test_days_total": 80,
+    "note": "Isotonic collapse: 218 -> 7. 50/80 days have calibrated top-1 ties broken alphabetically by ticker. This is the root cause of the 0.7143 (raw) vs 0.4714 (calibrated) gap on R-p@1."
+  },
+  "wall_clock_seconds": {
+    "iter_0_launch": 60,
+    "per_iter_resume_average": 12,
+    "finalization": 16,
+    "total_loop": 195,
+    "note": "Walltimes include cached feature load + V1.3 eval R-p@K compute pass + walk-forward train (~1s actual fit per iter on hist+nj=8)."
+  },
+  "next_action_recommendations": [
+    "PROMOTE #213 (V1.3 Option B scout response-curve phase). Per plan section 2.2 the A4 FAIL triggers this path. The Option B scout would presumably explore the colsample/depth curve BEFORE iter_0 commits to a starting envelope, giving the agent more degrees of freedom to find the global optimum in val_brier-near-baseline land.",
+    "FILE separate ticket: 'V1.3 bundle eval R-p@K should be computed on calibrated predictions to match canonical-CSV scoring'. The diagnostics.py:511-514 'isotonic is monotone, rank order is the same' justification is FALSE for piecewise-constant isotonic on tiny models (218 distinct raw collapse to 7 distinct calibrated). Without fixing this, the agent is navigating a different metric than the one the canonical scoring uses -- 'optimize the wrong thing perfectly' anti-pattern. The fix is to plumb the calibration through to the bundle (or compute eval R-p@K on a post-finalization preview of calibrated predictions; or change canonical CSV to use raw).",
+    "DO NOT generalize this A4 FAIL to all anti-AUC cells -- this run shows V1.3 Option A successfully drove the agent to the right architecture; the canonical-CSV failure is a calibration-collapse pathology distinct from the loop's reasoning quality. A5 (non-anti-AUC regression) should still pass."
+  ]
+}
