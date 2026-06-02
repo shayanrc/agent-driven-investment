@@ -12,9 +12,20 @@ Manual XGBoost tuning **beats sweep R-Precision@1 by +0.157 (+24% relative)** on
 | Backend / track | Test R-p@1 | Test AUC | Test base_rate |
 |---|---|---|---|
 | Sweep (CatBoost defaults) | 0.6714 | 0.4750 | 0.2652 |
-| Agent loop (mcw=10, γ=1) | 0.5429 | 0.4871 | 0.2652 |
+| Agent loop (mcw=10, γ=1) † | 0.5429 | 0.4871 | 0.2652 |
 | **Manual tuned (XGBoost)** | **0.8286** | 0.4717 | 0.2652 |
 | Baseline (XGBoost defaults, cliff FS) | 0.3429 | 0.5201 | 0.2652 |
+
+† **Calibrated-vs-uncalibrated note.** This row + the sidecar's `agent_loop_mcw10_gamma1`
+block score the agent loop's `mcw=10 + γ=1` config on its **uncalibrated** `p_raw`
+predictions (re-fit by the shootout script with the same HPs as the actual loop run, no
+isotonic calibration applied). The canonical CSV row `nasdaq100_up_10pct_50d_dd5pct_agentloop`
+scores the actual loop artifact's **calibrated** `p_calibrated` predictions
+(`predictions/test.csv` from `wt-cell5-agentloop/results/.../agentloop/`); that yields R-p@1
+= 0.4571, AUC = 0.4772. Both are internally consistent under their respective definitions
+(p_raw AUC = 0.4871, p_calibrated AUC = 0.4772, verified independently). The headline
++24% claim holds in either framing because it compares manual vs sweep, not manual vs
+loop.
 
 Sweep test R-Precision@1 lift = 2.53×; manual tuned lift = **3.12×**. Test AUC stays sub-null
 (0.47–0.52 across all configs — the anti-AUC anomaly: ranking signal lives in the
