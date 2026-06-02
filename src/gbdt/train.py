@@ -386,6 +386,12 @@ def walk_forward_train(
             mi_eval=mi_ev,
             sweep_row=sweep_row,
             degenerate_sink_threshold=degenerate_sink_threshold,
+            # Bug #222 fix — thread the spec's calibration method + Z
+            # threshold so the bundle's eval R-p@K is computed on calibrated
+            # predictions matching canonical CSV scoring. Per-iter calibrator
+            # is fit fresh inside the bundle build; not the finalization fit.
+            calibration_method=calibration_method,
+            calibration_z_threshold=calibration_z_threshold,
         )
         history.append(bundle)
         models.append(model)

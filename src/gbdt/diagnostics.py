@@ -23,7 +23,13 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import brier_score_loss
 
-from gbdt.calibration import spiegelhalter_z
+from gbdt.calibration import (
+    apply_calibrator,
+    conditional_isotonic,
+    isotonic_always,
+    platt_calibration,
+    spiegelhalter_z,
+)
 from gbdt.uniqueness import (
     effective_sample_size,
     weighted_brier,
@@ -166,6 +172,46 @@ def _r_precision_at_k_from_arrays(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _fit_in_loop_calibrator(
+    *,
+    y_val: np.ndarray,
+    p_val_raw: np.ndarray,
+    method: str,
+    z_threshold: float,
+):
+    """Fit a per-iter calibrator on ``(y_val, p_val_raw)`` — bug #222 fix.
+
+    Mirrors the finalization-side dispatch in
+    :func:`gbdt.train.walk_forward_train` exactly (same valid methods, same
+    Spiegelhalter Z gate). Returns the calibrator object (or ``None`` for
+    the native / Spiegelhalter-pass-through path) that
+    :func:`gbdt.calibration.apply_calibrator` consumes.
+
+    Unsupported methods are treated like ``"native"`` (pass-through) — never
+    raise: a bundle-build crash would degrade the agent's per-iter signal
+    to "no value". The calling code at ``build_diagnostic_bundle`` already
+    wraps the whole eval R-p@K computation in a try/except for defense in
+    depth.
+    """
+    if method == "native":
+        return None
+    if method == "conditional_isotonic":
+        return conditional_isotonic(
+            y_val, p_val_raw, z_threshold=z_threshold,
+        ).calibrator
+    if method == "isotonic_always":
+        return isotonic_always(
+            y_val, p_val_raw, z_threshold=z_threshold,
+        ).calibrator
+    if method == "platt":
+        return platt_calibration(
+            y_val, p_val_raw, z_threshold=z_threshold,
+        ).calibrator
+    # Unknown method: pass through, do not crash. The finalization path
+    # raises NotImplementedError in this case — the loop should not.
+    return None
 
 
 def reliability_curve(
@@ -398,6 +444,21 @@ def build_diagnostic_bundle(
     mi_eval: pd.MultiIndex | None = None,
     sweep_row: dict | None = None,
     degenerate_sink_threshold: float = 1.05,
+    # Bug #222 fix — eval R-p@K MUST be computed on calibrated predictions to
+    # match canonical CSV scoring (`compute_r_precision.py` +
+    # `[[project-r-precision-methodology]]`). Pre-fix, the bundle computed
+    # R-p@K on raw model output under the FALSE assumption that isotonic
+    # monotonicity preserves rank order — true mathematically, but FALSE on
+    # piecewise-constant isotonic + tiny models, where many distinct raw
+    # probabilities map to a single calibrated value and the canonical
+    # ``(p_calibrated desc, ticker asc)`` tie-break dominates (see memo
+    # ``_222`` § "The calibration-collapse pathology"). The in-loop
+    # calibrator is fit fresh per-iter on (y_val, p_val_raw) using the
+    # same method the finalization step will use; it is NOT the
+    # finalization calibrator (that fit happens once, on the best-checkpoint
+    # model's val predictions).
+    calibration_method: str = "conditional_isotonic",
+    calibration_z_threshold: float = 2.0,
 ) -> DiagnosticBundle:
     """Build one bundle from a fitted ``model``.
 
@@ -507,24 +568,44 @@ def build_diagnostic_bundle(
     )
 
     # eval_r_precision_at_k — end-of-iter predict on the carved eval segment
-    # (D2). Cost: < 1s on hist+nj=8 regardless. Rank-based so raw probabilities
-    # are order-equivalent to post-isotonic ones (isotonic is monotone) — using
-    # the raw model output here keeps the iter-loop signal independent of the
-    # finalization-only calibrator and stays byte-identical to the canonical
-    # CSV's ranking (the CSV uses p_calibrated but the rank order is the same).
+    # (D2). Cost: < 1s on hist+nj=8 regardless. Bug #222 fix: the eval R-p@K
+    # MUST be computed on CALIBRATED predictions to match canonical CSV
+    # scoring. The earlier "isotonic is monotone, raw rank order is the
+    # same" justification is FALSE on piecewise-constant isotonic + tiny
+    # models (218 distinct raw values → 7 distinct calibrated values; the
+    # canonical ``(p_calibrated desc, ticker asc)`` tie-break then chooses
+    # alphabetically among many ties). See memo ``_222`` § "The
+    # calibration-collapse pathology" for the worked example.
+    #
+    # We fit the in-loop calibrator fresh per-iter on ``(y_val, p_val)``
+    # using the spec's ``calibration_method`` — this is NOT the finalization
+    # calibrator (that's fit once at the end on the best-checkpoint model).
+    # The compute cost is negligible (~ms): isotonic regression is O(n log n)
+    # on val size, Platt is one LR fit. The fit is read-only with respect
+    # to the model.
     eval_r_precision_at_k: dict[int, float] | None = None
     eval_segment_size: int | None = None
     if X_eval is not None and y_eval is not None and len(y_eval) and mi_eval is not None:
         eval_segment_size = int(len(y_eval))
         try:
-            p_eval_for_rank = model.predict_proba(X_eval)
+            p_eval_raw = np.asarray(model.predict_proba(X_eval), dtype=float)
+            # Fit an in-loop calibrator on val so we can apply it to eval.
+            # The same method the finalization step will use is fit here
+            # (separately) so the iter signal aligns with canonical scoring.
+            in_loop_calibrator = _fit_in_loop_calibrator(
+                y_val=np.asarray(y_val, dtype=int),
+                p_val_raw=np.asarray(p_val, dtype=float),
+                method=calibration_method,
+                z_threshold=calibration_z_threshold,
+            )
+            p_eval_calibrated = apply_calibrator(p_eval_raw, in_loop_calibrator)
             # mi_eval is a (date, ticker) MultiIndex of length len(y_eval).
             dates = mi_eval.get_level_values("date").to_numpy()
             tickers = mi_eval.get_level_values("ticker").to_numpy()
             rp_at_k = _r_precision_at_k_from_arrays(
                 dates=dates,
                 tickers=tickers,
-                p_calibrated=np.asarray(p_eval_for_rank, dtype=float),
+                p_calibrated=np.asarray(p_eval_calibrated, dtype=float),
                 y_true=np.asarray(y_eval, dtype=int),
             )
             eval_r_precision_at_k = rp_at_k or None
