@@ -49,6 +49,7 @@ def inner_stop_check(
     degradation_gate: float = 0.01,
     max_iterations: int = 8,
     disable_plateau: bool = False,
+    anti_auc_flag: str = "unknown",
 ) -> tuple[bool, str | None]:
     """Return ``(should_stop, signal_name | None)``.
 
@@ -67,6 +68,14 @@ def inner_stop_check(
     after ``min_child_weight`` plateaued) instead of being auto-stopped on a
     single-knob val_brier flatline. ``default`` (sweep) mode keeps the
     plateau gate active — there's no agent to defer to.
+
+    ``anti_auc_flag`` (V1.3 Option A, plan § 3.5 / D6): when ``"true"`` the
+    plateau gate is auto-disabled the same way ``disable_plateau=True``
+    does — on anti-AUC cells val_brier descends to a degenerate constant-
+    predictor sink, so a plateau on val_brier is not a useful "loop
+    converged" signal (see ``docs/gbdt/_211_*`` F1). ``degradation`` + ``cap``
+    remain active in both cases. ``"false"`` + ``"unknown"`` preserve the
+    pre-V1.3 behavior (plateau gate active subject to ``disable_plateau``).
     """
     n = len(val_briers)
     if n == 0:
@@ -80,7 +89,11 @@ def inner_stop_check(
 
     # Plateau: last two iterations both improved by < threshold.
     # Gated off in agent mode (task #204) — the agent decides when to stop.
-    if not disable_plateau and n >= 3:
+    # V1.3 Option A: also gated off on anti-AUC cells (plan § 3.5 / D6).
+    plateau_disabled = (
+        disable_plateau or str(anti_auc_flag) == "true"
+    )
+    if not plateau_disabled and n >= 3:
         d_last = val_briers[-2] - val_briers[-1]
         d_prev = val_briers[-3] - val_briers[-2]
         if d_last < plateau_threshold and d_prev < plateau_threshold:
@@ -122,6 +135,8 @@ def best_checkpoint(
     spiegelhalter_zs: Sequence[float | None] | None = None,
     tie_band: float | None = None,
     plateau_threshold: float | None = None,
+    anti_auc_flag: str = "unknown",
+    eval_r_precision_at_1s: Sequence[float | None] | None = None,
 ) -> int:
     """Return the index of the best checkpoint to ship.
 
@@ -145,6 +160,15 @@ def best_checkpoint(
     When the tie set is a singleton (no other iteration's val Brier falls
     inside the band, ignoring rounding noise), the strict val-Brier winner
     is returned unchanged — backwards-compatible.
+
+    ``anti_auc_flag`` (V1.3 Option A, plan § 3.5 / D6): when ``"true"`` the
+    L1 tie-break (gap + Z) is auto-disabled — on anti-AUC cells L1 actively
+    selects the degenerate constant-predictor (see ``docs/gbdt/_211_*`` F5).
+    If ``eval_r_precision_at_1s`` is supplied AND every tied iter has a
+    non-None entry, the function tie-breaks on ``eval R-p@1`` (higher
+    wins). Otherwise (or when no `_at_1` data is available) it falls back
+    to strict val-Brier argmin among ties — the conservative, never-worse
+    choice. ``"false"`` + ``"unknown"`` preserve the pre-V1.3 L1 behavior.
     """
     n = len(val_briers)
     if not n:
@@ -152,8 +176,13 @@ def best_checkpoint(
 
     strict_best = int(min(range(n), key=lambda i: val_briers[i]))
 
+    is_anti_auc = str(anti_auc_flag) == "true"
+
     # Backwards-compatible fast path: no tie-break inputs at all → strict argmin.
-    if train_val_gaps is None and spiegelhalter_zs is None:
+    # On anti-AUC cells we also short-circuit to strict argmin (skipping L1)
+    # UNLESS eval_r_precision_at_1s is available, in which case we expand the
+    # tie set and break on eval R-p@1 (plan § 3.5).
+    if train_val_gaps is None and spiegelhalter_zs is None and not is_anti_auc:
         return strict_best
 
     effective_band = _resolve_tie_band(tie_band, plateau_threshold)
@@ -168,6 +197,30 @@ def best_checkpoint(
     if len(tied) <= 1:
         return strict_best
 
+    if is_anti_auc:
+        # V1.3 Option A: skip the L1 gap+Z tie-break (provably wrong on
+        # anti-AUC cells; selects the degenerate sink). Prefer the eval
+        # R-p@1 winner if every tied iter has a present value (defensive:
+        # we never want a missing-metric iter to out-prefer a present-metric
+        # one). Otherwise fall back to strict val-Brier argmin among ties
+        # — earliest-index breaks the remaining ties deterministically.
+        if eval_r_precision_at_1s is not None and all(
+            (
+                i < len(eval_r_precision_at_1s)
+                and eval_r_precision_at_1s[i] is not None
+            )
+            for i in tied
+        ):
+            # Highest eval R-p@1 wins; ties broken by val_brier (lower wins),
+            # then by earliest iter index for determinism.
+            def rp_sort_key(i: int) -> tuple[float, float, int]:
+                rp1 = -float(eval_r_precision_at_1s[i])  # negate for "higher wins"
+                return (rp1, float(val_briers[i]), i)
+
+            return min(tied, key=rp_sort_key)
+        return strict_best
+
+    # Non-anti-AUC: classic L1 (gap, |z|) tie-break.
     # Worst-case sentinels for missing-metric configs: +inf gap, +inf |z|.
     # Earlier iter index breaks the final remaining tie deterministically
     # (favours the simpler/earlier config — typically the unperturbed base).

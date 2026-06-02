@@ -412,6 +412,19 @@ def build_diagnose_payload(
             "n_rows_val": getattr(bundle, "n_rows_val", None),
         },
         "tuning_guidance": _tuning_guidance(overfit, drift, pruned),
+        # V1.3 Option A — agent reads these to drive anti-AUC-cell tuning
+        # (see .claude/skills/gbdt-experiment/SKILL.md § Anti-AUC + V1.3).
+        # All five fields are populated by build_diagnostic_bundle and
+        # carried through verbatim; absent on pre-V1.3 bundles (defaults).
+        "anti_auc_flag": getattr(bundle, "anti_auc_flag", "unknown"),
+        "eval_r_precision_at_k": getattr(bundle, "eval_r_precision_at_k", None),
+        "degenerate_sink_warning": getattr(
+            bundle, "degenerate_sink_warning", False
+        ),
+        "weighted_base_rate_brier": getattr(
+            bundle, "weighted_base_rate_brier", None
+        ),
+        "eval_segment_size": getattr(bundle, "eval_segment_size", None),
     }
     return _json_safe(payload)
 

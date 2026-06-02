@@ -35,6 +35,10 @@ from gbdt import loop_protocol
 from gbdt.heartbeat import Heartbeat
 from gbdt.model import _validate_hp, count_nonfinite, model_filename
 from gbdt.report import compute_segment_diagnostics, emit_figures, render_report
+from gbdt.sweep_lookup import (
+    cell_key_to_experiment_name,
+    lookup_sweep_row,
+)
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
 from gbdt.uniqueness import (
@@ -82,6 +86,17 @@ _HP_SEARCH_ITER_THRESHOLD = 5
 # under the bar but the normal case (test_rows ≥ 100 - horizon per
 # ticker × tickers) is comfortably above.
 _TEST_ROWS_WARNING_THRESHOLD = 100
+
+# V1.3 Option A — canonical R-Precision@K + AUC + base_rate CSV the
+# anti-AUC cell-flag lookup hits at iter_0 (plan § 3.3 / D3). Lives under
+# the repo's results/ tree, regenerated via
+# ``scripts/gbdt/regenerate_r_precision_at_k_csv``. The default below is
+# repo-relative; ``run_experiment`` resolves it against ``repo_root``.
+_DEFAULT_SWEEP_CSV_RELPATH = "results/gbdt/data/r_precision_at_k.csv"
+
+# V1.3 Option A — degenerate-sink warning threshold default (plan § 0 D5).
+# Spec-overridable via ``backend.fs_hp_loop.degenerate_sink_threshold``.
+_DEFAULT_DEGENERATE_SINK_THRESHOLD = 1.05
 
 
 def load_spec(spec_path: Path, default_path: Path | None = None) -> dict:
@@ -537,6 +552,20 @@ def _make_agent_file_protocol_callback(
             "feature_history": list(state["feature_history"]),
             "hp_lists": list(state["hp_lists"]),
             "delta_attributions": list(state["delta_attributions"]),
+            # V1.3 Option A — gap/Z + eval R-p@1 per-iter series + the
+            # run-level anti_auc_flag + audit auto_disabled mapping. These
+            # are populated by walk_forward_train into loop_state_sink (the
+            # ``state`` dict) and persisted here so the resume-side
+            # best_checkpoint sees the full history across the boundary.
+            # Missing fields default to safe values on older checkpoints —
+            # the read side tolerates absence (see _load_and_apply_resume).
+            "train_val_gaps": list(state.get("train_val_gaps", [])),
+            "spiegelhalter_zs": list(state.get("spiegelhalter_zs", [])),
+            "eval_r_precision_at_1s": list(
+                state.get("eval_r_precision_at_1s", [])
+            ),
+            "anti_auc_flag": str(state.get("anti_auc_flag", "unknown")),
+            "auto_disabled": dict(state.get("auto_disabled", {})),
         }
         ckpt_path = gbdt_checkpoint.write_checkpoint(artifact_dir, ckpt_state)
         # (3) hand control back to the agent.
@@ -621,6 +650,14 @@ def _load_and_apply_resume(
         "hp_lists": list(ckpt.get("hp_lists", [])),
         "delta_attributions": prior_deltas,
         "force_stop": should_stop,
+        # V1.3 Option A — thread the per-iter signals + run-level flag back
+        # to walk_forward_train so the resume-side finalization
+        # (best_checkpoint) sees the full history. Older checkpoints
+        # predating these fields default to empty/unknown, behavior unchanged.
+        "train_val_gaps": list(ckpt.get("train_val_gaps", [])),
+        "spiegelhalter_zs": list(ckpt.get("spiegelhalter_zs", [])),
+        "eval_r_precision_at_1s": list(ckpt.get("eval_r_precision_at_1s", [])),
+        "anti_auc_flag": str(ckpt.get("anti_auc_flag", "unknown")),
     }
 
 
@@ -1021,6 +1058,37 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     callback_mode = loop_cfg.get("callback_mode", _DEFAULT_CALLBACK_MODE)
     max_iter = loop_cfg.get("max_iterations", 8)
+    # V1.3 Option A (plan § 3.3 / D3) — look up the canonical sweep row for this
+    # cell ONCE at iter_0; cached for the run and threaded into every
+    # build_diagnostic_bundle call so anti_auc_flag is constant. None when no
+    # matching row exists (new cell) → flag stays "unknown" → auto-disables
+    # (best_checkpoint L1 + inner_stop_check val_brier plateau) safely default
+    # to NOT firing on cells without sweep evidence yet.
+    sweep_csv_path = repo_root / _DEFAULT_SWEEP_CSV_RELPATH
+    cell_experiment_name = cell_key_to_experiment_name(
+        universe=target["universe"],
+        direction=target["direction"],
+        threshold_pct=target["threshold_pct"],
+        horizon_days=target["horizon_days"],
+        max_drawdown=target.get("max_drawdown"),
+    )
+    sweep_row = lookup_sweep_row(cell_experiment_name, sweep_csv_path)
+    if sweep_row is not None:
+        _milestone(
+            f"[loop] V1.3 sweep_row matched cell='{cell_experiment_name}' "
+            f"(AUC={sweep_row.get('AUC')}, R-p@10={sweep_row.get('R_precision_at_10')}, "
+            f"base_rate={sweep_row.get('base_rate')})"
+        )
+    else:
+        _milestone(
+            f"[loop] V1.3 no sweep_row for cell='{cell_experiment_name}' "
+            f"(csv={sweep_csv_path}); anti_auc_flag will be 'unknown'"
+        )
+    degenerate_sink_threshold = float(
+        loop_cfg.get(
+            "degenerate_sink_threshold", _DEFAULT_DEGENERATE_SINK_THRESHOLD
+        )
+    )
     # V1.1 — resolve the FS+HP callback from the (possibly CLI-overridden) spec.
     # ``default`` resolves to None so walk_forward_train keeps using its built-in
     # default_fs_hp_callback (v1 behaviour preserved byte-for-byte). The
@@ -1080,6 +1148,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             loop_state_sink=loop_state_sink,
             backend=backend_library,
             disable_plateau=disable_plateau,
+            # V1.3 Option A — canonical sweep CSV row (anti_auc_flag source)
+            # + degenerate-sink warning threshold. Both constant for the run.
+            sweep_row=sweep_row,
+            degenerate_sink_threshold=degenerate_sink_threshold,
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the

@@ -261,6 +261,14 @@ def walk_forward_train(
     loop_state_sink: dict | None = None,
     backend: str = "catboost",
     disable_plateau: bool = False,
+    # V1.3 Option A (plan § 3.2): sweep_row is the canonical CSV row for the
+    # cell (looked up once at iter_0 by run_experiment from
+    # results/gbdt/data/r_precision_at_k.csv) — constant for the run.
+    # build_diagnostic_bundle computes anti_auc_flag from it. None when no
+    # matching row exists (new cell) → flag stays "unknown". The threshold
+    # is spec-overridable via backend.fs_hp_loop.degenerate_sink_threshold.
+    sweep_row: dict | None = None,
+    degenerate_sink_threshold: float = 1.05,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -341,7 +349,7 @@ def walk_forward_train(
         parts = _carve_X_y(X, y, panel, split, current_features, sample_weights)
         X_tr, y_tr, _, w_tr = parts["train"]
         X_val, y_val, _, w_val = parts["val"]
-        X_ev, y_ev, _, w_ev = parts["eval"]
+        X_ev, y_ev, mi_ev, w_ev = parts["eval"]
 
         # Sanity: enough training rows
         if len(y_tr) == 0:
@@ -372,6 +380,12 @@ def walk_forward_train(
             rationale=rationale,
             wall_time_sec=wall,
             include_permutation=False,        # too expensive on hot loop
+            # V1.3 Option A (plan § 3.2): mi_ev carries (date, ticker) for
+            # per-day R-Precision@K; sweep_row + degenerate_sink_threshold
+            # are constant for the run (passed through from run_experiment).
+            mi_eval=mi_ev,
+            sweep_row=sweep_row,
+            degenerate_sink_threshold=degenerate_sink_threshold,
         )
         history.append(bundle)
         models.append(model)
@@ -380,12 +394,17 @@ def walk_forward_train(
         val_briers.append(bundle.val_brier)
 
         # Inner-stop check (does the loop continue?).
+        # V1.3 Option A: pass anti_auc_flag so the plateau gate is auto-
+        # disabled on anti-AUC cells (plan § 3.5 / D6). The flag is constant
+        # for the run; bundle.anti_auc_flag carries it from
+        # build_diagnostic_bundle (computed from sweep_row at iter_0).
         stop, signal = inner_stop_check(
             val_briers,
             plateau_threshold=plateau_threshold,
             degradation_gate=degradation_gate,
             max_iterations=max_iterations,
             disable_plateau=disable_plateau,
+            anti_auc_flag=str(getattr(bundle, "anti_auc_flag", "unknown")),
         )
         if stop:
             inner_signal = signal
@@ -424,6 +443,44 @@ def walk_forward_train(
             sink_gaps = list(prior_gap_seed[:n_prior]) + sink_gaps
             sink_zs = list(prior_z_seed[:n_prior]) + sink_zs
 
+            # V1.3 Option A: per-iter eval R-p@1 series so the resume-side
+            # best_checkpoint can tie-break across the full history (mirrors
+            # the gap/z plumbing). Anti_auc_flag is constant per run.
+            sink_eval_rp1 = [
+                (
+                    float(b.eval_r_precision_at_k.get(1))
+                    if (
+                        b.eval_r_precision_at_k is not None
+                        and b.eval_r_precision_at_k.get(1) is not None
+                    )
+                    else None
+                )
+                for b in history
+            ]
+            prior_eval_rp1_seed = (
+                list(resume_state.get("eval_r_precision_at_1s", []))
+                if resume_state is not None else []
+            )
+            sink_eval_rp1 = list(prior_eval_rp1_seed[:n_prior]) + sink_eval_rp1
+            run_anti_auc_flag = (
+                str(history[-1].anti_auc_flag) if history else
+                (
+                    str(resume_state.get("anti_auc_flag", "unknown"))
+                    if resume_state is not None else "unknown"
+                )
+            )
+            # auto_disabled: audit trail per § 3.5 — records which V1.3
+            # auto-disable mechanisms are active for this run. The L1
+            # tie-break + val_brier plateau gate are both auto-disabled when
+            # anti_auc_flag=="true"; non-anti-AUC cells get an empty dict
+            # (advisory only, behavior unchanged from pre-V1.3).
+            v13_auto_disabled = {}
+            if run_anti_auc_flag == "true":
+                v13_auto_disabled = {
+                    "l1_tie_break": "anti_auc_flag=true",
+                    "val_brier_plateau": "anti_auc_flag=true",
+                }
+
             loop_state_sink.clear()
             loop_state_sink.update({
                 "iter_idx": iter_idx,
@@ -437,6 +494,13 @@ def walk_forward_train(
                 "hp_lists": [dict(h) for h in hp_lists],
                 "delta_attributions": list(prior_deltas),
                 "max_iterations": int(max_iterations),
+                # V1.3 Option A — carried across resume so the resume-side
+                # finalization can see the full history when picking the
+                # best checkpoint. Constant run-level fields:
+                "anti_auc_flag": run_anti_auc_flag,
+                "auto_disabled": v13_auto_disabled,
+                # Per-iter:
+                "eval_r_precision_at_1s": sink_eval_rp1,
             })
 
         # Ask the callback for next iteration. The agent-file-protocol callback
@@ -509,14 +573,47 @@ def walk_forward_train(
             return float(v) if v is not None else None
         return None
 
+    # V1.3 Option A: resume-seeded prior eval R-p@1 series if the checkpoint
+    # carried it; older checkpoints predating this field default to None
+    # (best_checkpoint then falls back to strict val-Brier argmin among ties).
+    prior_eval_rp1 = (
+        list(resume_state.get("eval_r_precision_at_1s", []))
+        if resume_state is not None else []
+    )
+
+    def _eval_rp1_for(i: int) -> float | None:
+        b = bundle_by_idx.get(i)
+        if b is not None:
+            rp = b.eval_r_precision_at_k
+            if rp is not None:
+                return float(rp.get(1)) if rp.get(1) is not None else None
+            return None
+        if i < len(prior_eval_rp1):
+            v = prior_eval_rp1[i]
+            return float(v) if v is not None else None
+        return None
+
     gaps_seq = [_gap_for(i) for i in range(len(val_briers))]
     zs_seq = [_z_for(i) for i in range(len(val_briers))]
+    eval_rp1_seq = [_eval_rp1_for(i) for i in range(len(val_briers))]
+    # V1.3 Option A: resolve the run's constant anti_auc_flag — prefer an
+    # in-process bundle's value (every bundle carries the same flag); fall
+    # back to whatever the resume checkpoint recorded; default "unknown".
+    anti_auc_flag = "unknown"
+    for b in history:
+        if getattr(b, "anti_auc_flag", None) is not None:
+            anti_auc_flag = str(b.anti_auc_flag)
+            break
+    if anti_auc_flag == "unknown" and resume_state is not None:
+        anti_auc_flag = str(resume_state.get("anti_auc_flag", "unknown"))
     best_i = best_checkpoint(
         val_briers,
         train_val_gaps=gaps_seq,
         spiegelhalter_zs=zs_seq,
         tie_band=tie_band,
         plateau_threshold=plateau_threshold,
+        anti_auc_flag=anti_auc_flag,
+        eval_r_precision_at_1s=eval_rp1_seq,
     )
     best_features = feature_lists[best_i]
     best_hp = hp_lists[best_i]
