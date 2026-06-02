@@ -17,7 +17,7 @@ Bundle contents (per V1_PLAN.md Stage 6):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -29,6 +29,138 @@ from gbdt.uniqueness import (
     weighted_brier,
     weighted_spiegelhalter_z,
 )
+
+
+# ---------------------------------------------------------------------------
+# V1.3 Option A — anti-AUC flag (canonical CSV lookup at iter_0)
+# ---------------------------------------------------------------------------
+
+# Tightened thresholds per V1.3 plan § 0 D4 (preempt false-positives for the
+# loop-doctrine auto-disables in fs_hp_loop.best_checkpoint / inner_stop_check).
+# CLAUDE.md "What not to do — gbdt" anti-AUC bullet is updated to the same
+# numbers — single source of truth.
+ANTI_AUC_FLAG_AUC_LOW = 0.46
+ANTI_AUC_FLAG_AUC_HIGH = 0.54
+ANTI_AUC_FLAG_RP10_LIFT_MIN = 1.8
+
+
+def compute_anti_auc_flag(
+    sweep_row: dict | None,
+) -> Literal["true", "false", "unknown"]:
+    """V1.3 Option A — apply the cell-shape anti-AUC rule (§ 3.3 / D4).
+
+    A cell is flagged ``"true"`` when its canonical sweep row satisfies
+    ``AUC ∈ [0.46, 0.54]`` AND ``R-Precision@10 lift > 1.8x`` (lift
+    relative to the segment base rate). Returns ``"unknown"`` when the
+    sweep row is None (new cell, lookup miss) so the loop's auto-disables
+    safely default to NOT firing.
+
+    Tighter than the CLAUDE.md compound rule (``[0.45, 0.55] + lift >
+    1.5x``) by design: this flag drives auto-disables (skip the L1
+    tie-break, skip the val_brier auto-plateau), so a false-positive is
+    costlier here than in the human-facing CLAUDE.md narrative.
+    """
+    if sweep_row is None:
+        return "unknown"
+    try:
+        auc = float(sweep_row["AUC"])
+        rp10 = float(sweep_row["R_precision_at_10"])
+        base = float(sweep_row["base_rate"])
+    except (KeyError, TypeError, ValueError):
+        return "unknown"
+    if base <= 0.0:
+        return "unknown"
+    lift10 = rp10 / base
+    if (
+        ANTI_AUC_FLAG_AUC_LOW <= auc <= ANTI_AUC_FLAG_AUC_HIGH
+        and lift10 > ANTI_AUC_FLAG_RP10_LIFT_MIN
+    ):
+        return "true"
+    return "false"
+
+
+def compute_degenerate_sink_warning(
+    val_brier: float | None,
+    weighted_base_rate_brier: float | None,
+    threshold: float,
+) -> bool:
+    """V1.3 Option A — degenerate-sink warning (§ 3.4 / D5).
+
+    Returns True when ``val_brier <= threshold * weighted_base_rate_brier``
+    — i.e. the model's val Brier is within ``threshold-1.0`` of the trivial
+    constant-predictor's Brier. Default ``threshold=1.05`` (5% above
+    trivial) catches the cell-5 γ≥5 / alpha=10 regimes without firing on
+    healthy near-degenerate models (cell-5 lean+γ=1 ratio 1.079 → no
+    trigger). Spec-overridable via
+    ``backend.fs_hp_loop.degenerate_sink_threshold``.
+
+    Both arguments may be None (e.g. iter_0 not yet computed, or weighted
+    base-rate denominator unavailable) — in that case the function returns
+    False (no warning) so the doctrine signals are conservative.
+    """
+    if val_brier is None or weighted_base_rate_brier is None:
+        return False
+    if weighted_base_rate_brier <= 0.0:
+        return False
+    return float(val_brier) <= float(threshold) * float(weighted_base_rate_brier)
+
+
+def _r_precision_at_k_from_arrays(
+    dates: np.ndarray,
+    tickers: np.ndarray,
+    p_calibrated: np.ndarray,
+    y_true: np.ndarray,
+    k_values: tuple[int, ...] = (1, 3, 5, 10, 20),
+) -> dict[int, float]:
+    """V1.3 Option A — canonical R-Precision@K on aligned per-row arrays.
+
+    Per-day fixed K, macro-averaged across days where ``R_q > 0``:
+
+        R-Precision@K = (1/Q) · Σ_q  r_q / min(K, R_q)
+
+    Tie-break inside each day: ``(p_calibrated desc, ticker asc)`` stable
+    mergesort — same convention as
+    :func:`gbdt.topk_diagnostics.compute_top_k_metrics` and the canonical
+    CSV ``results/gbdt/data/r_precision_at_k.csv`` (see
+    ``.claude/memories/project-r-precision-methodology.md``).
+
+    Empty arrays / no R_q > 0 day → empty dict (the caller surfaces this
+    as ``eval_r_precision_at_k = None``).
+
+    Uses a tiny per-call DataFrame for the groupby — same scaffolding as
+    ``topk_diagnostics.compute_top_k_metrics`` so the result is byte-
+    identical to the canonical CSV's per-cell numbers.
+    """
+    n = len(p_calibrated)
+    if n == 0:
+        return {}
+    df = pd.DataFrame({
+        "date": dates,
+        "ticker": tickers,
+        "p_calibrated": p_calibrated,
+        "y_true": y_true.astype(int),
+    })
+    sorted_df = df.sort_values(
+        ["date", "p_calibrated", "ticker"],
+        ascending=[True, False, True],
+        kind="mergesort",
+    )
+    grouped = sorted_df.groupby("date", sort=False)
+    per_day_r = grouped["y_true"].sum().astype(int)
+    qualifying_days = per_day_r[per_day_r > 0].index
+    if len(qualifying_days) == 0:
+        return {}
+
+    out: dict[int, float] = {}
+    for k in k_values:
+        picks = grouped.head(int(k))
+        per_day_caught = picks.groupby("date", sort=False)["y_true"].sum().astype(int)
+        per_day_caught = per_day_caught.reindex(qualifying_days, fill_value=0)
+        per_day_R = per_day_r.reindex(qualifying_days)
+        per_day_denom = per_day_R.clip(upper=int(k))
+        per_day_ratio = per_day_caught.astype(float) / per_day_denom.astype(float)
+        out[int(k)] = float(per_day_ratio.mean())
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +270,16 @@ class DiagnosticBundle:
     delta_attribution: str = ""
     wall_time_sec: float = 0.0
 
+    # V1.3 Option A additions (plan § 2.1 / D7) — all additive with sensible
+    # defaults so non-anti-AUC cells and existing call sites are
+    # backward-compatible. Populated by build_diagnostic_bundle when X_eval +
+    # sweep_row are wired through walk_forward_train.
+    eval_r_precision_at_k: dict[int, float] | None = None
+    anti_auc_flag: Literal["true", "false", "unknown"] = "unknown"
+    degenerate_sink_warning: bool = False
+    weighted_base_rate_brier: float | None = None
+    eval_segment_size: int | None = None
+
     def to_dict(self) -> dict[str, Any]:
         """JSON-serializable. NaN/Infs get coerced to None."""
 
@@ -200,6 +342,22 @@ class DiagnosticBundle:
             "rationale": str(self.rationale),
             "delta_attribution": str(self.delta_attribution),
             "wall_time_sec": clean(self.wall_time_sec),
+            # V1.3 Option A surface (plan § 2.1 / D7) — agent reads these in
+            # loop/iter_<N>_request.json. eval_r_precision_at_k stays None
+            # when the eval segment wasn't wired (older callers) or is too
+            # slim to contain any R_q > 0 day; anti_auc_flag defaults
+            # "unknown" (no sweep row → no auto-disable).
+            "eval_r_precision_at_k": (
+                {str(k): clean(v) for k, v in self.eval_r_precision_at_k.items()}
+                if self.eval_r_precision_at_k is not None else None
+            ),
+            "anti_auc_flag": str(self.anti_auc_flag),
+            "degenerate_sink_warning": bool(self.degenerate_sink_warning),
+            "weighted_base_rate_brier": clean(self.weighted_base_rate_brier),
+            "eval_segment_size": (
+                int(self.eval_segment_size)
+                if self.eval_segment_size is not None else None
+            ),
         }
         return d
 
@@ -230,6 +388,16 @@ def build_diagnostic_bundle(
     wall_time_sec: float = 0.0,
     include_permutation: bool = True,
     top_k_corr: int = 50,
+    # V1.3 Option A additions (plan § 3.1 / D1+D2).
+    # The eval-segment MultiIndex carries (date, ticker) — required for the
+    # per-day R-Precision@K computation. The sweep_row is looked up once at
+    # iter_0 (plan § 3.3 / D3) by the caller and threaded through every call
+    # for the run so anti_auc_flag is constant. The degenerate_sink_threshold
+    # comes from backend.fs_hp_loop.degenerate_sink_threshold (default 1.05,
+    # plan § 0 D5).
+    mi_eval: pd.MultiIndex | None = None,
+    sweep_row: dict | None = None,
+    degenerate_sink_threshold: float = 1.05,
 ) -> DiagnosticBundle:
     """Build one bundle from a fitted ``model``.
 
@@ -318,6 +486,57 @@ def build_diagnostic_bundle(
             else float(len(y_eval))
         )
 
+    # ----- V1.3 Option A signals (plan § 3) ---------------------------------
+    # weighted_base_rate_brier — the trivial constant-predictor's Brier on val
+    # under uniqueness weights (= p_val * (1 - p_val)). Constant for the run
+    # (re-derived each iter from the same val segment / same weights, so byte-
+    # identical iter-over-iter) but included in every bundle for context.
+    weighted_base_rate_brier: float | None = None
+    if w_val is not None and len(w_val) and float(np.sum(w_val)) > 0:
+        p_val_base = float(np.sum(w_val * y_val) / np.sum(w_val))
+    elif len(y_val):
+        p_val_base = float(np.mean(y_val))
+    else:
+        p_val_base = None
+    if p_val_base is not None:
+        weighted_base_rate_brier = float(p_val_base * (1.0 - p_val_base))
+
+    # degenerate_sink_warning — val_brier within threshold * trivial baseline.
+    degenerate_sink_warning = compute_degenerate_sink_warning(
+        val_brier, weighted_base_rate_brier, degenerate_sink_threshold,
+    )
+
+    # eval_r_precision_at_k — end-of-iter predict on the carved eval segment
+    # (D2). Cost: < 1s on hist+nj=8 regardless. Rank-based so raw probabilities
+    # are order-equivalent to post-isotonic ones (isotonic is monotone) — using
+    # the raw model output here keeps the iter-loop signal independent of the
+    # finalization-only calibrator and stays byte-identical to the canonical
+    # CSV's ranking (the CSV uses p_calibrated but the rank order is the same).
+    eval_r_precision_at_k: dict[int, float] | None = None
+    eval_segment_size: int | None = None
+    if X_eval is not None and y_eval is not None and len(y_eval) and mi_eval is not None:
+        eval_segment_size = int(len(y_eval))
+        try:
+            p_eval_for_rank = model.predict_proba(X_eval)
+            # mi_eval is a (date, ticker) MultiIndex of length len(y_eval).
+            dates = mi_eval.get_level_values("date").to_numpy()
+            tickers = mi_eval.get_level_values("ticker").to_numpy()
+            rp_at_k = _r_precision_at_k_from_arrays(
+                dates=dates,
+                tickers=tickers,
+                p_calibrated=np.asarray(p_eval_for_rank, dtype=float),
+                y_true=np.asarray(y_eval, dtype=int),
+            )
+            eval_r_precision_at_k = rp_at_k or None
+        except Exception:
+            # Never let an eval-side compute crash the bundle build; the
+            # field stays None and the agent / doctrine sees "no signal".
+            eval_r_precision_at_k = None
+
+    # anti_auc_flag — constant for the run; computed from the canonical sweep
+    # CSV row passed in by the caller at every iter (plan § 3.3 / D3).
+    anti_auc_flag = compute_anti_auc_flag(sweep_row)
+
     return DiagnosticBundle(
         iter=iter_idx,
         hp=dict(hp),
@@ -348,6 +567,12 @@ def build_diagnostic_bundle(
         rationale=rationale,
         delta_attribution=delta_attribution,
         wall_time_sec=float(wall_time_sec),
+        # V1.3 Option A
+        eval_r_precision_at_k=eval_r_precision_at_k,
+        anti_auc_flag=anti_auc_flag,
+        degenerate_sink_warning=degenerate_sink_warning,
+        weighted_base_rate_brier=weighted_base_rate_brier,
+        eval_segment_size=eval_segment_size,
     )
 
 
@@ -356,4 +581,10 @@ __all__ = [
     "build_diagnostic_bundle",
     "reliability_curve",
     "top_k_correlation",
+    # V1.3 Option A
+    "compute_anti_auc_flag",
+    "compute_degenerate_sink_warning",
+    "ANTI_AUC_FLAG_AUC_LOW",
+    "ANTI_AUC_FLAG_AUC_HIGH",
+    "ANTI_AUC_FLAG_RP10_LIFT_MIN",
 ]
