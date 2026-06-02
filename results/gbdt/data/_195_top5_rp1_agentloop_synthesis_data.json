@@ -1,0 +1,324 @@
+{
+  "task": "_195",
+  "title": "top-5 R-Precision@1 cells: agent-driven loop vs sweep baseline",
+  "branch": "gbdt-195-top5-rp1-synthesis-memo",
+  "ran_at_utc": "2026-06-02T08:55:54Z",
+  "backend": {
+    "library": "xgboost",
+    "callback_mode": "agent_file_protocol"
+  },
+  "r_precision_at_k_methodology_note": {
+    "rename_date_utc": "2026-06-01",
+    "definition": "R-Precision@K = (1/Q) * sum_{q in Q} r_q / min(K, R_q), where Q is the set of days with R_q > 0 positives, R_q is the count of positives on day q, r_q is the count of positives in the top-K picks on day q. Macro-averaged across days, equal weight per day. K is fixed (per-day variable-K under the legacy 'weighted R-precision' metric used the per-day R(d) as K; macro-averaged R-Precision@K uses a fixed K and the min(K, R_q) denominator for achievability). See .claude/memories/project-r-precision-methodology.md for the full definition and the relationship to the legacy metric.",
+    "canonical_record": "results/gbdt/data/r_precision_at_k.csv",
+    "memo_body_uses": "R-Precision@K (per-day fixed K, macro-averaged across days where R_q > 0; same form as _194 and _193's footer)."
+  },
+  "headline": "L2 grid mcw=10 prescription (from r1k trio + _185, rare-event cells) regresses loop R-Precision@1 by -20% to -32% on all 3 strong-top-1 cells where sweep R-p@1 >= 0.5 (cells 1, 3, 4). Cell-4 mix recipe (FS-to-30 + mcw=5 + colsample=0.5 + gamma=0.5) beat sweep R-p@1 by +21% on its cell but DESTROYED top-1 on cells 1+3 (-55% and -60% vs sweep). No transferable recipe across cell shapes. The agent loop's value is per-cell navigation, not recipe application.",
+  "cells": [
+    {
+      "name": "cell-1 sp500_up_50pct_50d_dd25pct",
+      "spec": {
+        "universe": "sp500",
+        "direction": "up",
+        "threshold_pct": 50,
+        "horizon_days": 50,
+        "max_drawdown_pct": 25
+      },
+      "n_tickers_used": 486,
+      "n_rows_test": 24300,
+      "Q_days_test": 50,
+      "base_rate_test": 0.025679,
+      "AUC_test": {
+        "sweep": 0.903398,
+        "agentloop_original": 0.899489,
+        "agentloop_mix": 0.883597
+      },
+      "R_precision_at_K_test": {
+        "sweep":              {"1": 0.800, "3": 0.527, "5": 0.432, "10": 0.286, "20": 0.385},
+        "agentloop_original": {"1": 0.640, "3": 0.427, "5": 0.320, "10": 0.346, "20": 0.428},
+        "agentloop_mix":      {"1": 0.360, "3": 0.393, "5": 0.312, "10": 0.293, "20": 0.415}
+      },
+      "best_loop_variant": "agentloop_original (mcw=10 grid endpoint)",
+      "best_loop_R_p1_vs_sweep_pct": -20.0,
+      "loop_chain": {
+        "agentloop_original": {
+          "n_iters": 2,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.007523, "train_val_gap": 0.004486},
+            {"iter": 1, "hp": {"min_child_weight": 5.0}, "nfeat": 279, "val_brier": 0.007405, "train_val_gap": 0.001215}
+          ],
+          "stop_reason": "plateau",
+          "final_hp_inferred": {"min_child_weight": 10.0}
+        },
+        "agentloop_mix": {
+          "n_iters": 1,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.007450, "train_val_gap": 0.004409},
+            {"iter": 1, "hp": {"min_child_weight": 5.0, "colsample_bytree": 0.5, "gamma": 0.5}, "nfeat": 30, "val_brier": 0.007316, "train_val_gap": -0.000861}
+          ],
+          "stop_reason": "agent_should_stop"
+        }
+      },
+      "artifact_paths": [
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop_mix/"
+      ],
+      "wall_time_sec_total": 1282.8
+    },
+    {
+      "name": "cell-2 sp500_up_20pct_50d_dd10pct",
+      "spec": {
+        "universe": "sp500",
+        "direction": "up",
+        "threshold_pct": 20,
+        "horizon_days": 50,
+        "max_drawdown_pct": 10
+      },
+      "n_tickers_used": 486,
+      "n_rows_test": 24300,
+      "Q_days_test": 50,
+      "base_rate_test": 0.136667,
+      "AUC_test": {
+        "sweep": 0.727103,
+        "agentloop_original": 0.675157
+      },
+      "R_precision_at_K_test": {
+        "sweep":              {"1": 0.640, "3": 0.387, "5": 0.316, "10": 0.374, "20": 0.317},
+        "agentloop_original": {"1": 0.080, "3": 0.193, "5": 0.240, "10": 0.274, "20": 0.274}
+      },
+      "best_loop_variant": "agentloop_original (only attempt; subsample stack collapse)",
+      "best_loop_R_p1_vs_sweep_pct": -87.5,
+      "loop_chain": {
+        "agentloop_original": {
+          "n_iters": 2,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.107147, "train_val_gap": 0.042807, "diagnosis": "OVERFIT (gap > 0.02)"},
+            {"iter": 1, "hp": {"min_child_weight": 5.0}, "nfeat": 279, "val_brier": 0.106967, "train_val_gap": 0.032799}
+          ],
+          "stop_reason": "plateau"
+        }
+      },
+      "artifact_paths": [
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_50d_dd10pct_agentloop/"
+      ],
+      "wall_time_sec_total": 3047.1,
+      "notes": "Common-event cell (base 0.137). Subsample stacked with mcw produced catastrophic top-1 collapse (R-p@1 0.640 -> 0.080). Not retried with mix recipe."
+    },
+    {
+      "name": "cell-3 sp500_up_20pct_25d_dd10pct",
+      "spec": {
+        "universe": "sp500",
+        "direction": "up",
+        "threshold_pct": 20,
+        "horizon_days": 25,
+        "max_drawdown_pct": 10
+      },
+      "n_tickers_used": 486,
+      "n_rows_test": 36450,
+      "Q_days_test": 75,
+      "base_rate_test": 0.088587,
+      "AUC_test": {
+        "sweep": 0.775467,
+        "agentloop_original": 0.755953,
+        "agentloop_mix": 0.757086
+      },
+      "R_precision_at_K_test": {
+        "sweep":              {"1": 0.600, "3": 0.484, "5": 0.461, "10": 0.409, "20": 0.386},
+        "agentloop_original": {"1": 0.413, "3": 0.431, "5": 0.405, "10": 0.403, "20": 0.360},
+        "agentloop_mix":      {"1": 0.240, "3": 0.324, "5": 0.387, "10": 0.355, "20": 0.334}
+      },
+      "best_loop_variant": "agentloop_original (mcw=10 grid endpoint)",
+      "best_loop_R_p1_vs_sweep_pct": -31.1,
+      "loop_chain": {
+        "agentloop_original": {
+          "n_iters": 2,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.038201, "train_val_gap": 0.012919},
+            {"iter": 1, "hp": {"min_child_weight": 5.0}, "nfeat": 279, "val_brier": 0.037519, "train_val_gap": 0.006791}
+          ],
+          "stop_reason": "plateau"
+        },
+        "agentloop_mix": {
+          "n_iters": 1,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.038423, "train_val_gap": 0.013335},
+            {"iter": 1, "hp": {"min_child_weight": 5.0, "colsample_bytree": 0.5, "gamma": 0.5}, "nfeat": 30, "val_brier": 0.036458, "train_val_gap": -0.003940}
+          ],
+          "stop_reason": "agent_should_stop"
+        }
+      },
+      "artifact_paths": [
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/"
+      ],
+      "wall_time_sec_total": 314.8
+    },
+    {
+      "name": "cell-4 nasdaq100_up_40pct_50d_dd20pct",
+      "spec": {
+        "universe": "nasdaq100",
+        "direction": "up",
+        "threshold_pct": 40,
+        "horizon_days": 50,
+        "max_drawdown_pct": 20
+      },
+      "n_tickers_used": 92,
+      "n_rows_test": 4600,
+      "Q_days_test": 51,
+      "base_rate_test": 0.055435,
+      "AUC_test": {
+        "sweep": 0.753280,
+        "agentloop_original": 0.698263,
+        "agentloop_colsample": 0.700415,
+        "agentloop_gamma": 0.730085,
+        "agentloop_mix": 0.737216,
+        "agentloop_mix_mcw3": 0.743058
+      },
+      "R_precision_at_K_test": {
+        "sweep":               {"1": 0.549, "3": 0.513, "5": 0.519, "10": 0.503, "20": 0.567},
+        "agentloop_original":  {"1": 0.373, "3": 0.363, "5": 0.362, "10": 0.477, "20": 0.535},
+        "agentloop_colsample": {"1": 0.431, "3": 0.369, "5": 0.340, "10": 0.508, "20": 0.538},
+        "agentloop_gamma":     {"1": 0.353, "3": 0.304, "5": 0.410, "10": 0.520, "20": 0.560},
+        "agentloop_mix":       {"1": 0.667, "3": 0.490, "5": 0.467, "10": 0.522, "20": 0.563},
+        "agentloop_mix_mcw3":  {"1": 0.373, "3": 0.444, "5": 0.490, "10": 0.508, "20": 0.567}
+      },
+      "best_loop_variant": "agentloop_mix (FS-to-30 + mcw=5 + colsample=0.5 + gamma=0.5)",
+      "best_loop_R_p1_vs_sweep_pct": 21.4,
+      "loop_chain": {
+        "agentloop_original": {
+          "n_iters": 2,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.024909, "train_val_gap": 0.016068},
+            {"iter": 1, "hp": {}, "nfeat": 30, "val_brier": 0.024715, "train_val_gap": 0.012379}
+          ],
+          "stop_reason": "plateau"
+        },
+        "agentloop_colsample": {
+          "n_iters": 3,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.024909, "train_val_gap": 0.016068},
+            {"iter": 1, "hp": {"min_child_weight": 10.0}, "nfeat": 30, "val_brier": 0.023547, "train_val_gap": -0.008880},
+            {"iter": 2, "hp": {"min_child_weight": 10.0, "colsample_bytree": 0.7}, "nfeat": 30, "val_brier": 0.023558, "train_val_gap": -0.008903}
+          ],
+          "stop_reason": "plateau"
+        },
+        "agentloop_gamma": {
+          "n_iters": 5,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.024909, "train_val_gap": 0.016068},
+            {"iter": 1, "hp": {"min_child_weight": 10.0, "colsample_bytree": 0.5}, "nfeat": 30, "val_brier": 0.023567, "train_val_gap": -0.008926},
+            {"iter": 2, "hp": {"min_child_weight": 10.0, "colsample_bytree": 0.5, "gamma": 0.1}, "nfeat": 30, "val_brier": 0.023544, "train_val_gap": -0.009021},
+            {"iter": 3, "hp": {"min_child_weight": 10.0, "colsample_bytree": 0.5, "gamma": 0.5}, "nfeat": 30, "val_brier": 0.023372, "train_val_gap": -0.010163},
+            {"iter": 4, "hp": {"min_child_weight": 10.0, "colsample_bytree": 0.5, "gamma": 1.0}, "nfeat": 30, "val_brier": 0.023363, "train_val_gap": -0.010705}
+          ],
+          "stop_reason": "plateau"
+        },
+        "agentloop_mix": {
+          "n_iters": 1,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.024909, "train_val_gap": 0.016068},
+            {"iter": 1, "hp": {"min_child_weight": 5.0, "colsample_bytree": 0.5, "gamma": 0.5}, "nfeat": 30, "val_brier": 0.023441, "train_val_gap": -0.008386}
+          ],
+          "stop_reason": "agent_should_stop"
+        },
+        "agentloop_mix_mcw3": {
+          "n_iters": 1,
+          "iter_path": [
+            {"iter": 0, "hp": {}, "nfeat": 279, "val_brier": 0.024909, "train_val_gap": 0.016068},
+            {"iter": 1, "hp": {"min_child_weight": 3.0, "colsample_bytree": 0.5, "gamma": 0.5}, "nfeat": 30, "val_brier": 0.022928, "train_val_gap": -0.007828}
+          ],
+          "stop_reason": "agent_should_stop"
+        }
+      },
+      "artifact_paths": [
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_colsample/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_gamma/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/",
+        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix_mcw3/"
+      ],
+      "wall_time_sec_total": 130.7
+    },
+    {
+      "name": "cell-5 nasdaq100_up_10pct_50d_dd5pct",
+      "spec": {
+        "universe": "nasdaq100",
+        "direction": "up",
+        "threshold_pct": 10,
+        "horizon_days": 50,
+        "max_drawdown_pct": 5
+      },
+      "status": "NOT RUN — deferred (anti-AUC anomaly)",
+      "n_tickers_used": 92,
+      "n_rows_test": 4600,
+      "Q_days_test": 70,
+      "base_rate_test": 0.265217,
+      "AUC_test": {"sweep": 0.475014},
+      "R_precision_at_K_test": {
+        "sweep": {"1": 0.671, "3": 0.557, "5": 0.569, "10": 0.515, "20": 0.518}
+      },
+      "deferral_rationale": "Anti-AUC anomaly cell: AUC=0.475 (below random) yet sweep R-p@1=0.671 — model ranks top picks correctly only at the extreme prediction tail. Warrants dedicated investigation, not a routine loop run."
+    }
+  ],
+  "findings_F1_to_F6": {
+    "F1_L2_grid_overregularizes_strong_top1": {
+      "claim": "mcw=10 grid endpoint regresses top-1 by -20% to -32% on all 3 strong-top-1 cells (1, 3, 4).",
+      "evidence": "cell-1 0.800 -> 0.640 (-20%); cell-3 0.600 -> 0.413 (-31%); cell-4 0.549 -> 0.373 (-32%).",
+      "mechanism": "mcw=10 caps leaf weights -> smooths prediction tail -> kills very-high-confidence top picks. L1 tie-break (gap + Z) actively selects most-regularized iter."
+    },
+    "F2_no_universal_fix": {
+      "claim": "No single recipe transfers across strong-top-1 cells.",
+      "evidence": "Cell-4 mix recipe beat sweep R-p@1 +21% (0.549 -> 0.667); same recipe on cell-1 -55% (0.800 -> 0.360); same on cell-3 -60% (0.600 -> 0.240)."
+    },
+    "F3_asymmetry_hint_n3": {
+      "claim": "sp500 (large panel) cells respond differently to FS+stacked-reg than nasdaq100 (small panel) cell.",
+      "caveat": "n=3 cells, do not over-read.",
+      "hypothesis": "Aggressive FS+stacked-reg on larger panels collapses the diversity sweep was using for top picks."
+    },
+    "F4_val_test_divergence": {
+      "claim": "val_brier movement does not track test ranking shifts in the prediction tail.",
+      "evidence": [
+        "cell-4 colsample variant: val Δ=+0.00001 (noise), test R-p@1 0.373 -> 0.431 (+16%).",
+        "cell-4 mix iter_1: val_brier 0.023441 WORSE than gamma stack's 0.023363, but test R-p@1 0.667 BETTER than gamma stack's 0.353."
+      ],
+      "implication": "L1 tie-break (calibrated on val gap + Z) is the wrong objective for top-1-driven cells."
+    },
+    "F5_single_knob_plateau_bug204": {
+      "claim": "Runner's auto-plateau fires per-knob, silencing entire response surfaces.",
+      "evidence": "Cell-4: mcw=10 val Δ=0.0012 plateau-stopped before colsample / gamma could be tested, masking the +16% colsample lift.",
+      "workaround": "Set plateau_threshold=0.0001 in spec; chain fresh-variant specs that pre-bake prior state via iter_0_decision.",
+      "fix_in_flight": "Bug #204: disable auto-plateau in agent_file_protocol mode, keep for sweep mode."
+    },
+    "F6_per_knob_effects_cell4_only": {
+      "caveat": "Single-cell evidence; do NOT generalize values.",
+      "knobs": {
+        "mcw_alone_1_to_10": "more reg -> worse top-1, neutral on K=10",
+        "colsample_alone_1.0_to_0.5": "partial top-1 recovery 0.373 -> 0.431 (+16%)",
+        "gamma_stack_0_to_1.0": "best K=10 recovery (R-p@10 0.520)",
+        "mix_moderate": "cell-4 sweet spot: mcw=5 + cs=0.5 + γ=0.5 (R-p@1 0.667)",
+        "mcw3_on_mix": "top-1 collapses 0.667 -> 0.373 (mcw=5 is local optimum)",
+        "subsample_stacked_common_event": "catastrophic on cell-2 (R-p@1 0.640 -> 0.080)",
+        "depth8_with_gamma": "no-op when gamma >= 0.5"
+      }
+    }
+  },
+  "open_questions": [
+    "cell-5 (nasdaq100 +10%/50d, AUC=0.475, R-p@1=0.671) anti-AUC anomaly — dedicated investigation needed",
+    "cells 1+3 still in regression — try UNDER-regularization (mcw=1 + smaller FS + no other reg) on these strong-top-1 sp500 cells",
+    "task #206 — /gbdt-diagnose pairwise interaction data not captured (both runs crashed); retry on cell-4 mix artifact (30 features)",
+    "bug #203 (hist + nj=8 swap, 15-90x speedup) — separate PR in flight",
+    "bug #204 (plateau-stop, auto-fires per-knob) — separate PR in flight"
+  ],
+  "wall_time_summary": {
+    "per_cell_sec": {
+      "cell-1": 1282.8,
+      "cell-2": 3047.1,
+      "cell-3": 314.8,
+      "cell-4": 130.7,
+      "cell-5": null
+    },
+    "total_sec": 4775.4,
+    "total_hr": 1.3265,
+    "note": "Cell-4 was the cheapest cell (smallest panel) but received the most exploration (5 variants); cell-2 was the most expensive single run due to feature cold-build on the sp500 panel before the features.py speedup PRs landed."
+  }
+}
