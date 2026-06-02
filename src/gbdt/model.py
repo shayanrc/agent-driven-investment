@@ -22,7 +22,9 @@ This module defines the **backend seam** for the gbdt module (V1.2 Phase 1,
     - Exposes ``fit / predict_proba / feature_importance / save / load``.
 - :class:`XGBoostModel` — the concrete XGBoost backend (V1.2 Phase 1). Mirrors
   :class:`CatBoostModel`'s public surface; deterministic-by-construction
-  (``tree_method=exact`` + ``n_jobs=1`` + ``device=cpu`` + fixed ``seed``),
+  (``tree_method=hist`` + ``n_jobs=8`` + ``device=cpu`` + fixed ``seed``;
+  empirically byte-identical across runs at a fixed ``n_jobs`` on a fixed
+  machine, 15–90× faster than the prior ``exact`` + ``n_jobs=1`` pin),
   ``binary:logistic`` objective, ``.ubj`` persistence. Reachable via
   :func:`make_model` / unit tests only — not yet wired into the runner/loop
   (the spec validation still rejects ``backend.library != "catboost"``; that
@@ -204,9 +206,15 @@ STRUCTURED_HP_KEYS_XGB: frozenset[str] = frozenset({"interaction_constraints"})
 PINNED_HPS_XGB: dict[str, Any] = {
     "objective": "binary:logistic",            # ↔ Logloss
     "eval_metric": "logloss",                   # Brier computed in the bundle
-    "tree_method": "exact",                     # determinism (plan § 5.1)
-    "n_jobs": 1,                                # determinism
-    "device": "cpu",                            # determinism
+    # ``tree_method="hist" + n_jobs=8`` is empirically byte-identical across runs
+    # on this machine (booster ``save_raw()`` SHA-256 match across 2 fits × 4
+    # configs), and 15–90× faster than the prior ``exact + n_jobs=1`` pin. The
+    # determinism contract is now "**at fixed ``n_jobs`` on a fixed machine**",
+    # not "at any n_jobs on any machine" — cross-machine or n_jobs changes would
+    # produce a different booster blob and require an A6 baseline refresh.
+    "tree_method": "hist",                      # speed; byte-identical at fixed n_jobs on a fixed machine
+    "n_jobs": 8,                                # speed; pin to a fixed n_jobs for byte-identical multi-thread reductions (8 = saturate the 8-core box)
+    "device": "cpu",                            # determinism (GPU reductions are non-deterministic)
 }
 
 # The subset of ``PINNED_HPS_XGB`` whose override breaks bit-reproducibility of
@@ -289,14 +297,20 @@ def _validate_hp_xgb(hp: dict) -> dict:
     The load-bearing reason this exists: the FS+HP loop's finalization step
     *retrains* a prior ``(features, hp)`` config (``train.py::_fit_one``) and
     assumes it reproduces the in-loop fit **bit-identically** — the checkpoint
-    stores no model blob. XGBoost only reproduces bit-identically with
-    ``tree_method="exact"`` + ``n_jobs=1`` + ``device="cpu"`` (the histogram
-    build / multi-thread float-reduction order / GPU reductions are otherwise
-    run-to-run non-deterministic). So those knobs are pinned in
-    ``PINNED_HPS_XGB`` and **cannot be overridden** — exactly as CatBoost pins
-    ``has_time`` (``model.py`` ``_validate_hp`` raises on a ``has_time``
-    override). A caller passing the *same* pinned value is a no-op; passing a
-    *different* value raises here, at construction, never at predict-time.
+    stores no model blob. XGBoost reproduces bit-identically when those
+    determinism knobs are held FIXED across the in-loop fit and the
+    finalization retrain — the current pins are ``tree_method="hist"`` +
+    ``n_jobs=8`` + ``device="cpu"`` (empirically byte-identical on this
+    machine; ``hist`` + ``n_jobs=8`` is 15–90× faster than the prior
+    ``exact + n_jobs=1`` pin while still hashing the same across runs). The
+    cross-machine / cross-n_jobs case is **not** guaranteed bit-identical —
+    multi-thread float-reduction order and GPU reductions are otherwise
+    run-to-run non-deterministic — so those knobs are pinned in
+    ``PINNED_HPS_XGB`` and **cannot be overridden** at construction, exactly
+    as CatBoost pins ``has_time`` (``model.py`` ``_validate_hp`` raises on a
+    ``has_time`` override). A caller passing the *same* pinned value is a
+    no-op; passing a *different* value raises here, at construction, never
+    at predict-time.
 
     Returns a copy of ``hp`` with the pins applied + the tunable/enum tables
     range-checked. Raises :class:`ValueError` on the first violation.
@@ -313,12 +327,13 @@ def _validate_hp_xgb(hp: dict) -> dict:
                 f"cannot be overridden (got {out[k]!r}). This pin is load-bearing: "
                 f"the FS+HP loop's finalization step retrains the selected "
                 f"(features, hp) config and requires a bit-identical reproduction "
-                f"of the in-loop fit. Only tree_method='exact', n_jobs=1, "
-                f"device='cpu' guarantee that — a non-deterministic override "
-                f"(e.g. tree_method='hist' with n_jobs>1, or device='cuda') would "
-                f"silently make the artifact's predictions disagree with the "
-                f"val-Brier the checkpoint was selected on. See V1.2 plan D5 / "
-                f"§ 5.1 and project-xgboost-training-essentials § 1."
+                f"of the in-loop fit. Only tree_method={pinned['tree_method']!r}, "
+                f"n_jobs={pinned['n_jobs']!r}, device={pinned['device']!r} guarantee "
+                f"that on this machine — a different override (e.g. device='cuda', "
+                f"or a different n_jobs value than the pin) would silently make "
+                f"the artifact's predictions disagree with the val-Brier the "
+                f"checkpoint was selected on. See V1.2 plan D5 / § 5.1 and "
+                f"project-xgboost-training-essentials § 1."
             )
 
     # Remaining pins (objective / eval_metric): policy pins, generic message.
@@ -767,11 +782,16 @@ class XGBoostModel(BaseGBDTModel):
     ``.ubj`` binary, ``project-xgboost-training-essentials`` § 4).
 
     **Deterministic by construction** (the load-bearing § 5.1 / § 1 contract):
-    ``PINNED_HPS_XGB`` supplies the determinism knobs (``tree_method="exact"``,
-    ``n_jobs=1``, ``device="cpu"``) and a fixed ``seed``/``random_state`` is
+    ``PINNED_HPS_XGB`` supplies the determinism knobs (``tree_method="hist"``,
+    ``n_jobs=8``, ``device="cpu"``) and a fixed ``seed``/``random_state`` is
     applied at construction, so a refit on the same ``(features, hp, seed)`` +
-    row order reproduces the prior model bit-identically. The XGBoost objective is
-    pinned to ``binary:logistic`` (raw margin → sigmoid → probability) and
+    row order — at the *same* ``n_jobs`` on the *same* machine — reproduces the
+    prior model bit-identically. (``hist + n_jobs=8`` was empirically verified
+    byte-identical across 2 fits × 4 configs on this 8-core box, and is 15–90×
+    faster than the prior ``exact + n_jobs=1`` pin; the cross-machine /
+    cross-n_jobs guarantee is intentionally NOT made — those would require an
+    A6 baseline refresh.) The XGBoost objective is pinned to
+    ``binary:logistic`` (raw margin → sigmoid → probability) and
     ``eval_metric="logloss"`` drives early stopping (Brier is computed in the
     diagnostic bundle, not as a native eval metric — V1.2 plan Q1). Missing values
     flow through XGBoost's sparsity-aware split finding — no imputation.
@@ -786,7 +806,7 @@ class XGBoostModel(BaseGBDTModel):
         determinism knobs (``tree_method``/``n_jobs``/``device``) with a value
         that would break the bit-identical finalization retrain. Passing the
         same pinned value is a no-op; a different value (e.g. ``tree_method=
-        "hist"`` with ``n_jobs=4``, or ``device="cuda"``) raises at construction.
+        "exact"``, ``n_jobs=4``, or ``device="cuda"``) raises at construction.
     """
 
     def __init__(
