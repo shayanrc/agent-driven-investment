@@ -48,6 +48,7 @@ def inner_stop_check(
     plateau_threshold: float = 0.005,
     degradation_gate: float = 0.01,
     max_iterations: int = 8,
+    disable_plateau: bool = False,
 ) -> tuple[bool, str | None]:
     """Return ``(should_stop, signal_name | None)``.
 
@@ -57,6 +58,15 @@ def inner_stop_check(
 
     Signal precedence: ``degradation`` first (more diagnostic), then
     ``plateau``, then ``cap``.
+
+    ``disable_plateau`` (task #204): when True, the plateau signal is
+    suppressed. ``degradation`` + ``cap`` still fire normally. Set by the
+    runner when ``callback_mode == "agent_file_protocol"`` — in agent mode
+    the runner defers loop-continuation calls to the agent, which should be
+    free to pivot to a structurally-different knob (e.g. ``colsample``
+    after ``min_child_weight`` plateaued) instead of being auto-stopped on a
+    single-knob val_brier flatline. ``default`` (sweep) mode keeps the
+    plateau gate active — there's no agent to defer to.
     """
     n = len(val_briers)
     if n == 0:
@@ -68,8 +78,9 @@ def inner_stop_check(
     if val_briers[-1] > (1.0 + degradation_gate) * best:
         return True, "degradation"
 
-    # Plateau: last two iterations both improved by < threshold
-    if n >= 3:
+    # Plateau: last two iterations both improved by < threshold.
+    # Gated off in agent mode (task #204) — the agent decides when to stop.
+    if not disable_plateau and n >= 3:
         d_last = val_briers[-2] - val_briers[-1]
         d_prev = val_briers[-3] - val_briers[-2]
         if d_last < plateau_threshold and d_prev < plateau_threshold:

@@ -151,6 +151,39 @@ def test_inner_stop_no_signal_when_improving():
     assert signal is None
 
 
+# Task #204 — disable_plateau (agent mode) gates the plateau signal off.
+# degradation + cap MUST still fire so the loop is still bounded + still
+# regresses-out-of cleanly.
+
+def test_inner_stop_plateau_suppressed_when_disabled():
+    # The same history that triggers plateau in default mode (above) must NOT
+    # stop when disable_plateau=True.
+    history = [0.30, 0.28, 0.279, 0.278]
+    stop, signal = inner_stop_check(history, plateau_threshold=0.005,
+                                    disable_plateau=True)
+    assert not stop
+    assert signal is None
+
+
+def test_inner_stop_degradation_fires_when_plateau_disabled():
+    # Regression IS a real stop signal — agent can't recover from val
+    # blowing up without backtracking.
+    history = [0.30, 0.25, 0.30]
+    stop, signal = inner_stop_check(history, degradation_gate=0.01,
+                                    disable_plateau=True)
+    assert stop and signal == "degradation"
+
+
+def test_inner_stop_cap_fires_when_plateau_disabled():
+    # Cap bounds the loop in both modes — even with the agent driving,
+    # max_iterations is a hard ceiling.
+    history = [0.25, 0.24, 0.235, 0.232, 0.231, 0.230, 0.229, 0.228]
+    stop, signal = inner_stop_check(history, max_iterations=8,
+                                    plateau_threshold=0.0001,
+                                    disable_plateau=True)
+    assert stop and signal == "cap"
+
+
 def test_best_checkpoint_picks_min():
     history = [0.30, 0.27, 0.24, 0.26, 0.25]
     assert best_checkpoint(history) == 2

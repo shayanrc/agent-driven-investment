@@ -260,6 +260,7 @@ def walk_forward_train(
     resume_state: dict | None = None,
     loop_state_sink: dict | None = None,
     backend: str = "catboost",
+    disable_plateau: bool = False,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -287,6 +288,13 @@ def walk_forward_train(
     from the spec. Threaded to :func:`gbdt.model.make_model` for both the
     in-loop fit and the finalization retrain. Defaults to ``"catboost"`` so
     every existing spec + test stays byte-for-byte unchanged.
+
+    ``disable_plateau`` (task #204): when True, the inner-stop plateau gate
+    is suppressed; only ``degradation`` + ``cap`` can terminate the loop. The
+    runner sets this when ``callback_mode == "agent_file_protocol"`` so the
+    agent stays in charge of when to stop (and is free to pivot to a
+    structurally-different knob after one knob plateaus). Default ``False``
+    preserves the v1 sweep-mode behaviour byte-for-byte.
     """
     split = split or SplitSpec()
     if fs_hp_callback is None:
@@ -377,6 +385,7 @@ def walk_forward_train(
             plateau_threshold=plateau_threshold,
             degradation_gate=degradation_gate,
             max_iterations=max_iterations,
+            disable_plateau=disable_plateau,
         )
         if stop:
             inner_signal = signal

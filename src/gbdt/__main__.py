@@ -1054,6 +1054,15 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         f"[loop] start max_iter={max_iter} callback_mode={callback_mode}{resume_note}"
     )
     t1 = time.time()
+    # Task #204: in agent_file_protocol mode the runner defers loop-continuation
+    # to the agent. The val_brier plateau gate is too coarse a stop signal
+    # there — the agent should be free to pivot to a structurally-different
+    # knob (e.g. ``colsample`` after ``min_child_weight`` plateaued) instead of
+    # being auto-stopped on one knob's flatline. ``degradation`` + ``cap``
+    # remain active in both modes (regression is a real stop signal; cap bounds
+    # the loop). Default (sweep) mode keeps the plateau gate — fully algorithmic,
+    # no agent to defer to.
+    disable_plateau = (callback_mode == "agent_file_protocol")
     try:
         result = walk_forward_train(
             panel=panel_obj.panel, X=X, y=y,
@@ -1070,6 +1079,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             resume_state=resume_state,
             loop_state_sink=loop_state_sink,
             backend=backend_library,
+            disable_plateau=disable_plateau,
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the
