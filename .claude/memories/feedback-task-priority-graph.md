@@ -1,6 +1,6 @@
 ---
 name: feedback-task-priority-graph
-description: Project convention — when optimizing/prioritizing tasks (dependency graph, what's unblocked, sequencing, "optimize for time"), ALWAYS render the graph to a PNG (+SVG) and display it via SendUserFile, not just inline text. Render locally with graphviz `dot` (mermaid-cli is unavailable). House style is top-to-bottom, module/phase cluster boxes, a top legend swatch-row subgraph, and a date+time-stamped title.
+description: Project convention — when optimizing/prioritizing tasks (dependency graph, what's unblocked, sequencing, "optimize for time"), ALWAYS render the graph to a PNG (+SVG) and display it via SendUserFile, not just inline text. Render locally with graphviz `dot` (mermaid-cli is unavailable). House style is top-to-bottom, module/phase cluster boxes, an HTML-table legend node in an isolated top rank (centered above all clusters via spacer-row anchors), and a date+time-stamped title.
 metadata:
   type: feedback
 ---
@@ -33,45 +33,70 @@ metadata:
   - recurring (paused between ticks): `fillcolor="#d1ecf1"`, `color="#0c5460"`, `style="rounded,filled,dotted"` (blue, DOTTED border — always-on but idle right now)
   - blocked on data: `fillcolor="#f8d7da"`, `color="#842029"` (red)
 - **Edges:** solid = hard dependency; `style=dashed` = soft/informational; color a workstream's critical path (e.g. orange `#d9534f` = catboost/V1.1 path, purple `#5a3e9e` = xgboost/V1.2 path). Put the meaning in the legend, not the title.
-- **Legend = a `cluster_legend` subgraph of swatch nodes in a horizontal row, forced to the TOP** (NOT a text blob, NOT a bottom table). One swatch node per state using its real fill/style, chained with `[style=invis]` + `{rank=same; ...}` to keep them a row; force above the graph with invisible edges from a legend node down to each top-of-graph source node.
+- **Legend = a single HTML-table `[shape=plaintext, label=<<TABLE>...</TABLE>>]` node in an isolated top rank, centered above all clusters via spacer-row anchors.** (NOT a text blob; NOT a bottom table; NOT the older `cluster_legend` swatch-row approach which couldn't be reliably centered or rank-isolated.) See the canonical skeleton below for the spacer-row + `weight=100` anchor pattern. **Optional "done this session" swatch** (`fillcolor="#a8d8c0"`, mid-green between done-gray and actionable-bright-green) can be added to visually distinguish work completed in the current session from older completed work.
+- **SVG/PNG render parity**: set explicit `FACE="Helvetica" POINT-SIZE="N"` on every `FONT` tag inside the HTML table. Without this, SVG and PNG can use different default fonts → different cell widths → different layouts.
 
-## Canonical DOT skeleton
+## Canonical DOT skeleton (current — HTML-table legend + spacer-row pattern, proven 2026-06-03)
 
 ```dot
 digraph deps {
   rankdir=TB;
+  newrank=true;
   graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
          labelloc="t", fontsize=15,
-         label="Agent-Driven Investment — <subject> (2026-05-29 00:57 IST)"];
+         label="Agent-Driven Investment — <subject>\n2026-06-03 11:33 IST"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
   edge [fontname="Helvetica", fontsize=8, color="#888888"];
 
-  subgraph cluster_legend {
-    label="Legend"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#999999"; margin=8;
-    node [shape=box, style="rounded,filled", fontsize=9, margin="0.12,0.05", height=0.32];
-    lg_action [label="actionable now",     fillcolor="#d4edda", color="#155724"];
-    lg_flight [label="in flight / running", fillcolor="#d1ecf1", color="#0c5460"];
-    lg_goal   [label="goal",                fillcolor="#ffe69c", color="#856404"];
-    lg_pend   [label="pending / gated",     fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
-    lg_done   [label="done / merged",       fillcolor="#ced4da", color="#495057"];
-    lg_recur  [label="recurring (paused)",  fillcolor="#d1ecf1", color="#0c5460", style="rounded,filled,dotted"];
-    lg_block  [label="blocked on data",     fillcolor="#f8d7da", color="#842029"];
-    lg_action -> lg_flight -> lg_goal -> lg_pend -> lg_done -> lg_recur -> lg_block [style=invis];
-    { rank=same; lg_action; lg_flight; lg_goal; lg_pend; lg_done; lg_recur; lg_block; }
-  }
+  /* ---------- legend (single wide HTML-table node, isolated top rank) ---------- */
+  legend [shape=plaintext, label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="6" CELLPADDING="6" BGCOLOR="#f6f6f6">
+      <TR>
+        <TD COLSPAN="8" BORDER="0"><FONT FACE="Helvetica" POINT-SIZE="11"><B>legend</B></FONT></TD>
+      </TR>
+      <TR>
+        <TD BGCOLOR="#ced4da"><FONT FACE="Helvetica" POINT-SIZE="10">done / merged</FONT></TD>
+        <TD BGCOLOR="#a8d8c0"><FONT FACE="Helvetica" POINT-SIZE="10">done this session</FONT></TD>
+        <TD BGCOLOR="#d4edda"><FONT FACE="Helvetica" POINT-SIZE="10">actionable</FONT></TD>
+        <TD BGCOLOR="#d1ecf1"><FONT FACE="Helvetica" POINT-SIZE="10">in flight</FONT></TD>
+        <TD BGCOLOR="#ffffff" STYLE="dashed"><FONT FACE="Helvetica" POINT-SIZE="10">pending / gated</FONT></TD>
+        <TD BGCOLOR="#f8d7da"><FONT FACE="Helvetica" POINT-SIZE="10">blocked on data</FONT></TD>
+        <TD BGCOLOR="#d1ecf1"><FONT FACE="Helvetica" POINT-SIZE="10">recurring (paused)</FONT></TD>
+        <TD BGCOLOR="#ffe69c"><FONT FACE="Helvetica" POINT-SIZE="10">goal</FONT></TD>
+      </TR>
+    </TABLE>
+  >];
+  /* Dedicated empty spacer row enforces visual gap between legend (rank=min) and ALL clusters. */
+  spacer_L [shape=point, width=0.01, style=invis];
+  spacer_C [shape=point, width=0.01, style=invis];
+  spacer_R [shape=point, width=0.01, style=invis];
+  {rank=min;  legend;}
+  {rank=same; spacer_L; spacer_C; spacer_R;}
+  /* Strong vertical pull keeps legend ABOVE the spacer row */
+  legend -> spacer_L [style=invis, weight=1];
+  legend -> spacer_C [style=invis, weight=100];
+  legend -> spacer_R [style=invis, weight=1];
+  /* EVERY cluster's top-most node must have a weight=100 invisible edge from a spacer,
+     so the cluster cannot drift up to the legend's rank. Distribute across L/C/R to control x-position. */
+  spacer_L -> <leftmost_cluster_top_node>  [style=invis, weight=100];
+  spacer_C -> <middle_cluster_top_node>    [style=invis, weight=100];
+  spacer_R -> <rightmost_cluster_top_node> [style=invis, weight=100];
+  /* repeat spacer_? → <top_node> for every cluster you add */
 
+  /* ---------- work clusters ---------- */
   subgraph cluster_work { label="<module · phase>"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
     /* work nodes here */ }
   subgraph cluster_scheduled { label="scheduled tasks / loops"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
     WAKE [label="#94 · hourly wakeup", fillcolor="#d1ecf1", color="#0c5460", style="rounded,filled,dotted"]; }
 
   /* dependency edges ... */
-
-  /* force the legend band above every top-of-graph source node */
-  lg_block -> <top_source_node> [style=invis];   /* repeat for each source node */
 }
 ```
 
-Note: do NOT combine a cluster with a global `rank=same` of its members (graphviz drops the cluster box) — the only `rank=same` is inside `cluster_legend` to make the swatch row.
+**Notes**:
+- Set `newrank=true` at graph level — required so the `{rank=min; legend;}` pin works across clusters.
+- Do NOT combine a cluster with a global `rank=same` of its members (graphviz drops the cluster box).
+- The spacer-row pattern is what makes the legend BOTH centered (via L/C/R distribution of anchor edges) AND in its own rank (via `weight=100` strong vertical pull on every cluster top node).
+- The old `cluster_legend` swatch-row approach is deprecated — it couldn't be reliably centered or rank-isolated against multiple cluster anchors.
 
 CLAUDE.md § "Presenting plans and priorities" is the one-line summary of this convention.
