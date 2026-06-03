@@ -1,0 +1,215 @@
+{
+  "experiment_id": 224,
+  "universe": "russell1000",
+  "date": "2026-06-03",
+  "branch": "gbdt-russell1000-sweep-rerun",
+  "closes_task": 225,
+  "n_cells_executed": 20,
+  "n_cells_with_predictions": 13,
+  "n_cells_empty_test": 7,
+  "h_empty_test": [
+    100,
+    200
+  ],
+  "empty_test_cells": [
+    "russell1000_up_10pct_100d_dd5pct",
+    "russell1000_up_10pct_200d_dd5pct",
+    "russell1000_up_20pct_100d_dd10pct",
+    "russell1000_up_40pct_100d_dd20pct",
+    "russell1000_up_40pct_200d_dd20pct",
+    "russell1000_up_50pct_100d_dd25pct",
+    "russell1000_up_50pct_200d_dd25pct"
+  ],
+  "empty_test_root_cause": "bug #129 \u2014 walk-forward split allocates 100 trailing rows per ticker for test; H >= 100 leaves no NaN-free target window in that segment.",
+  "headline": [
+    {
+      "cell": "russell1000_up_20pct_5d_dd10pct",
+      "rows": 84455,
+      "Q_days": 93,
+      "base_rate": 0.006986,
+      "auc": 0.832688,
+      "R_p_at_1": 0.107527,
+      "R_p_at_3": 0.164875,
+      "R_p_at_5": 0.159319,
+      "R_p_at_10": 0.208389,
+      "R_p_at_20": 0.294266
+    },
+    {
+      "cell": "russell1000_up_40pct_10d_dd20pct",
+      "rows": 80010,
+      "Q_days": 69,
+      "base_rate": 0.002375,
+      "auc": 0.861343,
+      "R_p_at_1": 0.028986,
+      "R_p_at_3": 0.111111,
+      "R_p_at_5": 0.181643,
+      "R_p_at_10": 0.265039,
+      "R_p_at_20": 0.345066
+    },
+    {
+      "cell": "russell1000_up_20pct_10d_dd10pct",
+      "rows": 80010,
+      "Q_days": 90,
+      "base_rate": 0.024884,
+      "auc": 0.817766,
+      "R_p_at_1": 0.255556,
+      "R_p_at_3": 0.27037,
+      "R_p_at_5": 0.222222,
+      "R_p_at_10": 0.222152,
+      "R_p_at_20": 0.253357
+    },
+    {
+      "cell": "russell1000_up_50pct_50d_dd25pct",
+      "rows": 44450,
+      "Q_days": 50,
+      "base_rate": 0.024837,
+      "auc": 0.857489,
+      "R_p_at_1": 0.14,
+      "R_p_at_3": 0.24,
+      "R_p_at_5": 0.26,
+      "R_p_at_10": 0.18,
+      "R_p_at_20": 0.221122
+    },
+    {
+      "cell": "russell1000_up_10pct_5d_dd5pct",
+      "rows": 84455,
+      "Q_days": 95,
+      "base_rate": 0.04979,
+      "auc": 0.762425,
+      "R_p_at_1": 0.263158,
+      "R_p_at_3": 0.259649,
+      "R_p_at_5": 0.273684,
+      "R_p_at_10": 0.235789,
+      "R_p_at_20": 0.237285
+    },
+    {
+      "cell": "russell1000_up_20pct_25d_dd10pct",
+      "rows": 66675,
+      "Q_days": 75,
+      "base_rate": 0.101942,
+      "auc": 0.729715,
+      "R_p_at_1": 0.333333,
+      "R_p_at_3": 0.435556,
+      "R_p_at_5": 0.378667,
+      "R_p_at_10": 0.38,
+      "R_p_at_20": 0.347333
+    },
+    {
+      "cell": "russell1000_up_50pct_25d_dd25pct",
+      "rows": 66675,
+      "Q_days": 74,
+      "base_rate": 0.008714,
+      "auc": 0.892923,
+      "R_p_at_1": 0.027027,
+      "R_p_at_3": 0.103604,
+      "R_p_at_5": 0.081532,
+      "R_p_at_10": 0.149973,
+      "R_p_at_20": 0.235031
+    },
+    {
+      "cell": "russell1000_up_40pct_25d_dd20pct",
+      "rows": 66675,
+      "Q_days": 75,
+      "base_rate": 0.017863,
+      "auc": 0.846265,
+      "R_p_at_1": 0.053333,
+      "R_p_at_3": 0.204444,
+      "R_p_at_5": 0.178667,
+      "R_p_at_10": 0.192111,
+      "R_p_at_20": 0.244481
+    },
+    {
+      "cell": "russell1000_up_40pct_50d_dd20pct",
+      "rows": 44450,
+      "Q_days": 50,
+      "base_rate": 0.045062,
+      "auc": 0.80325,
+      "R_p_at_1": 0.12,
+      "R_p_at_3": 0.46,
+      "R_p_at_5": 0.4,
+      "R_p_at_10": 0.356,
+      "R_p_at_20": 0.297
+    },
+    {
+      "cell": "russell1000_up_10pct_10d_dd5pct",
+      "rows": 80010,
+      "Q_days": 90,
+      "base_rate": 0.125559,
+      "auc": 0.693454,
+      "R_p_at_1": 0.322222,
+      "R_p_at_3": 0.4,
+      "R_p_at_5": 0.384444,
+      "R_p_at_10": 0.334444,
+      "R_p_at_20": 0.343333
+    },
+    {
+      "cell": "russell1000_up_20pct_50d_dd10pct",
+      "rows": 44450,
+      "Q_days": 50,
+      "base_rate": 0.152981,
+      "auc": 0.681598,
+      "R_p_at_1": 0.38,
+      "R_p_at_3": 0.346667,
+      "R_p_at_5": 0.352,
+      "R_p_at_10": 0.326,
+      "R_p_at_20": 0.309
+    },
+    {
+      "cell": "russell1000_up_10pct_50d_dd5pct",
+      "rows": 44450,
+      "Q_days": 50,
+      "base_rate": 0.298785,
+      "auc": 0.5056,
+      "R_p_at_1": 0.38,
+      "R_p_at_3": 0.353333,
+      "R_p_at_5": 0.316,
+      "R_p_at_10": 0.25,
+      "R_p_at_20": 0.223
+    },
+    {
+      "cell": "russell1000_up_10pct_25d_dd5pct",
+      "rows": 66675,
+      "Q_days": 75,
+      "base_rate": 0.285069,
+      "auc": 0.586463,
+      "R_p_at_1": 0.346667,
+      "R_p_at_3": 0.417778,
+      "R_p_at_5": 0.434667,
+      "R_p_at_10": 0.418667,
+      "R_p_at_20": 0.398667
+    }
+  ],
+  "methodology": {
+    "metric": "R-Precision@K with K in {1,3,5,10,20}",
+    "formula": "(1/Q) * sum_q r_q / min(K, R_q) over days q with R_q > 0",
+    "tie_break": "(p_calibrated desc, ticker asc) stable mergesort",
+    "reference": ".claude/memories/project-r-precision-methodology.md",
+    "compute_script": "scripts/gbdt/regenerate_r_precision_at_k_csv.py"
+  },
+  "compute": {
+    "backend": "catboost",
+    "sweep_mode_iters": 3,
+    "code_head": "32c849b",
+    "code_head_full": "32c849b875405effdebfdebca4d8885f9399d3ab",
+    "wall_clock_total_sec": 12963.9,
+    "wall_clock_total_min": 216.1,
+    "wall_clock_total_hours": 3.6,
+    "per_cell_warm_mean_sec": 549,
+    "cold_cell": "russell1000_up_10pct_100d_dd5pct",
+    "cold_cell_sec": 2620
+  },
+  "canonical_csv_coverage": {
+    "before_this_pr": "37/57 sweep cells",
+    "after_this_pr": "50/57 sweep cells",
+    "remaining_blocked_on_129": "7 cells (all H >= 100)"
+  },
+  "cross_references": {
+    "pr_112": "V1.3 Option A implementation",
+    "pr_114": "V1.3 bugfix (commit 32c849b \u2014 what this sweep ran against)",
+    "memo_223": "V1.3 A4 re-validation on cell-5 (merged 2026-06-02)",
+    "memo_188": "original russell1000 sweep memo (2026-05-30)",
+    "bug_task_226": "#183 cross-cell feature-cache sharing regression",
+    "bug_task_129": "H >= 100 test-split fix"
+  },
+  "notes": "#183 cross-cell feature-cache sharing did not engage on this re-run; each cell wrote its own 6.2GB _feature_matrix_cache.parquet. Filed as task #226. Sweep ran correctly; only the disk-efficiency property regressed."
+}

@@ -36,7 +36,7 @@
 
 ## Final checkpoint
 
-- best iteration: 1
+- best iteration: 0
 - iterations run: 3
 - inner stop signal: `plateau`
 - fs_hp_loop callback_mode: `default`
@@ -45,7 +45,7 @@
 
 - method requested: `conditional_isotonic`
 - decision: `isotonic`
-- Spiegelhalter Z: 17.120
+- Spiegelhalter Z: -11.559
 - Spiegelhalter p: 0.0000
 
 ![reliability](figs/reliability_diagram.png)
@@ -54,8 +54,8 @@
 
 | segment | Brier | base-rate Brier | improvement | LogLoss | AUC |
 |---|---|---|---|---|---|
-| eval | 0.0012 | 0.0012 | +0.0000 | 0.0078 | 0.8910 |
-| test | 0.0023 | 0.0024 | +0.0000 | 0.0137 | 0.8956 |
+| eval | 0.0012 | 0.0012 | +0.0000 | 0.0078 | 0.8692 |
+| test | 0.0024 | 0.0024 | +0.0000 | 0.0149 | 0.8613 |
 
 ## Top-K precision (per-day + global)
 
@@ -67,9 +67,9 @@ Per-day:
 
 | k | P@k | base_rate | n_picks | n_positives | n_denom | days_R<k / days_full_k / days_total |
 |---|---|---|---|---|---|---|
-| 1 | 0.1765 | 0.0012 | 216 | 24 | 136 | 80 / 216 / 216 |
-| 5 | 0.2698 | 0.0012 | 1017 | 58 | 215 | 216 / 200 / 216 |
-| 10 | 0.2837 | 0.0012 | 2017 | 61 | 215 | 216 / 200 / 216 |
+| 1 | 0.2647 | 0.0012 | 216 | 36 | 136 | 80 / 216 / 216 |
+| 5 | 0.2558 | 0.0012 | 1017 | 55 | 215 | 216 / 200 / 216 |
+| 10 | 0.2884 | 0.0012 | 2017 | 62 | 215 | 216 / 200 / 216 |
 
 Global (top-K across entire segment):
 
@@ -86,8 +86,8 @@ Per-day:
 | k | P@k | base_rate | n_picks | n_positives | n_denom | days_R<k / days_full_k / days_total |
 |---|---|---|---|---|---|---|
 | 1 | 0.0290 | 0.0024 | 106 | 2 | 69 | 37 / 106 / 106 |
-| 5 | 0.1726 | 0.0024 | 466 | 29 | 168 | 96 / 90 / 106 |
-| 10 | 0.2211 | 0.0024 | 916 | 42 | 190 | 106 / 90 / 106 |
+| 5 | 0.1488 | 0.0024 | 466 | 25 | 168 | 96 / 90 / 106 |
+| 10 | 0.2316 | 0.0024 | 916 | 44 | 190 | 106 / 90 / 106 |
 
 Global (top-K across entire segment):
 
@@ -108,25 +108,25 @@ Top-10 by n_picks:
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
 | NYSE:ASTS | 200 | 36 | 0.1800 |
-| NYSE:SMMT | 198 | 11 | 0.0556 |
-| NYSE:SRPT | 126 | 1 | 0.0079 |
-| NASDAQ:MSTR | 125 | 1 | 0.0080 |
-| NYSE:SMCI | 103 | 6 | 0.0583 |
-| NYSE:CLF | 40 | 0 | 0.0000 |
-| NYSE:QXO | 26 | 0 | 0.0000 |
-| NYSE:VKTX | 26 | 0 | 0.0000 |
-| NYSE:LITE | 21 | 3 | 0.1429 |
+| NYSE:SMMT | 184 | 8 | 0.0435 |
+| NASDAQ:MSTR | 144 | 1 | 0.0069 |
+| NYSE:SMCI | 138 | 6 | 0.0435 |
+| NYSE:SRPT | 132 | 1 | 0.0076 |
+| NYSE:LITE | 27 | 3 | 0.1111 |
+| NYSE:QXO | 22 | 0 | 0.0000 |
+| NYSE:INSP | 18 | 0 | 0.0000 |
 | NYSE:AL | 16 | 0 | 0.0000 |
+| NYSE:VKTX | 15 | 0 | 0.0000 |
 
 Bottom-5 by hit_rate (n_picks ≥ 5):
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NYSE:CLF | 40 | 0 | 0.0000 |
-| NYSE:QXO | 26 | 0 | 0.0000 |
-| NYSE:VKTX | 26 | 0 | 0.0000 |
+| NYSE:QXO | 22 | 0 | 0.0000 |
+| NYSE:INSP | 18 | 0 | 0.0000 |
 | NYSE:AL | 16 | 0 | 0.0000 |
-| NYSE:FTAI | 16 | 0 | 0.0000 |
+| NYSE:VKTX | 15 | 0 | 0.0000 |
+| NYSE:ELF | 12 | 0 | 0.0000 |
 
 ### test
 
@@ -135,46 +135,46 @@ Top-10 by n_picks:
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
 | NYSE:ASTS | 90 | 2 | 0.0222 |
-| NYSE:SRPT | 60 | 5 | 0.0833 |
-| NYSE:LITE | 45 | 4 | 0.0889 |
+| NYSE:LITE | 73 | 8 | 0.1096 |
+| NYSE:COHR | 42 | 0 | 0.0000 |
+| NYSE:SRPT | 31 | 2 | 0.0645 |
 | NYSE:CAR | 28 | 13 | 0.4643 |
-| NYSE:ACHC | 26 | 3 | 0.1154 |
-| NYSE:INSP | 23 | 0 | 0.0000 |
-| NYSE:COHR | 22 | 0 | 0.0000 |
+| NYSE:CORT | 21 | 0 | 0.0000 |
+| NASDAQ:MSTR | 20 | 0 | 0.0000 |
+| NYSE:CIEN | 18 | 0 | 0.0000 |
+| NYSE:SMMT | 18 | 0 | 0.0000 |
 | NYSE:AL | 16 | 0 | 0.0000 |
-| NYSE:CLVT | 15 | 2 | 0.1333 |
-| NYSE:MRNA | 15 | 0 | 0.0000 |
 
 Bottom-5 by hit_rate (n_picks ≥ 5):
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NYSE:INSP | 23 | 0 | 0.0000 |
-| NYSE:COHR | 22 | 0 | 0.0000 |
-| NYSE:AL | 16 | 0 | 0.0000 |
-| NYSE:MRNA | 15 | 0 | 0.0000 |
-| NYSE:WDC | 15 | 0 | 0.0000 |
+| NYSE:COHR | 42 | 0 | 0.0000 |
+| NYSE:CORT | 21 | 0 | 0.0000 |
+| NASDAQ:MSTR | 20 | 0 | 0.0000 |
+| NYSE:CIEN | 18 | 0 | 0.0000 |
+| NYSE:SMMT | 18 | 0 | 0.0000 |
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 0 | 0.0000 | 0.0012 | 0.000 |
-| 2025Q2 | 310 | 32 | 0.1032 | 0.0012 | 85.365 |
-| 2025Q3 | 320 | 13 | 0.0406 | 0.0012 | 33.596 |
-| 2025Q4 | 310 | 13 | 0.0419 | 0.0012 | 34.680 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 0 | 0.0000 | 0.0012 |
+| 2025Q2 | 310 | 29 | 0.0935 | 0.0012 |
+| 2025Q3 | 320 | 13 | 0.0406 | 0.0012 |
+| 2025Q4 | 310 | 13 | 0.0419 | 0.0012 |
 
 ### test
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q4 | 26 | 0 | 0.0000 | 0.0024 | 0.000 |
-| 2026Q1 | 305 | 15 | 0.0492 | 0.0024 | 20.710 |
-| 2026Q2 | 135 | 14 | 0.1037 | 0.0024 | 43.670 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q4 | 26 | 0 | 0.0000 | 0.0024 |
+| 2026Q1 | 305 | 12 | 0.0393 | 0.0024 |
+| 2026Q2 | 135 | 13 | 0.0963 | 0.0024 |
 
 ## Prediction-range diagnostics
 
@@ -182,11 +182,11 @@ Distribution of ``p_calibrated`` per segment. ``flag_low_separation = true`` whe
 
 | segment | n_rows | min | max | mean | std | flag_low_separation |
 |---|---|---|---|---|---|---|
-| eval | 177800 | 0.0000 | 0.3556 | 0.0018 | 0.0072 | `True` |
-| test | 80010 | 0.0000 | 0.2000 | 0.0019 | 0.0066 | `True` |
+| eval | 177800 | 0.0000 | 0.1355 | 0.0015 | 0.0070 | `True` |
+| test | 80010 | 0.0000 | 0.1355 | 0.0017 | 0.0060 | `True` |
 
 ## Per-experiment verdict (algorithmic readout)
 
-Calibration: required isotonic (|z|=17.12); shipped as `isotonic`. Brier vs base-rate: +0.0000 (model beats baseline).
+Calibration: required isotonic (|z|=11.56); shipped as `isotonic`. Brier vs base-rate: +0.0000 (model beats baseline).
 
 > NOTE: this verdict is generated from the metrics by a simple rule (see ``report._algorithmic_verdict``); it is NOT an automated pass/fail gate. The user reads the artifact and decides whether the cell ships.

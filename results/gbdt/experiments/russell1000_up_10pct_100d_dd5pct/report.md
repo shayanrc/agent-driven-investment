@@ -37,7 +37,7 @@
 
 ## Final checkpoint
 
-- best iteration: 1
+- best iteration: 2
 - iterations run: 3
 - inner stop signal: `plateau`
 - fs_hp_loop callback_mode: `default`
@@ -46,7 +46,7 @@
 
 - method requested: `conditional_isotonic`
 - decision: `isotonic`
-- Spiegelhalter Z: -12.399
+- Spiegelhalter Z: -13.176
 - Spiegelhalter p: 0.0000
 
 ![reliability](figs/reliability_diagram.png)
@@ -55,7 +55,7 @@
 
 | segment | Brier | base-rate Brier | improvement | LogLoss | AUC |
 |---|---|---|---|---|---|
-| eval | 0.2649 | 0.2416 | -0.0233 | 0.7293 | 0.4895 |
+| eval | 0.2418 | 0.2416 | -0.0002 | 0.6767 | 0.4530 |
 
 ## Top-K precision (per-day + global)
 
@@ -75,9 +75,9 @@ Global (top-K across entire segment):
 
 | k | P@k | base_rate | n_picks | n_positives | n_denom |
 |---|---|---|---|---|---|
-| 1 | 1.0000 | 0.4085 | 1 | 1 | 1 |
-| 5 | 1.0000 | 0.4085 | 5 | 5 | 5 |
-| 10 | 1.0000 | 0.4085 | 10 | 10 | 10 |
+| 1 | 0.0000 | 0.4085 | 1 | 0 | 1 |
+| 5 | 0.0000 | 0.4085 | 5 | 0 | 5 |
+| 10 | 0.0000 | 0.4085 | 10 | 0 | 10 |
 
 ### test — n_rows=0, base_rate=n/a
 
@@ -117,16 +117,16 @@ _no picks._
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 5 | 0.0649 | 0.4085 | 0.159 |
-| 2025Q2 | 310 | 151 | 0.4871 | 0.4085 | 1.192 |
-| 2025Q3 | 320 | 101 | 0.3156 | 0.4085 | 0.773 |
-| 2025Q4 | 310 | 69 | 0.2226 | 0.4085 | 0.545 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 5 | 0.0649 | 0.4085 |
+| 2025Q2 | 310 | 151 | 0.4871 | 0.4085 |
+| 2025Q3 | 320 | 101 | 0.3156 | 0.4085 |
+| 2025Q4 | 310 | 69 | 0.2226 | 0.4085 |
 
 ### test
 
@@ -138,11 +138,11 @@ Distribution of ``p_calibrated`` per segment. ``flag_low_separation = true`` whe
 
 | segment | n_rows | min | max | mean | std | flag_low_separation |
 |---|---|---|---|---|---|---|
-| eval | 177800 | 0.3960 | 0.8037 | 0.5046 | 0.1432 | `False` |
+| eval | 177800 | 0.4044 | 0.4083 | 0.4065 | 0.0019 | `True` |
 | test | 0 | n/a | n/a | n/a | n/a | `False` |
 
 ## Per-experiment verdict (algorithmic readout)
 
-Calibration: required isotonic (|z|=12.40); shipped as `isotonic`. Brier vs base-rate: -0.0233 (worse than baseline).
+Calibration: required isotonic (|z|=13.18); shipped as `isotonic`. Brier vs base-rate: -0.0002 (worse than baseline).
 
 > NOTE: this verdict is generated from the metrics by a simple rule (see ``report._algorithmic_verdict``); it is NOT an automated pass/fail gate. The user reads the artifact and decides whether the cell ships.
