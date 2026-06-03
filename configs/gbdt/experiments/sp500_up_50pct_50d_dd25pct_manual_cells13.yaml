@@ -1,0 +1,34 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_manual_cells13
+#
+# Cell-1 in the cells-13 methodology-replication study (task #214).
+# Tests whether the 5-stage manual methodology (cell-5 / `_211_*`) and the
+# Z-gate finding (cell-5 / `_223_*`) generalize beyond the cell-5 anti-AUC
+# strong-top-1 regime to STRONG-AUC strong-top-1 cells.
+#
+# Methodology is OUTSIDE the per-experiment runner — the per-cell driver
+# (scripts/gbdt/_214_cell_manual_driver.py) sweeps configurations via
+# direct calls into `gbdt.train` / `gbdt.model.XGBoostModel` and writes a
+# JSON sidecar at results/gbdt/data/_214_cell1_manual_methodology_results.json.
+# This YAML is here for parity with the cell-5 manual track's audit trail
+# (`docs/gbdt/_211_*.md` § Artifacts) — running it under the regular runner
+# would invoke the 3-iter sweep loop, NOT the manual methodology.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    # The driver runs OUTSIDE the loop; this block exists only so the spec is
+    # well-formed under EXPERIMENT_SPEC.md. Sweep-mode is a safe fallback if
+    # someone runs this through the runner without reading the comment above.
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01

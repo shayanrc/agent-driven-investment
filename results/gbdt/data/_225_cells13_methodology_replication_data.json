@@ -1,0 +1,208 @@
+{
+  "task": "_225",
+  "title": "Cells 1+3 methodology replication: 5-stage manual + Z-gate generalization test",
+  "branch": "gbdt-214-cells13-methodology-replication",
+  "closes_issue": 214,
+  "ran_at_utc": "2026-06-03T07:30:00Z",
+  "backend": {
+    "library": "xgboost",
+    "callback_mode": "manual (outside the loop)",
+    "fit_pins": {
+      "tree_method": "hist",
+      "n_jobs": 8,
+      "device": "cpu",
+      "objective": "binary:logistic",
+      "eval_metric": "logloss",
+      "seed": 42
+    }
+  },
+  "r_precision_at_k_methodology_note": {
+    "definition": "R-Precision@K = (1/Q) * sum_{q in Q} r_q / min(K, R_q), per [[project-r-precision-methodology]]. Tie-break (p_calibrated desc, ticker asc) stable mergesort; macro-averaged across days with R_q > 0.",
+    "canonical_record": "results/gbdt/data/r_precision_at_k.csv",
+    "memo_body_uses": "R-Precision@K (per-day fixed K, macro-averaged)."
+  },
+  "headline": "Methodology FAILS on both cells (0 of 2 PASS the test-R-p@1 >= sweep floor). Cell-1 manual winner test R-p@1=0.6600 vs sweep 0.800 (FAIL, -0.140 absolute, 82.5% of sweep). Cell-3 manual winner test R-p@1=0.4267 vs sweep 0.600 (FAIL, -0.173 absolute, 71.1% of sweep). Z-gate finding from _223 (mcw -> |z| -> calibration decision -> R-p@1) does NOT generalize: minimum val |z| achievable on cells 1+3 across 80+ configs was 12.04 (cell-3 spw=4.0) / 18.84 (cell-1 d=3+cs=0.3+mcw=1+FS=100) — an order of magnitude above the |z|=2 isotonic-gate threshold. Calibration always fires isotonic on these strong-AUC cells. Methodology rule 11 (5-stage manual) is best framed as a fallback when the loop's val_brier objective is misaligned (rule 10), NOT as a general-purpose improvement engine.",
+  "verdict_per_cell": {
+    "cell1": {
+      "name": "sp500_up_50pct_50d_dd25pct",
+      "sweep_test_R_p_at_1": 0.800000,
+      "manual_winner_test_R_p_at_1": 0.660000,
+      "delta_absolute": -0.140000,
+      "delta_pct_of_sweep": -17.5,
+      "verdict": "FAIL"
+    },
+    "cell3": {
+      "name": "sp500_up_20pct_25d_dd10pct",
+      "sweep_test_R_p_at_1": 0.600000,
+      "manual_winner_test_R_p_at_1": 0.426667,
+      "delta_absolute": -0.173333,
+      "delta_pct_of_sweep": -28.9,
+      "verdict": "FAIL"
+    },
+    "methodology_overall_verdict": "FAIL",
+    "methodology_pass_count": "0 of 2"
+  },
+  "z_gate_generalization": {
+    "claim_being_tested": "Per _223: min_child_weight controls val Spiegelhalter |z|, which determines conditional_isotonic's decision (native vs isotonic), which determines how many distinct calibrated predictions survive into test, which determines R-p@1. On cell-5, mcw=5 -> |z|=1.56 < 2 -> native -> 225 distinct cal preds -> R-p@1=0.7143.",
+    "result_on_cells_13": "DOES NOT GENERALIZE.",
+    "cell1_min_val_z_observed_across_80_plus_configs": 18.84,
+    "cell1_min_z_config": "d=3_cs=0.3_mcw=1+FS=100",
+    "cell3_min_val_z_observed_across_80_plus_configs": 12.04,
+    "cell3_min_z_config": "spw=4.0 (eval R-p@1 dropped to 0.317, actively hurt the operating metric)",
+    "z_threshold_for_native_calibration": 2.0,
+    "mechanism": "The booster on a strong-AUC cell (cell-1 AUC=0.903, cell-3 AUC=0.776) generates highly confident predictions far from the base rate; the Spiegelhalter z-statistic is structurally large regardless of HP. mcw cannot push |z| below 12 on either cell. Conditional_isotonic ALWAYS fires; the mcw axis has no leverage on the calibration decision.",
+    "draft_rule_13_promotion": "NOT promoted to the playbook."
+  },
+  "methodology_5_stage_generalization": {
+    "claim_being_tested": "Per _211: FS cliff cut -> single-knob response curves -> mix-and-match -> eval validation -> 1-shot test shootout. Beats sweep R-p@1 by +24% on cell-5.",
+    "result_on_cells_13": "DOES NOT GENERALIZE unconditionally.",
+    "best_relative_to_sweep": "cell-1: 82.5% of sweep R-p@1 (gap -0.140); cell-3: 71.1% of sweep R-p@1 (gap -0.173).",
+    "best_relative_to_un_tuned_XGBoost_defaults": "cell-1: +0.120 over baseline; cell-3: +0.213 over baseline.",
+    "interpretation": "The methodology recovers SOME signal vs un-tuned XGBoost defaults on both cells, but cannot close the XGBoost-vs-CatBoost backend gap. CatBoost sweep dominates the XGBoost-manual configuration space tested.",
+    "playbook_amendment_proposed": "Rule 11 should state: 'this methodology applies when the loop val_brier objective is misaligned (rule 10) -- that is, the iter_0 anti_auc_flag is true.' On strong-AUC cells the methodology has no leverage over the sweep baseline."
+  },
+  "split": {"train_rows": 800, "val_rows": 400, "eval_rows": 200, "test_rows": 100},
+  "cell1": {
+    "spec": {"universe": "sp500", "direction": "up", "threshold_pct": 50, "horizon_days": 50, "max_drawdown_pct": 25},
+    "n_tickers_used": 486,
+    "n_rows_test": 24400,
+    "Q_days_test": 50,
+    "base_rate_test": 0.025574,
+    "AUC_test": {
+      "sweep_catboost": 0.903398,
+      "agentloop_xgboost_mcw10": 0.899489,
+      "manual_winner_d=3_cs=0.3_mcw=1_FS=130": 0.912678,
+      "baseline_xgboost_defaults_cliff": 0.894200
+    },
+    "R_precision_at_K_test": {
+      "sweep_catboost":                                 {"1": 0.800000, "3": 0.526667, "5": 0.432000, "10": 0.286468, "20": 0.385469},
+      "agentloop_xgboost_mcw10":                        {"1": 0.640000, "3": 0.426667, "5": 0.320000, "10": 0.345770, "20": 0.428157},
+      "agentloop_xgboost_mix_cs0.5_g0.5_mcw5":          {"1": 0.360000, "3": 0.393333, "5": 0.312000, "10": 0.293325, "20": 0.415051},
+      "manual_winner_d=3_cs=0.3_mcw=1_FS=130":          {"1": 0.660000, "3": 0.360000, "5": 0.344000, "10": 0.374532, "20": 0.459903},
+      "manual_2nd_d=3_cs=0.3_mcw=1_FS=100":             {"1": 0.600000, "3": 0.366667, "5": 0.308000, "10": 0.326000, "20": 0.404},
+      "baseline_xgboost_defaults_cliff":                {"1": 0.540000, "3": 0.373333, "5": 0.292000, "10": 0.254400, "20": 0.323}
+    },
+    "winning_config": {
+      "name": "d=3_cs=0.3_mcw=1+FS=130",
+      "hp": {"max_depth": 3, "colsample_bytree": 0.3, "min_child_weight": 1,
+             "eta": 0.1, "n_estimators": 500, "early_stopping_rounds": 30},
+      "fs": {"method": "top-K by iter_0 importance", "K": 130, "rank_basis": "iter_0 XGBoost feature_importance (gain)"},
+      "best_iter": 29,
+      "leaves_upper_bound": 232,
+      "val_brier": 0.0073,
+      "val_R_p_at_1": 0.5823,
+      "eval_R_p_at_1": 0.3100,
+      "test_R_p_at_1": 0.6600,
+      "test_AUC": 0.9127,
+      "val_spiegelhalter_z": 23.27,
+      "calibration_decision": "isotonic",
+      "n_distinct_raw_test": 4699,
+      "n_distinct_cal_test": 40
+    },
+    "stage_summary": {
+      "stage1_fs_cliff_n_configs": 2, "stage1_best_eval_rp1": 0.1700,
+      "stage2_single_knob_n_configs": 25, "stage2_best_eval_rp1": 0.3100,
+      "stage2_best_config": "gamma=0.5",
+      "stage3_mix_n_configs": 21, "stage3_best_eval_rp1": 0.3000,
+      "stage3_best_config": "d=3_cs=0.3_mcw=1",
+      "stage4_eval_validation_n_configs": 18, "stage4_best_eval_rp1": 0.3300,
+      "stage4_best_config": "d=3_cs=0.3_mcw=1+FS=190",
+      "stage5_test_shootout_n_configs": 9
+    }
+  },
+  "cell3": {
+    "spec": {"universe": "sp500", "direction": "up", "threshold_pct": 20, "horizon_days": 25, "max_drawdown_pct": 10},
+    "n_tickers_used": 486,
+    "n_rows_test": 36600,
+    "Q_days_test": 75,
+    "base_rate_test": 0.088716,
+    "AUC_test": {
+      "sweep_catboost": 0.775467,
+      "agentloop_xgboost_mcw10": 0.755953,
+      "manual_winner_depth=3": 0.756106,
+      "baseline_xgboost_defaults_cliff": 0.747
+    },
+    "R_precision_at_K_test": {
+      "sweep_catboost":                                 {"1": 0.600000, "3": 0.484444, "5": 0.461333, "10": 0.409333, "20": 0.385895},
+      "agentloop_xgboost_mcw10":                        {"1": 0.413333, "3": 0.431111, "5": 0.405333, "10": 0.402667, "20": 0.359790},
+      "agentloop_xgboost_mix_cs0.5_g0.5_mcw5":          {"1": 0.240000, "3": 0.324444, "5": 0.386667, "10": 0.354667, "20": 0.333766},
+      "manual_winner_depth=3":                          {"1": 0.426667, "3": 0.342222, "5": 0.325333, "10": 0.320000, "20": 0.308200},
+      "manual_2nd_d=2_cs=0.5_mcw=10":                   {"1": 0.360000, "3": 0.377800, "5": 0.365333, "10": 0.364000, "20": 0.349},
+      "baseline_xgboost_defaults_cliff":                {"1": 0.213333, "3": 0.260, "5": 0.260, "10": 0.281333, "20": 0.281}
+    },
+    "winning_config": {
+      "name": "depth=3",
+      "hp": {"max_depth": 3},
+      "fs": {"method": "cliff cut (importance < 0.01)", "K": 210,
+             "rank_basis": "iter_0 XGBoost feature_importance (gain), pruned floor at importance < 0.01"},
+      "best_iter": null,
+      "val_brier": 0.0370,
+      "val_R_p_at_1": 0.2929,
+      "eval_R_p_at_1": 0.3417,
+      "test_R_p_at_1": 0.426667,
+      "test_AUC": 0.756106,
+      "val_spiegelhalter_z": 54.62,
+      "calibration_decision": "isotonic",
+      "n_distinct_raw_test": 36400,
+      "n_distinct_cal_test": 146
+    },
+    "stage_summary": {
+      "stage1_fs_cliff_n_configs": 2, "stage1_best_eval_rp1": 0.2864,
+      "stage2_single_knob_n_configs": 25, "stage2_best_eval_rp1": 0.4422,
+      "stage2_best_config": "sub=0.7",
+      "stage3_mix_n_configs": 21, "stage3_best_eval_rp1": 0.4271,
+      "stage3_best_config": "d=2_cs=0.5_mcw=10",
+      "stage4_eval_validation_n_configs": 18, "stage4_best_eval_rp1": "skipped — top-3 mix stayed in pool",
+      "stage5_test_shootout_n_configs": 9
+    },
+    "eval_test_oracle_failure": {
+      "eval_leader_config": "sub=0.7",
+      "eval_leader_eval_rp1": 0.4422,
+      "eval_leader_test_rp1": 0.2400,
+      "eval_leader_test_rank": 7,
+      "test_winner_config": "depth=3",
+      "test_winner_eval_rp1": 0.3417,
+      "test_winner_eval_rank": 6,
+      "test_winner_test_rp1": 0.4267,
+      "test_winner_test_rank": 1,
+      "interpretation": "Eval R-p@1 was an unreliable oracle on cell-3. The methodology's stage-4-eval-validation step (rank by eval R-p@1) would have committed to sub=0.7 as the test pick; the actual test winner was rank 6 by eval. This is a stronger failure of the methodology than the headline 'FAIL on R-p@1 >= sweep' verdict: even the methodology's INTERNAL stages 4-5 ordering does not reliably surface the test winner."
+    }
+  },
+  "cross_cell_synthesis": {
+    "no_universal_recipe_reconfirmed": "The cell-5 winning config (XGBoost depth-2 + cs=0.4 + mcw=5 + FS=top-130 + eta=0.1+ES=30, the 'cell5_template' in stage 3) was tested on both cells: cell-1 eval R-p@1=0.160, cell-3 eval R-p@1=0.293 -- neither close to top-3 mix winners. The cell-5 cell-specific config does NOT carry over to cells 1+3. Confirms playbook rule 8 ('no transferable recipe across cell shapes').",
+    "xgboost_vs_catboost_gap_codified": "On both cells, XGBoost-manual best is well below CatBoost sweep on R-p@1 despite essentially matching test AUC (cell-1 manual AUC=0.913 vs sweep 0.903; cell-3 manual AUC=0.756 vs sweep 0.775). The gap is concentrated in the top-1 prediction-tail bucket, not in bulk ranking. Most likely mechanism: CatBoost's ordered boosting handles the panel-pooled walk-forward structure better than XGBoost's standard boosting on these specific cell shapes. Dedicated investigation out of scope for this task.",
+    "v1_3_b_relevance_revised": "V1.3 Option B (#213, scout response-curve phase) is no longer load-bearing for closing cell-5's 0.115 gap to the manual track (per _223 conclusion), and the cells 1+3 result here further reduces the cross-cell value: the agent loop's current envelope is enough to identify that strong-AUC cells are NOT Z-gate-controllable, and a scout response curve would just confirm |z| > 12 at iter_0. May still be useful for cells we haven't characterized yet."
+  },
+  "wall_clock": {
+    "cell1_total_minutes": 110,
+    "cell1_total_breakdown": "stage 1-3 in parent driver: ~75 min (OOM'd mid-stage-4); stage 4+5 resume: ~20 min",
+    "cell3_total_minutes": 87,
+    "cell3_total_breakdown": "all 5 stages in parent driver, no OOM",
+    "parallel_runtime_total_wallclock_minutes": 110,
+    "oom_root_cause": "two concurrent driver processes at VmRSS ~16GB each + stage 4's carve-cache construction = ~33-35GB on a 38GB machine; cell-1 was killed by OOM-killer (silent — no log entry, no dmesg trace in user-readable buffer)"
+  },
+  "artifacts": {
+    "memo": "docs/gbdt/_225_cells13_methodology_replication.md",
+    "csv_rows_appended": [
+      "sp500_up_50pct_50d_dd25pct_manual_cells13,24400,50,0.025574,0.912678,0.660000,0.360000,0.344000,0.374532,0.459903",
+      "sp500_up_20pct_25d_dd10pct_manual_cells13,36600,75,0.088716,0.756106,0.426667,0.342222,0.325333,0.320000,0.308200"
+    ],
+    "per_cell_json_sidecars": [
+      "results/gbdt/data/_214_cell1_manual_methodology_results.json",
+      "results/gbdt/data/_214_cell3_manual_methodology_results.json"
+    ],
+    "winner_test_predictions": [
+      "results/gbdt/data/_214_cell1_winner_test_predictions.csv",
+      "results/gbdt/data/_214_cell3_winner_test_predictions.csv"
+    ],
+    "driver_scripts": [
+      "scripts/gbdt/_214_cell_manual_driver.py",
+      "scripts/gbdt/_214_cell1_resume_stage45.py",
+      "scripts/gbdt/_214_append_csv_rows.py"
+    ],
+    "spec_yamls": [
+      "configs/gbdt/experiments/sp500_up_50pct_50d_dd25pct_manual_cells13.yaml",
+      "configs/gbdt/experiments/sp500_up_20pct_25d_dd10pct_manual_cells13.yaml"
+    ]
+  }
+}
