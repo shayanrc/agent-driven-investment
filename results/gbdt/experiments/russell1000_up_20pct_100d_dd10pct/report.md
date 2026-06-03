@@ -37,7 +37,7 @@
 
 ## Final checkpoint
 
-- best iteration: 2
+- best iteration: 1
 - iterations run: 3
 - inner stop signal: `plateau`
 - fs_hp_loop callback_mode: `default`
@@ -46,8 +46,8 @@
 
 - method requested: `conditional_isotonic`
 - decision: `native`
-- Spiegelhalter Z: 1.434
-- Spiegelhalter p: 0.1517
+- Spiegelhalter Z: -0.103
+- Spiegelhalter p: 0.9182
 
 ![reliability](figs/reliability_diagram.png)
 
@@ -55,7 +55,7 @@
 
 | segment | Brier | base-rate Brier | improvement | LogLoss | AUC |
 |---|---|---|---|---|---|
-| eval | 0.2018 | 0.2136 | +0.0118 | 0.5904 | 0.6653 |
+| eval | 0.2008 | 0.2136 | +0.0128 | 0.5882 | 0.6770 |
 
 ## Top-K precision (per-day + global)
 
@@ -67,9 +67,9 @@ Per-day:
 
 | k | P@k | base_rate | n_picks | n_positives | n_denom | days_R<k / days_full_k / days_total |
 |---|---|---|---|---|---|---|
-| 1 | 0.5637 | 0.3092 | 216 | 115 | 204 | 12 / 216 / 216 |
-| 5 | 0.5727 | 0.3092 | 1017 | 575 | 1004 | 16 / 200 / 216 |
-| 10 | 0.5220 | 0.3092 | 2017 | 1046 | 2004 | 16 / 200 / 216 |
+| 1 | 0.5098 | 0.3092 | 216 | 104 | 204 | 12 / 216 / 216 |
+| 5 | 0.5169 | 0.3092 | 1017 | 519 | 1004 | 16 / 200 / 216 |
+| 10 | 0.5065 | 0.3092 | 2017 | 1015 | 2004 | 16 / 200 / 216 |
 
 Global (top-K across entire segment):
 
@@ -77,7 +77,7 @@ Global (top-K across entire segment):
 |---|---|---|---|---|---|
 | 1 | 0.0000 | 0.3092 | 1 | 0 | 1 |
 | 5 | 0.0000 | 0.3092 | 5 | 0 | 5 |
-| 10 | 0.0000 | 0.3092 | 10 | 0 | 10 |
+| 10 | 0.4000 | 0.3092 | 10 | 4 | 10 |
 
 ### test — n_rows=0, base_rate=n/a
 
@@ -93,26 +93,26 @@ Top-10 by n_picks:
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NYSE:CORT | 114 | 67 | 0.5877 |
-| NYSE:RH | 102 | 62 | 0.6078 |
-| NYSE:SMCI | 95 | 52 | 0.5474 |
-| NYSE:SMMT | 92 | 27 | 0.2935 |
-| NYSE:SRPT | 67 | 41 | 0.6119 |
-| NASDAQ:MSTR | 66 | 0 | 0.0000 |
-| NYSE:ONTO | 51 | 39 | 0.7647 |
-| NYSE:FTAI | 50 | 36 | 0.7200 |
-| NYSE:ENPH | 39 | 13 | 0.3333 |
-| NYSE:ASTS | 35 | 17 | 0.4857 |
+| NYSE:SMCI | 91 | 52 | 0.5714 |
+| NASDAQ:MSTR | 84 | 0 | 0.0000 |
+| NYSE:CORT | 72 | 48 | 0.6667 |
+| NYSE:FTAI | 66 | 50 | 0.7576 |
+| NYSE:ENPH | 64 | 28 | 0.4375 |
+| NYSE:ASTS | 54 | 31 | 0.5741 |
+| NASDAQ:MRVL | 50 | 46 | 0.9200 |
+| NYSE:CVNA | 49 | 23 | 0.4694 |
+| NYSE:BILL | 48 | 28 | 0.5833 |
+| NYSE:ONTO | 35 | 24 | 0.6857 |
 
 Bottom-5 by hit_rate (n_picks ≥ 5):
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NASDAQ:MSTR | 66 | 0 | 0.0000 |
-| NYSE:QRVO | 13 | 0 | 0.0000 |
-| NYSE:MPT | 9 | 0 | 0.0000 |
-| NYSE:PENN | 9 | 0 | 0.0000 |
-| NYSE:AL | 16 | 4 | 0.2500 |
+| NASDAQ:MSTR | 84 | 0 | 0.0000 |
+| NYSE:CLVT | 31 | 0 | 0.0000 |
+| NASDAQ:TTD | 30 | 0 | 0.0000 |
+| NYSE:PENN | 26 | 0 | 0.0000 |
+| NYSE:NET | 9 | 0 | 0.0000 |
 
 ### test
 
@@ -120,16 +120,16 @@ _no picks._
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 16 | 0.2078 | 0.3092 | 0.672 |
-| 2025Q2 | 310 | 234 | 0.7548 | 0.3092 | 2.442 |
-| 2025Q3 | 320 | 174 | 0.5437 | 0.3092 | 1.759 |
-| 2025Q4 | 310 | 151 | 0.4871 | 0.3092 | 1.576 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 8 | 0.1039 | 0.3092 |
+| 2025Q2 | 310 | 244 | 0.7871 | 0.3092 |
+| 2025Q3 | 320 | 164 | 0.5125 | 0.3092 |
+| 2025Q4 | 310 | 103 | 0.3323 | 0.3092 |
 
 ### test
 
@@ -141,11 +141,11 @@ Distribution of ``p_calibrated`` per segment. ``flag_low_separation = true`` whe
 
 | segment | n_rows | min | max | mean | std | flag_low_separation |
 |---|---|---|---|---|---|---|
-| eval | 177800 | 0.2097 | 0.4962 | 0.3087 | 0.0674 | `False` |
+| eval | 177800 | 0.2250 | 0.5088 | 0.3098 | 0.0688 | `False` |
 | test | 0 | n/a | n/a | n/a | n/a | `False` |
 
 ## Per-experiment verdict (algorithmic readout)
 
-Calibration: native-passable (|z|=1.43<2). Brier vs base-rate: +0.0118 (model beats baseline).
+Calibration: native-passable (|z|=0.10<2). Brier vs base-rate: +0.0128 (model beats baseline).
 
 > NOTE: this verdict is generated from the metrics by a simple rule (see ``report._algorithmic_verdict``); it is NOT an automated pass/fail gate. The user reads the artifact and decides whether the cell ships.

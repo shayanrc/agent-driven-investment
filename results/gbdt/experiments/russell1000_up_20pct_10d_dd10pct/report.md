@@ -157,24 +157,24 @@ Bottom-5 by hit_rate (n_picks ≥ 5):
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 5 | 0.0649 | 0.0139 | 4.672 |
-| 2025Q2 | 310 | 67 | 0.2161 | 0.0139 | 15.551 |
-| 2025Q3 | 320 | 56 | 0.1750 | 0.0139 | 12.592 |
-| 2025Q4 | 310 | 44 | 0.1419 | 0.0139 | 10.213 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 5 | 0.0649 | 0.0139 |
+| 2025Q2 | 310 | 67 | 0.2161 | 0.0139 |
+| 2025Q3 | 320 | 56 | 0.1750 | 0.0139 |
+| 2025Q4 | 310 | 44 | 0.1419 | 0.0139 |
 
 ### test
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q4 | 26 | 2 | 0.0769 | 0.0249 | 3.091 |
-| 2026Q1 | 305 | 72 | 0.2361 | 0.0249 | 9.486 |
-| 2026Q2 | 135 | 26 | 0.1926 | 0.0249 | 7.739 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q4 | 26 | 2 | 0.0769 | 0.0249 |
+| 2026Q1 | 305 | 72 | 0.2361 | 0.0249 |
+| 2026Q2 | 135 | 26 | 0.1926 | 0.0249 |
 
 ## Prediction-range diagnostics
 

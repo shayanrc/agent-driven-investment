@@ -37,7 +37,7 @@
 
 ## Final checkpoint
 
-- best iteration: 2
+- best iteration: 1
 - iterations run: 3
 - inner stop signal: `plateau`
 - fs_hp_loop callback_mode: `default`
@@ -45,9 +45,9 @@
 ## Calibration
 
 - method requested: `conditional_isotonic`
-- decision: `isotonic`
-- Spiegelhalter Z: 11.925
-- Spiegelhalter p: 0.0000
+- decision: `native`
+- Spiegelhalter Z: -1.525
+- Spiegelhalter p: 0.1273
 
 ![reliability](figs/reliability_diagram.png)
 
@@ -55,7 +55,7 @@
 
 | segment | Brier | base-rate Brier | improvement | LogLoss | AUC |
 |---|---|---|---|---|---|
-| eval | 0.1763 | 0.1947 | +0.0185 | 0.5317 | 0.7446 |
+| eval | 0.1747 | 0.1947 | +0.0201 | 0.5279 | 0.7491 |
 
 ## Top-K precision (per-day + global)
 
@@ -67,9 +67,9 @@ Per-day:
 
 | k | P@k | base_rate | n_picks | n_positives | n_denom | days_R<k / days_full_k / days_total |
 |---|---|---|---|---|---|---|
-| 1 | 0.9245 | 0.2649 | 116 | 98 | 106 | 10 / 116 / 116 |
-| 5 | 0.6581 | 0.2649 | 517 | 333 | 506 | 16 / 100 / 116 |
-| 10 | 0.6561 | 0.2649 | 1017 | 660 | 1006 | 16 / 100 / 116 |
+| 1 | 0.7547 | 0.2649 | 116 | 80 | 106 | 10 / 116 / 116 |
+| 5 | 0.6858 | 0.2649 | 517 | 347 | 506 | 16 / 100 / 116 |
+| 10 | 0.6421 | 0.2649 | 1017 | 646 | 1006 | 16 / 100 / 116 |
 
 Global (top-K across entire segment):
 
@@ -93,26 +93,26 @@ Top-10 by n_picks:
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NASDAQ:AVGO | 100 | 92 | 0.9200 |
-| NASDAQ:AMD | 82 | 82 | 1.0000 |
-| NASDAQ:INTC | 70 | 64 | 0.9143 |
-| NASDAQ:FAST | 49 | 0 | 0.0000 |
-| NASDAQ:CRWD | 42 | 20 | 0.4762 |
-| NASDAQ:LRCX | 30 | 30 | 1.0000 |
-| NASDAQ:DXCM | 26 | 3 | 0.1154 |
-| NASDAQ:AMAT | 23 | 23 | 1.0000 |
-| NASDAQ:LULU | 23 | 0 | 0.0000 |
+| NASDAQ:MDB | 87 | 77 | 0.8851 |
+| NASDAQ:AVGO | 72 | 64 | 0.8889 |
+| NASDAQ:MCHP | 72 | 23 | 0.3194 |
+| NASDAQ:MRVL | 68 | 54 | 0.7941 |
+| NASDAQ:INTC | 59 | 57 | 0.9661 |
+| NASDAQ:MSTR | 42 | 9 | 0.2143 |
+| NASDAQ:MU | 39 | 27 | 0.6923 |
+| NASDAQ:TSLA | 19 | 19 | 1.0000 |
+| NASDAQ:TTD | 18 | 0 | 0.0000 |
 | NYSE:AL | 16 | 6 | 0.3750 |
 
 Bottom-5 by hit_rate (n_picks ≥ 5):
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NASDAQ:FAST | 49 | 0 | 0.0000 |
-| NASDAQ:LULU | 23 | 0 | 0.0000 |
-| NASDAQ:MCHP | 5 | 0 | 0.0000 |
-| NASDAQ:DXCM | 26 | 3 | 0.1154 |
-| NASDAQ:MU | 8 | 1 | 0.1250 |
+| NASDAQ:TTD | 18 | 0 | 0.0000 |
+| NASDAQ:DXCM | 8 | 0 | 0.0000 |
+| NASDAQ:MSTR | 42 | 9 | 0.2143 |
+| NASDAQ:MCHP | 72 | 23 | 0.3194 |
+| NYSE:AL | 16 | 6 | 0.3750 |
 
 ### test
 
@@ -120,15 +120,15 @@ _no picks._
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 22 | 0.2857 | 0.2649 | 1.078 |
-| 2025Q2 | 310 | 230 | 0.7419 | 0.2649 | 2.801 |
-| 2025Q3 | 130 | 81 | 0.6231 | 0.2649 | 2.352 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 17 | 0.2208 | 0.2649 |
+| 2025Q2 | 310 | 253 | 0.8161 | 0.2649 |
+| 2025Q3 | 130 | 77 | 0.5923 | 0.2649 |
 
 ### test
 
@@ -140,11 +140,11 @@ Distribution of ``p_calibrated`` per segment. ``flag_low_separation = true`` whe
 
 | segment | n_rows | min | max | mean | std | flag_low_separation |
 |---|---|---|---|---|---|---|
-| eval | 88900 | 0.0989 | 0.6000 | 0.3242 | 0.1242 | `False` |
+| eval | 88900 | 0.1282 | 0.4487 | 0.2812 | 0.0805 | `False` |
 | test | 0 | n/a | n/a | n/a | n/a | `False` |
 
 ## Per-experiment verdict (algorithmic readout)
 
-Calibration: required isotonic (|z|=11.93); shipped as `isotonic`. Brier vs base-rate: +0.0185 (model beats baseline).
+Calibration: native-passable (|z|=1.52<2). Brier vs base-rate: +0.0201 (model beats baseline).
 
 > NOTE: this verdict is generated from the metrics by a simple rule (see ``report._algorithmic_verdict``); it is NOT an automated pass/fail gate. The user reads the artifact and decides whether the cell ships.

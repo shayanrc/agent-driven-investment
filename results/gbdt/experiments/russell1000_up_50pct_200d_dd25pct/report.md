@@ -37,7 +37,7 @@
 
 ## Final checkpoint
 
-- best iteration: 0
+- best iteration: 1
 - iterations run: 3
 - inner stop signal: `plateau`
 - fs_hp_loop callback_mode: `default`
@@ -46,7 +46,7 @@
 
 - method requested: `conditional_isotonic`
 - decision: `isotonic`
-- Spiegelhalter Z: -8.100
+- Spiegelhalter Z: -16.373
 - Spiegelhalter p: 0.0000
 
 ![reliability](figs/reliability_diagram.png)
@@ -55,7 +55,7 @@
 
 | segment | Brier | base-rate Brier | improvement | LogLoss | AUC |
 |---|---|---|---|---|---|
-| eval | 0.1382 | 0.1604 | +0.0222 | 0.4293 | 0.7810 |
+| eval | 0.1373 | 0.1604 | +0.0231 | 0.4273 | 0.7804 |
 
 ## Top-K precision (per-day + global)
 
@@ -67,9 +67,9 @@ Per-day:
 
 | k | P@k | base_rate | n_picks | n_positives | n_denom | days_R<k / days_full_k / days_total |
 |---|---|---|---|---|---|---|
-| 1 | 0.5100 | 0.2007 | 116 | 51 | 100 | 16 / 116 / 116 |
-| 5 | 0.6160 | 0.2007 | 517 | 308 | 500 | 16 / 100 / 116 |
-| 10 | 0.6260 | 0.2007 | 1017 | 626 | 1000 | 16 / 100 / 116 |
+| 1 | 0.7100 | 0.2007 | 116 | 71 | 100 | 16 / 116 / 116 |
+| 5 | 0.6300 | 0.2007 | 517 | 315 | 500 | 16 / 100 / 116 |
+| 10 | 0.6470 | 0.2007 | 1017 | 647 | 1000 | 16 / 100 / 116 |
 
 Global (top-K across entire segment):
 
@@ -93,26 +93,26 @@ Top-10 by n_picks:
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
-| NASDAQ:MSTR | 93 | 13 | 0.1398 |
-| NASDAQ:TSLA | 63 | 51 | 0.8095 |
-| NYSE:ASTS | 62 | 35 | 0.5645 |
-| NASDAQ:MRVL | 42 | 42 | 1.0000 |
-| NYSE:CAR | 42 | 11 | 0.2619 |
-| NASDAQ:MU | 32 | 32 | 1.0000 |
-| NYSE:CLF | 31 | 25 | 0.8065 |
-| NASDAQ:INTC | 21 | 21 | 1.0000 |
-| NASDAQ:MDB | 21 | 21 | 1.0000 |
-| NYSE:CVNA | 20 | 8 | 0.4000 |
+| NASDAQ:MSTR | 86 | 13 | 0.1512 |
+| NASDAQ:TSLA | 79 | 56 | 0.7089 |
+| NASDAQ:MRVL | 74 | 62 | 0.8378 |
+| NYSE:ASTS | 48 | 33 | 0.6875 |
+| NYSE:CLF | 42 | 36 | 0.8571 |
+| NASDAQ:AVGO | 26 | 24 | 0.9231 |
+| NASDAQ:MU | 25 | 23 | 0.9200 |
+| NYSE:COHR | 18 | 18 | 1.0000 |
+| NASDAQ:INTC | 16 | 16 | 1.0000 |
+| NYSE:AL | 16 | 0 | 0.0000 |
 
 Bottom-5 by hit_rate (n_picks ≥ 5):
 
 | ticker | n_picks | n_positives | hit_rate |
 |---|---|---|---|
 | NYSE:AL | 16 | 0 | 0.0000 |
-| NYSE:ELF | 9 | 0 | 0.0000 |
-| NASDAQ:TTD | 7 | 0 | 0.0000 |
-| NASDAQ:MSTR | 93 | 13 | 0.1398 |
-| NYSE:CAR | 42 | 11 | 0.2619 |
+| NYSE:CVNA | 12 | 0 | 0.0000 |
+| NYSE:ELF | 10 | 0 | 0.0000 |
+| NASDAQ:TTD | 9 | 0 | 0.0000 |
+| NYSE:CAR | 7 | 0 | 0.0000 |
 
 ### test
 
@@ -120,15 +120,15 @@ _no picks._
 
 ## Per-quarter P@5 stability
 
-P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``lift`` falls toward 1.0 or below.
+P@5 grouped by calendar quarter. ``base_rate`` is the segment-wide positive prevalence (constant across rows); regime-dependent collapse shows as a quarter where ``P@5`` falls toward ``base_rate`` or below. ``lift`` omitted from the table by project reporting convention.
 
 ### eval
 
-| quarter | n_picks | n_positives | P@5 | base_rate | lift |
-|---|---|---|---|---|---|
-| 2025Q1 | 77 | 43 | 0.5584 | 0.2007 | 2.783 |
-| 2025Q2 | 310 | 221 | 0.7129 | 0.2007 | 3.552 |
-| 2025Q3 | 130 | 44 | 0.3385 | 0.2007 | 1.687 |
+| quarter | n_picks | n_positives | P@5 | base_rate |
+|---|---|---|---|---|
+| 2025Q1 | 77 | 35 | 0.4545 | 0.2007 |
+| 2025Q2 | 310 | 212 | 0.6839 | 0.2007 |
+| 2025Q3 | 130 | 68 | 0.5231 | 0.2007 |
 
 ### test
 
@@ -140,11 +140,11 @@ Distribution of ``p_calibrated`` per segment. ``flag_low_separation = true`` whe
 
 | segment | n_rows | min | max | mean | std | flag_low_separation |
 |---|---|---|---|---|---|---|
-| eval | 88900 | 0.0459 | 0.5143 | 0.1855 | 0.1049 | `False` |
+| eval | 88900 | 0.0355 | 0.5827 | 0.1894 | 0.1133 | `False` |
 | test | 0 | n/a | n/a | n/a | n/a | `False` |
 
 ## Per-experiment verdict (algorithmic readout)
 
-Calibration: required isotonic (|z|=8.10); shipped as `isotonic`. Brier vs base-rate: +0.0222 (model beats baseline).
+Calibration: required isotonic (|z|=16.37); shipped as `isotonic`. Brier vs base-rate: +0.0231 (model beats baseline).
 
 > NOTE: this verdict is generated from the metrics by a simple rule (see ``report._algorithmic_verdict``); it is NOT an automated pass/fail gate. The user reads the artifact and decides whether the cell ships.
