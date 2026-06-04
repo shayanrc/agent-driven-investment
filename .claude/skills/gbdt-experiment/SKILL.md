@@ -77,6 +77,10 @@ done
 
 `metrics.json::preflight.snapshot_end_override` records the pinned ISO date (or `null` when the flag is omitted) so post-hoc audits can confirm every cell of a sweep used the same snapshot. `metrics.json::cache.universe_hit == true` on every sibling after the first is the operational signal that the pin is working.
 
+**Re-pass `--snapshot-end` on every `--resume`.** In `--callback-mode agent_file_protocol` the runner exits between iterations and argparse re-parses argv from scratch — the pin doesn't survive process exit. Each `--resume` invocation must carry the same `--snapshot-end <date>` value used at launch. Without it, the resumed cell loads the panel with `end=None`, rebuilds against a different snapshot, and the cell's iter-by-iter feature matrix silently drifts. (Single-process `default` mode is unaffected.)
+
+**Phase 0b auto-fetch will mutate `processed.db` mid-sweep — that's by design.** When a sub-case-B currency check appends new bars to the cache between cells, sweep correctness is not compromised: with `--snapshot-end` pinned, `load_panel` sees a constrained view of the panel up to `end`, so post-`end` bars don't change the loaded data and `panel_signature` stays stable. The cross-cell sharing contract depends on the pinned end, not on the cache being frozen. See `src/gbdt/preflight.py::cache_currency_check` and PR #120 / bug #226 for the rationale.
+
 **Single-cell runs don't need the flag** — the sharing dependency only matters when ≥2 cells run with overlapping universe-cache writes. The flag is also a no-op on cells whose spec already pins `date_range.end` to a past, fixed date (it just overrides one fixed value with another).
 
 ## Pre-flight
