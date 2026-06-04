@@ -55,3 +55,20 @@ This tells git's index to stop comparing the worktree copy of `data/.gitkeep` �
 **Don't apply when:** the sub-agent doesn't need a separate worktree (single-file edits, doc updates, etc.). Use the main checkout directly.
 
 See `[[feedback-disk-wedge-pattern]]` (when disk wedges, symlink + worktree ops cascade-fail), `[[project-nse-data-quirks]]` § 3 (scratch cache rationale + the WAL corruption that motivated the move), and `CLAUDE.md` § Environment for the `wt-<scope>/` convention.
+
+---
+
+**Addendum 2026-06-04 — `.git/info/exclude` `data` rule masks ALL `data` subdirectories.**
+
+The main checkout's `.git/info/exclude` carries an unanchored `data` line — added to keep the top-level `data` directory (the cache symlink) out of `git status` while it's a per-machine pointer. The trap: gitignore patterns without a leading slash match **anywhere in the tree**, so `data` masks any file under any subdir named `data/` — `results/gbdt/data/`, `dashboards/<module>/data/`, future `<module>/data/` paths, etc. New files added under these subdirs are silently absent from `git status` and skipped by `git add -A`. We hit this twice this session:
+
+- V1.4 P3 backfill: `results/gbdt/data/v1.4_backfill_log.json` invisible to `git add -A`; required `git add -f` to stage.
+- (#218 candidate path) any `_<id>_data.json` written under `results/<module>/data/` per the CLAUDE.md "Docs vs results" convention has the same trap.
+
+**Two fixes**:
+1. **Per-developer**: anchor the pattern in `.git/info/exclude` — replace the bare `data` with `/data` so it only matches the top-level cache dir. Self-applied; survives across worktrees of this checkout because `.git/info/exclude` is shared via `$GIT_DIR/info`.
+2. **Per-file**: `git add -f <path>` when staging a new file under any nested `data/` subdir. Cheaper to remember once you know the trap exists; harder to remember out-of-context.
+
+`.git/info/exclude` is NOT tracked (it's per-checkout, like `.gitignore_global`). A fresh `git clone` won't carry the unanchored `data` line. If you're collaborating with a contributor whose `git status` looks different from yours, this is a common cause — surface the line + suggest the `/data` anchor.
+
+**How to apply**: when writing a new artifact under `results/<module>/data/`, `dashboards/<module>/data/`, or any subpath ending in `/data/`, default to `git add -f <path>` until the contributor base has migrated to the anchored pattern. The runner already does this for canonical files like `r_precision_at_k.csv`; new aggregator scripts should follow.
