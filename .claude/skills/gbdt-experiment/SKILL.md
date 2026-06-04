@@ -59,7 +59,25 @@ uv run python -m gbdt experiment <spec_path> --resume <run_id>
 
 `<run_id>` is the value printed in the pause hint (it equals the spec file's stem; the artifact dir is `results/gbdt/experiments/<run_id>/`). Use the agent-driven mode for production runs where per-iteration judgment matters. Both modes load through the same `load_spec()` validator and emit the same final artifact set.
 
-> CLI subcommand note: the entrypoint is `python -m gbdt experiment …` (space, the `experiment` subcommand), not `python -m gbdt.experiment …`. The flags are `--callback-mode {default|agent_file_protocol}`, `--resume <run_id>`, and `--overwrite`.
+> CLI subcommand note: the entrypoint is `python -m gbdt experiment …` (space, the `experiment` subcommand), not `python -m gbdt.experiment …`. The flags are `--callback-mode {default|agent_file_protocol}`, `--resume <run_id>`, `--snapshot-end YYYY-MM-DD`, and `--overwrite`.
+
+### Sweep orchestration — pin `--snapshot-end`
+
+When running **≥2 cells back-to-back** (a sweep — same universe across multiple `(threshold, horizon, drawdown)` cells), every cell MUST be invoked with the **same** `--snapshot-end <today's UTC date>` value. This pins `date_range.end` for the lifetime of each run so the **universe-level feature cache key stays stable across cells** — every sibling hashes to the same `panel_signature` and shares the build (one cold rebuild + N warm hits, instead of N cold rebuilds at 5 min – 3 h apiece).
+
+Without the pin, an auto-fetch between cells (e.g. the V1.4 Phase 0b cache-currency check appending a new trading bar to `processed.db`, or a scheduled refresh landing during the sweep) shifts `panel.date_max` / the `(date, ticker)` tuple set, drifts the universe-cache key, and forces every subsequent cell to rebuild the universe matrix from scratch. This is the bug-#226 pathology — three v2 russell1000 universe-cache keys with identical `(n_rows, n_cols)` shapes, written 2 days apart, that all should have collapsed to one shared entry. The in-process repro is bit-identical; the drift is strictly between-process.
+
+Recipe:
+```bash
+END=$(date -I)   # today's UTC date — or any past date for reproducibility
+for spec in configs/gbdt/experiments/<universe>_*.yaml; do
+  uv run python -m gbdt experiment "$spec" --snapshot-end "$END"
+done
+```
+
+`metrics.json::preflight.snapshot_end_override` records the pinned ISO date (or `null` when the flag is omitted) so post-hoc audits can confirm every cell of a sweep used the same snapshot. `metrics.json::cache.universe_hit == true` on every sibling after the first is the operational signal that the pin is working.
+
+**Single-cell runs don't need the flag** — the sharing dependency only matters when ≥2 cells run with overlapping universe-cache writes. The flag is also a no-op on cells whose spec already pins `date_range.end` to a past, fixed date (it just overrides one fixed value with another).
 
 ## Pre-flight
 
