@@ -837,35 +837,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     )
     min_rows = split_d.get("min_rows_per_ticker", split.total)
 
-    heartbeat.set_phase("data")
-    status.update(phase="data")
-    _milestone(f"[data] start universe={target['universe']}")
-    t1 = time.time()
-    data_cfg = spec.get("data", {}) or {}
-    staleness_days = int(data_cfg.get(
-        "staleness_days", gbdt_data.DEFAULT_STALENESS_DAYS,
-    ))
-    panel_obj = gbdt_data.load_panel(
-        target["universe"],
-        start=dr.get("start"),
-        end=dr.get("end"),
-        min_rows=min_rows,
-        repo_root=repo_root,
-        staleness_days=staleness_days,
-    )
-    if panel_obj.stale_tickers:
-        print(
-            f"[data] warning: {len(panel_obj.stale_tickers)} stale ticker(s) "
-            f"(cache > {staleness_days}d old): "
-            f"{panel_obj.stale_tickers[:5]}{'...' if len(panel_obj.stale_tickers) > 5 else ''}",
-            flush=True,
-        )
-    _milestone(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
-               f"tickers_kept={len(panel_obj.tickers_kept)}")
-
-    # -------- Phase 1a: universe trading calendar (V1.4 date-aligned mode) --------
-    # Only resolved when ``split.mode == "date_aligned"``. Trailing carves use
-    # per-ticker tail positions and have no calendar dependency.
+    # -------- Phase 0a: universe trading calendar (V1.4 date-aligned mode) --------
+    # Resolved BEFORE the heavy data-load below so the Phase 0b cache-currency
+    # check can REFUSE without wasting panel-build wall-clock. Only built when
+    # ``split.mode == "date_aligned"``; trailing carves have no calendar dep.
     universe_cal: "pd.DatetimeIndex | None" = None
     if split.mode == "date_aligned":
         universes_cfg = spec.get("universes") or {}
@@ -886,12 +861,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             f"({len(universe_cal)} trading days available from {cal_start.isoformat()})"
         )
 
-        # -------- Phase 0 cache-currency check (V1.4 P5, plan §6) --------
+        # -------- Phase 0b: cache-currency check (V1.4 P5, plan §6) --------
         # Verify the cache covers test_end + horizon for every ticker; auto-
         # fetch with 3-retry exponential backoff on transient errors. REFUSE
         # with a worked-example table when the deficient set is non-empty
         # after retries. Sub-case A (universe-level shortfall) raises
-        # CacheCurrencyError inline.
+        # CacheCurrencyError inline. Runs BEFORE load_panel so REFUSE skips
+        # the heavy panel build entirely.
         days_train_start = int(universe_cal.searchsorted(
             pd.Timestamp(split.train_start), side="left",
         ))
@@ -939,7 +915,33 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             f"covered through {universe_cal[days_test_end + int(target['horizon_days'])].date().isoformat()}"
         )
 
-    # -------- Phase 1b: project test segment size + warn if structurally slim --------
+    heartbeat.set_phase("data")
+    status.update(phase="data")
+    _milestone(f"[data] start universe={target['universe']}")
+    t1 = time.time()
+    data_cfg = spec.get("data", {}) or {}
+    staleness_days = int(data_cfg.get(
+        "staleness_days", gbdt_data.DEFAULT_STALENESS_DAYS,
+    ))
+    panel_obj = gbdt_data.load_panel(
+        target["universe"],
+        start=dr.get("start"),
+        end=dr.get("end"),
+        min_rows=min_rows,
+        repo_root=repo_root,
+        staleness_days=staleness_days,
+    )
+    if panel_obj.stale_tickers:
+        print(
+            f"[data] warning: {len(panel_obj.stale_tickers)} stale ticker(s) "
+            f"(cache > {staleness_days}d old): "
+            f"{panel_obj.stale_tickers[:5]}{'...' if len(panel_obj.stale_tickers) > 5 else ''}",
+            flush=True,
+        )
+    _milestone(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
+               f"tickers_kept={len(panel_obj.tickers_kept)}")
+
+    # -------- Phase 1a: project test segment size + warn if structurally slim --------
     # Issue #31 — the walk-forward driver silently emits an empty test
     # segment when ``horizon_days >= split.test_rows``: every ticker's
     # trailing ``test_rows`` rows have NaN targets (forward window
