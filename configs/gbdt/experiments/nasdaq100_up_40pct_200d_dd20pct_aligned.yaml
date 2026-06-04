@@ -36,6 +36,7 @@ split:
   eval_rows: 200
   test_rows: 300
   min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000   # bug #228: train(800)+val(400)+eval(200)+test(300)=1700 > default 1600 — raise floor
 
 backend:
   calibration_method: conditional_isotonic
