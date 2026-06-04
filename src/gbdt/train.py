@@ -486,6 +486,13 @@ def _maybe_run_scout_and_prefit(
     if callback_mode == "sweep":
         # Defense in depth — sweep mode is supposed to skip scout per D4.
         return None
+    if callback_mode == "agent_file_protocol":
+        # The runner (__main__.py) handles scout + combine for
+        # agent_file_protocol mode via the exit-resume cycles (P4). By the
+        # time walk_forward_train is called in that mode, the agent's
+        # combine winner (if any) is already applied to ``current_hp`` via
+        # the spec's hp_starting + the feature pool is the cliff-cut subset.
+        return None
 
     # Carve once. The scout + prefit reuse the same train/val/eval segments
     # iter_0 uses (D10.A); features are the FULL current_features at this
