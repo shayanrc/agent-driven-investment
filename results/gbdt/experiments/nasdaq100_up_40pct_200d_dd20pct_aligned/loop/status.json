@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "nasdaq100_up_40pct_200d_dd20pct_aligned",
+  "iter_idx": 2,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-04T19:50:03+00:00",
+  "last_heartbeat_utc": "2026-06-04T19:49:55+00:00",
+  "best_val_brier": 0.16009249935447892,
+  "stop_reason": "plateau"
+}

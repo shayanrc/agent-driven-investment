@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "sp500_up_50pct_200d_dd25pct_aligned",
+  "iter_idx": 2,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-04T19:45:07+00:00",
+  "last_heartbeat_utc": "2026-06-04T19:44:46+00:00",
+  "best_val_brier": 0.06651012407659819,
+  "stop_reason": "plateau"
+}

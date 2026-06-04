@@ -1,0 +1,19 @@
+2026-06-04T15:45:46+00:00 [experiment] start spec=nasdaq100_up_20pct_100d_dd10pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/nasdaq100_up_20pct_100d_dd10pct_aligned
+2026-06-04T15:45:46+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-04T15:45:46+00:00 [preflight] cache currency OK: 100 ticker(s) covered through 2025-10-06
+2026-06-04T15:45:46+00:00 [data] start universe=nasdaq100
+2026-06-04T15:45:51+00:00 [data] complete in 4.8s rows=645189 tickers_kept=92
+2026-06-04T15:45:54+00:00 [features] loaded from universe cache (key match) in 1.0s shape=(645189, 279)
+2026-06-04T15:46:03+00:00 [target] start
+2026-06-04T15:46:05+00:00 [target] complete in 2.6s positive_prevalence=0.324
+2026-06-04T15:46:05+00:00 [uniqueness] start
+2026-06-04T15:46:06+00:00 [uniqueness] complete in 0.5s horizon=100 rows=645189 ESS=641216 inflation=1.01x
+2026-06-04T15:46:06+00:00 [loop] V1.3 no sweep_row for cell='nasdaq100_up_20pct_100d_dd10pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T15:46:06+00:00 [loop] start max_iter=3 callback_mode=default
+2026-06-04T15:46:16+00:00 [heartbeat] t=21:16:16 phase=loop elapsed_phase=10s elapsed_total=30s rss_mb=3434
+2026-06-04T15:46:46+00:00 [heartbeat] t=21:16:46 phase=loop elapsed_phase=40s elapsed_total=60s rss_mb=3688
+2026-06-04T15:46:50+00:00 [loop] LOOP COMPLETE in 44.0s best_iter=0 val_brier=0.2341 reason=degradation
+2026-06-04T15:46:50+00:00 [artifact] start
+2026-06-04T15:46:52+00:00 [artifact] complete in 2.3s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/nasdaq100_up_20pct_100d_dd10pct_aligned
+2026-06-04T15:46:52+00:00 [loop] STOPPED reason=degradation
+2026-06-04T15:46:52+00:00 [experiment] complete in 66.5s

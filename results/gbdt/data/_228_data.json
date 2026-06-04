@@ -1,0 +1,1016 @@
+{
+  "bug_id": 228,
+  "description": "H>=100 US-sweep rerun under V1.4 date-aligned splits + #226 cache-key stability",
+  "sweep_finished_at": "2026-06-05T01:21:34+05:30",
+  "main_sweep_log": "/tmp/v1_228_sweep.log",
+  "h200_waiter_log": "/tmp/v1_228_sweep_h200.log",
+  "snapshot_end_pinned": "2026-06-04",
+  "cell_count": 19,
+  "h100_cell_count": 11,
+  "h200_cell_count": 8,
+  "split_modes_used": [
+    "date_aligned"
+  ],
+  "train_starts_used": [
+    "2018-01-01",
+    "2019-01-01"
+  ],
+  "panel_index_hash_uniques": [
+    "0ee999a08e61fc068c8edc49b811ed0add66cb749981b8203c2e935991794b8c",
+    "120ef6900af9914db6f3ea4d8ba86d9da11e0477ebc4bcb43754e205577fd0f3",
+    "7b0c88f76c7f362a03829a633b3169cbc15b76dbe1d56a5c8c6a68b79705f756",
+    "949336de9dd8a9c8894de78a6a0696a3b85d8ebd8ec11da60cd223c137951477",
+    "9c0d7eb3868859e43fee165681ff1b98eee4e76386ed6a65af9d4423ffb5506e",
+    "d1bdc7a084fa77f6360401a18b9b1e1d0ae9865d10b4fa012a115ef58ce269c2"
+  ],
+  "cells": [
+    {
+      "cell": "nasdaq100_up_10pct_100d_dd5pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "10pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "141e055e8d719e10346236d34fe2b6b97b47046f",
+      "panel_index_hash": "9c0d7eb3868859e43fee165681ff1b98eee4e76386ed6a65af9d4423ffb5506e",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 18400,
+      "headline_test": {
+        "roc_auc": 0.495876065769514,
+        "brier": 0.24051781788605464,
+        "brier_baseline_baserate": 0.2396380877835539,
+        "weighted_prevalence": 0.39820652173913046,
+        "n_rows": 18400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.398207,
+        "Q_days": 200,
+        "R_precision_at_1": 0.49,
+        "R_precision_at_3": 0.36,
+        "R_precision_at_5": 0.393,
+        "R_precision_at_10": 0.35645,
+        "R_precision_at_20": 0.373933
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 272.17402958869934
+    },
+    {
+      "cell": "nasdaq100_up_10pct_200d_dd5pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "10pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "d1bdc7a084fa77f6360401a18b9b1e1d0ae9865d10b4fa012a115ef58ce269c2",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 26700,
+      "headline_test": {
+        "roc_auc": 0.5,
+        "brier": 0.2509101805578937,
+        "brier_baseline_baserate": 0.24585977640309156,
+        "weighted_prevalence": 0.4356554307116105,
+        "n_rows": 26700
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.435655,
+        "Q_days": 300,
+        "R_precision_at_1": 0.49,
+        "R_precision_at_3": 0.361111,
+        "R_precision_at_5": 0.418,
+        "R_precision_at_10": 0.450037,
+        "R_precision_at_20": 0.440451
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 218.9001932144165
+    },
+    {
+      "cell": "nasdaq100_up_20pct_100d_dd10pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "20pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "141e055e8d719e10346236d34fe2b6b97b47046f",
+      "panel_index_hash": "9c0d7eb3868859e43fee165681ff1b98eee4e76386ed6a65af9d4423ffb5506e",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 18400,
+      "headline_test": {
+        "roc_auc": 0.666014255383956,
+        "brier": 0.18079562555063988,
+        "brier_baseline_baserate": 0.192790639768431,
+        "weighted_prevalence": 0.26081521739130437,
+        "n_rows": 18400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.260815,
+        "Q_days": 200,
+        "R_precision_at_1": 0.145,
+        "R_precision_at_3": 0.196667,
+        "R_precision_at_5": 0.255583,
+        "R_precision_at_10": 0.381486,
+        "R_precision_at_20": 0.428244
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 65.41764235496521
+    },
+    {
+      "cell": "nasdaq100_up_40pct_100d_dd20pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "40pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "141e055e8d719e10346236d34fe2b6b97b47046f",
+      "panel_index_hash": "9c0d7eb3868859e43fee165681ff1b98eee4e76386ed6a65af9d4423ffb5506e",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 18400,
+      "headline_test": {
+        "roc_auc": 0.8379589132116625,
+        "brier": 0.07712289268002268,
+        "brier_baseline_baserate": 0.08764356096408317,
+        "weighted_prevalence": 0.09706521739130435,
+        "n_rows": 18400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.097065,
+        "Q_days": 193,
+        "R_precision_at_1": 0.227979,
+        "R_precision_at_3": 0.361831,
+        "R_precision_at_5": 0.391192,
+        "R_precision_at_10": 0.411095,
+        "R_precision_at_20": 0.627083
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 94.54807329177856
+    },
+    {
+      "cell": "nasdaq100_up_40pct_200d_dd20pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "40pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "d1bdc7a084fa77f6360401a18b9b1e1d0ae9865d10b4fa012a115ef58ce269c2",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 26700,
+      "headline_test": {
+        "roc_auc": 0.7358130007700346,
+        "brier": 0.16777082730351597,
+        "brier_baseline_baserate": 0.1681225715047202,
+        "weighted_prevalence": 0.21385767790262175,
+        "n_rows": 26700
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.213858,
+        "Q_days": 300,
+        "R_precision_at_1": 0.37,
+        "R_precision_at_3": 0.383333,
+        "R_precision_at_5": 0.408,
+        "R_precision_at_10": 0.417741,
+        "R_precision_at_20": 0.474947
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 2,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 67.20830917358398
+    },
+    {
+      "cell": "nasdaq100_up_50pct_100d_dd25pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "50pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "141e055e8d719e10346236d34fe2b6b97b47046f",
+      "panel_index_hash": "9c0d7eb3868859e43fee165681ff1b98eee4e76386ed6a65af9d4423ffb5506e",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 18400,
+      "headline_test": {
+        "roc_auc": 0.8700211580030071,
+        "brier": 0.05878933761492819,
+        "brier_baseline_baserate": 0.06350745510396974,
+        "weighted_prevalence": 0.06815217391304347,
+        "n_rows": 18400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.068152,
+        "Q_days": 176,
+        "R_precision_at_1": 0.340909,
+        "R_precision_at_3": 0.392045,
+        "R_precision_at_5": 0.383428,
+        "R_precision_at_10": 0.503943,
+        "R_precision_at_20": 0.61687
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 1,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 117.55584907531738
+    },
+    {
+      "cell": "nasdaq100_up_50pct_200d_dd25pct_aligned",
+      "universe": "nasdaq100",
+      "threshold": "50pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "d1bdc7a084fa77f6360401a18b9b1e1d0ae9865d10b4fa012a115ef58ce269c2",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 26700,
+      "headline_test": {
+        "roc_auc": 0.7922043511378855,
+        "brier": 0.12128841839373934,
+        "brier_baseline_baserate": 0.12494373044929795,
+        "weighted_prevalence": 0.14636704119850186,
+        "n_rows": 26700
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.146367,
+        "Q_days": 300,
+        "R_precision_at_1": 0.603333,
+        "R_precision_at_3": 0.434444,
+        "R_precision_at_5": 0.426,
+        "R_precision_at_10": 0.417898,
+        "R_precision_at_20": 0.57217
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 1,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 71.49814105033875
+    },
+    {
+      "cell": "russell1000_up_10pct_100d_dd5pct_aligned",
+      "universe": "russell1000",
+      "threshold": "10pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "141e055e8d719e10346236d34fe2b6b97b47046f",
+      "panel_index_hash": "949336de9dd8a9c8894de78a6a0696a3b85d8ebd8ec11da60cd223c137951477",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 177800,
+      "headline_test": {
+        "roc_auc": 0.5001816251525639,
+        "brier": 0.2337890935643825,
+        "brier_baseline_baserate": 0.2326540137172111,
+        "weighted_prevalence": 0.36829583802024746,
+        "n_rows": 177800
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.368296,
+        "Q_days": 200,
+        "R_precision_at_1": 0.45,
+        "R_precision_at_3": 0.315,
+        "R_precision_at_5": 0.352,
+        "R_precision_at_10": 0.334,
+        "R_precision_at_20": 0.355763
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 3865.482484817505
+    },
+    {
+      "cell": "russell1000_up_10pct_200d_dd5pct_aligned",
+      "universe": "russell1000",
+      "threshold": "10pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "7b0c88f76c7f362a03829a633b3169cbc15b76dbe1d56a5c8c6a68b79705f756",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 257400,
+      "headline_test": {
+        "roc_auc": 0.5,
+        "brier": 0.2626458360586092,
+        "brier_baseline_baserate": 0.24831498361778084,
+        "weighted_prevalence": 0.45895104895104905,
+        "n_rows": 257400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.458951,
+        "Q_days": 300,
+        "R_precision_at_1": 0.49,
+        "R_precision_at_3": 0.361111,
+        "R_precision_at_5": 0.418,
+        "R_precision_at_10": 0.45,
+        "R_precision_at_20": 0.4405
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 2579.6132488250732
+    },
+    {
+      "cell": "russell1000_up_20pct_100d_dd10pct_aligned",
+      "universe": "russell1000",
+      "threshold": "20pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "949336de9dd8a9c8894de78a6a0696a3b85d8ebd8ec11da60cd223c137951477",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 177800,
+      "headline_test": {
+        "roc_auc": 0.7026040880845141,
+        "brier": 0.1697401583586243,
+        "brier_baseline_baserate": 0.1790128193480877,
+        "weighted_prevalence": 0.23356580427446572,
+        "n_rows": 177800
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.233566,
+        "Q_days": 200,
+        "R_precision_at_1": 0.24,
+        "R_precision_at_3": 0.346667,
+        "R_precision_at_5": 0.371,
+        "R_precision_at_10": 0.354,
+        "R_precision_at_20": 0.365
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 881.644693851471
+    },
+    {
+      "cell": "russell1000_up_40pct_100d_dd20pct_aligned",
+      "universe": "russell1000",
+      "threshold": "40pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "949336de9dd8a9c8894de78a6a0696a3b85d8ebd8ec11da60cd223c137951477",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 177800,
+      "headline_test": {
+        "roc_auc": 0.8210311144445822,
+        "brier": 0.0678945193160775,
+        "brier_baseline_baserate": 0.07329750822766952,
+        "weighted_prevalence": 0.0796400449943757,
+        "n_rows": 177800
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.07964,
+        "Q_days": 200,
+        "R_precision_at_1": 0.55,
+        "R_precision_at_3": 0.516667,
+        "R_precision_at_5": 0.447,
+        "R_precision_at_10": 0.382,
+        "R_precision_at_20": 0.340689
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 2,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 753.0110211372375
+    },
+    {
+      "cell": "russell1000_up_40pct_200d_dd20pct_aligned",
+      "universe": "russell1000",
+      "threshold": "40pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "7b0c88f76c7f362a03829a633b3169cbc15b76dbe1d56a5c8c6a68b79705f756",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 257400,
+      "headline_test": {
+        "roc_auc": 0.6618336726296329,
+        "brier": 0.2023721801259215,
+        "brier_baseline_baserate": 0.18056754526014435,
+        "weighted_prevalence": 0.23649961149961152,
+        "n_rows": 257400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.2365,
+        "Q_days": 300,
+        "R_precision_at_1": 0.716667,
+        "R_precision_at_3": 0.57,
+        "R_precision_at_5": 0.506667,
+        "R_precision_at_10": 0.464667,
+        "R_precision_at_20": 0.431667
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 587.0193333625793
+    },
+    {
+      "cell": "russell1000_up_50pct_100d_dd25pct_aligned",
+      "universe": "russell1000",
+      "threshold": "50pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "949336de9dd8a9c8894de78a6a0696a3b85d8ebd8ec11da60cd223c137951477",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 177800,
+      "headline_test": {
+        "roc_auc": 0.8746981175049579,
+        "brier": 0.042135045712646126,
+        "brier_baseline_baserate": 0.046090356197038926,
+        "weighted_prevalence": 0.04843644544431946,
+        "n_rows": 177800
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.048436,
+        "Q_days": 200,
+        "R_precision_at_1": 0.49,
+        "R_precision_at_3": 0.433333,
+        "R_precision_at_5": 0.42525,
+        "R_precision_at_10": 0.343933,
+        "R_precision_at_20": 0.361074
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 1,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 777.9048342704773
+    },
+    {
+      "cell": "russell1000_up_50pct_200d_dd25pct_aligned",
+      "universe": "russell1000",
+      "threshold": "50pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "7b0c88f76c7f362a03829a633b3169cbc15b76dbe1d56a5c8c6a68b79705f756",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 257400,
+      "headline_test": {
+        "roc_auc": 0.6967958707650418,
+        "brier": 0.13758443635650305,
+        "brier_baseline_baserate": 0.12876942148760329,
+        "weighted_prevalence": 0.15181818181818182,
+        "n_rows": 257400
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.151818,
+        "Q_days": 300,
+        "R_precision_at_1": 0.736667,
+        "R_precision_at_3": 0.642222,
+        "R_precision_at_5": 0.538667,
+        "R_precision_at_10": 0.466,
+        "R_precision_at_20": 0.396
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 627.5818674564362
+    },
+    {
+      "cell": "sp500_up_20pct_100d_dd10pct_aligned",
+      "universe": "sp500",
+      "threshold": "20pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "0ee999a08e61fc068c8edc49b811ed0add66cb749981b8203c2e935991794b8c",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 97200,
+      "headline_test": {
+        "roc_auc": 0.6854945783364326,
+        "brier": 0.16319612807059686,
+        "brier_baseline_baserate": 0.1675506676658368,
+        "weighted_prevalence": 0.21286008230452674,
+        "n_rows": 97200
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.21286,
+        "Q_days": 200,
+        "R_precision_at_1": 0.38,
+        "R_precision_at_3": 0.436667,
+        "R_precision_at_5": 0.447,
+        "R_precision_at_10": 0.409,
+        "R_precision_at_20": 0.37925
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 1,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 1514.4680790901184
+    },
+    {
+      "cell": "sp500_up_40pct_100d_dd20pct_aligned",
+      "universe": "sp500",
+      "threshold": "40pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "0ee999a08e61fc068c8edc49b811ed0add66cb749981b8203c2e935991794b8c",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 97200,
+      "headline_test": {
+        "roc_auc": 0.8549189384853577,
+        "brier": 0.05978380261485955,
+        "brier_baseline_baserate": 0.06421416789446052,
+        "weighted_prevalence": 0.06897119341563784,
+        "n_rows": 97200
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.068971,
+        "Q_days": 200,
+        "R_precision_at_1": 0.325,
+        "R_precision_at_3": 0.351667,
+        "R_precision_at_5": 0.366667,
+        "R_precision_at_10": 0.342675,
+        "R_precision_at_20": 0.354535
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 1,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 387.45725274086
+    },
+    {
+      "cell": "sp500_up_40pct_200d_dd20pct_aligned",
+      "universe": "sp500",
+      "threshold": "40pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "120ef6900af9914db6f3ea4d8ba86d9da11e0477ebc4bcb43754e205577fd0f3",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 143100,
+      "headline_test": {
+        "roc_auc": 0.6678040739659792,
+        "brier": 0.1928867909576154,
+        "brier_baseline_baserate": 0.1710079710962363,
+        "weighted_prevalence": 0.2189447938504542,
+        "n_rows": 143100
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.218945,
+        "Q_days": 300,
+        "R_precision_at_1": 0.726667,
+        "R_precision_at_3": 0.555556,
+        "R_precision_at_5": 0.521333,
+        "R_precision_at_10": 0.45,
+        "R_precision_at_20": 0.4505
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 0,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 1411.7250397205353
+    },
+    {
+      "cell": "sp500_up_50pct_100d_dd25pct_aligned",
+      "universe": "sp500",
+      "threshold": "50pct",
+      "horizon": "100d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "0ee999a08e61fc068c8edc49b811ed0add66cb749981b8203c2e935991794b8c",
+      "segment_dates": {
+        "train": {
+          "start": "2019-01-02",
+          "end": "2022-03-04"
+        },
+        "val": {
+          "start": "2022-03-07",
+          "end": "2023-10-06"
+        },
+        "eval": {
+          "start": "2023-10-09",
+          "end": "2024-07-25"
+        },
+        "test": {
+          "start": "2024-07-26",
+          "end": "2025-05-13"
+        }
+      },
+      "n_rows_test": 97200,
+      "headline_test": {
+        "roc_auc": 0.9006231380913566,
+        "brier": 0.03705579276274883,
+        "brier_baseline_baserate": 0.0407031634744026,
+        "weighted_prevalence": 0.042510288065843616,
+        "n_rows": 97200
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.04251,
+        "Q_days": 195,
+        "R_precision_at_1": 0.476923,
+        "R_precision_at_3": 0.407692,
+        "R_precision_at_5": 0.391026,
+        "R_precision_at_10": 0.391347,
+        "R_precision_at_20": 0.407873
+      },
+      "loop": {
+        "n_iterations_run": 2,
+        "best_iteration": 1,
+        "inner_stop_signal": "degradation"
+      },
+      "wall_time_total_sec": 292.7391564846039
+    },
+    {
+      "cell": "sp500_up_50pct_200d_dd25pct_aligned",
+      "universe": "sp500",
+      "threshold": "50pct",
+      "horizon": "200d",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "snapshot_end_override": "2026-06-04",
+      "code_commit": "8ba2adbc869913520677097e13fa7b3758b5f278",
+      "panel_index_hash": "120ef6900af9914db6f3ea4d8ba86d9da11e0477ebc4bcb43754e205577fd0f3",
+      "segment_dates": {
+        "train": {
+          "start": "2018-01-02",
+          "end": "2021-03-08"
+        },
+        "val": {
+          "start": "2021-03-09",
+          "end": "2022-10-06"
+        },
+        "eval": {
+          "start": "2022-10-07",
+          "end": "2023-07-26"
+        },
+        "test": {
+          "start": "2023-07-27",
+          "end": "2024-10-03"
+        }
+      },
+      "n_rows_test": 143100,
+      "headline_test": {
+        "roc_auc": 0.7165217676233536,
+        "brier": 0.12254668040071177,
+        "brier_baseline_baserate": 0.11679285404888558,
+        "weighted_prevalence": 0.1350244584206848,
+        "n_rows": 143100
+      },
+      "r_precision_at_k": {
+        "base_rate": 0.135024,
+        "Q_days": 300,
+        "R_precision_at_1": 0.606667,
+        "R_precision_at_3": 0.568889,
+        "R_precision_at_5": 0.542667,
+        "R_precision_at_10": 0.487667,
+        "R_precision_at_20": 0.458333
+      },
+      "loop": {
+        "n_iterations_run": 3,
+        "best_iteration": 2,
+        "inner_stop_signal": "plateau"
+      },
+      "wall_time_total_sec": 319.94442200660706
+    }
+  ]
+}

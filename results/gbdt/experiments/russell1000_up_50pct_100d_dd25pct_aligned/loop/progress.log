@@ -1,0 +1,42 @@
+2026-06-04T18:15:42+00:00 [experiment] start spec=russell1000_up_50pct_100d_dd25pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_50pct_100d_dd25pct_aligned
+2026-06-04T18:15:42+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-04T18:15:43+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-04T18:15:43+00:00 [data] start universe=russell1000
+2026-06-04T18:16:12+00:00 [heartbeat] t=23:46:12 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=433
+2026-06-04T18:16:29+00:00 [data] complete in 45.7s rows=6059743 tickers_kept=889
+2026-06-04T18:16:42+00:00 [heartbeat] t=23:46:42 phase=features elapsed_phase=12s elapsed_total=60s rss_mb=1630
+2026-06-04T18:17:00+00:00 [features] loaded from universe cache (key match) in 11.1s shape=(6059743, 279)
+2026-06-04T18:17:12+00:00 [heartbeat] t=23:47:12 phase=features elapsed_phase=42s elapsed_total=90s rss_mb=27872
+2026-06-04T18:17:42+00:00 [heartbeat] t=23:47:42 phase=features elapsed_phase=72s elapsed_total=120s rss_mb=27872
+2026-06-04T18:18:12+00:00 [heartbeat] t=23:48:12 phase=features elapsed_phase=102s elapsed_total=150s rss_mb=27872
+2026-06-04T18:18:28+00:00 [target] start
+2026-06-04T18:18:42+00:00 [heartbeat] t=23:48:42 phase=target elapsed_phase=13s elapsed_total=180s rss_mb=27872
+2026-06-04T18:18:54+00:00 [target] complete in 25.4s positive_prevalence=0.060
+2026-06-04T18:18:54+00:00 [uniqueness] start
+2026-06-04T18:19:03+00:00 [uniqueness] complete in 9.4s horizon=100 rows=6059743 ESS=6021404 inflation=1.01x
+2026-06-04T18:19:03+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_100d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T18:19:03+00:00 [loop] start max_iter=3 callback_mode=default
+2026-06-04T18:19:12+00:00 [heartbeat] t=23:49:12 phase=loop elapsed_phase=9s elapsed_total=210s rss_mb=27872
+2026-06-04T18:19:42+00:00 [heartbeat] t=23:49:42 phase=loop elapsed_phase=39s elapsed_total=240s rss_mb=27872
+2026-06-04T18:20:12+00:00 [heartbeat] t=23:50:12 phase=loop elapsed_phase=69s elapsed_total=270s rss_mb=27872
+2026-06-04T18:20:42+00:00 [heartbeat] t=23:50:42 phase=loop elapsed_phase=99s elapsed_total=300s rss_mb=27872
+2026-06-04T18:21:12+00:00 [heartbeat] t=23:51:12 phase=loop elapsed_phase=129s elapsed_total=330s rss_mb=27872
+2026-06-04T18:21:42+00:00 [heartbeat] t=23:51:42 phase=loop elapsed_phase=159s elapsed_total=360s rss_mb=27872
+2026-06-04T18:22:12+00:00 [heartbeat] t=23:52:12 phase=loop elapsed_phase=189s elapsed_total=390s rss_mb=27872
+2026-06-04T18:22:42+00:00 [heartbeat] t=23:52:42 phase=loop elapsed_phase=219s elapsed_total=420s rss_mb=27872
+2026-06-04T18:23:12+00:00 [heartbeat] t=23:53:12 phase=loop elapsed_phase=249s elapsed_total=450s rss_mb=27872
+2026-06-04T18:23:42+00:00 [heartbeat] t=23:53:42 phase=loop elapsed_phase=279s elapsed_total=480s rss_mb=27872
+2026-06-04T18:24:12+00:00 [heartbeat] t=23:54:12 phase=loop elapsed_phase=309s elapsed_total=510s rss_mb=27872
+2026-06-04T18:24:42+00:00 [heartbeat] t=23:54:42 phase=loop elapsed_phase=339s elapsed_total=540s rss_mb=27872
+2026-06-04T18:25:12+00:00 [heartbeat] t=23:55:12 phase=loop elapsed_phase=369s elapsed_total=570s rss_mb=27872
+2026-06-04T18:25:42+00:00 [heartbeat] t=23:55:42 phase=loop elapsed_phase=399s elapsed_total=600s rss_mb=27872
+2026-06-04T18:26:12+00:00 [heartbeat] t=23:56:12 phase=loop elapsed_phase=429s elapsed_total=630s rss_mb=27872
+2026-06-04T18:26:42+00:00 [heartbeat] t=23:56:42 phase=loop elapsed_phase=459s elapsed_total=660s rss_mb=27872
+2026-06-04T18:27:12+00:00 [heartbeat] t=23:57:12 phase=loop elapsed_phase=489s elapsed_total=690s rss_mb=27872
+2026-06-04T18:27:42+00:00 [heartbeat] t=23:57:42 phase=loop elapsed_phase=519s elapsed_total=720s rss_mb=27872
+2026-06-04T18:28:12+00:00 [heartbeat] t=23:58:12 phase=loop elapsed_phase=549s elapsed_total=750s rss_mb=27872
+2026-06-04T18:28:30+00:00 [loop] LOOP COMPLETE in 567.2s best_iter=1 val_brier=0.0316 reason=plateau
+2026-06-04T18:28:30+00:00 [artifact] start
+2026-06-04T18:28:41+00:00 [artifact] complete in 10.1s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_50pct_100d_dd25pct_aligned
+2026-06-04T18:28:41+00:00 [loop] STOPPED reason=plateau
+2026-06-04T18:28:41+00:00 [experiment] complete in 778.9s
