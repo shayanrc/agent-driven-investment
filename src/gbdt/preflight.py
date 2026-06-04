@@ -137,6 +137,18 @@ def cache_currency_check(
     list means the cache is current and the run may proceed. Sub-case A
     is raised inline (``CacheCurrencyError``) since it's universe-level.
 
+    Sweep-correctness note (bug #226). Sub-case B auto-fetches WILL append
+    new bars to ``processed.db`` mid-sweep — and that is **by design**, not
+    a bug. When ``--snapshot-end`` is pinned (the recommended sweep
+    pattern, see ``.claude/skills/gbdt-experiment/SKILL.md`` § "Sweep
+    orchestration"), ``load_panel`` sees a constrained view of the panel
+    bounded by ``end``, so post-``end`` bars added here don't change the
+    loaded data. ``panel_signature`` therefore stays stable, and the
+    universe-cache key stays stable across cells. The cross-cell sharing
+    contract depends on ``load_panel``'s VIEW being stable (pinned end),
+    not on the underlying cache being frozen. See PR #120 + bug #226
+    review for the full forensics.
+
     Parameters
     ----------
     universe_tickers : Iterable[str]

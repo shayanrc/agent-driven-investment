@@ -214,3 +214,47 @@ def test_invalid_snapshot_end_exits_with_clear_message(tmp_path, capsys):
     err = captured.err
     assert "--snapshot-end" in err, f"missing flag name in stderr: {err!r}"
     assert "2025-13-99" in err, f"missing offending value in stderr: {err!r}"
+
+
+# ---------------------------------------------------------------------------
+# Test 4 — argparse default for --snapshot-end is None (lock the
+# "must be re-passed on every --resume" semantic — bug #226 soft note 1)
+# ---------------------------------------------------------------------------
+
+
+def test_snapshot_end_argparse_default_is_none(monkeypatch):
+    """The ``--snapshot-end`` argparse default MUST stay ``None``.
+
+    Each runner invocation (including every ``--resume`` in
+    ``--callback-mode agent_file_protocol``) re-parses argv from scratch.
+    If the default were anything other than ``None``, a resumed cell could
+    silently load the panel with a different effective ``end`` than the
+    launch cell did, drifting the feature matrix. The reviewer's soft
+    note on PR #120 / bug #226 calls this out explicitly; locking the
+    default here keeps the "must be re-passed" contract enforced by the
+    test suite.
+
+    Asserted by intercepting ``run_experiment`` from the runner's ``main``
+    and inspecting the ``snapshot_end`` kwarg it forwards when the flag
+    is absent. ``None`` here means each invocation is forced to re-pass
+    ``--snapshot-end`` explicitly.
+    """
+    import gbdt.__main__ as gbdt_main
+
+    captured: dict = {}
+
+    def _fake_run_experiment(spec_path, **kwargs):
+        captured["kwargs"] = kwargs
+        # Return a dummy path-like; main() doesn't use the return value
+        # for the success path under test.
+        return None
+
+    monkeypatch.setattr(gbdt_main, "run_experiment", _fake_run_experiment)
+
+    rc = gbdt_main.main(["experiment", "/nonexistent/spec.yaml"])
+    assert rc == 0, f"expected exit 0 with the run_experiment stub, got {rc}"
+    assert captured.get("kwargs", {}).get("snapshot_end") is None, (
+        "argparse default for --snapshot-end must yield snapshot_end=None "
+        "in the run_experiment call so each --resume is forced to "
+        "re-pass it explicitly (bug #226 soft note 1)."
+    )
