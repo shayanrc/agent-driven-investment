@@ -671,6 +671,7 @@ def _load_and_apply_resume(
 def run_experiment(spec_path: Path, *, overwrite: bool = False,
                     callback_mode_override: str | None = None,
                     resume: str | None = None,
+                    snapshot_end: date | None = None,
                     repo_root: Path | None = None) -> Path:
     """Run the experiment end-to-end. Returns the artifact dir path.
 
@@ -680,6 +681,14 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     ``resume`` (CLI ``--resume <run_id>``): V1.1 Phase 1 scaffolding only.
     Accepted + logged; the exit-and-resume control flow lands in Phase 2.
+
+    ``snapshot_end`` (CLI ``--snapshot-end YYYY-MM-DD``): when set, pins the
+    spec's ``date_range.end`` for the lifetime of this run. Sweep
+    orchestrators MUST pass the SAME value to every cell so the universe-
+    level feature cache key stays stable across cells (an auto-fetch between
+    cells otherwise drifts ``panel_signature`` and forces a cold rebuild on
+    every sibling). Persisted into ``metrics.json::preflight.snapshot_end_override``
+    for post-hoc audit. See bug #226.
     """
     spec_path = Path(spec_path).resolve()
     repo_root = Path(repo_root) if repo_root is not None else Path.cwd()
@@ -714,6 +723,34 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             per_exp.setdefault("backend", {}).setdefault("fs_hp_loop", {})[
                 "callback_mode"
             ] = callback_mode_override
+
+    # Bug #226 — CLI ``--snapshot-end`` pins ``date_range.end`` for the
+    # lifetime of this run. Applied BEFORE Phase 0b (cache_currency_check)
+    # and BEFORE ``load_panel`` so the universe-level feature cache key is
+    # computed against the pinned snapshot (every sweep cell sees the same
+    # ``panel_signature`` ⇒ shared universe-cache hit). Mirrored into the
+    # per-experiment snapshot source so ``spec.yaml`` reflects the
+    # *effective* end-date this run actually used. ``snapshot_end_override``
+    # is also persisted into ``metrics.json::preflight`` below for audit;
+    # ``None`` ⇒ no override (the spec's value is used unchanged).
+    snapshot_end_override_iso: str | None = None
+    if snapshot_end is not None:
+        snapshot_end_override_iso = snapshot_end.isoformat()
+        prior_end = (spec.get("date_range") or {}).get("end")
+        prior_end_repr = (
+            prior_end.isoformat() if isinstance(prior_end, date)
+            else (str(prior_end) if prior_end is not None else None)
+        )
+        spec.setdefault("date_range", {})["end"] = snapshot_end
+        per_exp = spec.get("__per_experiment_spec__")
+        if isinstance(per_exp, dict):
+            per_exp.setdefault("date_range", {})["end"] = snapshot_end
+        print(
+            f"[data] snapshot-end pinned to {snapshot_end_override_iso} "
+            f"(override; spec said: {prior_end_repr})",
+            flush=True,
+        )
+    preflight["snapshot_end_override"] = snapshot_end_override_iso
 
     out_root = repo_root / spec.get("artifacts", {}).get(
         "experiment_dir", "results/gbdt/experiments"
@@ -1746,14 +1783,37 @@ def main(argv: list[str] | None = None) -> int:
              "continues at iteration N+1. RUN_ID is the value printed in the "
              "pause hint.",
     )
+    p_exp.add_argument(
+        "--snapshot-end",
+        metavar="YYYY-MM-DD",
+        default=None,
+        help="Pin the date_range.end for this run (overrides the spec). "
+             "Use the SAME value across every cell of a sweep so the universe-"
+             "level feature cache key stays stable cell-to-cell (an "
+             "auto-fetch between cells will otherwise drift the panel "
+             "signature and force a cold rebuild on every sibling). See "
+             "bug #226.",
+    )
 
     args = parser.parse_args(argv)
     if args.cmd == "experiment":
+        snapshot_end_val: date | None = None
+        if args.snapshot_end is not None:
+            try:
+                snapshot_end_val = date.fromisoformat(args.snapshot_end)
+            except ValueError as exc:
+                print(
+                    f"[experiment] --snapshot-end: invalid ISO date "
+                    f"{args.snapshot_end!r} ({exc})",
+                    file=sys.stderr,
+                )
+                return 2
         run_experiment(
             args.spec,
             overwrite=args.overwrite,
             callback_mode_override=args.callback_mode,
             resume=args.resume,
+            snapshot_end=snapshot_end_val,
         )
         return 0
     parser.print_help()
