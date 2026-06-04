@@ -118,6 +118,50 @@ Before launching the loop:
 - Build the binary target (`targets.compute_target(panel, spec.target)`). If `spec.target.max_drawdown` is set, the target builder applies the path-honesty filter described in `EXPERIMENT_SPEC.md` § "target".
 - Carve segments per `spec.split` (train / val / eval / test, in time order).
 
+### Phase 1.4–1.6 — FS-prefit + scout + combine (V1.3 Option B, optional)
+
+**When to enable** (default-OFF — opt in via `backend.scout.enabled: true` per `docs/gbdt/V1.3_OPTION_B_PLAN.md`):
+
+- Anti-AUC + strong-top-1 cells (`anti_auc_flag == "true"` in the canonical CSV) where rule 12's "tiny-model bias" applies — the scout's depth=2/3 + eta=0.1+ES + colsample=0.3-0.5 grid lets the agent walk into a structurally-different regime than CatBoost defaults' depth=6/lr=0.05/iter=1000.
+- Cells where rule 7's L2-grid winner does NOT apply (i.e. `sweep R-p@1` is not in the rare-event regime; the L2 plateau winner was calibrated on `sweep R-p@1 ≈ 0.03` cells per the r1k trio).
+
+**When to leave OFF**:
+
+- Rare-event cells (rule 7) — the L2 grid `{1, 5, 10}` for `min_child_weight` is already calibrated; scout adds machinery without value.
+- Strong-AUC cells where defaults already dominate per `_225` (the cell-5 manual methodology FAILED on cells 1+3 because the gap was XGBoost-vs-CatBoost, not anything FS/HP could close).
+
+The phases:
+
+- **Phase 1.4 — FS-prefit** (D11): train one default-HP fit on the full feature matrix, cliff-cut features with importance < 1% of top (`backend.fs_prefit.cliff_pct` default 0.01). Matches the cell-5 manual workflow (~130 of 279 features kept).
+- **Phase 1.5 — Scout** (D1): 8 single-knob response curves × ~4-5 values each + defaults zeroth = ~35-41 fits/cell on the cliff-cut pool. XGBoost canonical knob names; CatBoost translation applied internally (`gamma` is silently dropped — no CatBoost analog). Soft wall-clock cap (D3a.C: 5 min XGB / 30 min CB) + per-config timeout (30s XGB / 120s CB) bound the runtime.
+- **Phase 1.6 — Combine** (D12):
+  - In `default` mode: runner picks the lexicographic per-knob argmax (oracle: `eval_R_p@1 > 3 > 5 > 10 > 20`), composes one HP overlay, proceeds to iter_0. No exit-resume. D9.2.A degenerate-sink fallback → defaults if val_brier ≈ baseline AND train_val_gap ≈ 0.
+  - In `agent_file_protocol` mode: **TWO new exit-resume cycles before iter_0** (see below).
+  - In `sweep` mode: hard-OFF.
+
+**The two new exit-resume cycles (agent_file_protocol mode)**:
+
+```
+Cycle 1 (scout-complete → combine_request):
+  runner writes scout/scout_results.jsonl + scout/scout_bundle.json + scout/combine_request.json
+  runner exits with the resume hint
+  agent reads scout_results, writes scout/combine_decision.json (N ≤ 50 mix configs)
+
+Cycle 2 (combine-fit → combine_results):
+  --resume → runner fits each combine config in-process
+  runner writes scout/combine_results.json, exits with the resume hint
+  agent reads combine_results, writes scout/iter_0_decision.json with the winning HP
+
+Cycle 3 (iter_0_decision → normal iter_0):
+  --resume → runner reads iter_0_decision.json, uses its HP as iter_0's hp_starting
+  + the cliff-cut feature pool from Phase 1.4
+  Runner proceeds with Phase 2 (iter_0) → Phase 3 (the V1.1 FS+HP loop)
+```
+
+**`--snapshot-end` re-pass requirement** (V1.3 Option B P4 hard rule): every `--resume` MUST re-pass `--snapshot-end <DATE>` when the spec uses `callback_mode: agent_file_protocol` AND `backend.scout.enabled: true`. The runner refuses without it (clear error message). This keeps the universe-feature-cache key stable across cycles 1-3 (and the subsequent V1.1 loop iter resumes). Pre-V1.3-Option-B agent loops without scout do NOT trigger this requirement.
+
+**The speed-biased combine prompt** (§ 3.5 of the plan) is prefilled into `combine_request.json::speed_biased_prompt` verbatim. It codifies the rule-12 tiny-model bias at the prompt level so the agent doesn't have to re-derive it per cell. The agent may override based on scout evidence (e.g. if depth=2 curves are flat at baseline and depth=6 has a clear R-p@1 lead, follow the data).
+
 ### Phase 2 — Iteration 0
 
 - Start with the full candidate feature pool.
