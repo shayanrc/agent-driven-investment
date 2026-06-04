@@ -192,6 +192,15 @@ def best_checkpoint(
     inside the band, ignoring rounding noise), the strict val-Brier winner
     is returned unchanged — backwards-compatible.
 
+    Bug #216: when the tie set is non-singleton but NO tied iter presents any
+    L1 metric (every gap AND every |z| is None — e.g. resume from a pre-V1.3
+    checkpoint that didn't persist the per-iter signals), the function falls
+    back to strict val-Brier argmin instead of the earliest-iter-index
+    fallback. The earliest-iter-index breaker is only meaningful when L1
+    metrics WERE considered and were genuinely equal; with nothing present,
+    it would pick the worse-val_brier (strictly dominated) iter. Symmetric
+    to the V1.3 ``anti_auc_flag`` fallback described below.
+
     ``anti_auc_flag`` (V1.3 Option A, plan § 3.5 / D6): when ``"true"`` the
     L1 tie-break (gap + Z) is auto-disabled — on anti-AUC cells L1 actively
     selects the degenerate constant-predictor (see ``docs/gbdt/_211_*`` F5).
@@ -255,6 +264,33 @@ def best_checkpoint(
     # Worst-case sentinels for missing-metric configs: +inf gap, +inf |z|.
     # Earlier iter index breaks the final remaining tie deterministically
     # (favours the simpler/earlier config — typically the unperturbed base).
+    #
+    # Bug #216: when NO tied iter presents any L1 metric (e.g. resume from a
+    # pre-V1.3 checkpoint that didn't carry train_val_gaps / spiegelhalter_zs),
+    # every sort key collapses to ``(inf, inf, i)`` and the earliest-index
+    # fallback fires — picking the WORSE-val_brier iter (a strictly dominated
+    # config). The fallback only makes sense when L1 metrics WERE considered
+    # and were genuinely equal between configs that present them; with nothing
+    # present, L1 has nothing to break and we should return the strict
+    # val-Brier winner instead. Symmetric to the V1.3 anti-AUC branch above
+    # (which falls back to ``strict_best`` when ``eval_r_precision_at_1s`` is
+    # not available for the tied set).
+    any_l1_metric_present = any(
+        (
+            train_val_gaps is not None
+            and i < len(train_val_gaps)
+            and train_val_gaps[i] is not None
+        )
+        or (
+            spiegelhalter_zs is not None
+            and i < len(spiegelhalter_zs)
+            and spiegelhalter_zs[i] is not None
+        )
+        for i in tied
+    )
+    if not any_l1_metric_present:
+        return strict_best
+
     def sort_key(i: int) -> tuple[float, float, int]:
         gap = (
             float(train_val_gaps[i])
