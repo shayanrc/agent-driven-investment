@@ -35,8 +35,9 @@ from typing import Callable, Iterable
 import pandas as pd
 
 
-# Backoff schedule (seconds) per D6: 1s, 4s, 16s — three attempts total.
-_BACKOFF_SECONDS = (1, 4, 16)
+# Inter-attempt sleeps per D6. N entries → N+1 attempts.
+# Three attempts (per docstring "up to 3 times") = two inter-attempt sleeps.
+_BACKOFF_SECONDS = (1, 4)
 
 
 class CacheCurrencyError(RuntimeError):
@@ -99,7 +100,8 @@ def _try_fetch_with_retries(
     - ``'definitive:<tag>'`` on first definitive failure (no retry).
     """
     last_tag: str | None = "transient_max_retries"
-    for attempt, sleep_s in enumerate(backoff_seconds):
+    n_attempts = len(backoff_seconds) + 1  # N inter-attempt sleeps → N+1 attempts.
+    for attempt in range(n_attempts):
         try:
             fetcher(ticker, end=today, back_extend=False)
             return None
@@ -111,8 +113,8 @@ def _try_fetch_with_retries(
                 # Unknown class — treat as definitive to avoid pointless retries.
                 return f"definitive:{type(exc).__name__}"
             last_tag = "transient_max_retries"
-            if attempt < len(backoff_seconds) - 1:
-                sleep_fn(sleep_s)
+            if attempt < n_attempts - 1:
+                sleep_fn(backoff_seconds[attempt])
     return last_tag
 
 

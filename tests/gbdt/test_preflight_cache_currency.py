@@ -141,7 +141,7 @@ def test_sub_case_b_retry_loop_transient_then_success():
         cache_latest_date=lookup,
         fetcher=fake_fetcher,
         sleep_fn=sleeps.append,
-        backoff_seconds=(1, 4, 16),
+        backoff_seconds=(1, 4),
     )
     assert deficient == []
     assert attempts["AAA"] == 2          # second attempt succeeded.
@@ -164,11 +164,11 @@ def test_sub_case_b_retry_loop_all_transient_failures():
         cache_latest_date=lambda t: "2019-06-01",
         fetcher=fake_fetcher,
         sleep_fn=sleeps.append,
-        backoff_seconds=(1, 4, 16),
+        backoff_seconds=(1, 4),
     )
     assert len(deficient) == 1
     assert deficient[0].last_error_type == "transient_max_retries"
-    # Slept after attempt 1 + attempt 2; final attempt has no sleep after it.
+    # 3 attempts: sleeps after attempt 0 (1s) + attempt 1 (4s); attempt 2 has no sleep.
     assert sleeps == [1, 4]
 
 
@@ -188,7 +188,7 @@ def test_sub_case_b_retry_loop_skips_on_definitive_404():
         cache_latest_date=lambda t: "2019-06-01",
         fetcher=fake_fetcher,
         sleep_fn=sleeps.append,
-        backoff_seconds=(1, 4, 16),
+        backoff_seconds=(1, 4),
     )
     assert len(deficient) == 1
     assert deficient[0].last_error_type == "definitive:404"
