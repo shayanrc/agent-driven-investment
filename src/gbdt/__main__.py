@@ -42,6 +42,7 @@ from gbdt.sweep_lookup import (
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
 from gbdt import universe_calendar as gbdt_universe_calendar
+from gbdt import preflight as gbdt_preflight
 from gbdt.uniqueness import (
     compute_uniqueness_weights,
     effective_sample_size,
@@ -883,6 +884,59 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             f"[split] date_aligned: train_start={split.train_start.isoformat()} "
             f"calendar={gbdt_universe_calendar.resolve_calendar_name(target['universe'], uni_block)} "
             f"({len(universe_cal)} trading days available from {cal_start.isoformat()})"
+        )
+
+        # -------- Phase 0 cache-currency check (V1.4 P5, plan §6) --------
+        # Verify the cache covers test_end + horizon for every ticker; auto-
+        # fetch with 3-retry exponential backoff on transient errors. REFUSE
+        # with a worked-example table when the deficient set is non-empty
+        # after retries. Sub-case A (universe-level shortfall) raises
+        # CacheCurrencyError inline.
+        days_train_start = int(universe_cal.searchsorted(
+            pd.Timestamp(split.train_start), side="left",
+        ))
+        days_test_end = (
+            days_train_start
+            + split.train_rows + split.val_rows + split.eval_rows + split.test_rows
+            - 1
+        )
+        universe_tickers = gbdt_data.resolve_universe(
+            target["universe"], repo_root=repo_root,
+        )
+        from data_pipelines import fetch as _dp_fetch  # local import — heavy
+        try:
+            deficient = gbdt_preflight.cache_currency_check(
+                universe_tickers=universe_tickers,
+                universe_calendar=universe_cal,
+                days_test_end=days_test_end,
+                horizon_days=int(target["horizon_days"]),
+                today=date.today(),
+                cache_latest_date=lambda t: gbdt_data._cache_last_date(
+                    t, repo_root=repo_root,
+                ),
+                fetcher=_dp_fetch,
+            )
+        except gbdt_preflight.CacheCurrencyError as cce:
+            print(str(cce), file=sys.stderr)
+            heartbeat.stop()
+            progress_log.close()
+            sys.exit(2)
+        if deficient:
+            table = gbdt_preflight.format_deficient_table(deficient)
+            msg = (
+                "[preflight] REFUSE: cache cannot satisfy test_end + horizon "
+                f"for {len(deficient)} ticker(s) after 3 retries. "
+                "Remediation: run /fetch-data on each deficient ticker "
+                "(or extend train_start so test_end falls within the cache).\n"
+                f"{table}"
+            )
+            print(msg, file=sys.stderr)
+            heartbeat.stop()
+            progress_log.close()
+            sys.exit(2)
+        _milestone(
+            f"[preflight] cache currency OK: {len(universe_tickers)} ticker(s) "
+            f"covered through {universe_cal[days_test_end + int(target['horizon_days'])].date().isoformat()}"
         )
 
     # -------- Phase 1b: project test segment size + warn if structurally slim --------
