@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "russell1000_up_40pct_200d_dd20pct_aligned",
+  "iter_idx": 0,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-04T18:15:37+00:00",
+  "last_heartbeat_utc": "2026-06-04T18:15:20+00:00",
+  "best_val_brier": 0.11169160811950256,
+  "stop_reason": "degradation"
+}
