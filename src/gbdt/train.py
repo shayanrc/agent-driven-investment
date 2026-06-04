@@ -31,9 +31,18 @@ from gbdt.calibration import (
     platt_calibration,
     spiegelhalter_z,
 )
-from gbdt.diagnostics import DiagnosticBundle, build_diagnostic_bundle
+from gbdt.diagnostics import (
+    DiagnosticBundle,
+    _r_precision_at_k_from_arrays,
+    _fit_in_loop_calibrator,
+    build_diagnostic_bundle,
+)
 from gbdt.fs_hp_loop import best_checkpoint, inner_stop_check
 from gbdt.model import BaseGBDTModel, make_model
+from gbdt import fs_prefit as fs_prefit_mod
+from gbdt import scout as scout_mod
+from gbdt.uniqueness import weighted_brier, weighted_spiegelhalter_z
+from sklearn.metrics import brier_score_loss
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +343,331 @@ def default_fs_hp_callback(
 
 
 # ---------------------------------------------------------------------------
+# V1.3 Option B — scout + FS-prefit helper (Phase 1.4 + 1.5 + 1.6)
+# ---------------------------------------------------------------------------
+
+
+def _build_scout_fit_one(
+    *, backend: str, current_hp: dict, current_features: list[str],
+    random_seed: int, calibration_method: str, calibration_z_threshold: float,
+) -> Callable:
+    """Build the per-scout-config fit closure (V1.3 Option B Phase 1.5).
+
+    Each scout config carries a small ``hp_overlay`` dict. The closure
+    overlays it onto ``current_hp``, fits the backend, scores
+    ``(val_brier, train_brier, eval_R_p_at_K, train_val_gap,
+    spiegelhalter_z)`` and returns them. Errors propagate to ``run_scout``
+    which catches them as ``status="error"`` rows.
+    """
+    def _fit_one(
+        *, hp_overlay, X_train, y_train, w_train,
+        X_val, y_val, w_val, X_eval, y_eval, w_eval, mi_eval,
+    ):
+        hp = dict(current_hp)
+        hp.update(hp_overlay or {})
+        model = make_model(
+            backend, hp, feature_names=current_features,
+            random_seed=random_seed,
+        )
+        model.fit(
+            X_train, y_train, X_val, y_val,
+            train_weight=w_train, val_weight=w_val,
+        )
+        p_train = model.predict_proba(X_train)
+        p_val = model.predict_proba(X_val)
+        if w_train is not None:
+            tr_b = float(weighted_brier(y_train, p_train, w_train))
+        else:
+            tr_b = float(brier_score_loss(y_train, p_train))
+        if w_val is not None:
+            val_b = float(weighted_brier(y_val, p_val, w_val))
+            z, _p = weighted_spiegelhalter_z(y_val, p_val, w_val)
+        else:
+            val_b = float(brier_score_loss(y_val, p_val))
+            z, _p = spiegelhalter_z(y_val, p_val)
+        # eval R-p@K on CALIBRATED predictions per bug #222 doctrine.
+        eval_rp: dict[int, float] | None = None
+        if X_eval is not None and len(X_eval) and mi_eval is not None:
+            try:
+                p_eval_raw = np.asarray(model.predict_proba(X_eval), dtype=float)
+                calibrator = _fit_in_loop_calibrator(
+                    y_val=np.asarray(y_val, dtype=int),
+                    p_val_raw=np.asarray(p_val, dtype=float),
+                    method=calibration_method,
+                    z_threshold=calibration_z_threshold,
+                )
+                p_eval_cal = apply_calibrator(p_eval_raw, calibrator)
+                dates = mi_eval.get_level_values("date").to_numpy()
+                tickers = mi_eval.get_level_values("ticker").to_numpy()
+                rp = _r_precision_at_k_from_arrays(
+                    dates=dates, tickers=tickers,
+                    p_calibrated=np.asarray(p_eval_cal, dtype=float),
+                    y_true=np.asarray(y_eval, dtype=int),
+                )
+                eval_rp = rp or None
+            except Exception:
+                eval_rp = None
+        return {
+            "val_brier": val_b,
+            "train_brier": tr_b,
+            "train_val_gap": val_b - tr_b,
+            "spiegelhalter_z": float(z),
+            "eval_R_p_at_K": eval_rp,
+        }
+    return _fit_one
+
+
+def _build_fs_prefit_fit_one(
+    *, backend: str, random_seed: int, feature_names: list[str],
+) -> Callable:
+    """Build the FS-prefit fit closure (V1.3 Option B Phase 1.4).
+
+    Trains one default-HP fit on the full feature matrix and returns the
+    feature → importance pd.Series. The runner's scout/prefit specs control
+    whether early-stopping is used here; we honor whatever is in the HP
+    dict.
+    """
+    def _fit_one(*, hp, X_train, y_train, w_train,
+                  X_val, y_val, w_val):
+        model = make_model(
+            backend, hp, feature_names=feature_names,
+            random_seed=random_seed,
+        )
+        model.fit(
+            X_train, y_train, X_val, y_val,
+            train_weight=w_train, val_weight=w_val,
+        )
+        return model.feature_importance("native")
+    return _fit_one
+
+
+def _maybe_run_scout_and_prefit(
+    *,
+    panel: pd.DataFrame,
+    X: pd.DataFrame,
+    y: pd.Series,
+    split: SplitSpec,
+    sample_weights: pd.Series | None,
+    current_features: list[str],
+    current_hp: dict,
+    random_seed: int,
+    backend: str,
+    scout_spec: dict | None,
+    fs_prefit_spec: dict | None,
+    callback_mode: str,
+    calibration_method: str,
+    calibration_z_threshold: float,
+    degenerate_sink_threshold: float,
+    universe_calendar: pd.DatetimeIndex | None,
+) -> dict | None:
+    """Run Phase 1.4 (FS-prefit) + Phase 1.5 (scout) + Phase 1.6 (combine).
+
+    Returns ``None`` when scout is disabled (the byte-for-byte back-compat
+    path). Otherwise returns a dict ``{current_features, current_hp,
+    report}`` reflecting the cliff-cut feature pool + scout-composed HP +
+    the metrics.json::scout payload.
+
+    Mode behaviour (plan § 3.4):
+    - ``sweep``: hard-OFF (caller is responsible for not setting
+      ``scout.enabled: true`` in sweep specs; defense-in-depth here too).
+    - ``default``: scout + lex auto-compose; no exit-resume.
+    - ``agent_file_protocol``: scout runs to produce data; the
+      ``combine_request.json`` + exit-resume is handled in ``__main__.py``
+      around this call (P4). Here we only run the scout itself and return
+      the report; the agent's combine HP overlay flows in via
+      ``scout_spec['combine_decision_hp']`` on the resume side (set by P4).
+    """
+    scout_cfg = dict(scout_spec or {})
+    prefit_cfg = dict(fs_prefit_spec or {})
+    scout_enabled = bool(scout_cfg.get("enabled", False))
+    prefit_enabled = bool(prefit_cfg.get("enabled", scout_enabled))   # default = scout's
+    if not scout_enabled and not prefit_enabled:
+        return None
+    if callback_mode == "sweep":
+        # Defense in depth — sweep mode is supposed to skip scout per D4.
+        return None
+
+    # Carve once. The scout + prefit reuse the same train/val/eval segments
+    # iter_0 uses (D10.A); features are the FULL current_features at this
+    # point.
+    parts = _carve_X_y(
+        X, y, panel, split, current_features, sample_weights,
+        universe_calendar=universe_calendar,
+    )
+    X_tr_full, y_tr, _, w_tr = parts["train"]
+    X_val_full, y_val, _, w_val = parts["val"]
+    X_ev_full, y_ev, mi_ev, w_ev = parts["eval"]
+
+    if len(y_tr) == 0:
+        # No training rows → skip the whole phase. The caller will fall
+        # through to the normal loop which will raise the empty-train error.
+        return None
+
+    # ---- Phase 1.4 — FS-prefit ------------------------------------------
+    kept_features: list[str] = list(current_features)
+    fs_prefit_report: dict = {"enabled": False}
+    if prefit_enabled:
+        cliff_pct = float(prefit_cfg.get("cliff_pct", 0.01))
+        prefit_fit_one = _build_fs_prefit_fit_one(
+            backend=backend, random_seed=random_seed,
+            feature_names=current_features,
+        )
+        try:
+            prefit_result = fs_prefit_mod.run_fs_prefit(
+                X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
+                X_val=X_val_full, y_val=y_val, w_val=w_val,
+                fit_one=prefit_fit_one,
+                backend=backend,
+                default_hp=dict(current_hp),
+                cliff_pct=cliff_pct,
+            )
+            kept_features = list(prefit_result.kept_features)
+            fs_prefit_report = {
+                "enabled": True,
+                "cliff_pct": cliff_pct,
+                "n_kept": len(prefit_result.kept_features),
+                "n_dropped": len(prefit_result.dropped_features),
+                "top_importance": prefit_result.top_importance,
+                "cliff_threshold": prefit_result.cliff_threshold,
+                "fit_seconds": prefit_result.fit_seconds,
+                "backend": prefit_result.backend,
+            }
+        except Exception as exc:    # noqa: BLE001
+            fs_prefit_report = {
+                "enabled": True,
+                "status": "error",
+                "error_message": f"{type(exc).__name__}: {exc}"[:512],
+            }
+            # Fall through with the original feature set.
+            kept_features = list(current_features)
+
+    # Restrict X to kept features for the scout fits.
+    X_tr = X_tr_full[kept_features]
+    X_val = X_val_full[kept_features]
+    X_ev = X_ev_full[kept_features]
+
+    # ---- Phase 1.5 — Scout ----------------------------------------------
+    scout_results: list[scout_mod.ScoutResult] = []
+    if scout_enabled:
+        n_pos = int(np.sum(np.asarray(y_tr) == 1))
+        n_neg = int(np.sum(np.asarray(y_tr) == 0))
+        scout_fit_one = _build_scout_fit_one(
+            backend=backend, current_hp=dict(current_hp),
+            current_features=kept_features,
+            random_seed=random_seed,
+            calibration_method=calibration_method,
+            calibration_z_threshold=calibration_z_threshold,
+        )
+        # Spec-shape the scout config the way ``run_scout`` expects (it
+        # reads from ``spec.backend.scout``).
+        spec_shim = {"backend": {"scout": scout_cfg}}
+        scout_results = scout_mod.run_scout(
+            X_train=X_tr, y_train=y_tr, w_train=w_tr,
+            X_val=X_val, y_val=y_val, w_val=w_val,
+            X_eval=X_ev, y_eval=y_ev, w_eval=w_ev,
+            mi_eval=mi_ev,
+            fit_one=scout_fit_one,
+            backend=backend,
+            spec=spec_shim,
+            per_config_timeout_seconds=scout_cfg.get("per_config_timeout_seconds"),
+            soft_wall_clock_seconds=scout_cfg.get("wall_clock_cap_seconds"),
+            n_positive=n_pos, n_negative=n_neg,
+        )
+
+    # ---- Phase 1.6 — Combine --------------------------------------------
+    composed_overlay: dict = {}
+    combine_status = "skipped"
+    degenerate_sink_fallback = False
+    if scout_enabled and scout_results:
+        # The defaults-zeroth row gives us the per-cell baseline brier.
+        defaults_row = next(
+            (r for r in scout_results
+              if r.config.knob_name == "defaults" and r.status == "ok"),
+            None,
+        )
+        baseline_brier = defaults_row.val_brier if defaults_row else None
+
+        if callback_mode == "agent_file_protocol":
+            # In agent mode the runner exits AFTER scout (Cycle 1 of D12).
+            # That exit-resume is handled in __main__.py. Here we leave
+            # composed_overlay empty so iter_0 uses ``current_hp`` until the
+            # agent's combine_decision lands.
+            #
+            # The agent may have already written its decision on a prior
+            # resume cycle; if so the runner stashes it in
+            # ``scout_cfg['_combine_winner_overlay']`` (P4).
+            combine_winner = scout_cfg.get("_combine_winner_overlay")
+            if combine_winner is not None:
+                composed_overlay = dict(combine_winner)
+                combine_status = "agent_combine_winner"
+            else:
+                combine_status = "awaiting_agent_combine_decision"
+        else:
+            # Default mode: lex auto-compose.
+            winner = scout_mod.lexicographic_winner(scout_results)
+            composed_overlay = dict(winner.hp_overlay)
+            combine_status = "lex_auto_compose"
+            # D9.2.A: degenerate-sink fallback in default mode.
+            if scout_mod.detect_degenerate_sink(
+                winner, scout_results, baseline_brier=baseline_brier,
+                brier_threshold=float(degenerate_sink_threshold),
+            ):
+                composed_overlay = {}
+                combine_status = "degenerate_sink_fallback"
+                degenerate_sink_fallback = True
+
+    # Apply the composed overlay to current_hp.
+    next_hp = dict(current_hp)
+    next_hp.update(composed_overlay)
+
+    # ---- Build the metrics.json::scout block -----------------------------
+    per_knob = scout_mod.per_knob_winners(scout_results) if scout_results else {}
+    defaults_metrics = None
+    for r in scout_results:
+        if r.config.knob_name == "defaults":
+            defaults_metrics = r.to_dict()
+            break
+    n_completed = sum(1 for r in scout_results if r.status == "ok")
+    runtime_seconds = float(sum(r.fit_seconds for r in scout_results))
+    scout_metrics_block = {
+        "enabled": scout_enabled,
+        "backend": backend,
+        "n_configs_total": len(scout_results),
+        "n_configs_completed": n_completed,
+        "runtime_seconds": runtime_seconds,
+        "defaults_metrics": defaults_metrics,
+        "per_knob_winner": per_knob,
+        "lexicographic_auto_compose": {
+            "hp_overlay": (
+                dict(scout_mod.lexicographic_winner(scout_results).hp_overlay)
+                if scout_results else {}
+            ),
+        },
+        "status": combine_status,
+        "degenerate_sink_fallback": degenerate_sink_fallback,
+        "grid_spec": dict(scout_cfg.get("grid", {})),
+    }
+
+    report = {
+        "scout": scout_metrics_block,
+        "fs_prefit": fs_prefit_report,
+        "combine": {
+            "status": combine_status,
+            "composed_overlay": composed_overlay,
+            "n_mix_configs_completed": 0,    # P4 fills this in agent mode
+        },
+        # Raw rows for the scout/ subdir dump (P5 writes them to disk).
+        "_scout_results_raw": [r.to_dict() for r in scout_results],
+    }
+
+    return {
+        "current_features": kept_features,
+        "current_hp": next_hp,
+        "report": report,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Walk-forward driver
 # ---------------------------------------------------------------------------
 
@@ -353,6 +687,11 @@ class WalkForwardResult:
     # carves (the runner computes calendar-union dates from
     # ``predictions`` directly in that path).
     segment_dates: dict[str, dict[str, str]] | None = None
+    # V1.3 Option B (plan § 4 D7.1) — scout + combine + FS-prefit summary
+    # bundle for metrics.json emission. None when scout is disabled (the
+    # default; existing specs unchanged). Populated by walk_forward_train
+    # when ``backend.scout.enabled: true``.
+    scout_report: dict | None = None
 
 
 def _carve_X_y(
@@ -443,6 +782,14 @@ def walk_forward_train(
     # ``pandas_market_calendars.get_calendar(...).schedule(...)`` per
     # configs/gbdt/default.yaml::universes::<name>::calendar.
     universe_calendar: pd.DatetimeIndex | None = None,
+    # V1.3 Option B (plan § 3 D8 / D11) — scout + FS-prefit pre-iter_0
+    # additions. ALL DEFAULT-OFF for byte-for-byte back-compat with
+    # pre-V1.3 Option B specs. The runner reads ``backend.scout.enabled``
+    # + ``backend.fs_prefit.enabled`` from the spec and threads the
+    # sub-dicts here.
+    scout_spec: dict | None = None,
+    fs_prefit_spec: dict | None = None,
+    callback_mode: str = "default",
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -514,6 +861,35 @@ def walk_forward_train(
         hp_lists = []
         prior_deltas = []
         force_stop = False
+
+    # ---- V1.3 Option B Phase 1.4 + 1.5 + 1.6 (plan § 3) -------------------
+    # Only run on the FRESH path (not --resume); the scout writes the iter_0
+    # ``hp_starting`` + cliff-cut feature pool, which the resume path inherits
+    # from the prior run's checkpoint. Sweep mode is hard-OFF (D4); default
+    # mode auto-composes lexicographically (D12); agent_file_protocol mode
+    # exits to write combine_request.json and resumes for combine fits + iter_0
+    # (handled in __main__.py per the exit-resume cycles).
+    scout_report: dict | None = None
+    if resume_state is None:
+        scout_outcome = _maybe_run_scout_and_prefit(
+            panel=panel, X=X, y=y,
+            split=split, sample_weights=sample_weights,
+            current_features=current_features,
+            current_hp=current_hp,
+            random_seed=random_seed,
+            backend=backend,
+            scout_spec=scout_spec,
+            fs_prefit_spec=fs_prefit_spec,
+            callback_mode=callback_mode,
+            calibration_method=calibration_method,
+            calibration_z_threshold=calibration_z_threshold,
+            degenerate_sink_threshold=degenerate_sink_threshold,
+            universe_calendar=universe_calendar,
+        )
+        if scout_outcome is not None:
+            current_features = scout_outcome["current_features"]
+            current_hp = scout_outcome["current_hp"]
+            scout_report = scout_outcome["report"]
 
     # ``force_stop`` (agent should_stop=true on resume, plan § 8): finalize the
     # loop at the iters already done — do NOT train a new exploration iteration.
@@ -884,6 +1260,7 @@ def walk_forward_train(
         inner_stop_signal=inner_signal or "cap",
         predictions=predictions,
         segment_dates=best_parts.get("__segment_dates__"),
+        scout_report=scout_report,
     )
 
 
