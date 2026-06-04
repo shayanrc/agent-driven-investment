@@ -307,6 +307,54 @@ backend:
     early_stopping_rounds: 100
 ```
 
+#### `backend.scout` (V1.3 Option B — pre-iter_0 response-curve sweep)
+
+V1.3 Option B (`docs/gbdt/V1.3_OPTION_B_PLAN.md`) — Phase 1.5 single-knob response curves run BEFORE iter_0 so the loop starts from an evidence-based HP envelope. Default-OFF for back-compat; opt in by adding the `scout` block.
+
+| Field | Type | Default | Semantics |
+|---|---|---|---|
+| `enabled` | bool | `false` | When `true`, run scout (and `fs_prefit` by default) between data build and iter_0. |
+| `grid` | dict (optional) | runner defaults | Per-knob value overrides. Each key is an XGBoost canonical knob name (`max_depth`, `eta`, `colsample_bytree`, `min_child_weight`, `gamma`, `alpha`, `subsample`, `scale_pos_weight`); each value is a list of candidate values. The runner translates to CatBoost equivalents (`max_depth`→`depth`, `eta`→`learning_rate`, …); `gamma` is silently dropped for CatBoost. |
+| `n_configs_cap` | int (optional) | `50` | Hard cap on `combine_decision.json::configs` size (agent mode) — D3b.A. Decisions with more configs are rejected at parse time. |
+| `per_config_timeout_seconds` | int (optional) | `30` (XGBoost) / `120` (CatBoost) | D3a.C — per-config fit timeout. Fits exceeding this get `status="timeout"` and are excluded from the oracle. |
+| `wall_clock_cap_seconds` | int (optional) | `300` (XGBoost) / `1800` (CatBoost) | D3a.C — soft scout wall-clock cap. Configs queued past the cap are dropped (not fit). |
+
+Override example (opt in with the speed-biased grid hint for an anti-AUC cell):
+```yaml
+backend:
+  scout:
+    enabled: true
+    grid:
+      max_depth: [2, 3]              # rule-12 tiny-model bias
+      eta: [0.1, 0.2]                # higher eta + ES
+      colsample_bytree: [0.3, 0.5]
+```
+
+Behavior by `callback_mode`:
+
+- **`default`** — runner picks the lexicographic per-knob argmax (oracle priority: `eval_R_p@1 > 3 > 5 > 10 > 20`) and proceeds to iter_0 with the composed HP overlay. NO mix-config fits. D9.2.A degenerate-sink fallback discards the winner + falls back to defaults when val_brier ≈ baseline AND train_val_gap ≈ 0.
+- **`agent_file_protocol`** — runner runs scout, writes `scout/scout_results.jsonl` + `scout/scout_bundle.json` + `scout/combine_request.json` (carrying the speed-biased prompt + lex auto-compose as zeroth-candidate), then PAUSES. Agent reads + writes `scout/combine_decision.json` (N ≤ `n_configs_cap` mix configs). Runner resumes, fits the configs, writes `scout/combine_results.json`, PAUSES again. Agent reads + writes `scout/iter_0_decision.json`. Runner resumes, starts iter_0 from the agent's HP overlay + cliff-cut feature pool. From there the normal V1.1 agent loop takes over.
+- **`sweep`** — D4 hard-OFF; the `scout` block is silently ignored.
+
+#### `backend.fs_prefit` (V1.3 Option B — Phase 1.4 cliff-cut feature pool)
+
+V1.3 Option B Phase 1.4 (D11) — single default-HP fit + importance cliff-cut runs BEFORE scout (and BEFORE iter_0). Reduces the feature pool to the cliff-cut subset for scout + iter_0. Defaults to ON when `scout.enabled: true`; off otherwise.
+
+| Field | Type | Default | Semantics |
+|---|---|---|---|
+| `enabled` | bool | `scout.enabled` | When `true`, run FS-prefit before scout. |
+| `cliff_pct` | float | `0.01` | D11 Q2.A — cliff cut at `cliff_pct * top_importance`. Default 1% matches the cell-5 manual workflow (~130 of 279 features kept). Validated to `[0, 1]`. |
+
+Override example:
+```yaml
+backend:
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.05      # tighter cut for a high-noise cell
+```
+
+> **`--resume --snapshot-end` contract** — when the spec uses `callback_mode: agent_file_protocol` AND `backend.scout.enabled: true`, every `--resume` invocation MUST re-pass `--snapshot-end <ISODATE>` (the same value the fresh run used). This keeps the universe-feature-cache key stable across cycles 1–3. Resumes that omit `--snapshot-end` are rejected with a clear error message at parse time. Pre-V1.3-Option-B agent loops without scout do NOT require this (the V1.1 phase4 smoke tests still resume without `--snapshot-end`).
+
 ### `random_seed` (optional, top-level)
 
 | Field | Type | Default |
