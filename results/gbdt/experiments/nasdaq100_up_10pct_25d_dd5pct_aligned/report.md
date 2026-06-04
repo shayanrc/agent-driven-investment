@@ -26,6 +26,15 @@
 - positive prevalence (train): 0.279
 - positive prevalence (eval): 0.260
 
+## Segment windows
+
+- split mode: `date_aligned`
+- train_start anchor: `2019-12-02`
+- train: `2019-12-02` → `2023-02-03`
+- val: `2023-02-06` → `2024-09-09`
+- eval: `2024-09-10` → `2025-06-27`
+- test: `2025-06-30` → `2025-11-18`
+
 ## Iteration history
 
 | iter | n_features | train Brier | val Brier | gap | rationale | inner_stop |
