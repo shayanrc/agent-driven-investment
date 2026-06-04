@@ -967,6 +967,147 @@ def _build_fs_prefit_runner_fit_one(
     )
 
 
+def _build_scout_metrics_blocks(
+    *,
+    result,
+    out_dir: Path,
+    cycle_outcome: dict | None,
+    callback_mode: str,
+    scout_enabled: bool,
+) -> tuple[dict | None, dict | None]:
+    """V1.3 Option B P5 — build metrics.json::scout + metrics.json::combine.
+
+    Returns ``(scout_block, combine_block)``; either or both may be None
+    when scout was disabled / no data was produced.
+
+    Data sources:
+    - Default mode: ``result.scout_report`` (the in-train helper's payload).
+    - Agent mode: ``cycle_outcome['scout_report']`` (the scout_bundle.json
+      payload from cycle 3 — already in dict form).
+    - Combine data in agent mode also reads ``scout/combine_results.json``
+      if present, for the per-config fit metrics.
+    """
+    if not scout_enabled:
+        return None, None
+
+    scout_block: dict | None = None
+    combine_block: dict | None = None
+
+    # Default mode: in-train report.
+    if callback_mode == "default" and result is not None and result.scout_report:
+        rep = result.scout_report
+        sb = rep.get("scout", {}) or {}
+        cb = rep.get("combine", {}) or {}
+        scout_block = {
+            "enabled": True,
+            "backend": sb.get("backend"),
+            "n_configs_total": sb.get("n_configs_total"),
+            "n_configs_completed": sb.get("n_configs_completed"),
+            "runtime_seconds": sb.get("runtime_seconds"),
+            "defaults_metrics": sb.get("defaults_metrics"),
+            "per_knob_winner": sb.get("per_knob_winner"),
+            "lexicographic_auto_compose": sb.get("lexicographic_auto_compose"),
+            "status": sb.get("status"),
+            "degenerate_sink_fallback": sb.get("degenerate_sink_fallback"),
+            "grid_spec": sb.get("grid_spec"),
+            "fs_prefit": rep.get("fs_prefit"),
+        }
+        combine_block = {
+            "mode": "default",
+            "status": cb.get("status"),
+            "n_mix_configs_proposed": cb.get("n_mix_configs_completed", 0),
+            "n_mix_configs_completed": cb.get("n_mix_configs_completed", 0),
+            "exit_resume_rounds": 0,
+            "agent_winner": None,
+            "composed_overlay": cb.get("composed_overlay"),
+            "vs_lexicographic_auto_compose": None,
+        }
+        return scout_block, combine_block
+
+    # Agent mode: read from cycle_outcome + scout/ files.
+    if callback_mode == "agent_file_protocol":
+        bundle_payload = (
+            (cycle_outcome or {}).get("scout_report") or {}
+        )
+        # Fall back to reading the file directly if the cycle outcome
+        # didn't stash it (defense-in-depth).
+        if not bundle_payload:
+            bundle_path = gbdt_scout_io.scout_bundle_path(out_dir)
+            if bundle_path.exists():
+                try:
+                    bundle_payload = json.loads(bundle_path.read_text())
+                except Exception:    # noqa: BLE001
+                    bundle_payload = {}
+        scout_block = {
+            "enabled": True,
+            "backend": bundle_payload.get("backend"),
+            "n_configs_total": bundle_payload.get("n_configs_total"),
+            "n_configs_completed": bundle_payload.get("n_configs_completed"),
+            "runtime_seconds": bundle_payload.get("runtime_seconds"),
+            "defaults_metrics": bundle_payload.get("defaults_metrics"),
+            "per_knob_winner": bundle_payload.get("per_knob_winner"),
+            "lexicographic_auto_compose": bundle_payload.get(
+                "lexicographic_auto_compose",
+            ),
+            "status": "agent_combine",
+            "degenerate_sink_fallback": False,
+            "grid_spec": bundle_payload.get("grid_spec"),
+            "fs_prefit": bundle_payload.get("fs_prefit"),
+        }
+
+        # Combine — read combine_results.json + the agent's iter_0 decision.
+        combine_results_path = gbdt_scout_io.combine_results_path(out_dir)
+        agent_combine_results: list[dict] = []
+        if combine_results_path.exists():
+            try:
+                payload = json.loads(combine_results_path.read_text())
+                agent_combine_results = list(payload.get("configs") or [])
+            except Exception:    # noqa: BLE001
+                agent_combine_results = []
+        iter_0_decision_path = gbdt_scout_io.iter_0_decision_path(out_dir)
+        agent_winner_hp: dict | None = None
+        if iter_0_decision_path.exists():
+            try:
+                payload = json.loads(iter_0_decision_path.read_text())
+                agent_winner_hp = dict(payload.get("hp") or {})
+            except Exception:    # noqa: BLE001
+                agent_winner_hp = None
+
+        n_completed = sum(
+            1 for c in agent_combine_results
+            if (c.get("status") or "").lower() == "ok"
+        )
+        lex_overlay = (
+            (bundle_payload.get("lexicographic_auto_compose") or {})
+            .get("hp_overlay")
+        )
+        vs_lex = (
+            (agent_winner_hp == lex_overlay)
+            if (agent_winner_hp is not None and lex_overlay is not None)
+            else None
+        )
+        combine_block = {
+            "mode": "agent_file_protocol",
+            "status": (
+                "agent_combine"
+                if agent_winner_hp is not None
+                else "scout_in_progress"
+            ),
+            "n_mix_configs_proposed": len(agent_combine_results),
+            "n_mix_configs_completed": n_completed,
+            "exit_resume_rounds": 2,
+            "agent_winner": agent_winner_hp,
+            "composed_overlay": agent_winner_hp,
+            "vs_lexicographic_auto_compose": (
+                {"is_lex": vs_lex, "lex_overlay": lex_overlay}
+                if lex_overlay is not None else None
+            ),
+        }
+        return scout_block, combine_block
+
+    return None, None
+
+
 def _build_combine_fit_one(
     *, backend: str, hp_starting: dict, feature_names: list[str],
     random_seed: int, calibration_method: str, calibration_z_threshold: float,
@@ -1767,6 +1908,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     scout_enabled = bool(scout_cfg.get("enabled", False))
     fs_prefit_enabled = bool(fs_prefit_cfg.get("enabled", scout_enabled))
     iter_0_features = list(X.columns)
+    cycle_outcome: dict | None = None
     if scout_enabled and callback_mode == "agent_file_protocol":
         cycle_outcome = _handle_scout_cycles_agent_mode(
             out_dir=out_dir,
@@ -2230,6 +2372,39 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         "segment_diagnostics": compute_segment_diagnostics(result.predictions),
         "wall_time_total_sec": time.time() - t0,
     }
+
+    # V1.3 Option B (P5) — metrics.json::scout + metrics.json::combine.
+    # Two data sources:
+    # - Default mode: walk_forward_train's ``scout_report`` (the in-train
+    #   helper).
+    # - Agent mode: the runner-side scout cycles wrote to ``scout/`` files;
+    #   the cycle 3 outcome stitched ``scout_bundle.json`` payload into
+    #   ``cycle_outcome``.
+    scout_block, combine_block = _build_scout_metrics_blocks(
+        result=result, out_dir=out_dir, cycle_outcome=cycle_outcome,
+        callback_mode=callback_mode, scout_enabled=scout_enabled,
+    )
+    if scout_block is not None:
+        metrics["scout"] = scout_block
+    if combine_block is not None:
+        metrics["combine"] = combine_block
+
+    # In default mode the in-train scout produced its raw rows in memory;
+    # write them to scout/scout_results.jsonl + scout/scout_bundle.json on
+    # disk so the artifact layout matches agent mode (P5 § D7.2).
+    if (
+        callback_mode == "default"
+        and scout_enabled
+        and result.scout_report is not None
+    ):
+        try:
+            raw_rows = result.scout_report.get("_scout_results_raw") or []
+            gbdt_scout_io.write_scout_results(out_dir, raw_rows)
+            gbdt_scout_io.write_scout_bundle(out_dir, scout_block or {})
+        except Exception as exc:    # noqa: BLE001 — best-effort
+            print(f"[scout] failed to write scout/ subdir files: {exc!r}",
+                  flush=True)
+
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
 
     emit_figures(out_dir, result.iterations, result.predictions)
