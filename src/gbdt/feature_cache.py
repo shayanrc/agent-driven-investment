@@ -232,12 +232,26 @@ def compute_key(
 # ---------------------------------------------------------------------------
 
 
-def write_cache(run_dir: str | Path, X: pd.DataFrame, key: str) -> Path:
+def write_cache(
+    run_dir: str | Path,
+    X: pd.DataFrame,
+    key: str,
+    payload: dict | None = None,
+) -> Path:
     """Persist the full candidate matrix ``X`` + the cache-key sidecar.
 
     Writes are best-effort *atomic* via a temp-file rename so a crash
     mid-write never leaves a half-written parquet that a later load mistakes
     for a valid cache. Returns the matrix path written.
+
+    Bug #226 (diagnostic): when ``payload`` is provided, it is persisted into
+    the sidecar under the ``"payload"`` key. This is the dict that was hashed
+    to produce ``key`` (universe + target + split + features + random_seed +
+    panel_signature). Persisting it lets a post-hoc reader DIFF two sidecars
+    side-by-side to learn which input field varied across keys — the root-cause
+    triage needed for the russell1000 cross-cell sharing failure observed in
+    sweep #225. ``payload=None`` (the default) preserves the pre-#226 sidecar
+    shape exactly for back-compat.
     """
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -248,15 +262,17 @@ def write_cache(run_dir: str | Path, X: pd.DataFrame, key: str) -> Path:
     X.to_parquet(tmp_m)
     tmp_m.replace(mpath)
 
-    sidecar = {
+    sidecar: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "key": key,
         "n_rows": int(len(X)),
         "n_cols": int(X.shape[1]),
         "columns": list(map(str, X.columns)),
     }
+    if payload is not None:
+        sidecar["payload"] = payload
     tmp_k = kpath.with_suffix(kpath.suffix + ".tmp")
-    tmp_k.write_text(json.dumps(sidecar, indent=2))
+    tmp_k.write_text(json.dumps(sidecar, indent=2, default=str))
     tmp_k.replace(kpath)
     return mpath
 
