@@ -1,0 +1,38 @@
+# V1.4 P6 smoke test — date-aligned variant of nasdaq100_up_10pct_25d_dd5pct.
+#
+# Cell: nasdaq100 UP 10% in 25 trading days with max drawdown 5%.
+#
+# train_start = 2019-12-02 — chosen so that test_end + horizon falls
+# BEFORE today (2026-06-04) so the V1.4 preflight cache-currency check
+# (Phase 0, plan §6) can succeed against the cache that exists. With NYSE
+# trading days from 2019-12-02:
+#   train 800 days → 2023-02-08
+#   val   400      → 2024-09-13
+#   eval  200      → 2025-06-30
+#   test  100      → 2025-11-18
+#   test_end + 25  → 2025-12-24
+# This is NOT the canonical 2019-01-01 (D2) — the smaller pre-history
+# is acceptable for a smoke test.
+#
+# Sweep-mode params kept the same as the trailing spec so we can A/B
+# compare metrics between the two runs.
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+split:
+  mode: date_aligned
+  train_start: 2019-12-02
+  # train_rows / val_rows / eval_rows / test_rows fall through to default
+  # (800 / 400 / 200 / 100), now interpreted as trading-day durations.
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
