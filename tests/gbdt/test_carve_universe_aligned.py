@@ -299,3 +299,113 @@ def test_carve_single_fold_trailing_back_compat():
     assert len(fold.val_idx["DEEP"]) == 400
     assert len(fold.eval_idx["DEEP"]) == 200
     assert len(fold.test_idx["DEEP"]) == 100
+
+
+# ---------------------------------------------------------------------------
+# Boundary conditions — off-by-one checks on the gate
+# ---------------------------------------------------------------------------
+
+
+def test_carve_universe_aligned_train_gate_exact_match_keeps_ticker():
+    """A ticker with EXACTLY ``min_train_rows_per_ticker`` rows in the train
+    window must be KEPT (gate is ``>=``, not ``>``). Off-by-one regression
+    test."""
+    cal = _synthetic_calendar(periods=1400)
+    panel = _mixed_panel(cal)
+    # MID starts at cal[400]; train window [0..599] ⇒ 200 valid rows.
+    # Gate set to 200 ⇒ MID has EXACTLY the gate → must be kept.
+    split = SplitSpec(
+        mode="date_aligned",
+        train_rows=600, val_rows=300, eval_rows=150, test_rows=50,
+        train_start=cal[0].date(),
+        min_train_rows_per_ticker=200,
+    )
+    fold = carve_universe_aligned(panel, split, cal)
+    assert "MID" in fold.train_idx, (
+        "MID has EXACTLY 200 train rows == gate=200 ⇒ should be kept "
+        "(gate is >=, not strict >)"
+    )
+    assert len(fold.train_idx["MID"]) == 200
+
+
+def test_carve_universe_aligned_single_row_in_val_segment_keeps_ticker():
+    """A late-IPO ticker contributing EXACTLY ONE row to val (the gate is
+    ``>= 1`` for non-train segments) must be KEPT in val. Boundary check
+    on the val/eval/test gate."""
+    cal = _synthetic_calendar(periods=1400)
+    # Build a ticker that starts on the last day of the val window so it
+    # contributes exactly one row to val and nothing to train.
+    # Layout: train [0..599], val [600..899], eval [900..1049], test [1050..1099].
+    deep = _ticker_frame("DEEP", cal, seed=1)
+    # IPO_VAL starts at cal[899] — the LAST val day.
+    one_day = _ticker_frame("IPO_VAL", cal[899:], seed=2)
+    panel = pd.concat([deep, one_day]).set_index(["date", "ticker"]).sort_index()
+    split = SplitSpec(
+        mode="date_aligned",
+        train_rows=600, val_rows=300, eval_rows=150, test_rows=50,
+        train_start=cal[0].date(),
+        min_train_rows_per_ticker=200,
+    )
+    fold = carve_universe_aligned(panel, split, cal)
+    assert "IPO_VAL" not in fold.train_idx
+    assert "IPO_VAL" in fold.val_idx, "single-row val gate (>=1) should pass"
+    assert len(fold.val_idx["IPO_VAL"]) == 1
+    # Eval + test also picked up (the IPO_VAL series extends through cal[-1]).
+    assert "IPO_VAL" in fold.eval_idx
+    assert "IPO_VAL" in fold.test_idx
+
+
+def test_carve_universe_aligned_cache_growth_invariance():
+    """V1.4 plan §1(a) + A4 invariance: adding new bars past ``test_end``
+    must leave segment_dates AND per-ticker positional indices
+    bit-identical. This is the entire motivation for the date-aligned
+    mode — the trailing carve violates it; the date-aligned carve must
+    not."""
+    cal_short = _synthetic_calendar(start="2020-01-01", periods=1200)
+    cal_long = _synthetic_calendar(start="2020-01-01", periods=1500)  # 300 extra trailing days
+
+    def _toy_panel(c: pd.DatetimeIndex) -> pd.DataFrame:
+        return _ticker_frame("DEEP", c).set_index(["date", "ticker"]).sort_index()
+
+    split = SplitSpec(
+        mode="date_aligned",
+        train_rows=600, val_rows=300, eval_rows=150, test_rows=50,
+        train_start=cal_short[0].date(),
+        min_train_rows_per_ticker=200,
+    )
+    fold_short = carve_universe_aligned(_toy_panel(cal_short), split, cal_short)
+    fold_long = carve_universe_aligned(_toy_panel(cal_long), split, cal_long)
+    # Bit-identical segment_dates.
+    assert fold_short.segment_dates == fold_long.segment_dates
+    # Bit-identical positional indices for every segment.
+    for seg in ("train", "val", "eval", "test"):
+        idx_short = getattr(fold_short, f"{seg}_idx")["DEEP"]
+        idx_long = getattr(fold_long, f"{seg}_idx")["DEEP"]
+        np.testing.assert_array_equal(
+            idx_short, idx_long,
+            err_msg=f"{seg} indices drift across cache growth",
+        )
+
+
+def test_carve_universe_aligned_ipo_on_test_end_keeps_ticker_in_test_only():
+    """A ticker whose first cached bar is the TEST_END date must contribute
+    exactly one row to test, nothing to train/val/eval. The trailing-edge
+    membership boundary."""
+    cal = _synthetic_calendar(periods=1400)
+    deep = _ticker_frame("DEEP", cal, seed=1)
+    # train [0..599], val [600..899], eval [900..1049], test [1050..1099].
+    # Late ticker IPOs on cal[1099] = test_end.
+    late = _ticker_frame("LATE", cal[1099:1100], seed=2)  # single bar
+    panel = pd.concat([deep, late]).set_index(["date", "ticker"]).sort_index()
+    split = SplitSpec(
+        mode="date_aligned",
+        train_rows=600, val_rows=300, eval_rows=150, test_rows=50,
+        train_start=cal[0].date(),
+        min_train_rows_per_ticker=200,
+    )
+    fold = carve_universe_aligned(panel, split, cal)
+    assert "LATE" not in fold.train_idx
+    assert "LATE" not in fold.val_idx
+    assert "LATE" not in fold.eval_idx
+    assert "LATE" in fold.test_idx, "single bar on test_end satisfies >=1 gate"
+    assert len(fold.test_idx["LATE"]) == 1
