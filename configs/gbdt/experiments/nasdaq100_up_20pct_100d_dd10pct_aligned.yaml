@@ -1,8 +1,11 @@
 # Experiment: nasdaq100_up_20pct_100d_dd10pct_aligned
 #
 # V1.4 date-aligned variant of the cell — train_start=2019-01-01
-# (canonical D2 anchor). Rerun under bug #228 to fix the H>=100
-# trailing-anchor test-window-eaten-by-horizon issue (bug #129).
+# (canonical D2 anchor). Rerun under bug #228 to fix
+# the H>=100 trailing-anchor test-window-eaten-by-horizon issue (bug #129).
+#
+# test_rows=200 (= horizon_days+100) gives ~100 usable test rows per ticker;
+# the trailing horizon_days=100 rows of the test segment have NaN labels and are dropped.
 #
 #
 # Cell: nasdaq100 UP 20% in 100 trading days with max drawdown 10%.
@@ -31,7 +34,7 @@ split:
   train_rows: 800
   val_rows: 400
   eval_rows: 200
-  test_rows: 100
+  test_rows: 200
   min_train_rows_per_ticker: 200
 
 backend:
