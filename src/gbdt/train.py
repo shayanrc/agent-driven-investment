@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from datetime import date
+from typing import Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -42,10 +43,44 @@ from gbdt.model import BaseGBDTModel, make_model
 
 @dataclass
 class SplitSpec:
+    """Walk-forward split spec.
+
+    Two modes (V1.4):
+
+    - ``mode == "trailing"`` (default, back-compat): each ticker's last
+      ``total`` rows are carved into ``[train | val | eval | test]`` in
+      time order. Used by every pre-V1.4 spec. Silently re-defines the
+      cell across cache growth (the eval/test windows slide forward as
+      new bars arrive) — the V1.4 plan's motivating bug (§1).
+    - ``mode == "date_aligned"`` (V1.4 opt-in): segment windows are
+      anchored to **universe-level calendar dates** computed from
+      ``train_start`` + the per-segment durations on the universe's
+      canonical trading calendar (NYSE for US universes, NSE for NSE
+      universes). Per-ticker membership respects the gate
+      ``min_train_rows_per_ticker`` on the train segment (≥ max
+      ``lookback_windows`` = 200 valid feature rows) and ``≥ 1`` valid
+      feature row on val/eval/test. Late-IPO tickers contribute only to
+      whichever segments they have valid features for. Reproducible
+      across cache growth — adding new bars past ``test_end`` leaves
+      segments bit-identical.
+
+    When ``mode == "date_aligned"``, ``train_rows`` / ``val_rows`` /
+    ``eval_rows`` / ``test_rows`` are interpreted as **trading-day
+    durations** measured on the universe calendar (not row counts).
+    ``train_start`` is required (default in the runner is
+    ``2019-01-01`` per V1.4 D2).
+    """
+
     train_rows: int = 800
     val_rows: int = 400
     eval_rows: int = 200
     test_rows: int = 100
+    # V1.4 fields kept AFTER the row-count fields so existing positional
+    # call sites (e.g. ``SplitSpec(800, 400, 200, 100)`` in tests) stay
+    # byte-compatible.
+    mode: Literal["trailing", "date_aligned"] = "trailing"
+    train_start: date | None = None
+    min_train_rows_per_ticker: int = 200
 
     @property
     def total(self) -> int:
@@ -55,31 +90,57 @@ class SplitSpec:
 @dataclass
 class Fold:
     """Per-ticker positional segments. Indices are positions within the
-    ticker's sorted time series, not absolute dates."""
+    ticker's sorted time series, not absolute dates.
+
+    ``segment_dates`` (V1.4): optional 4-segment date envelope (universe-
+    calendar windows) populated by ``carve_universe_aligned``. None for
+    trailing carves — the caller computes calendar-union dates from the
+    predictions DataFrame in that path.
+    """
 
     train_idx: dict[str, np.ndarray]
     val_idx: dict[str, np.ndarray]
     eval_idx: dict[str, np.ndarray]
     test_idx: dict[str, np.ndarray]
+    segment_dates: dict[str, dict[str, str]] | None = None
 
 
 def carve_single_fold(
     panel: pd.DataFrame,
     split: SplitSpec,
+    universe_calendar: pd.DatetimeIndex | None = None,
 ) -> Fold:
-    """Carve one trailing-anchor fold per ticker.
+    """Carve one fold per ticker.
 
-    For each ticker, take the latest ``split.total`` rows (sorted ascending
-    by date) and split them into ``[train | val | eval | test]`` in order.
-    Tickers with fewer rows than ``split.total`` are dropped (the caller
-    is responsible for the row gate via ``min_rows_per_ticker``).
+    Dispatches by ``split.mode``:
+
+    - ``"trailing"`` (default): each ticker's latest ``split.total`` rows
+      become ``[train | val | eval | test]`` in time order. Tickers with
+      fewer rows than ``split.total`` are dropped (the caller is
+      responsible for the row gate via ``min_rows_per_ticker``).
+    - ``"date_aligned"`` (V1.4): universe-level calendar windows; see
+      :func:`carve_universe_aligned`. Requires ``universe_calendar``.
     """
+    if split.mode == "date_aligned":
+        if universe_calendar is None:
+            raise ValueError(
+                "carve_single_fold: split.mode='date_aligned' requires the "
+                "universe_calendar argument (a pd.DatetimeIndex of the "
+                "universe's trading days). Caller (run_experiment) must "
+                "resolve this from configs/gbdt/default.yaml::universes::"
+                "<name>::calendar via pandas_market_calendars."
+            )
+        return carve_universe_aligned(panel, split, universe_calendar)
+    return _carve_trailing(panel, split)
+
+
+def _carve_trailing(panel: pd.DataFrame, split: SplitSpec) -> Fold:
+    """Trailing-anchor carve — pre-V1.4 behaviour preserved byte-for-byte."""
     train, val, ev, te = {}, {}, {}, {}
     tickers = panel.index.get_level_values("ticker").unique()
     n_train = split.train_rows
     n_val = split.val_rows
     n_eval = split.eval_rows
-    n_test = split.test_rows
     n_total = split.total
     for t in tickers:
         sub = panel.xs(t, level="ticker").sort_index()
@@ -91,6 +152,101 @@ def carve_single_fold(
         ev[t] = tail[n_train + n_val: n_train + n_val + n_eval]
         te[t] = tail[n_train + n_val + n_eval: n_total]
     return Fold(train_idx=train, val_idx=val, eval_idx=ev, test_idx=te)
+
+
+def carve_universe_aligned(
+    panel: pd.DataFrame,
+    split: SplitSpec,
+    universe_calendar: pd.DatetimeIndex,
+) -> Fold:
+    """Date-aligned carve on universe-level calendar windows (V1.4, plan §4.2).
+
+    Compute calendar segment boundaries on the universe's canonical trading
+    calendar from ``split.train_start`` and the per-segment durations. Then
+    derive per-ticker membership: a ticker contributes to a segment iff its
+    panel slice in the segment window has ≥ ``min_train_rows_per_ticker``
+    rows for the train segment, ≥ 1 row for val/eval/test.
+
+    The panel is feature-NaN-propagated upstream
+    (``gbdt.features.build_feature_matrix``), so the row counts here are
+    "valid feature rows" by construction.
+
+    Returns a ``Fold`` whose positional indices are computed against each
+    ticker's sorted panel (same convention as the trailing carve, so
+    ``_gather_segment`` downstream works unchanged), plus a
+    ``segment_dates`` ISO-string envelope for ``metrics.json``.
+    """
+    if split.train_start is None:
+        raise ValueError(
+            "carve_universe_aligned: split.train_start must be set "
+            "(date_aligned mode anchors all segments to this date)."
+        )
+    cal = pd.DatetimeIndex(universe_calendar).sort_values()
+    if len(cal) == 0:
+        raise ValueError("carve_universe_aligned: universe_calendar is empty.")
+
+    # Normalize train_start to a Timestamp aligned to the calendar. `side="left"`
+    # advances to the next trading day if train_start falls on a non-trading day.
+    ts_train_start = pd.Timestamp(split.train_start)
+    days_train_start = int(cal.searchsorted(ts_train_start, side="left"))
+    days_val_start = days_train_start + split.train_rows
+    days_eval_start = days_val_start + split.val_rows
+    days_test_start = days_eval_start + split.eval_rows
+    days_test_end = days_test_start + split.test_rows - 1  # inclusive index
+
+    if days_test_end >= len(cal):
+        raise ValueError(
+            "carve_universe_aligned: requested window "
+            f"[{ts_train_start.date()} + {split.train_rows + split.val_rows + split.eval_rows + split.test_rows} "
+            f"trading days] runs past the end of the supplied universe_calendar "
+            f"({cal[-1].date()}). Either extend the calendar or shrink the "
+            f"per-segment durations."
+        )
+
+    seg_bounds: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {
+        "train": (cal[days_train_start], cal[days_val_start - 1]),
+        "val":   (cal[days_val_start],   cal[days_eval_start - 1]),
+        "eval":  (cal[days_eval_start],  cal[days_test_start - 1]),
+        "test":  (cal[days_test_start],  cal[days_test_end]),
+    }
+    segment_dates: dict[str, dict[str, str]] = {
+        seg: {
+            "start": s.date().isoformat(),
+            "end":   e.date().isoformat(),
+        }
+        for seg, (s, e) in seg_bounds.items()
+    }
+
+    train_idx: dict[str, np.ndarray] = {}
+    val_idx: dict[str, np.ndarray] = {}
+    eval_idx: dict[str, np.ndarray] = {}
+    test_idx: dict[str, np.ndarray] = {}
+    seg_idx_map = {
+        "train": train_idx,
+        "val": val_idx,
+        "eval": eval_idx,
+        "test": test_idx,
+    }
+
+    tickers = panel.index.get_level_values("ticker").unique()
+    for t in tickers:
+        sub = panel.xs(t, level="ticker").sort_index()
+        sub_dates = sub.index
+        for seg, (s, e) in seg_bounds.items():
+            mask = (sub_dates >= s) & (sub_dates <= e)
+            n_valid = int(mask.sum())
+            gate = split.min_train_rows_per_ticker if seg == "train" else 1
+            if n_valid >= gate:
+                seg_idx_map[seg][t] = np.flatnonzero(mask)
+            # else: ticker excluded from this segment.
+
+    return Fold(
+        train_idx=train_idx,
+        val_idx=val_idx,
+        eval_idx=eval_idx,
+        test_idx=test_idx,
+        segment_dates=segment_dates,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -193,14 +349,19 @@ class WalkForwardResult:
     calibration: CalibrationDecision
     inner_stop_signal: str
     predictions: dict[str, pd.DataFrame] = field(default_factory=dict)
+    # V1.4: ISO date envelope for date-aligned carves; None for trailing
+    # carves (the runner computes calendar-union dates from
+    # ``predictions`` directly in that path).
+    segment_dates: dict[str, dict[str, str]] | None = None
 
 
 def _carve_X_y(
     X_full: pd.DataFrame, y_full: pd.Series, panel: pd.DataFrame,
     split: SplitSpec, features: list[str],
     weights: pd.Series | None = None,
+    universe_calendar: pd.DatetimeIndex | None = None,
 ):
-    fold = carve_single_fold(panel, split)
+    fold = carve_single_fold(panel, split, universe_calendar=universe_calendar)
     X_use = X_full[features]
     parts = {}
     for name, idx in (
@@ -211,6 +372,9 @@ def _carve_X_y(
     ):
         Xs, ys, mi, ws = _gather_segment(panel, X_use, y_full, idx, weights)
         parts[name] = (Xs, ys, mi, ws)
+    # Stash the fold's segment_dates so walk_forward_train can surface them
+    # without re-running the carve.
+    parts["__segment_dates__"] = fold.segment_dates
     return parts
 
 
@@ -219,6 +383,7 @@ def _fit_one(
     features: list[str], hp: dict, random_seed: int,
     sample_weights: pd.Series | None,
     backend: str = "catboost",
+    universe_calendar: pd.DatetimeIndex | None = None,
 ) -> BaseGBDTModel:
     """Fit a single model for a (features, hp) configuration.
 
@@ -230,7 +395,10 @@ def _fit_one(
     in-loop fit, which the chosen ``backend`` must guarantee given the same
     ``(features, hp, random_seed)`` + row order.
     """
-    parts = _carve_X_y(X, y, panel, split, features, sample_weights)
+    parts = _carve_X_y(
+        X, y, panel, split, features, sample_weights,
+        universe_calendar=universe_calendar,
+    )
     X_tr, y_tr, _, w_tr = parts["train"]
     X_val, y_val, _, w_val = parts["val"]
     if len(y_tr) == 0:
@@ -269,6 +437,12 @@ def walk_forward_train(
     # is spec-overridable via backend.fs_hp_loop.degenerate_sink_threshold.
     sweep_row: dict | None = None,
     degenerate_sink_threshold: float = 1.05,
+    # V1.4: universe trading calendar (NYSE for US universes, NSE for NSE
+    # universes). Required when ``split.mode == "date_aligned"``; ignored
+    # for the trailing-anchor carve. Caller resolves via
+    # ``pandas_market_calendars.get_calendar(...).schedule(...)`` per
+    # configs/gbdt/default.yaml::universes::<name>::calendar.
+    universe_calendar: pd.DatetimeIndex | None = None,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -346,7 +520,10 @@ def walk_forward_train(
     # The decision's prune/hp_changes are not used to seed a new fit (there is
     # none). The best checkpoint is retrained from the prior history below.
     while not force_stop:
-        parts = _carve_X_y(X, y, panel, split, current_features, sample_weights)
+        parts = _carve_X_y(
+            X, y, panel, split, current_features, sample_weights,
+            universe_calendar=universe_calendar,
+        )
         X_tr, y_tr, _, w_tr = parts["train"]
         X_val, y_val, _, w_val = parts["val"]
         X_ev, y_ev, mi_ev, w_ev = parts["eval"]
@@ -631,10 +808,14 @@ def walk_forward_train(
         best_model = _fit_one(
             X, y, panel, split, best_features, best_hp, random_seed,
             sample_weights, backend=backend,
+            universe_calendar=universe_calendar,
         )
 
     # Score the best checkpoint and apply calibration
-    best_parts = _carve_X_y(X, y, panel, split, best_features, sample_weights)
+    best_parts = _carve_X_y(
+        X, y, panel, split, best_features, sample_weights,
+        universe_calendar=universe_calendar,
+    )
     X_tr, y_tr, mi_tr, w_tr = best_parts["train"]
     X_val, y_val, mi_val, w_val = best_parts["val"]
     X_ev, y_ev, mi_ev, w_ev = best_parts["eval"]
@@ -702,6 +883,7 @@ def walk_forward_train(
         calibration=cal,
         inner_stop_signal=inner_signal or "cap",
         predictions=predictions,
+        segment_dates=best_parts.get("__segment_dates__"),
     )
 
 
@@ -709,6 +891,7 @@ __all__ = [
     "SplitSpec",
     "Fold",
     "carve_single_fold",
+    "carve_universe_aligned",
     "WalkForwardResult",
     "walk_forward_train",
     "default_fs_hp_callback",
