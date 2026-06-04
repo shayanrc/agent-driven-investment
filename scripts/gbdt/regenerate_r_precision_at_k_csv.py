@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -30,6 +31,15 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 KS = (1, 3, 5, 10, 20)
+
+# V1.4: 8 calendar-date columns appended to every row.
+_DATE_COLS = (
+    "train_start", "train_end",
+    "val_start",   "val_end",
+    "eval_start",  "eval_end",
+    "test_start",  "test_end",
+)
+_SEGMENTS = ("train", "val", "eval", "test")
 
 
 def find_test_csvs(roots: list[Path]) -> dict[str, Path]:
@@ -58,6 +68,51 @@ def find_test_csvs(roots: list[Path]) -> dict[str, Path]:
             if name not in freshest or mtime > freshest[name].stat().st_mtime:
                 freshest[name] = csv
     return freshest
+
+
+def _segment_dates_for_artifact(art_dir: Path) -> dict[str, dict[str, str | None]]:
+    """V1.4: prefer metrics.json::segment_dates; fall back to calendar UNION
+    across predictions/{train,val,eval,test}.csv (MIN start, MAX end).
+    """
+    metrics_path = art_dir / "metrics.json"
+    if metrics_path.is_file():
+        try:
+            m = json.loads(metrics_path.read_text())
+            sd = m.get("segment_dates")
+            if isinstance(sd, dict) and all(
+                isinstance(sd.get(s), dict)
+                and "start" in sd[s]
+                and "end"   in sd[s]
+                for s in _SEGMENTS
+            ):
+                return sd
+        except (OSError, json.JSONDecodeError):
+            pass
+    # Calendar UNION fallback.
+    out: dict[str, dict[str, str | None]] = {}
+    pred_dir = art_dir / "predictions"
+    for seg in _SEGMENTS:
+        path = pred_dir / f"{seg}.csv"
+        if not path.is_file():
+            out[seg] = {"start": None, "end": None}
+            continue
+        try:
+            df = pd.read_csv(path, usecols=["date"])
+        except (OSError, ValueError):
+            out[seg] = {"start": None, "end": None}
+            continue
+        if len(df) == 0:
+            out[seg] = {"start": None, "end": None}
+            continue
+        dts = pd.to_datetime(df["date"], errors="coerce").dropna()
+        if len(dts) == 0:
+            out[seg] = {"start": None, "end": None}
+            continue
+        out[seg] = {
+            "start": dts.min().date().isoformat(),
+            "end":   dts.max().date().isoformat(),
+        }
+    return out
 
 
 def compute_row(name: str, path: Path) -> dict | None:
@@ -102,6 +157,14 @@ def compute_row(name: str, path: Path) -> dict | None:
             Q = len(ratios)
         out[f"R_precision_at_{K}"] = float(np.mean(ratios)) if ratios else float("nan")
     out["Q_days"] = Q
+    # V1.4 (plan §5.1): 8 calendar-date columns. Artifact dir is the test
+    # CSV's parent.parent. Empty string when neither metrics.json nor
+    # predictions/*.csv carry usable dates.
+    art_dir = path.parent.parent
+    sd = _segment_dates_for_artifact(art_dir)
+    for seg in _SEGMENTS:
+        out[f"{seg}_start"] = sd[seg]["start"] or ""
+        out[f"{seg}_end"]   = sd[seg]["end"]   or ""
     return out
 
 
@@ -147,6 +210,7 @@ def main() -> int:
     df_out = df_out[
         ["experiment", "rows", "Q_days", "base_rate", "AUC"]
         + [f"R_precision_at_{k}" for k in KS]
+        + list(_DATE_COLS)
     ].sort_values("AUC", ascending=False, na_position="last")
 
     out = args.out or (args.repo_root / "results" / "gbdt" / "data" / "r_precision_at_k.csv")
