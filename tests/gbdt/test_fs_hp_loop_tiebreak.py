@@ -312,6 +312,138 @@ def test_best_checkpoint_none_z_treated_as_worst_case():
 
 
 # ---------------------------------------------------------------------------
+# Bug #216 — when NO tied iter presents L1 metrics, fall back to strict argmin
+# ---------------------------------------------------------------------------
+
+
+def test_best_checkpoint_216_all_tied_l1_metrics_none_returns_strict_argmin():
+    """Bug #216 regression — the cell-5 agentloop reproduction.
+
+    Pre-fix: when the resume checkpoint predates V1.3 Option A it doesn't
+    carry train_val_gaps / spiegelhalter_zs, AND the final-finalize resume
+    (force_stop=True) skips the loop body so no in-process bundle exists.
+    Every tied iter's L1 sort key collapses to (inf, inf, i) and the
+    "earliest iter index" deterministic fallback fires — picking the
+    strictly-dominated worse-val_brier iter. The fix: when no tied iter
+    presents ANY L1 metric, fall back to the strict val-Brier argmin
+    (symmetric to the V1.3 anti-AUC fallback).
+
+    Fixture mirrors the cell-5 trajectory (artifact dir
+    ``wt-cell5-agentloop/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop``):
+    val_briers [0.2628, 0.2628, 0.2544, 0.2524, 0.2376, 0.2354, 0.2337];
+    default tie_band 0.005 collapses {4, 5, 6} into a tie; iter_6 strictly
+    dominates iter_5 (and iter_4) on val_brier and (when L1 were known) on
+    gap + |z| too. Pre-fix returned iter 4 via earliest-index fallback;
+    post-fix returns iter 6.
+    """
+    val_briers = [0.2628, 0.2628, 0.2544, 0.2524, 0.2376, 0.2354, 0.2337]
+    # Pre-V1.3 resume case — all L1 metrics absent.
+    gaps_all_none: list[float | None] = [None] * 7
+    zs_all_none: list[float | None] = [None] * 7
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps_all_none,
+        spiegelhalter_zs=zs_all_none,
+        plateau_threshold=0.005,  # cell-5's spec value; tie_band defaults
+                                  # to 0.005 absolute (post-#223).
+    )
+    assert out == 6, (
+        f"expected iter 6 (strict val-Brier argmin) when no tied iter has L1 "
+        f"metrics; got iter {out} (val_brier={val_briers[out]}). The bug "
+        f"#216 pre-fix would have returned the earliest-index iter via the "
+        f"deterministic fallback even though iter 6 strictly dominates on "
+        f"val_brier."
+    )
+
+
+def test_best_checkpoint_216_pre_fix_behavior_demonstration():
+    """Demonstrates what the pre-#216-fix would have picked, to make the
+    regression concrete. We simulate the pre-fix code path explicitly by
+    running the sort_key over the tied set ourselves and asserting it
+    matches the buggy outcome — then run the real (post-fix) function and
+    assert it returns the dominator instead."""
+    val_briers = [0.2628, 0.2628, 0.2544, 0.2524, 0.2376, 0.2354, 0.2337]
+    # Default tie_band = 0.005 → threshold = 0.2387; tied = {4, 5, 6}.
+    tied = [i for i, v in enumerate(val_briers) if v <= 0.2337 + 0.005]
+    assert tied == [4, 5, 6]
+    # Pre-fix sort_key with all-None metrics → (inf, inf, i). Earliest
+    # index = iter 4 wins — the buggy outcome.
+    pre_fix_winner = min(tied, key=lambda i: (float("inf"), float("inf"), i))
+    assert pre_fix_winner == 4, (
+        "sanity: pre-fix earliest-index fallback would have picked iter 4 "
+        "(or any other iter with worse val_brier than iter 6 inside the "
+        "tied set)"
+    )
+    # Post-fix real call: strict argmin (iter 6) wins.
+    post_fix_winner = best_checkpoint(
+        val_briers,
+        train_val_gaps=[None] * 7,
+        spiegelhalter_zs=[None] * 7,
+        tie_band=0.005,
+    )
+    assert post_fix_winner == 6, (
+        f"post-fix should pick the strict val-Brier argmin (iter 6) when "
+        f"no tied iter has L1 metrics present; got iter {post_fix_winner}"
+    )
+
+
+def test_best_checkpoint_216_some_tied_present_some_none_uses_l1():
+    """Counter-test for the #216 fix: when at least ONE tied iter presents an
+    L1 metric, the L1 path stays active (None entries still treated as
+    worst-case — i.e. NEVER out-prefer present-metric configs). The new
+    "all-None → strict argmin" branch must NOT swallow the mixed case.
+    """
+    # iter 5 + iter 6 both inside the band; iter 6 has present gap, iter 5
+    # has None. Iter 6 should win (lower val_brier + present finite L1).
+    val_briers = [0.30, 0.30, 0.30, 0.30, 0.30, 0.235, 0.234]
+    gaps = [None, None, None, None, None, None, 0.039]
+    zs = [None, None, None, None, None, None, 3.37]
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+    )
+    assert out == 6, (
+        f"expected iter 6 (present L1 with finite gap/z) to beat iter 5 "
+        f"(None L1, worst-case sentinel); got iter {out}"
+    )
+
+
+def test_best_checkpoint_216_no_regression_on_v13_anti_auc():
+    """Cross-check that V1.3 Option A's anti-AUC auto-disable still works
+    after the #216 fix — the anti-AUC branch returns BEFORE the new
+    all-None check, so its behavior is unchanged."""
+    val_briers = [0.250, 0.249, 0.248]
+    # All L1 metrics None — same shape as the cell-5 trajectory.
+    out_anti_auc = best_checkpoint(
+        val_briers,
+        train_val_gaps=[None, None, None],
+        spiegelhalter_zs=[None, None, None],
+        tie_band=0.005,
+        anti_auc_flag="true",  # V1.3 auto-disable engaged
+        eval_r_precision_at_1s=None,  # no R-p@1 series → strict_best fallback
+    )
+    assert out_anti_auc == 2, (
+        f"anti-AUC branch should fall back to strict argmin (iter 2) when "
+        f"R-p@1 unavailable; got iter {out_anti_auc}"
+    )
+    # And with R-p@1 supplied: iter 0 has highest R-p@1 → wins.
+    out_anti_auc_rp1 = best_checkpoint(
+        val_briers,
+        train_val_gaps=[None, None, None],
+        spiegelhalter_zs=[None, None, None],
+        tie_band=0.005,
+        anti_auc_flag="true",
+        eval_r_precision_at_1s=[0.8, 0.5, 0.6],
+    )
+    assert out_anti_auc_rp1 == 0, (
+        f"anti-AUC branch with R-p@1 supplied should pick the highest "
+        f"R-p@1 winner (iter 0); got iter {out_anti_auc_rp1}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Empty / single-entry edge cases
 # ---------------------------------------------------------------------------
 
