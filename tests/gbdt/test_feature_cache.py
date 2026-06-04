@@ -341,3 +341,70 @@ def test_compute_key_differs_when_features_source_changes(panel_and_key, monkeyp
     panel_sig = fc.panel_signature(panel, index_df)
     other = fc.compute_key(panel_sig=panel_sig, **_BASE_KW)
     assert other != base_key
+
+
+# ---------------------------------------------------------------------------
+# Bug #226 — payload round-trip in sidecar (diagnostic only, no key change)
+# ---------------------------------------------------------------------------
+
+
+def test_write_cache_payload_kwarg_roundtrips(tmp_path, panel_and_key):
+    """Bug #226: when ``payload=`` is passed to write_cache, the dict round-
+    trips through the sidecar JSON under the ``payload`` key. This is what
+    lets a post-hoc reader diff two sidecars side-by-side to learn which
+    input field varied — the diagnosis needed for the russell1000 cross-cell
+    sharing failure."""
+    panel, index_df, key = panel_and_key
+    X = _build_matrix(panel, index_df)
+    panel_sig = fc.panel_signature(panel, index_df)
+    payload = {
+        "schema_version": fc.SCHEMA_VERSION,
+        "universe": _BASE_KW["universe"],
+        "target": _BASE_KW["target"],
+        "split": _BASE_KW["split"],
+        "features": {
+            "lookbacks": list(_BASE_KW["lookbacks"]),
+            "families": _BASE_KW["families"],
+            "exclude": _BASE_KW["exclude"],
+            "code_signature": fc.feature_code_signature(),
+        },
+        "random_seed": _BASE_KW["random_seed"],
+        "panel_signature": panel_sig,
+    }
+    run_dir = tmp_path / "cell"
+    fc.write_cache(run_dir, X, key, payload=payload)
+
+    import json as _json
+    sidecar = _json.loads(fc.key_path(run_dir).read_text())
+    assert "payload" in sidecar, (
+        "payload must be persisted into the sidecar when passed to write_cache"
+    )
+    # The fields we care about for post-hoc diff must round-trip.
+    assert sidecar["payload"]["universe"] == _BASE_KW["universe"]
+    assert sidecar["payload"]["random_seed"] == _BASE_KW["random_seed"]
+    # panel_signature carries the data-snapshot identity — the most-likely
+    # discriminator across the 3 russell1000 keys (#226 diagnosis target).
+    assert sidecar["payload"]["panel_signature"]["panel_index_hash"] == \
+        panel_sig["panel_index_hash"]
+    # And the load contract still works (no behaviour change for readers).
+    loaded = fc.load_cache(run_dir, key)
+    assert loaded is not None
+    pd.testing.assert_frame_equal(loaded, X, check_exact=True)
+
+
+def test_write_cache_default_payload_omits_field_back_compat(tmp_path, panel_and_key):
+    """Pre-#226 sidecar shape (no ``payload`` field) is preserved when the
+    new kwarg is omitted — back-compat for any caller that hasn't been
+    updated yet (including the unit-test fixtures already on disk).
+    """
+    panel, index_df, key = panel_and_key
+    X = _build_matrix(panel, index_df)
+    run_dir = tmp_path / "cell"
+    fc.write_cache(run_dir, X, key)  # no payload= kwarg
+
+    import json as _json
+    sidecar = _json.loads(fc.key_path(run_dir).read_text())
+    assert "payload" not in sidecar, (
+        "payload must NOT appear in the sidecar when write_cache is called "
+        "without the kwarg — preserves pre-#226 shape exactly."
+    )

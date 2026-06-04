@@ -414,3 +414,68 @@ def test_schema_version_is_v2():
     reuse — we'd rather rebuild once than risk reusing under an
     inconsistent key shape."""
     assert ufc.SCHEMA_VERSION == "v2"
+
+
+# ---------------------------------------------------------------------------
+# Bug #226 — payload round-trip in sidecar (diagnostic only, no key change)
+# ---------------------------------------------------------------------------
+
+
+def test_write_cache_payload_kwarg_roundtrips(tmp_path, panel_and_key):
+    """Bug #226: when ``payload=`` is passed to write_cache, the dict round-
+    trips through the sidecar JSON under the ``payload`` key. This is what
+    lets a post-hoc reader diff two universe-key sidecars side-by-side to
+    learn which input field varied — the diagnosis needed for the
+    russell1000 cross-cell sharing failure (3 different keys for the same
+    universe within a single sweep window).
+
+    NOTE: the universe-cache payload INTENTIONALLY excludes ``target``
+    (same as compute_key) — that's the entire point of this layer.
+    """
+    panel, index_df, key = panel_and_key
+    X = _build_matrix(panel, index_df)
+    panel_sig = per_cell_cache.panel_signature(panel, index_df)
+    payload = {
+        "schema_version": ufc.SCHEMA_VERSION,
+        "universe": _BASE_KW["universe"],
+        # NO "target" key — universe payload must mirror compute_key inputs.
+        "split": _BASE_KW["split"],
+        "features": {
+            "lookbacks": list(_BASE_KW["lookbacks"]),
+            "families": _BASE_KW["families"],
+            "exclude": _BASE_KW["exclude"],
+            "code_signature": per_cell_cache.feature_code_signature(),
+        },
+        "random_seed": _BASE_KW["random_seed"],
+        "panel_signature": panel_sig,
+    }
+    ufc.write_cache(tmp_path, X, key, subdir="cache", payload=payload)
+
+    sidecar = json.loads(
+        ufc.key_path(tmp_path, key, subdir="cache").read_text()
+    )
+    assert "payload" in sidecar
+    # Target MUST be absent — re-introducing it would defeat the cache layer.
+    assert "target" not in sidecar["payload"], (
+        "universe payload must not carry target (would defeat the cache layer)"
+    )
+    assert sidecar["payload"]["universe"] == _BASE_KW["universe"]
+    assert sidecar["payload"]["panel_signature"]["panel_index_hash"] == \
+        panel_sig["panel_index_hash"]
+    # Load path still works (no behaviour change for readers).
+    loaded = ufc.load_cache(tmp_path, key, subdir="cache")
+    assert loaded is not None
+    pd.testing.assert_frame_equal(loaded, X, check_exact=True)
+
+
+def test_write_cache_default_payload_omits_field_back_compat(tmp_path, panel_and_key):
+    """Pre-#226 sidecar shape (no ``payload``) is preserved when the new
+    kwarg is omitted — back-compat for any caller (or pre-existing on-disk
+    artifact) that hasn't been updated."""
+    panel, index_df, key = panel_and_key
+    X = _build_matrix(panel, index_df)
+    ufc.write_cache(tmp_path, X, key, subdir="cache")
+    sidecar = json.loads(
+        ufc.key_path(tmp_path, key, subdir="cache").read_text()
+    )
+    assert "payload" not in sidecar

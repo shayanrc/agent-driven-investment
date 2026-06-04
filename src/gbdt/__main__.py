@@ -1030,6 +1030,65 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     )
     universe_cache_root = preflight.get("data_root") or str(Path("data").resolve())
 
+    # Bug #226 (diagnostic): mirror the exact dicts that compute_key hashed,
+    # so we can persist them into the sidecar JSONs alongside the keys. Without
+    # this, two cache files with different keys are uninvestigable post-hoc
+    # (the input payload was lost the moment compute_key returned its digest).
+    # No behaviour change: compute_key's hash inputs are unchanged; we are
+    # only persisting the inputs separately for observability.
+    _cell_payload = {
+        "schema_version": gbdt_feature_cache.SCHEMA_VERSION,
+        "universe": target["universe"],
+        "target": {
+            "direction": target.get("direction"),
+            "threshold_pct": target.get("threshold_pct"),
+            "horizon_days": target.get("horizon_days"),
+            "max_drawdown": target.get("max_drawdown"),
+            "uniqueness_weighting": bool(target.get("uniqueness_weighting", True)),
+        },
+        "split": {
+            "train_rows": split_d.get("train_rows"),
+            "val_rows": split_d.get("val_rows"),
+            "eval_rows": split_d.get("eval_rows"),
+            "test_rows": split_d.get("test_rows"),
+            "min_rows_per_ticker": split_d.get("min_rows_per_ticker"),
+        },
+        "features": {
+            "lookbacks": list(lookbacks),
+            "families": (
+                families if isinstance(families, str) else sorted(families)
+            ),
+            "exclude": sorted(exclude or []),
+            "code_signature": gbdt_feature_cache.feature_code_signature(),
+        },
+        "random_seed": int(spec.get("random_seed", 42)),
+        "panel_signature": panel_sig,
+    }
+    _universe_payload = {
+        "schema_version": gbdt_universe_feature_cache.SCHEMA_VERSION,
+        "universe": target["universe"],
+        "split": {
+            "train_rows": split_d.get("train_rows"),
+            "val_rows": split_d.get("val_rows"),
+            "eval_rows": split_d.get("eval_rows"),
+            "test_rows": split_d.get("test_rows"),
+            "min_rows_per_ticker": split_d.get("min_rows_per_ticker"),
+        },
+        "features": {
+            "lookbacks": list(lookbacks),
+            "families": (
+                families if isinstance(families, str) else sorted(families)
+            ),
+            "exclude": sorted(exclude or []),
+            "code_signature": gbdt_feature_cache.feature_code_signature(),
+        },
+        "random_seed": int(spec.get("random_seed", 42)),
+        "panel_signature": panel_sig,
+    }
+    # Bug #226: track which layer (if any) served the matrix, for metrics.json.
+    _matrix_hit = False
+    _universe_hit = False
+
     t1 = time.time()
     X = None
     try:
@@ -1040,6 +1099,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         X = None
 
     if X is not None:
+        _matrix_hit = True
         _milestone(
             f"[features] loaded from per-cell cache (key match) in "
             f"{time.time()-t1:.1f}s shape={X.shape}"
@@ -1058,6 +1118,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             X = None
 
         if X is not None:
+            _universe_hit = True
             _milestone(
                 f"[features] loaded from universe cache (key match) in "
                 f"{time.time()-t1:.1f}s shape={X.shape}"
@@ -1065,7 +1126,9 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             # Mirror into the per-cell cache so a subsequent --resume of THIS
             # cell hits the cheaper local layer (no shared-cache touch needed).
             try:
-                gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
+                gbdt_feature_cache.write_cache(
+                    out_dir, X, matrix_key, payload=_cell_payload,
+                )
             except Exception as exc:
                 print(f"[features] per-cell cache write failed ({exc!r}); continuing",
                       flush=True)
@@ -1084,7 +1147,9 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             X = X.dropna(axis=1, how="all")
             _milestone(f"[features] complete in {time.time()-t1:.1f}s shape={X.shape}")
             try:
-                gbdt_feature_cache.write_cache(out_dir, X, matrix_key)
+                gbdt_feature_cache.write_cache(
+                    out_dir, X, matrix_key, payload=_cell_payload,
+                )
                 _milestone(f"[features] per-cell cache written (key={matrix_key[:12]}…)")
             except Exception as exc:  # a cache write failure must not fail the run
                 print(f"[features] per-cell cache write failed ({exc!r}); continuing",
@@ -1092,6 +1157,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             try:
                 gbdt_universe_feature_cache.write_cache(
                     universe_cache_root, X, universe_key,
+                    payload=_universe_payload,
                 )
                 _milestone(
                     f"[features] universe cache written (key={universe_key[:12]}…) "
@@ -1602,6 +1668,21 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             "spiegelhalter_p": result.calibration.spiegelhalter_p,
         },
         "sample_uniqueness": ess_summary,
+        # Bug #226 (diagnostic): persist the cache keys + which layer (if any)
+        # served the matrix, plus the panel_signature that determined them.
+        # This is what lets a sweep-level post-hoc audit answer "did sibling
+        # cells share the universe cache, or did each rebuild from scratch?"
+        # without having to grep the per-run log. ``panel_signature`` is the
+        # most likely discriminator (its index hash captures every (date,
+        # ticker) tuple in the panel), so surfacing it directly here makes
+        # cross-cell diffs trivial.
+        "cache": {
+            "matrix_key": matrix_key,
+            "universe_key": universe_key,
+            "matrix_hit": bool(_matrix_hit),
+            "universe_hit": bool(_universe_hit),
+            "panel_signature": panel_sig,
+        },
         "headline_eval": headline_eval,
         "headline_test": headline_test,
         # Per-segment top-K + per-ticker + per-quarter + pred-range
