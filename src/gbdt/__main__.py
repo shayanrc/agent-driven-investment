@@ -17,7 +17,7 @@ import pickle
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +41,7 @@ from gbdt.sweep_lookup import (
 )
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
+from gbdt import universe_calendar as gbdt_universe_calendar
 from gbdt.uniqueness import (
     compute_uniqueness_weights,
     effective_sample_size,
@@ -792,11 +793,46 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     target = spec["target"]
     dr = spec.get("date_range", {}) or {}
     split_d = spec.get("split", {}) or {}
+    # V1.4 (date_aligned splits, plan §3 D1/D2/D7): mode defaults to
+    # 'trailing' (existing specs unchanged). 'date_aligned' anchors every
+    # segment to universe-calendar dates from ``train_start`` (default
+    # 2019-01-01 per D2). ``min_train_rows_per_ticker`` is the per-ticker
+    # validity gate on the train segment (= max(lookback_windows) = 200
+    # per D1).
+    split_mode = str(split_d.get("mode", "trailing"))
+    if split_mode not in ("trailing", "date_aligned"):
+        raise ValueError(
+            f"spec.split.mode must be 'trailing' or 'date_aligned', got "
+            f"{split_mode!r}"
+        )
+    train_start_raw = split_d.get("train_start")
+    train_start_val: date | None = None
+    if train_start_raw is not None:
+        if isinstance(train_start_raw, date):
+            train_start_val = train_start_raw
+        else:
+            train_start_val = date.fromisoformat(str(train_start_raw)[:10])
+    if split_mode == "date_aligned" and train_start_val is None:
+        # V1.4 D2: canonical anchor for new date-aligned cells.
+        train_start_val = date(2019, 1, 1)
+    if "mode" not in split_d:
+        # D7: info-log nudge per run when mode is unspecified.
+        print(
+            "[split] info: spec.split.mode unspecified, defaulting to "
+            "'trailing'. New work should prefer 'date_aligned' (V1.4) — "
+            "see docs/gbdt/V1.4_date_aligned_splits_plan.md.",
+            flush=True,
+        )
     split = SplitSpec(
         train_rows=split_d.get("train_rows", 800),
         val_rows=split_d.get("val_rows", 400),
         eval_rows=split_d.get("eval_rows", 200),
         test_rows=split_d.get("test_rows", 100),
+        mode=split_mode,
+        train_start=train_start_val,
+        min_train_rows_per_ticker=int(split_d.get(
+            "min_train_rows_per_ticker", 200,
+        )),
     )
     min_rows = split_d.get("min_rows_per_ticker", split.total)
 
@@ -825,6 +861,29 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         )
     _milestone(f"[data] complete in {time.time()-t1:.1f}s rows={len(panel_obj.panel)} "
                f"tickers_kept={len(panel_obj.tickers_kept)}")
+
+    # -------- Phase 1a: universe trading calendar (V1.4 date-aligned mode) --------
+    # Only resolved when ``split.mode == "date_aligned"``. Trailing carves use
+    # per-ticker tail positions and have no calendar dependency.
+    universe_cal: "pd.DatetimeIndex | None" = None
+    if split.mode == "date_aligned":
+        universes_cfg = spec.get("universes") or {}
+        uni_block = universes_cfg.get(target["universe"])
+        # Span: from a year before train_start through today + a year, so
+        # ``searchsorted`` boundaries in carve_universe_aligned never run off
+        # either end. The exact ``end`` is irrelevant beyond ``test_end``.
+        cal_start = (
+            split.train_start.replace(year=split.train_start.year - 1)
+            if split.train_start is not None else date(2018, 1, 1)
+        )
+        universe_cal = gbdt_universe_calendar.get_calendar(
+            target["universe"], uni_block, start=cal_start,
+        )
+        _milestone(
+            f"[split] date_aligned: train_start={split.train_start.isoformat()} "
+            f"calendar={gbdt_universe_calendar.resolve_calendar_name(target['universe'], uni_block)} "
+            f"({len(universe_cal)} trading days available from {cal_start.isoformat()})"
+        )
 
     # -------- Phase 1b: project test segment size + warn if structurally slim --------
     # Issue #31 — the walk-forward driver silently emits an empty test
@@ -1152,6 +1211,9 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             # + degenerate-sink warning threshold. Both constant for the run.
             sweep_row=sweep_row,
             degenerate_sink_threshold=degenerate_sink_threshold,
+            # V1.4 (date-aligned splits): None for trailing carves (the
+            # default path); the resolved universe calendar otherwise.
+            universe_calendar=universe_cal,
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the
@@ -1330,6 +1392,62 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             },
         },
     }
+
+    # V1.4 (plan §5.2): segment-date envelope + per-ticker sidecars.
+    #
+    # For date_aligned carves, result.segment_dates is already the
+    # universe-calendar window (ISO strings) from carve_universe_aligned.
+    # For trailing carves, compute the calendar UNION per segment from the
+    # predictions DataFrame: MIN(start) and MAX(end) across all tickers in
+    # the segment. Either way, an empty segment yields ``None`` endpoints.
+    def _trailing_segment_dates() -> dict[str, dict[str, str | None]]:
+        sd: dict[str, dict[str, str | None]] = {}
+        for seg in ("train", "val", "eval", "test"):
+            df = result.predictions.get(seg)
+            if df is None or len(df) == 0:
+                sd[seg] = {"start": None, "end": None}
+                continue
+            dts = pd.to_datetime(df["date"])
+            sd[seg] = {
+                "start": dts.min().date().isoformat(),
+                "end": dts.max().date().isoformat(),
+            }
+        return sd
+
+    if result.segment_dates is not None:
+        segment_dates = result.segment_dates
+    else:
+        segment_dates = _trailing_segment_dates()
+
+    # Per-ticker sidecars (D4).
+    def _per_ticker_sidecars() -> dict[str, object]:
+        tickers_per_segment: dict[str, list[str]] = {}
+        n_tickers_per_segment: dict[str, int] = {}
+        row_counts: dict[str, dict[str, int]] = {}
+        for seg in ("train", "val", "eval", "test"):
+            df = result.predictions.get(seg)
+            if df is None or len(df) == 0:
+                tickers_per_segment[seg] = []
+                n_tickers_per_segment[seg] = 0
+                continue
+            grp = df.groupby("ticker", sort=True)["y_true"].count()
+            seg_tickers = grp.index.tolist()
+            tickers_per_segment[seg] = seg_tickers
+            n_tickers_per_segment[seg] = len(seg_tickers)
+            for t, n in grp.items():
+                row_counts.setdefault(t, {"train": 0, "val": 0, "eval": 0, "test": 0})[
+                    seg
+                ] = int(n)
+        # Ensure every ticker that appears anywhere has all 4 keys (D4's
+        # nested int dict has 0 for absent segments — explicit not implicit).
+        return {
+            "n_tickers_per_segment": n_tickers_per_segment,
+            "tickers_per_segment": tickers_per_segment,
+            "row_counts_per_segment_per_ticker": row_counts,
+        }
+
+    sidecars = _per_ticker_sidecars()
+
     metrics = {
         "experiment_name": name,
         # Which GBDT backend produced this artifact (V1.2 plan § 4.4) — so a
@@ -1344,6 +1462,17 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         # Pre-flight cache + code fingerprint (see ``_collect_preflight``).
         # Six fields populated even when git is unavailable.
         "preflight": preflight,
+        # V1.4 (plan §5.2): top-level segment-date envelope + carve mode.
+        # ``split_mode`` mirrors the spec; ``split_train_start`` is the
+        # ISO date used for the date-aligned anchor (None for trailing).
+        # ``segment_dates`` is the universe-calendar window for
+        # date-aligned carves, or the calendar UNION across tickers for
+        # trailing carves (MIN start, MAX end per segment).
+        "split_mode": split.mode,
+        "split_train_start": (
+            split.train_start.isoformat() if split.train_start is not None else None
+        ),
+        "segment_dates": segment_dates,
         "data": {
             "n_tickers_in_universe": len(panel_obj.statuses),
             "n_tickers_used": len(panel_obj.tickers_kept),
@@ -1380,6 +1509,17 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             # string explaining the calculation when below threshold.
             "test_split_warning": test_split_warning,
             "test_split_projection": test_split_projection,
+            # V1.4 D4 (plan §5.2): per-ticker sidecars for the carve.
+            # ``n_tickers_per_segment`` is the count of tickers contributing
+            # to each segment; ``tickers_per_segment`` is the full list;
+            # ``row_counts_per_segment_per_ticker`` is the nested int dict
+            # keyed by ticker → {segment: n_rows}. Useful for downstream
+            # reproducibility audits + the cache-growth invariance check.
+            "n_tickers_per_segment": sidecars["n_tickers_per_segment"],
+            "tickers_per_segment": sidecars["tickers_per_segment"],
+            "row_counts_per_segment_per_ticker": sidecars[
+                "row_counts_per_segment_per_ticker"
+            ],
         },
         "loop": {
             "n_iterations_run": len(result.iterations),
