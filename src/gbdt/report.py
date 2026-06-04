@@ -218,6 +218,29 @@ def render_report(experiment_dir: Path) -> Path:
         lines.append(f"- positive prevalence (eval): {data['positive_prevalence_eval']:.3f}")
     lines.append("")
 
+    # V1.4 — Segment windows (8 calendar dates). Always emitted, regardless
+    # of mode: for date_aligned cells these are the universe-calendar
+    # window; for trailing cells they are the calendar UNION across
+    # tickers (MIN start, MAX end per segment). A backtester can use
+    # ``test_end + 1`` as a clean out-of-sample start.
+    sd = metrics.get("segment_dates") or {}
+    split_mode = metrics.get("split_mode") or "(unknown)"
+    split_anchor = metrics.get("split_train_start")
+    if sd:
+        lines.append("## Segment windows")
+        lines.append("")
+        lines.append(f"- split mode: `{split_mode}`")
+        if split_anchor:
+            lines.append(f"- train_start anchor: `{split_anchor}`")
+        for seg in ("train", "val", "eval", "test"):
+            block = sd.get(seg) or {}
+            s, e = block.get("start"), block.get("end")
+            if s and e:
+                lines.append(f"- {seg}: `{s}` → `{e}`")
+            else:
+                lines.append(f"- {seg}: (empty)")
+        lines.append("")
+
     # 3. Iteration history
     # The ``rationale``/``delta_attribution`` columns carry each iteration's
     # decision narrative. Under ``callback_mode: agent_file_protocol`` (V1.1)

@@ -121,12 +121,29 @@ Walk-forward fold scheme. **Global defaults live in `configs/gbdt/default.yaml::
 
 | Field | Type | Default (from `default.yaml`) |
 |---|---|---|
+| `mode` | `"trailing"` \| `"date_aligned"` | `"trailing"` |
 | `train_rows` | int | `800` |
 | `val_rows` | int | `400` |
 | `eval_rows` | int | `200` |
 | `test_rows` | int | `100` |
 | `n_folds` | int | `1` |
 | `min_rows_per_ticker` | int | `1600` (= sum of the four segments) |
+| `train_start` | ISO date | _none_ (required when `mode == "date_aligned"`; runner default `2019-01-01`) |
+| `min_train_rows_per_ticker` | int | `200` (= `max(lookback_windows)`) |
+
+**`mode == "trailing"` (default)**: each ticker's last `train_rows + val_rows + eval_rows + test_rows` rows are carved into `[train | val | eval | test]` in time order. Used by every pre-V1.4 spec. **Silently re-defines the cell across cache growth** (the eval/test windows slide forward as new bars arrive) — the V1.4 plan's motivating bug.
+
+**`mode == "date_aligned"` (V1.4 opt-in)**: segment windows are anchored to **universe-level calendar dates** computed from `train_start` and the per-segment durations on the universe's canonical trading calendar (NYSE for US universes, NSE for NSE universes; mapping in `configs/gbdt/default.yaml::universes::<name>::calendar` — defaults inferred from universe name prefix). Per-ticker membership uses `min_train_rows_per_ticker` (≥ 200 valid feature rows) on the train segment and ≥ 1 row on val/eval/test; late-IPO tickers contribute only to whichever segments they have valid features for. The 4-segment row counts are NOT guaranteed to equal `{train,val,eval,test}_rows` per ticker — that's the duration the calendar window spans, not the count of cached bars. **Reproducible across cache growth**: adding new bars past `test_end` leaves segments bit-identical.
+
+When `mode == "date_aligned"`, `train_rows` / `val_rows` / `eval_rows` / `test_rows` are interpreted as **trading-day durations** measured on the universe calendar (not row counts). A `train_start` falling on a non-trading day advances to the next trading day (`searchsorted(side="left")` semantics).
+
+Example (canonical date-aligned cell):
+```yaml
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+  # train_rows / val_rows / eval_rows / test_rows fall through (800/400/200/100).
+```
 
 Example (override eval to a longer segment for a low-base-rate cell):
 ```yaml
@@ -134,7 +151,9 @@ split:
   eval_rows: 400
 ```
 
-Tickers with fewer than `min_rows_per_ticker` rows are dropped from the panel and listed in the artifact's `metrics.json::data.tickers_excluded`.
+For trailing-mode rows in the canonical `r_precision_at_k.csv`, the 8 calendar-date columns (`train_start, train_end, val_start, val_end, eval_start, eval_end, test_start, test_end`) carry the **calendar UNION across tickers** — MIN(start) and MAX(end) of `predictions/<seg>.csv['date']` across all tickers in the segment. For date-aligned rows they're the universe-calendar window directly.
+
+Tickers with fewer than `min_rows_per_ticker` rows are dropped from the panel and listed in the artifact's `metrics.json::data.tickers_excluded`. Tickers excluded only from the train segment (via `min_train_rows_per_ticker`) still appear in val/eval/test and are listed in `metrics.json::data.tickers_per_segment`.
 
 ### `features` (optional)
 
