@@ -123,6 +123,22 @@ def test_scout_sweep_mode_skipped_even_when_enabled():
     assert result.scout_report is None
 
 
+def test_scout_agent_file_protocol_mode_skipped_in_walk_forward():
+    """In agent_file_protocol mode, scout is the runner's responsibility
+    (__main__.py); walk_forward_train must NOT run scout itself."""
+    panel, X, y = _toy_panel(1600, 3, seed=15)
+    result = walk_forward_train(
+        panel=panel, X=X, y=y, features=list(X.columns),
+        hp={"iterations": 20, "depth": 3, "boosting_type": "Plain",
+            "learning_rate": 0.05},
+        max_iterations=2,
+        scout_spec={"enabled": True},
+        fs_prefit_spec={"enabled": True},
+        callback_mode="agent_file_protocol",
+    )
+    assert result.scout_report is None
+
+
 def test_scout_resume_path_skips_scout():
     """Resume path inherits iter_0 HP from the checkpoint; scout MUST NOT
     re-run (we don't want it to overwrite the agent's chosen HP)."""

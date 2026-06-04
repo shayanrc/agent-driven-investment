@@ -41,6 +41,9 @@ from gbdt.sweep_lookup import (
 )
 from gbdt.targets import build_target
 from gbdt.train import SplitSpec, walk_forward_train
+from gbdt import scout as gbdt_scout
+from gbdt import scout_io as gbdt_scout_io
+from gbdt import fs_prefit as gbdt_fs_prefit
 from gbdt import universe_calendar as gbdt_universe_calendar
 from gbdt import preflight as gbdt_preflight
 from gbdt.uniqueness import (
@@ -205,6 +208,42 @@ def _validate_spec(spec: dict) -> None:
             f"backend.fs_hp_loop.callback_mode must be in {sorted(_VALID_CALLBACK_MODES)}, "
             f"got {loop['callback_mode']!r}"
         )
+    # V1.3 Option B (plan § 6): minimal schema validation for the new
+    # ``backend.scout`` + ``backend.fs_prefit`` blocks. Both are optional;
+    # ``enabled`` must be bool when present; numeric caps must be positive.
+    scout_cfg = backend.get("scout", {}) or {}
+    if scout_cfg:
+        if "enabled" in scout_cfg and not isinstance(scout_cfg["enabled"], bool):
+            raise ValueError(
+                f"backend.scout.enabled must be bool, got "
+                f"{scout_cfg['enabled']!r}"
+            )
+        for key in ("n_configs_cap", "per_config_timeout_seconds",
+                     "wall_clock_cap_seconds"):
+            if key in scout_cfg and not (
+                isinstance(scout_cfg[key], (int, float))
+                and scout_cfg[key] > 0
+            ):
+                raise ValueError(
+                    f"backend.scout.{key} must be a positive number, got "
+                    f"{scout_cfg[key]!r}"
+                )
+    fs_prefit_cfg = backend.get("fs_prefit", {}) or {}
+    if fs_prefit_cfg:
+        if "enabled" in fs_prefit_cfg and not isinstance(
+            fs_prefit_cfg["enabled"], bool,
+        ):
+            raise ValueError(
+                f"backend.fs_prefit.enabled must be bool, got "
+                f"{fs_prefit_cfg['enabled']!r}"
+            )
+        if "cliff_pct" in fs_prefit_cfg:
+            cp = fs_prefit_cfg["cliff_pct"]
+            if not (isinstance(cp, (int, float)) and 0 <= cp <= 1):
+                raise ValueError(
+                    f"backend.fs_prefit.cliff_pct must be in [0, 1], got "
+                    f"{cp!r}"
+                )
     sp = spec.get("split", {}) or {}
     if sp:
         total = (sp.get("train_rows", 0) + sp.get("val_rows", 0)
@@ -580,6 +619,371 @@ def _make_agent_file_protocol_callback(
     return _cb
 
 
+def _handle_scout_cycles_agent_mode(
+    *,
+    out_dir: Path,
+    spec: dict,
+    run_id: str,
+    spec_path: Path,
+    panel,
+    X,
+    y,
+    sample_weights,
+    split: SplitSpec,
+    universe_calendar,
+    backend_library: str,
+    hp_starting: dict,
+    calibration_method: str,
+    calibration_z_threshold: float,
+    random_seed: int,
+    scout_cfg: dict,
+    fs_prefit_cfg: dict,
+    milestone,
+    heartbeat,
+    status,
+    progress_log,
+) -> dict | None:
+    """V1.3 Option B P4 — runner-side scout cycles in agent_file_protocol mode.
+
+    Detects which cycle we're in via the presence of scout/ files; runs the
+    appropriate work; PAUSES (returns None) when there's nothing to fit yet.
+    Returns ``{"hp_starting": dict, "features": list[str], "scout_report":
+    dict}`` when cycle 3 is reached (iter_0_decision present); the caller
+    proceeds to walk_forward_train with those values.
+
+    Cycle 1 (no scout_results.jsonl yet) — fresh run path:
+    - Run FS-prefit, then scout, on a single segment carve.
+    - Write scout_results.jsonl + scout_bundle.json + combine_request.json.
+    - PAUSE (return None); the runner exits cleanly and the agent picks up.
+
+    Cycle 2 (combine_decision.json exists, no combine_results.json):
+    - Load combine_decision.json (≤50 configs per D3b.A).
+    - Fit each config in-process, score val/eval metrics, write
+      combine_results.json.
+    - PAUSE; the agent picks an iter_0 winner.
+
+    Cycle 3 (iter_0_decision.json exists):
+    - Load the agent's HP overlay; return it as ``hp_starting`` + the cliff-
+      cut feature pool as ``features``. Caller proceeds to walk_forward_train.
+    """
+    cycle_state = gbdt_scout_io.detect_cycle_state(out_dir)
+
+    # Cycle 3 — iter_0 decision is ready; the agent has chosen the HP.
+    if cycle_state.has_iter_0_decision:
+        try:
+            iter_0_decision = gbdt_scout_io.read_iter_0_decision(out_dir)
+        except gbdt_scout_io.Iter0DecisionError:
+            progress_log.close()
+            raise
+        agent_hp = dict(iter_0_decision.get("hp") or {})
+        # Cliff-cut feature pool comes from cycle 1's scout_bundle (saved at
+        # the cycle-1 exit). Fall back to all of X.columns if unavailable
+        # (shouldn't happen for a clean run).
+        try:
+            bundle_payload = json.loads(
+                gbdt_scout_io.scout_bundle_path(out_dir).read_text()
+            )
+            kept = list(bundle_payload.get("fs_prefit", {}).get(
+                "kept_features", list(X.columns),
+            ))
+        except Exception:
+            kept = list(X.columns)
+        # Apply the agent overlay on top of the spec's hp_starting.
+        composed_hp = dict(hp_starting)
+        composed_hp.update(agent_hp)
+        milestone(
+            f"[scout] cycle 3 — iter_0_decision applied "
+            f"(features={len(kept)}, hp_overlay_keys="
+            f"{sorted(agent_hp.keys())})"
+        )
+        return {
+            "hp_starting": composed_hp,
+            "features": kept,
+            "scout_report": bundle_payload,
+        }
+
+    # Carve once for cycles 1 + 2 (re-uses the same segments iter_0 will use).
+    from gbdt.train import _carve_X_y
+    parts = _carve_X_y(
+        X, y, panel, split, list(X.columns), sample_weights,
+        universe_calendar=universe_calendar,
+    )
+    X_tr_full, y_tr, _, w_tr = parts["train"]
+    X_val_full, y_val, _, w_val = parts["val"]
+    X_ev_full, y_ev, mi_ev, w_ev = parts["eval"]
+    if len(y_tr) == 0:
+        # Nothing to scout — let the caller fall through; the loop will
+        # raise the empty-train error there.
+        milestone(
+            "[scout] WARNING: empty training segment; skipping scout cycles."
+        )
+        return {
+            "hp_starting": dict(hp_starting),
+            "features": list(X.columns),
+            "scout_report": None,
+        }
+
+    # Cycle 2 — combine_decision exists, results pending.
+    if cycle_state.has_combine_decision and not cycle_state.has_combine_results:
+        try:
+            decision = gbdt_scout_io.read_combine_decision(out_dir)
+        except gbdt_scout_io.CombineDecisionError:
+            progress_log.close()
+            raise
+        configs = decision.get("configs", [])
+        milestone(
+            f"[scout] cycle 2 — fitting {len(configs)} combine config(s) "
+            f"(D3b.A cap = {gbdt_scout_io.COMBINE_DECISION_MAX_CONFIGS})"
+        )
+        # Reuse cycle 1's cliff-cut feature pool from scout_bundle.json.
+        try:
+            bundle_payload = json.loads(
+                gbdt_scout_io.scout_bundle_path(out_dir).read_text()
+            )
+            kept = list(bundle_payload.get("fs_prefit", {}).get(
+                "kept_features", list(X.columns),
+            ))
+        except Exception:
+            kept = list(X.columns)
+        X_tr = X_tr_full[kept]
+        X_val = X_val_full[kept]
+        X_ev = X_ev_full[kept]
+        fit_one_cb = _build_combine_fit_one(
+            backend=backend_library,
+            hp_starting=hp_starting,
+            feature_names=kept,
+            random_seed=random_seed,
+            calibration_method=calibration_method,
+            calibration_z_threshold=calibration_z_threshold,
+        )
+        combine_results: list[dict] = []
+        for i, cfg in enumerate(configs):
+            t_cfg = time.time()
+            overlay = dict(cfg.get("hp") or {})
+            try:
+                metrics = fit_one_cb(
+                    hp_overlay=overlay,
+                    X_train=X_tr, y_train=y_tr, w_train=w_tr,
+                    X_val=X_val, y_val=y_val, w_val=w_val,
+                    X_eval=X_ev, y_eval=y_ev, w_eval=w_ev,
+                    mi_eval=mi_ev,
+                )
+                row = {
+                    "index": i,
+                    "label": cfg.get("label"),
+                    "hp_overlay": overlay,
+                    "metrics": metrics,
+                    "fit_seconds": float(time.time() - t_cfg),
+                    "status": "ok",
+                }
+            except Exception as exc:    # noqa: BLE001
+                row = {
+                    "index": i,
+                    "label": cfg.get("label"),
+                    "hp_overlay": overlay,
+                    "metrics": None,
+                    "fit_seconds": float(time.time() - t_cfg),
+                    "status": "error",
+                    "error_message": f"{type(exc).__name__}: {exc}"[:512],
+                }
+            combine_results.append(row)
+        results_path = gbdt_scout_io.write_combine_results(
+            out_dir, combine_results,
+        )
+        status.update(phase="scout_cycle_2", awaiting_decision=True)
+        milestone(
+            f"[scout] cycle 2 complete; wrote {results_path}. "
+            f"Agent writes iter_0_decision.json + reruns --resume "
+            f"--snapshot-end <DATE>."
+        )
+        return None
+
+    # Cycle 1 — fresh run, no scout/ files yet. Run prefit + scout.
+    milestone("[scout] cycle 1 — starting FS-prefit + scout response curves")
+    heartbeat.set_phase("scout")
+    status.update(phase="scout_cycle_1", awaiting_decision=False)
+
+    # FS-prefit
+    fs_prefit_enabled = bool(fs_prefit_cfg.get("enabled", True))
+    kept_features = list(X.columns)
+    fs_prefit_summary: dict = {"enabled": False}
+    if fs_prefit_enabled:
+        cliff_pct = float(fs_prefit_cfg.get("cliff_pct", 0.01))
+        prefit_fit_one = _build_fs_prefit_runner_fit_one(
+            backend=backend_library, random_seed=random_seed,
+            feature_names=list(X.columns),
+        )
+        try:
+            prefit_result = gbdt_fs_prefit.run_fs_prefit(
+                X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
+                X_val=X_val_full, y_val=y_val, w_val=w_val,
+                fit_one=prefit_fit_one,
+                backend=backend_library,
+                default_hp=dict(hp_starting),
+                cliff_pct=cliff_pct,
+            )
+            kept_features = list(prefit_result.kept_features)
+            fs_prefit_summary = {
+                "enabled": True,
+                "cliff_pct": cliff_pct,
+                "n_kept": len(prefit_result.kept_features),
+                "n_dropped": len(prefit_result.dropped_features),
+                "top_importance": prefit_result.top_importance,
+                "cliff_threshold": prefit_result.cliff_threshold,
+                "fit_seconds": prefit_result.fit_seconds,
+                "kept_features": kept_features,
+            }
+            milestone(
+                f"[scout] FS-prefit: kept {len(prefit_result.kept_features)}, "
+                f"dropped {len(prefit_result.dropped_features)} "
+                f"(cliff_pct={cliff_pct}, "
+                f"top_importance={prefit_result.top_importance:.4g})"
+            )
+        except Exception as exc:    # noqa: BLE001
+            fs_prefit_summary = {
+                "enabled": True, "status": "error",
+                "error_message": f"{type(exc).__name__}: {exc}"[:512],
+            }
+            milestone(f"[scout] FS-prefit ERROR: {exc!r}; using full feature set")
+
+    # Scout fits on the cliff-cut pool.
+    X_tr = X_tr_full[kept_features]
+    X_val = X_val_full[kept_features]
+    X_ev = X_ev_full[kept_features]
+    n_pos = int(np.sum(np.asarray(y_tr) == 1))
+    n_neg = int(np.sum(np.asarray(y_tr) == 0))
+    scout_fit_one = _build_scout_runner_fit_one(
+        backend=backend_library, hp_starting=hp_starting,
+        feature_names=kept_features, random_seed=random_seed,
+        calibration_method=calibration_method,
+        calibration_z_threshold=calibration_z_threshold,
+    )
+    spec_shim = {"backend": {"scout": scout_cfg}}
+    t_scout = time.time()
+    scout_results = gbdt_scout.run_scout(
+        X_train=X_tr, y_train=y_tr, w_train=w_tr,
+        X_val=X_val, y_val=y_val, w_val=w_val,
+        X_eval=X_ev, y_eval=y_ev, w_eval=w_ev,
+        mi_eval=mi_ev,
+        fit_one=scout_fit_one,
+        backend=backend_library,
+        spec=spec_shim,
+        per_config_timeout_seconds=scout_cfg.get("per_config_timeout_seconds"),
+        soft_wall_clock_seconds=scout_cfg.get("wall_clock_cap_seconds"),
+        n_positive=n_pos, n_negative=n_neg,
+    )
+    scout_runtime = time.time() - t_scout
+    n_ok = sum(1 for r in scout_results if r.status == "ok")
+    milestone(
+        f"[scout] cycle 1 complete; {n_ok}/{len(scout_results)} configs ok "
+        f"in {scout_runtime:.1f}s"
+    )
+
+    # Build the lex auto-compose to prefill into combine_request.
+    lex_winner = gbdt_scout.lexicographic_winner(scout_results)
+    per_knob = gbdt_scout.per_knob_winners(scout_results)
+    defaults_metrics = next(
+        (r.to_dict() for r in scout_results
+          if r.config.knob_name == "defaults"),
+        None,
+    )
+
+    # Write scout/ files (atomic temp+rename).
+    scout_results_path = gbdt_scout_io.write_scout_results(
+        out_dir, [r.to_dict() for r in scout_results],
+    )
+    bundle_payload = {
+        "run_id": run_id,
+        "backend": backend_library,
+        "n_configs_total": len(scout_results),
+        "n_configs_completed": n_ok,
+        "runtime_seconds": scout_runtime,
+        "defaults_metrics": defaults_metrics,
+        "per_knob_winner": per_knob,
+        "lexicographic_auto_compose": {
+            "hp_overlay": dict(lex_winner.hp_overlay),
+        },
+        "fs_prefit": fs_prefit_summary,
+        "grid_spec": dict(scout_cfg.get("grid", {})),
+    }
+    bundle_path = gbdt_scout_io.write_scout_bundle(out_dir, bundle_payload)
+    combine_request_payload = {
+        "run_id": run_id,
+        "backend": backend_library,
+        "prompt": gbdt_scout.SPEED_BIASED_COMBINE_PROMPT,
+        "cap_n_configs": gbdt_scout_io.COMBINE_DECISION_MAX_CONFIGS,
+        "lex_auto_compose_overlay": dict(lex_winner.hp_overlay),
+        # Recommend the agent include the lex auto-compose as the zeroth
+        # candidate so combine_results always has a "vs auto-compose"
+        # comparator visible (plan § 4 D3b).
+        "zeroth_candidate_recommendation": {
+            "label": "lex_auto_compose",
+            "hp": dict(lex_winner.hp_overlay),
+        },
+        "speed_biased_prompt": gbdt_scout.SPEED_BIASED_COMBINE_PROMPT,
+        "scout_results_jsonl": str(scout_results_path),
+        "scout_bundle_json": str(bundle_path),
+    }
+    request_path = gbdt_scout_io.write_combine_request(
+        out_dir, combine_request_payload,
+    )
+    status.update(phase="scout_cycle_1", awaiting_decision=True)
+    milestone(
+        f"[scout] cycle 1 paused — wrote {request_path}. "
+        f"Agent writes combine_decision.json and reruns: "
+        f"uv run python -m gbdt experiment {spec_path.name} "
+        f"--resume {run_id} --snapshot-end <DATE>"
+    )
+    return None
+
+
+def _build_scout_runner_fit_one(
+    *, backend: str, hp_starting: dict, feature_names: list[str],
+    random_seed: int, calibration_method: str, calibration_z_threshold: float,
+):
+    """Runner-side fit closure for scout fits (cycle 1).
+
+    Mirrors :func:`gbdt.train._build_scout_fit_one` so the runner can fit
+    configs without going through ``walk_forward_train``. Returns the
+    metrics dict ``run_scout`` expects from its ``fit_one`` callable.
+    """
+    from gbdt.train import _build_scout_fit_one
+    return _build_scout_fit_one(
+        backend=backend, current_hp=hp_starting,
+        current_features=feature_names,
+        random_seed=random_seed,
+        calibration_method=calibration_method,
+        calibration_z_threshold=calibration_z_threshold,
+    )
+
+
+def _build_fs_prefit_runner_fit_one(
+    *, backend: str, random_seed: int, feature_names: list[str],
+):
+    from gbdt.train import _build_fs_prefit_fit_one
+    return _build_fs_prefit_fit_one(
+        backend=backend, random_seed=random_seed,
+        feature_names=feature_names,
+    )
+
+
+def _build_combine_fit_one(
+    *, backend: str, hp_starting: dict, feature_names: list[str],
+    random_seed: int, calibration_method: str, calibration_z_threshold: float,
+):
+    """Runner-side fit closure for combine configs (cycle 2).
+
+    Same shape as the scout fit closure — just a thin alias for clarity.
+    """
+    return _build_scout_runner_fit_one(
+        backend=backend, hp_starting=hp_starting,
+        feature_names=feature_names,
+        random_seed=random_seed,
+        calibration_method=calibration_method,
+        calibration_z_threshold=calibration_z_threshold,
+    )
+
+
 def _load_and_apply_resume(
     out_dir: Path, spec: dict, *, run_id: str,
     progress_log: "loop_observability.ProgressLog | None" = None,
@@ -788,12 +1192,55 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
 
     _milestone(f"[experiment] start spec={spec_path.name} -> {out_dir}")
 
+    # V1.3 Option B (P4) — agent_file_protocol scout cycles use
+    # ``scout/`` files (not the V1.1 loop checkpoint). When a ``--resume``
+    # lands in cycle 2 (combine_decision present, no loop checkpoint yet)
+    # or cycle 3 (iter_0_decision present, still no checkpoint), we MUST
+    # NOT enter the V1.1 ``_load_and_apply_resume`` path — it would refuse
+    # for a missing checkpoint. Distinguish by checking whether the V1.1
+    # checkpoint exists; if not, we're in a scout cycle.
+    _spec_backend = spec.get("backend", {}) or {}
+    _spec_loop = _spec_backend.get("fs_hp_loop", {}) or {}
+    _spec_scout = _spec_backend.get("scout", {}) or {}
+    _is_agent_mode = (
+        _spec_loop.get("callback_mode", _DEFAULT_CALLBACK_MODE)
+        == "agent_file_protocol"
+    )
+    _scout_enabled_in_spec = bool(_spec_scout.get("enabled", False))
+    _v1_1_ckpt_exists = gbdt_checkpoint.read_checkpoint(out_dir) is not None
+    _in_scout_cycle = (
+        resume is not None
+        and _is_agent_mode
+        and _scout_enabled_in_spec
+        and not _v1_1_ckpt_exists
+    )
+
+    # PR #122 contract — `--resume` MUST re-pass `--snapshot-end` when the
+    # spec uses agent_file_protocol mode AND has scout enabled (V1.3 Option B
+    # scout cycles MUST keep universe-cache keys stable across exits). The
+    # pre-V1.3 Option B agent loop doesn't strictly require it (existing
+    # tests resume without --snapshot-end), so we only enforce when scout
+    # is part of the picture.
+    if (
+        resume is not None
+        and _is_agent_mode
+        and _scout_enabled_in_spec
+        and snapshot_end is None
+    ):
+        progress_log.close()
+        raise ValueError(
+            "[resume] --snapshot-end is REQUIRED when --resume targets an "
+            "agent_file_protocol spec with scout enabled (V1.3 Option B "
+            "P4 contract). Pass the same --snapshot-end value the fresh "
+            "run used so universe-cache keys stay stable across cycles."
+        )
+
     # V1.1 exit-and-resume (plan § 0): load the prior checkpoint + the agent's
     # decision, validate + apply it, and build the ``resume_state`` that seeds
     # ``walk_forward_train`` at iter N+1 (without re-training 0..N). ``None``
     # when this is a fresh run.
     resume_state: dict | None = None
-    if resume is not None:
+    if resume is not None and not _in_scout_cycle:
         try:
             resume_state = _load_and_apply_resume(
                 out_dir, spec, run_id=resume, progress_log=progress_log,
@@ -1307,6 +1754,54 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             "degenerate_sink_threshold", _DEFAULT_DEGENERATE_SINK_THRESHOLD
         )
     )
+    # V1.3 Option B (P4) — agent_file_protocol scout cycles.
+    # In agent mode with scout enabled, we run cycles 1-3 OUTSIDE of
+    # walk_forward_train: cycle 1 produces scout_results + combine_request,
+    # cycle 2 fits the agent's combine_decision configs, cycle 3 reads the
+    # agent's iter_0_decision and uses it as iter_0's hp_starting. The
+    # walk_forward_train call below sees scout-disabled + the agent's HP
+    # already on hp_starting, so it behaves like the V1.1 agent loop from
+    # iter_0 onwards.
+    scout_cfg = backend.get("scout", {}) or {}
+    fs_prefit_cfg = backend.get("fs_prefit", {}) or {}
+    scout_enabled = bool(scout_cfg.get("enabled", False))
+    fs_prefit_enabled = bool(fs_prefit_cfg.get("enabled", scout_enabled))
+    iter_0_features = list(X.columns)
+    if scout_enabled and callback_mode == "agent_file_protocol":
+        cycle_outcome = _handle_scout_cycles_agent_mode(
+            out_dir=out_dir,
+            spec=spec,
+            run_id=name, spec_path=spec_path,
+            panel=panel_obj.panel, X=X, y=y, sample_weights=sample_weights,
+            split=split, universe_calendar=universe_cal,
+            backend_library=backend_library,
+            hp_starting=hp_starting,
+            calibration_method=cal_method,
+            calibration_z_threshold=cal_z_thr,
+            random_seed=seed,
+            scout_cfg=scout_cfg, fs_prefit_cfg=fs_prefit_cfg,
+            milestone=_milestone, heartbeat=heartbeat, status=status,
+            progress_log=progress_log,
+        )
+        if cycle_outcome is None:
+            # Cycle paused — runner already wrote the relevant files +
+            # logged the resume hint. Exit cleanly.
+            heartbeat.stop()
+            progress_log.close()
+            return out_dir
+        # cycle 3: proceed with the agent's HP + cliff-cut feature set.
+        hp_starting = cycle_outcome["hp_starting"]
+        iter_0_features = cycle_outcome["features"]
+        # The scout report is stitched into the metrics later via
+        # ``cycle_outcome['scout_report']``.
+    elif scout_enabled and callback_mode == "default":
+        # Default mode — scout runs INSIDE walk_forward_train. We don't
+        # touch hp_starting / iter_0_features here; the in-train helper
+        # will mutate them based on the lex auto-compose winner.
+        pass
+    else:
+        cycle_outcome = None
+
     # V1.1 — resolve the FS+HP callback from the (possibly CLI-overridden) spec.
     # ``default`` resolves to None so walk_forward_train keeps using its built-in
     # default_fs_hp_callback (v1 behaviour preserved byte-for-byte). The
@@ -1352,7 +1847,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     try:
         result = walk_forward_train(
             panel=panel_obj.panel, X=X, y=y,
-            features=list(X.columns), hp=dict(hp_starting), split=split,
+            features=list(iter_0_features), hp=dict(hp_starting), split=split,
             calibration_method=cal_method,
             calibration_z_threshold=cal_z_thr,
             max_iterations=max_iter,
@@ -1373,6 +1868,12 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             # V1.4 (date-aligned splits): None for trailing carves (the
             # default path); the resolved universe calendar otherwise.
             universe_calendar=universe_cal,
+            # V1.3 Option B (P3) — scout/prefit hooks. Active only in default
+            # mode (the in-train helper skips agent_file_protocol mode since
+            # P4's runner-side cycles already handled it).
+            scout_spec=scout_cfg if scout_enabled else None,
+            fs_prefit_spec=fs_prefit_cfg if fs_prefit_enabled else None,
+            callback_mode=callback_mode,
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the
