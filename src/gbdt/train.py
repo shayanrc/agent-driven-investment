@@ -459,6 +459,14 @@ def _maybe_run_scout_and_prefit(
     calibration_z_threshold: float,
     degenerate_sink_threshold: float,
     universe_calendar: pd.DatetimeIndex | None,
+    # V1.3 Option B D6.2.A — FS-prefit kept-feature cache (cross-cell reuse).
+    # All four are optional; when any is missing we run the prefit without
+    # caching (back-compat for old callers / tests). The runner threads all
+    # of these in default mode.
+    universe: str | None = None,
+    cache_root: str | None = None,
+    features_source_sha256: str | None = None,
+    snapshot_end_iso: str | None = None,
 ) -> dict | None:
     """Run Phase 1.4 (FS-prefit) + Phase 1.5 (scout) + Phase 1.6 (combine).
 
@@ -515,19 +523,69 @@ def _maybe_run_scout_and_prefit(
     fs_prefit_report: dict = {"enabled": False}
     if prefit_enabled:
         cliff_pct = float(prefit_cfg.get("cliff_pct", 0.01))
-        prefit_fit_one = _build_fs_prefit_fit_one(
-            backend=backend, random_seed=random_seed,
-            feature_names=current_features,
-        )
-        try:
-            prefit_result = fs_prefit_mod.run_fs_prefit(
-                X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
-                X_val=X_val_full, y_val=y_val, w_val=w_val,
-                fit_one=prefit_fit_one,
-                backend=backend,
-                default_hp=dict(current_hp),
-                cliff_pct=cliff_pct,
+        # D6.2.A cache key — only computable when ALL key components are
+        # provided. Missing any component disables caching (back-compat /
+        # test paths). Cliff_pct is folded into the default_hp_sha256 input
+        # so two cells with different cliffs don't share a cache entry.
+        cache_key: str | None = None
+        if (
+            universe is not None
+            and features_source_sha256 is not None
+            and snapshot_end_iso is not None
+            and cache_root is not None
+        ):
+            cache_key = fs_prefit_mod.fs_prefit_cache_key(
+                universe=str(universe),
+                features_source_sha256=str(features_source_sha256),
+                snapshot_end=str(snapshot_end_iso),
+                default_hp_sha256=fs_prefit_mod.hp_sha256(
+                    {"hp": dict(current_hp), "cliff_pct": float(cliff_pct),
+                     "backend": str(backend)},
+                ),
             )
+
+        prefit_result = None
+        cache_hit = False
+        if cache_key is not None:
+            cached = fs_prefit_mod.load_fs_prefit_cache(cache_root, cache_key)
+            if cached is not None:
+                prefit_result = cached
+                cache_hit = True
+
+        if prefit_result is None:
+            prefit_fit_one = _build_fs_prefit_fit_one(
+                backend=backend, random_seed=random_seed,
+                feature_names=current_features,
+            )
+            try:
+                prefit_result = fs_prefit_mod.run_fs_prefit(
+                    X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
+                    X_val=X_val_full, y_val=y_val, w_val=w_val,
+                    fit_one=prefit_fit_one,
+                    backend=backend,
+                    default_hp=dict(current_hp),
+                    cliff_pct=cliff_pct,
+                )
+                if cache_key is not None:
+                    try:
+                        fs_prefit_mod.save_fs_prefit_cache(
+                            cache_root, cache_key, prefit_result,
+                        )
+                    except OSError:
+                        # Cache write failures are non-fatal — the run
+                        # continues with the freshly-fit result.
+                        pass
+            except Exception as exc:    # noqa: BLE001
+                fs_prefit_report = {
+                    "enabled": True,
+                    "status": "error",
+                    "error_message": f"{type(exc).__name__}: {exc}"[:512],
+                }
+                # Fall through with the original feature set.
+                kept_features = list(current_features)
+                prefit_result = None
+
+        if prefit_result is not None:
             kept_features = list(prefit_result.kept_features)
             fs_prefit_report = {
                 "enabled": True,
@@ -538,15 +596,9 @@ def _maybe_run_scout_and_prefit(
                 "cliff_threshold": prefit_result.cliff_threshold,
                 "fit_seconds": prefit_result.fit_seconds,
                 "backend": prefit_result.backend,
+                "cache_hit": cache_hit,
+                "cache_key": cache_key,
             }
-        except Exception as exc:    # noqa: BLE001
-            fs_prefit_report = {
-                "enabled": True,
-                "status": "error",
-                "error_message": f"{type(exc).__name__}: {exc}"[:512],
-            }
-            # Fall through with the original feature set.
-            kept_features = list(current_features)
 
     # Restrict X to kept features for the scout fits.
     X_tr = X_tr_full[kept_features]
@@ -797,6 +849,14 @@ def walk_forward_train(
     scout_spec: dict | None = None,
     fs_prefit_spec: dict | None = None,
     callback_mode: str = "default",
+    # V1.3 Option B D6.2.A — FS-prefit kept-feature cache (cross-cell reuse).
+    # Threaded into ``_maybe_run_scout_and_prefit``; when any is None the
+    # cache is bypassed (back-compat for callers that don't supply the
+    # universe/snapshot/source-sha context).
+    fs_prefit_universe: str | None = None,
+    fs_prefit_cache_root: str | None = None,
+    fs_prefit_features_source_sha256: str | None = None,
+    fs_prefit_snapshot_end_iso: str | None = None,
 ) -> WalkForwardResult:
     """Run one walk-forward fold with the FS+HP iteration loop on top.
 
@@ -892,6 +952,10 @@ def walk_forward_train(
             calibration_z_threshold=calibration_z_threshold,
             degenerate_sink_threshold=degenerate_sink_threshold,
             universe_calendar=universe_calendar,
+            universe=fs_prefit_universe,
+            cache_root=fs_prefit_cache_root,
+            features_source_sha256=fs_prefit_features_source_sha256,
+            snapshot_end_iso=fs_prefit_snapshot_end_iso,
         )
         if scout_outcome is not None:
             current_features = scout_outcome["current_features"]
