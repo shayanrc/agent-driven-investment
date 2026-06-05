@@ -675,6 +675,55 @@ def _handle_scout_cycles_agent_mode(
     """
     cycle_state = gbdt_scout_io.detect_cycle_state(out_dir)
 
+    def _translate_agent_overlay(
+        overlay: dict, *, source_label: str,
+    ) -> dict:
+        """Apply scout._translate_for_backend to agent-supplied HP overlays
+        (V1.3 Option B PR #125 Medium 2 fix). The speed-biased combine
+        prompt uses XGBoost-canonical knob names; the agent will echo
+        those names; for CatBoost specs the XGBoost-named keys would be
+        silently dropped by make_model. Translate-then-fit gives consistent
+        semantics with the runner's own grid-build path (which already
+        translates XGBoost → CatBoost).
+
+        Logs a one-line warning for every key the translation drops (e.g.
+        ``gamma`` on CatBoost — no analog), so the agent gets feedback in
+        the next request bundle.
+        """
+        if not overlay:
+            return {}
+        translated = gbdt_scout._translate_for_backend(
+            dict(overlay), backend_library,
+        )
+        # XGBoost path: translation is pass-through, no drops to log.
+        if backend_library == "xgboost":
+            return translated
+        # Detect dropped keys (in source but not in translation). Both
+        # ``gamma`` (explicit drop) and any unknown-vocab key surface here.
+        translated_xgb_names = set()
+        for k_in in overlay.keys():
+            if k_in == "gamma":
+                continue    # known-drop; logged separately below
+            if k_in in gbdt_scout._XGB_TO_CATBOOST:
+                translated_xgb_names.add(k_in)
+            elif k_in == "scale_pos_weight":
+                translated_xgb_names.add(k_in)
+        dropped = [
+            k for k in overlay.keys()
+            if k != "gamma" and k not in translated_xgb_names
+        ]
+        if "gamma" in overlay:
+            milestone(
+                f"[scout] {source_label}: dropped 'gamma' "
+                f"(no CatBoost analog) — translation per V1.3 Option B D1"
+            )
+        if dropped:
+            milestone(
+                f"[scout] {source_label}: dropped unknown-vocab key(s) "
+                f"{dropped} for backend={backend_library!r}"
+            )
+        return translated
+
     # Cycle 3 — iter_0 decision is ready; the agent has chosen the HP.
     if cycle_state.has_iter_0_decision:
         try:
@@ -682,7 +731,10 @@ def _handle_scout_cycles_agent_mode(
         except gbdt_scout_io.Iter0DecisionError:
             progress_log.close()
             raise
-        agent_hp = dict(iter_0_decision.get("hp") or {})
+        raw_agent_hp = dict(iter_0_decision.get("hp") or {})
+        agent_hp = _translate_agent_overlay(
+            raw_agent_hp, source_label="cycle 3 iter_0_decision",
+        )
         # Cliff-cut feature pool comes from cycle 1's scout_bundle (saved at
         # the cycle-1 exit). Fall back to all of X.columns if unavailable
         # (shouldn't happen for a clean run).
@@ -766,7 +818,16 @@ def _handle_scout_cycles_agent_mode(
         combine_results: list[dict] = []
         for i, cfg in enumerate(configs):
             t_cfg = time.time()
-            overlay = dict(cfg.get("hp") or {})
+            raw_overlay = dict(cfg.get("hp") or {})
+            # Translate agent-supplied XGBoost-vocab keys to the spec's
+            # backend (V1.3 Option B PR #125 Medium 2). For XGBoost specs
+            # this is pass-through; for CatBoost specs ``gamma`` is dropped
+            # + the XGBoost-canonical keys map to their CatBoost
+            # equivalents (per scout._translate_for_backend).
+            overlay = _translate_agent_overlay(
+                raw_overlay,
+                source_label=f"cycle 2 combine cfg[{i}] ({cfg.get('label')})",
+            )
             try:
                 metrics = fit_one_cb(
                     hp_overlay=overlay,
@@ -778,6 +839,9 @@ def _handle_scout_cycles_agent_mode(
                 row = {
                     "index": i,
                     "label": cfg.get("label"),
+                    # Preserve BOTH the agent's original keys (audit) AND
+                    # the translated keys the model was actually fit on.
+                    "hp_overlay_raw": raw_overlay,
                     "hp_overlay": overlay,
                     "metrics": metrics,
                     "fit_seconds": float(time.time() - t_cfg),
@@ -787,6 +851,7 @@ def _handle_scout_cycles_agent_mode(
                 row = {
                     "index": i,
                     "label": cfg.get("label"),
+                    "hp_overlay_raw": raw_overlay,
                     "hp_overlay": overlay,
                     "metrics": None,
                     "fit_seconds": float(time.time() - t_cfg),
