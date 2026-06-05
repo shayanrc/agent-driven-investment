@@ -642,6 +642,13 @@ def _handle_scout_cycles_agent_mode(
     heartbeat,
     status,
     progress_log,
+    # V1.3 Option B D6.2.A — FS-prefit kept-feature cache key inputs.
+    # All four optional; when any is None the cache is bypassed and the
+    # cycle-1 FS-prefit runs cold every time (back-compat / tests).
+    fs_prefit_universe: str | None = None,
+    fs_prefit_cache_root: str | None = None,
+    fs_prefit_features_source_sha256: str | None = None,
+    fs_prefit_snapshot_end_iso: str | None = None,
 ) -> dict | None:
     """V1.3 Option B P4 — runner-side scout cycles in agent_file_protocol mode.
 
@@ -809,19 +816,80 @@ def _handle_scout_cycles_agent_mode(
     fs_prefit_summary: dict = {"enabled": False}
     if fs_prefit_enabled:
         cliff_pct = float(fs_prefit_cfg.get("cliff_pct", 0.01))
-        prefit_fit_one = _build_fs_prefit_runner_fit_one(
-            backend=backend_library, random_seed=random_seed,
-            feature_names=list(X.columns),
-        )
-        try:
-            prefit_result = gbdt_fs_prefit.run_fs_prefit(
-                X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
-                X_val=X_val_full, y_val=y_val, w_val=w_val,
-                fit_one=prefit_fit_one,
-                backend=backend_library,
-                default_hp=dict(hp_starting),
-                cliff_pct=cliff_pct,
+        # D6.2.A cache key — only when all four inputs are supplied (runner
+        # supplies them; tests may not).
+        cache_key: str | None = None
+        if (
+            fs_prefit_universe is not None
+            and fs_prefit_features_source_sha256 is not None
+            and fs_prefit_snapshot_end_iso is not None
+            and fs_prefit_cache_root is not None
+        ):
+            cache_key = gbdt_fs_prefit.fs_prefit_cache_key(
+                universe=str(fs_prefit_universe),
+                features_source_sha256=str(fs_prefit_features_source_sha256),
+                snapshot_end=str(fs_prefit_snapshot_end_iso),
+                default_hp_sha256=gbdt_fs_prefit.hp_sha256(
+                    {"hp": dict(hp_starting), "cliff_pct": float(cliff_pct),
+                     "backend": str(backend_library)},
+                ),
             )
+
+        prefit_result = None
+        cache_hit = False
+        if cache_key is not None:
+            cached = gbdt_fs_prefit.load_fs_prefit_cache(
+                fs_prefit_cache_root, cache_key,
+            )
+            if cached is not None:
+                prefit_result = cached
+                cache_hit = True
+                milestone(
+                    f"[scout] FS-prefit cache HIT (key={cache_key[:12]}…) — "
+                    f"skipping fit; kept={len(prefit_result.kept_features)}"
+                )
+
+        if prefit_result is None:
+            prefit_fit_one = _build_fs_prefit_runner_fit_one(
+                backend=backend_library, random_seed=random_seed,
+                feature_names=list(X.columns),
+            )
+            try:
+                prefit_result = gbdt_fs_prefit.run_fs_prefit(
+                    X_train=X_tr_full, y_train=y_tr, w_train=w_tr,
+                    X_val=X_val_full, y_val=y_val, w_val=w_val,
+                    fit_one=prefit_fit_one,
+                    backend=backend_library,
+                    default_hp=dict(hp_starting),
+                    cliff_pct=cliff_pct,
+                )
+                if cache_key is not None:
+                    try:
+                        gbdt_fs_prefit.save_fs_prefit_cache(
+                            fs_prefit_cache_root, cache_key, prefit_result,
+                        )
+                    except OSError:
+                        # Non-fatal — cycle proceeds with the freshly-fit
+                        # result; the next sibling cell will miss too.
+                        pass
+                milestone(
+                    f"[scout] FS-prefit: kept {len(prefit_result.kept_features)}, "
+                    f"dropped {len(prefit_result.dropped_features)} "
+                    f"(cliff_pct={cliff_pct}, "
+                    f"top_importance={prefit_result.top_importance:.4g}, "
+                    f"cache_key={cache_key[:12] + '…' if cache_key else 'none'})"
+                )
+            except Exception as exc:    # noqa: BLE001
+                fs_prefit_summary = {
+                    "enabled": True, "status": "error",
+                    "error_message": f"{type(exc).__name__}: {exc}"[:512],
+                }
+                milestone(
+                    f"[scout] FS-prefit ERROR: {exc!r}; using full feature set"
+                )
+                prefit_result = None
+
+        if prefit_result is not None:
             kept_features = list(prefit_result.kept_features)
             fs_prefit_summary = {
                 "enabled": True,
@@ -832,19 +900,9 @@ def _handle_scout_cycles_agent_mode(
                 "cliff_threshold": prefit_result.cliff_threshold,
                 "fit_seconds": prefit_result.fit_seconds,
                 "kept_features": kept_features,
+                "cache_hit": cache_hit,
+                "cache_key": cache_key,
             }
-            milestone(
-                f"[scout] FS-prefit: kept {len(prefit_result.kept_features)}, "
-                f"dropped {len(prefit_result.dropped_features)} "
-                f"(cliff_pct={cliff_pct}, "
-                f"top_importance={prefit_result.top_importance:.4g})"
-            )
-        except Exception as exc:    # noqa: BLE001
-            fs_prefit_summary = {
-                "enabled": True, "status": "error",
-                "error_message": f"{type(exc).__name__}: {exc}"[:512],
-            }
-            milestone(f"[scout] FS-prefit ERROR: {exc!r}; using full feature set")
 
     # Scout fits on the cliff-cut pool.
     X_tr = X_tr_full[kept_features]
@@ -1924,6 +1982,16 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             scout_cfg=scout_cfg, fs_prefit_cfg=fs_prefit_cfg,
             milestone=_milestone, heartbeat=heartbeat, status=status,
             progress_log=progress_log,
+            # D6.2.A — FS-prefit cache inputs.
+            fs_prefit_universe=target["universe"],
+            fs_prefit_cache_root=preflight.get("data_root"),
+            fs_prefit_features_source_sha256=(
+                gbdt_feature_cache.feature_code_signature().get("source_sha256")
+            ),
+            fs_prefit_snapshot_end_iso=(
+                snapshot_end_override_iso
+                or panel_sig.get("panel_date_max")
+            ),
         )
         if cycle_outcome is None:
             # Cycle paused — runner already wrote the relevant files +
@@ -2016,6 +2084,19 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             scout_spec=scout_cfg if scout_enabled else None,
             fs_prefit_spec=fs_prefit_cfg if fs_prefit_enabled else None,
             callback_mode=callback_mode,
+            # V1.3 Option B D6.2.A — FS-prefit kept-feature cache key inputs.
+            # Default mode flows through ``_maybe_run_scout_and_prefit``; the
+            # cache is the cross-cell reuse layer for sibling cells sharing
+            # the universe + snapshot + feature-source + default HP.
+            fs_prefit_universe=target["universe"],
+            fs_prefit_cache_root=preflight.get("data_root"),
+            fs_prefit_features_source_sha256=(
+                gbdt_feature_cache.feature_code_signature().get("source_sha256")
+            ),
+            fs_prefit_snapshot_end_iso=(
+                snapshot_end_override_iso
+                or panel_sig.get("panel_date_max")
+            ),
         )
     except loop_protocol.PauseForAgentDecision as pause:
         # Exit half of exit-and-resume (plan § 0): the callback wrote the
