@@ -1,0 +1,975 @@
+{
+  "configs": [
+    {
+      "index": 0,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.24066662621102258,
+        "train_brier": 0.24022848412871406,
+        "train_val_gap": 0.0004381420823085236,
+        "spiegelhalter_z": -2.470711479196623,
+        "eval_R_p_at_K": {
+          "1": 0.6270491803278688,
+          "3": 0.5710382513661203,
+          "5": 0.5614754098360656,
+          "10": 0.5528688524590164,
+          "20": 0.529640614514428
+        }
+      },
+      "fit_seconds": 3.031085968017578,
+      "status": "ok"
+    },
+    {
+      "index": 1,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23854511507517534,
+        "train_brier": 0.2175452369599993,
+        "train_val_gap": 0.020999878115176035,
+        "spiegelhalter_z": 0.7474607455538744,
+        "eval_R_p_at_K": {
+          "1": 0.6516393442622951,
+          "3": 0.5437158469945355,
+          "5": 0.5434426229508197,
+          "10": 0.5409836065573771,
+          "20": 0.5317968293809536
+        }
+      },
+      "fit_seconds": 2.6970698833465576,
+      "status": "ok"
+    },
+    {
+      "index": 2,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.2380532850611422,
+        "train_brier": 0.22445267440609032,
+        "train_val_gap": 0.013600610655051887,
+        "spiegelhalter_z": 0.1115911184200363,
+        "eval_R_p_at_K": {
+          "1": 0.48770491803278687,
+          "3": 0.5150273224043715,
+          "5": 0.5303278688524591,
+          "10": 0.5184426229508197,
+          "20": 0.5200972461892437
+        }
+      },
+      "fit_seconds": 3.0664126873016357,
+      "status": "ok"
+    },
+    {
+      "index": 3,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23966739102150594,
+        "train_brier": 0.2065885481616982,
+        "train_val_gap": 0.03307884285980775,
+        "spiegelhalter_z": 2.1203905002116894,
+        "eval_R_p_at_K": {
+          "1": 0.5819672131147541,
+          "3": 0.4986338797814208,
+          "5": 0.46885245901639344,
+          "10": 0.5266393442622951,
+          "20": 0.4970358786310038
+        }
+      },
+      "fit_seconds": 2.875507354736328,
+      "status": "ok"
+    },
+    {
+      "index": 4,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.24016963588267642,
+        "train_brier": 0.23879416490820493,
+        "train_val_gap": 0.0013754709744714932,
+        "spiegelhalter_z": -2.329188633021788,
+        "eval_R_p_at_K": {
+          "1": 0.6639344262295082,
+          "3": 0.5532786885245902,
+          "5": 0.5524590163934426,
+          "10": 0.5422131147540984,
+          "20": 0.5351526209027287
+        }
+      },
+      "fit_seconds": 2.860602855682373,
+      "status": "ok"
+    },
+    {
+      "index": 5,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 4,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 4,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23741090917727958,
+        "train_brier": 0.22825196651596785,
+        "train_val_gap": 0.00915894266131173,
+        "spiegelhalter_z": -2.23561211488795,
+        "eval_R_p_at_K": {
+          "1": 0.6229508196721312,
+          "3": 0.5355191256830601,
+          "5": 0.5204918032786885,
+          "10": 0.5430327868852459,
+          "20": 0.5330503045990534
+        }
+      },
+      "fit_seconds": 3.998671531677246,
+      "status": "ok"
+    },
+    {
+      "index": 6,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23999414589713822,
+        "train_brier": 0.23778951363960113,
+        "train_val_gap": 0.002204632257537087,
+        "spiegelhalter_z": -2.4722956603727924,
+        "eval_R_p_at_K": {
+          "1": 0.5409836065573771,
+          "3": 0.5191256830601094,
+          "5": 0.5499999999999999,
+          "10": 0.5614754098360656,
+          "20": 0.5147025692646917
+        }
+      },
+      "fit_seconds": 3.401874303817749,
+      "status": "ok"
+    },
+    {
+      "index": 7,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23839212507901295,
+        "train_brier": 0.2247456083658509,
+        "train_val_gap": 0.013646516713162055,
+        "spiegelhalter_z": 0.01928259714109198,
+        "eval_R_p_at_K": {
+          "1": 0.5081967213114754,
+          "3": 0.5245901639344263,
+          "5": 0.49426229508196723,
+          "10": 0.5131147540983607,
+          "20": 0.530331763493433
+        }
+      },
+      "fit_seconds": 3.382075071334839,
+      "status": "ok"
+    },
+    {
+      "index": 8,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.24080778936999558,
+        "train_brier": 0.24070157686373114,
+        "train_val_gap": 0.00010621250626444145,
+        "spiegelhalter_z": -2.51575899766689,
+        "eval_R_p_at_K": {
+          "1": 0.5819672131147541,
+          "3": 0.5901639344262294,
+          "5": 0.5647540983606558,
+          "10": 0.5495901639344262,
+          "20": 0.5362048820822548
+        }
+      },
+      "fit_seconds": 3.5603158473968506,
+      "status": "ok"
+    },
+    {
+      "index": 9,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.2297232924200673,
+        "train_brier": 0.20463928006657414,
+        "train_val_gap": 0.025084012353493168,
+        "spiegelhalter_z": 2.6397938931764253,
+        "eval_R_p_at_K": {
+          "1": 0.639344262295082,
+          "3": 0.5040983606557377,
+          "5": 0.5057377049180328,
+          "10": 0.5295081967213114,
+          "20": 0.5160864468672923
+        }
+      },
+      "fit_seconds": 2.961060047149658,
+      "status": "ok"
+    },
+    {
+      "index": 10,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.23663769384960365,
+        "train_brier": 0.21557514913620462,
+        "train_val_gap": 0.021062544713399023,
+        "spiegelhalter_z": 0.4260242115679885,
+        "eval_R_p_at_K": {
+          "1": 0.5860655737704918,
+          "3": 0.5409836065573771,
+          "5": 0.527049180327869,
+          "10": 0.5442622950819672,
+          "20": 0.5141454177233944
+        }
+      },
+      "fit_seconds": 3.5761873722076416,
+      "status": "ok"
+    },
+    {
+      "index": 11,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.2399562326914461,
+        "train_brier": 0.21865873419725224,
+        "train_val_gap": 0.02129749849419385,
+        "spiegelhalter_z": 1.1588990812552107,
+        "eval_R_p_at_K": {
+          "1": 0.5,
+          "3": 0.5081967213114754,
+          "5": 0.5065573770491804,
+          "10": 0.5295081967213114,
+          "20": 0.5124231965905823
+        }
+      },
+      "fit_seconds": 3.0358455181121826,
+      "status": "ok"
+    },
+    {
+      "index": 12,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.24077519991596605,
+        "train_brier": 0.239821626478529,
+        "train_val_gap": 0.0009535734374370441,
+        "spiegelhalter_z": -2.395278535656815,
+        "eval_R_p_at_K": {
+          "1": 0.5450819672131147,
+          "3": 0.5,
+          "5": 0.5254098360655737,
+          "10": 0.5618852459016394,
+          "20": 0.5085531218134756
+        }
+      },
+      "fit_seconds": 2.8582780361175537,
+      "status": "ok"
+    },
+    {
+      "index": 13,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.23109922471777097,
+        "train_brier": 0.2042704283482432,
+        "train_val_gap": 0.026828796369527785,
+        "spiegelhalter_z": 2.7880331304379293,
+        "eval_R_p_at_K": {
+          "1": 0.6147540983606558,
+          "3": 0.5204918032786886,
+          "5": 0.5114754098360657,
+          "10": 0.5413934426229507,
+          "20": 0.5150080398462624
+        }
+      },
+      "fit_seconds": 2.7512121200561523,
+      "status": "ok"
+    },
+    {
+      "index": 14,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "hp_overlay": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "metrics": {
+        "val_brier": 0.2369271620461787,
+        "train_brier": 0.22181041122861778,
+        "train_val_gap": 0.01511675081756092,
+        "spiegelhalter_z": 0.2233087805537022,
+        "eval_R_p_at_K": {
+          "1": 0.5327868852459017,
+          "3": 0.5191256830601092,
+          "5": 0.5204918032786886,
+          "10": 0.5307377049180327,
+          "20": 0.5246947200651902
+        }
+      },
+      "fit_seconds": 3.2725141048431396,
+      "status": "ok"
+    },
+    {
+      "index": 15,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.22432834160646536,
+        "train_brier": 0.22174377889916508,
+        "train_val_gap": 0.0025845627073002864,
+        "spiegelhalter_z": 0.07604438194636168,
+        "eval_R_p_at_K": {
+          "1": 0.6639344262295082,
+          "3": 0.5819672131147541,
+          "5": 0.5631147540983606,
+          "10": 0.5536885245901639,
+          "20": 0.5508843830888698
+        }
+      },
+      "fit_seconds": 3.040120840072632,
+      "status": "ok"
+    },
+    {
+      "index": 16,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "metrics": {
+        "val_brier": 0.2241384759537062,
+        "train_brier": 0.22314837315947766,
+        "train_val_gap": 0.0009901027942285368,
+        "spiegelhalter_z": -0.10691643123138328,
+        "eval_R_p_at_K": {
+          "1": 0.7704918032786885,
+          "3": 0.5915300546448088,
+          "5": 0.5991803278688524,
+          "10": 0.5577868852459015,
+          "20": 0.5599502085130861
+        }
+      },
+      "fit_seconds": 1.7695388793945312,
+      "status": "ok"
+    },
+    {
+      "index": 17,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.4,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "hp_overlay": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.4,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "metrics": {
+        "val_brier": 0.2246804261293289,
+        "train_brier": 0.22204825044948143,
+        "train_val_gap": 0.0026321756798474705,
+        "spiegelhalter_z": -0.1371341099154777,
+        "eval_R_p_at_K": {
+          "1": 0.6598360655737705,
+          "3": 0.5901639344262295,
+          "5": 0.5442622950819672,
+          "10": 0.5327868852459017,
+          "20": 0.5233767245361293
+        }
+      },
+      "fit_seconds": 1.8197739124298096,
+      "status": "ok"
+    },
+    {
+      "index": 18,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.15,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.15,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "metrics": {
+        "val_brier": 0.22460537857730778,
+        "train_brier": 0.22800313250057477,
+        "train_val_gap": -0.003397753923266994,
+        "spiegelhalter_z": -0.428271475144941,
+        "eval_R_p_at_K": {
+          "1": 0.5860655737704918,
+          "3": 0.4986338797814208,
+          "5": 0.5327868852459017,
+          "10": 0.564344262295082,
+          "20": 0.5049562710800847
+        }
+      },
+      "fit_seconds": 1.7515292167663574,
+      "status": "ok"
+    },
+    {
+      "index": 19,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 2,
+        "eta": 0.2,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "hp_overlay": {
+        "max_depth": 2,
+        "eta": 0.2,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "metrics": {
+        "val_brier": 0.22466164375133657,
+        "train_brier": 0.2271136314179354,
+        "train_val_gap": -0.0024519876665988205,
+        "spiegelhalter_z": -0.3080985771617557,
+        "eval_R_p_at_K": {
+          "1": 0.5983606557377049,
+          "3": 0.49453551912568317,
+          "5": 0.5180327868852459,
+          "10": 0.5499999999999999,
+          "20": 0.5017333058801996
+        }
+      },
+      "fit_seconds": 1.7323718070983887,
+      "status": "ok"
+    },
+    {
+      "index": 20,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 50,
+        "n_estimators": 200
+      },
+      "hp_overlay": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 50,
+        "n_estimators": 200
+      },
+      "metrics": {
+        "val_brier": 0.22490327714020267,
+        "train_brier": 0.22059075661605923,
+        "train_val_gap": 0.004312520524143437,
+        "spiegelhalter_z": 0.0512388112558747,
+        "eval_R_p_at_K": {
+          "1": 0.45901639344262296,
+          "3": 0.45081967213114754,
+          "5": 0.4811475409836067,
+          "10": 0.5024590163934426,
+          "20": 0.5283808479532163
+        }
+      },
+      "fit_seconds": 2.4469337463378906,
+      "status": "ok"
+    },
+    {
+      "index": 21,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 6,
+        "eta": 0.05,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 6,
+        "eta": 0.05,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.23685007239890993,
+        "train_brier": 0.17403191568980034,
+        "train_val_gap": 0.06281815670910959,
+        "spiegelhalter_z": 4.9005270531834135,
+        "eval_R_p_at_K": {
+          "1": 0.6721311475409836,
+          "3": 0.5150273224043717,
+          "5": 0.5155737704918033,
+          "10": 0.5540983606557377,
+          "20": 0.5179876308381486
+        }
+      },
+      "fit_seconds": 4.810704469680786,
+      "status": "ok"
+    },
+    {
+      "index": 22,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 6,
+        "eta": 0.3,
+        "colsample_bytree": 1.0,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 6,
+        "eta": 0.3,
+        "colsample_bytree": 1.0,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.2627631447226142,
+        "train_brier": 0.09609986356595539,
+        "train_val_gap": 0.1666632811566588,
+        "spiegelhalter_z": 10.555295797572395,
+        "eval_R_p_at_K": {
+          "1": 0.569672131147541,
+          "3": 0.5245901639344263,
+          "5": 0.5172131147540985,
+          "10": 0.5115095628415302,
+          "20": 0.5225400576080041
+        }
+      },
+      "fit_seconds": 5.645942449569702,
+      "status": "ok"
+    },
+    {
+      "index": 23,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 6,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 0.85,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 6,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 0.85,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.240197993353214,
+        "train_brier": 0.16184379250114914,
+        "train_val_gap": 0.07835420085206488,
+        "spiegelhalter_z": 5.811386918764821,
+        "eval_R_p_at_K": {
+          "1": 0.47540983606557374,
+          "3": 0.5286885245901639,
+          "5": 0.5672131147540984,
+          "10": 0.5552709471766849,
+          "20": 0.5369033028734281
+        }
+      },
+      "fit_seconds": 5.485365152359009,
+      "status": "ok"
+    },
+    {
+      "index": 24,
+      "label": null,
+      "hp_overlay_raw": {
+        "max_depth": 4,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0.1,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "hp_overlay": {
+        "max_depth": 4,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0.1,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "metrics": {
+        "val_brier": 0.23840243859408983,
+        "train_brier": 0.17384811678367684,
+        "train_val_gap": 0.06455432181041298,
+        "spiegelhalter_z": 5.253717276203149,
+        "eval_R_p_at_K": {
+          "1": 0.569672131147541,
+          "3": 0.5464480874316939,
+          "5": 0.5434426229508197,
+          "10": 0.5645833333333333,
+          "20": 0.5494007155245292
+        }
+      },
+      "fit_seconds": 4.531993865966797,
+      "status": "ok"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+2026-06-05T07:21:45+00:00 [experiment] start spec=sp500_up_10pct_25d_dd5pct_b_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:21:45+00:00 [data] start universe=sp500
+2026-06-05T07:22:08+00:00 [data] complete in 23.4s rows=3638785 tickers_kept=486
+2026-06-05T07:22:15+00:00 [heartbeat] t=12:52:15 phase=features elapsed_phase=6s elapsed_total=30s rss_mb=1126
+2026-06-05T07:22:25+00:00 [features] loaded from universe cache (key match) in 6.3s shape=(3638785, 279)
+2026-06-05T07:22:45+00:00 [heartbeat] t=12:52:45 phase=features elapsed_phase=36s elapsed_total=60s rss_mb=18552
+2026-06-05T07:23:09+00:00 [target] start
+2026-06-05T07:23:15+00:00 [heartbeat] t=12:53:15 phase=target elapsed_phase=6s elapsed_total=90s rss_mb=18552
+2026-06-05T07:23:24+00:00 [target] complete in 15.0s positive_prevalence=0.210
+2026-06-05T07:23:24+00:00 [uniqueness] start
+2026-06-05T07:23:28+00:00 [uniqueness] complete in 4.2s horizon=25 rows=3638785 ESS=3633434 inflation=1.00x
+2026-06-05T07:23:28+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_10pct_25d_dd5pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T07:23:28+00:00 [loop] start max_iter=8 callback_mode=default
+2026-06-05T07:23:45+00:00 [heartbeat] t=12:53:45 phase=loop elapsed_phase=17s elapsed_total=120s rss_mb=18552
+2026-06-05T07:24:15+00:00 [heartbeat] t=12:54:15 phase=loop elapsed_phase=47s elapsed_total=150s rss_mb=18552
+2026-06-05T07:24:45+00:00 [heartbeat] t=12:54:45 phase=loop elapsed_phase=77s elapsed_total=180s rss_mb=18552
+2026-06-05T07:25:15+00:00 [heartbeat] t=12:55:15 phase=loop elapsed_phase=107s elapsed_total=210s rss_mb=18552
+2026-06-05T07:25:45+00:00 [heartbeat] t=12:55:45 phase=loop elapsed_phase=137s elapsed_total=240s rss_mb=18552
+2026-06-05T07:26:15+00:00 [heartbeat] t=12:56:15 phase=loop elapsed_phase=167s elapsed_total=270s rss_mb=18552
+2026-06-05T07:26:45+00:00 [heartbeat] t=12:56:45 phase=loop elapsed_phase=197s elapsed_total=300s rss_mb=18552
+2026-06-05T07:27:15+00:00 [heartbeat] t=12:57:15 phase=loop elapsed_phase=227s elapsed_total=330s rss_mb=18552
+2026-06-05T07:27:45+00:00 [heartbeat] t=12:57:45 phase=loop elapsed_phase=257s elapsed_total=360s rss_mb=18552
+2026-06-05T07:28:15+00:00 [heartbeat] t=12:58:15 phase=loop elapsed_phase=287s elapsed_total=390s rss_mb=18552
+2026-06-05T07:28:45+00:00 [heartbeat] t=12:58:45 phase=loop elapsed_phase=317s elapsed_total=420s rss_mb=18552
+2026-06-05T07:29:15+00:00 [heartbeat] t=12:59:15 phase=loop elapsed_phase=347s elapsed_total=450s rss_mb=18552
+2026-06-05T07:29:45+00:00 [heartbeat] t=12:59:45 phase=loop elapsed_phase=377s elapsed_total=480s rss_mb=18552
+2026-06-05T07:30:15+00:00 [heartbeat] t=13:00:15 phase=loop elapsed_phase=407s elapsed_total=510s rss_mb=18552
+2026-06-05T07:30:45+00:00 [heartbeat] t=13:00:45 phase=loop elapsed_phase=437s elapsed_total=540s rss_mb=18552
+2026-06-05T07:31:15+00:00 [heartbeat] t=13:01:15 phase=loop elapsed_phase=467s elapsed_total=570s rss_mb=18552
+2026-06-05T07:31:45+00:00 [heartbeat] t=13:01:45 phase=loop elapsed_phase=497s elapsed_total=600s rss_mb=18552
+2026-06-05T07:32:15+00:00 [heartbeat] t=13:02:15 phase=loop elapsed_phase=527s elapsed_total=630s rss_mb=18552
+2026-06-05T07:32:45+00:00 [heartbeat] t=13:02:45 phase=loop elapsed_phase=557s elapsed_total=660s rss_mb=18552
+2026-06-05T07:33:15+00:00 [heartbeat] t=13:03:15 phase=loop elapsed_phase=587s elapsed_total=690s rss_mb=18552
+2026-06-05T07:33:45+00:00 [heartbeat] t=13:03:45 phase=loop elapsed_phase=617s elapsed_total=720s rss_mb=18552
+2026-06-05T07:34:15+00:00 [heartbeat] t=13:04:15 phase=loop elapsed_phase=647s elapsed_total=750s rss_mb=18552
+2026-06-05T07:34:45+00:00 [heartbeat] t=13:04:45 phase=loop elapsed_phase=677s elapsed_total=780s rss_mb=18552
+2026-06-05T07:34:52+00:00 [loop] LOOP COMPLETE in 683.6s best_iter=1 val_brier=0.2026 reason=plateau
+2026-06-05T07:34:52+00:00 [artifact] start
+2026-06-05T07:34:57+00:00 [artifact] complete in 5.6s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:34:57+00:00 [loop] STOPPED reason=plateau
+2026-06-05T07:34:57+00:00 [experiment] complete in 792.2s

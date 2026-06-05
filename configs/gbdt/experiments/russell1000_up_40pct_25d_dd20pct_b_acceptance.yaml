@@ -1,0 +1,30 @@
+# V1.3 Option B P9 — A5 rare-event regression gate.
+#
+# Cell: russell1000 UP +40% within 25 trading days, max_drawdown 20%.
+# Selected per brief Phase 2: sweep R-p@1=0.053 (≤ 0.1 — qualifies as
+# the rare-event slot). Sweep row baseline:
+#   russell1000_up_40pct_25d_dd20pct, R-p@1=0.0533, R-p@10=0.1921.
+#
+# A5 gate: scout-enabled must NOT regress >5% on test R-p@10 vs the sweep
+# row. Floor = 0.1921 * 0.95 = 0.1825.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: russell1000_up_40pct_25d_dd20pct_b_acceptance
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 40
+  horizon_days: 25
+  max_drawdown: 0.2
+
+backend:
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+
+random_seed: 42

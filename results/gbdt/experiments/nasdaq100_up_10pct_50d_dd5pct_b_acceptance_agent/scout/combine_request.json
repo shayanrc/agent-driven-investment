@@ -1,0 +1,30 @@
+{
+  "run_id": "nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent",
+  "backend": "xgboost",
+  "prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "cap_n_configs": 50,
+  "lex_auto_compose_overlay": {
+    "max_depth": 2,
+    "eta": 0.01,
+    "colsample_bytree": 0.3,
+    "min_child_weight": 25,
+    "gamma": 0.5,
+    "subsample": 0.5,
+    "scale_pos_weight": 1.7291604865025214
+  },
+  "zeroth_candidate_recommendation": {
+    "label": "lex_auto_compose",
+    "hp": {
+      "max_depth": 2,
+      "eta": 0.01,
+      "colsample_bytree": 0.3,
+      "min_child_weight": 25,
+      "gamma": 0.5,
+      "subsample": 0.5,
+      "scale_pos_weight": 1.7291604865025214
+    }
+  },
+  "speed_biased_prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "scout_results_jsonl": "/mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/scout_results.jsonl",
+  "scout_bundle_json": "/mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/scout_bundle.json"
+}

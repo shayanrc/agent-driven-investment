@@ -1,0 +1,36 @@
+# V1.3 Option B P9 — A3 acceptance: cell-5 (anti-AUC strong-top-1) under
+# scout + combine machinery, AGENT_FILE_PROTOCOL mode (apples-to-apples vs
+# V1.3 Option A's 0.7143 baseline, which was agent mode).
+#
+# Cell: nasdaq100 UP +10% within 50 trading days, max_drawdown 5%.
+# Baseline (V1.3 Option A, _223 revalidation, agent mode): R-p@1 = 0.7143.
+# Acceptance: R-p@1 >= 0.75 (PASS). Stretch: >= 0.78 (within 6% of manual 0.8286).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 50
+  max_drawdown: 0.05
+
+backend:
+  library: xgboost                                # tiny-model regime cell — XGBoost per _211.
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16                            # validator cap; agent should_stop earlier.
+    plateau_threshold: 0.0001                     # DISABLE single-knob auto-plateau (bug #204 workaround).
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05               # V1.3 D5 default.
+    tie_band: 0.005                               # natural plateau tie band on anti-AUC cells.
+
+random_seed: 42

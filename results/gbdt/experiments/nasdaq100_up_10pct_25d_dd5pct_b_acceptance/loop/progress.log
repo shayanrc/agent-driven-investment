@@ -1,0 +1,24 @@
+2026-06-05T07:15:47+00:00 [experiment] start spec=nasdaq100_up_10pct_25d_dd5pct_b_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:15:47+00:00 [data] start universe=nasdaq100
+2026-06-05T07:15:51+00:00 [data] complete in 4.1s rows=645189 tickers_kept=92
+2026-06-05T07:15:55+00:00 [features] loaded from universe cache (key match) in 1.7s shape=(645189, 279)
+2026-06-05T07:16:03+00:00 [target] start
+2026-06-05T07:16:05+00:00 [target] complete in 2.4s positive_prevalence=0.261
+2026-06-05T07:16:05+00:00 [uniqueness] start
+2026-06-05T07:16:05+00:00 [uniqueness] complete in 0.5s horizon=25 rows=645189 ESS=644177 inflation=1.00x
+2026-06-05T07:16:05+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_25d_dd5pct' (AUC=0.511108, R-p@10=0.507339, base_rate=0.272899)
+2026-06-05T07:16:05+00:00 [loop] start max_iter=8 callback_mode=default
+2026-06-05T07:16:17+00:00 [heartbeat] t=12:46:17 phase=loop elapsed_phase=12s elapsed_total=30s rss_mb=3454
+2026-06-05T07:16:47+00:00 [heartbeat] t=12:46:47 phase=loop elapsed_phase=42s elapsed_total=60s rss_mb=3495
+2026-06-05T07:17:17+00:00 [heartbeat] t=12:47:17 phase=loop elapsed_phase=72s elapsed_total=90s rss_mb=3620
+2026-06-05T07:17:47+00:00 [heartbeat] t=12:47:47 phase=loop elapsed_phase=102s elapsed_total=120s rss_mb=3627
+2026-06-05T07:18:17+00:00 [heartbeat] t=12:48:17 phase=loop elapsed_phase=132s elapsed_total=150s rss_mb=3627
+2026-06-05T07:18:47+00:00 [heartbeat] t=12:48:47 phase=loop elapsed_phase=162s elapsed_total=180s rss_mb=3627
+2026-06-05T07:19:17+00:00 [heartbeat] t=12:49:17 phase=loop elapsed_phase=192s elapsed_total=210s rss_mb=3627
+2026-06-05T07:19:47+00:00 [heartbeat] t=12:49:47 phase=loop elapsed_phase=222s elapsed_total=240s rss_mb=3627
+2026-06-05T07:20:17+00:00 [heartbeat] t=12:50:17 phase=loop elapsed_phase=252s elapsed_total=270s rss_mb=3627
+2026-06-05T07:20:23+00:00 [loop] LOOP COMPLETE in 257.8s best_iter=1 val_brier=0.1738 reason=degradation
+2026-06-05T07:20:23+00:00 [artifact] start
+2026-06-05T07:20:25+00:00 [artifact] complete in 1.8s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:20:25+00:00 [loop] STOPPED reason=degradation
+2026-06-05T07:20:25+00:00 [experiment] complete in 277.7s

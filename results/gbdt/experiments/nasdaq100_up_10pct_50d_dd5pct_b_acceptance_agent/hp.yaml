@@ -1,0 +1,11 @@
+hp:
+  max_depth: 2
+  eta: 0.1
+  colsample_bytree: 0.3
+  min_child_weight: 5
+  gamma: 0
+  alpha: 0
+  subsample: 1.0
+  scale_pos_weight: 1.0
+  early_stopping_rounds: 30
+  n_estimators: 200

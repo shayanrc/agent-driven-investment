@@ -1,0 +1,328 @@
+{
+  "configs": [
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "lex_auto_compose: top-1 per knob (mandatory zeroth)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-1: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-2: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-3: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-4: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 4,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-5: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-6: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-7: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-8: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "description": "mix-9: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-10: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "alpha": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-11: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 25,
+        "gamma": 1.0,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-12: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 5,
+        "gamma": 1.0,
+        "subsample": 0.7,
+        "scale_pos_weight": 1.0
+      },
+      "description": "mix-13: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 4,
+        "eta": 0.05,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 25,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.7291604865025214
+      },
+      "description": "mix-14: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0.5,
+        "subsample": 0.5,
+        "scale_pos_weight": 1.0
+      },
+      "description": "mix-15: top-2-cartesian sample (speed-biased)"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "description": "speed-biased-1: shallow + higher eta + ES per \u00a7 3.5"
+    },
+    {
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.4,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "description": "speed-biased-2: shallow + higher eta + ES per \u00a7 3.5"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.15,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "description": "speed-biased-3: shallow + higher eta + ES per \u00a7 3.5"
+    },
+    {
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.2,
+        "colsample_bytree": 0.3,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 30,
+        "n_estimators": 200
+      },
+      "description": "speed-biased-4: shallow + higher eta + ES per \u00a7 3.5"
+    },
+    {
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "colsample_bytree": 0.5,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0,
+        "early_stopping_rounds": 50,
+        "n_estimators": 200
+      },
+      "description": "speed-biased-5: shallow + higher eta + ES per \u00a7 3.5"
+    },
+    {
+      "hp": {
+        "max_depth": 6,
+        "eta": 0.05,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "description": "conservative-defaults-1: defaults-anchored comparator"
+    },
+    {
+      "hp": {
+        "max_depth": 6,
+        "eta": 0.3,
+        "colsample_bytree": 1.0,
+        "min_child_weight": 1,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "description": "conservative-defaults-2: defaults-anchored comparator"
+    },
+    {
+      "hp": {
+        "max_depth": 6,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0,
+        "alpha": 0,
+        "subsample": 0.85,
+        "scale_pos_weight": 1.0
+      },
+      "description": "conservative-defaults-3: defaults-anchored comparator"
+    },
+    {
+      "hp": {
+        "max_depth": 4,
+        "eta": 0.1,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "gamma": 0.1,
+        "alpha": 0,
+        "subsample": 1.0,
+        "scale_pos_weight": 1.0
+      },
+      "description": "conservative-defaults-4: defaults-anchored comparator"
+    }
+  ],
+  "rationale": "Combine per V1.3 Option B \u00a7 3.4.1: 1 lex auto-compose (zeroth, mandatory) + 15 top-2-Cartesian samples (depth \u2208 {2, 4}; eta \u2208 {0.01, 0.05, 0.1}; cs \u2208 {0.3, 0.5}; mcw \u2208 {5, 25}; gamma \u2208 {0.5, 1.0}; alpha and subsample variations) + 5 speed-biased configs per \u00a7 3.5 prompt (shallow + higher eta + ES) + 4 defaults-anchored variants for sanity comparison. Total 25, well under 50 cap."
+}

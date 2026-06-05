@@ -1,0 +1,27 @@
+features:
+- garman_klass_100
+- realized_vol_20
+- index_vol_200
+- index_runup_100
+- realized_vol_200
+- parkinson_20
+- garman_klass_200
+- parkinson_200
+- index_runup_200
+- parkinson_100
+- vol_xs_zscore_200_outside_band_1
+- index_runup_50
+- vol_of_vol_100
+- realized_vol_5
+- vol_change_200
+- stock_return_zscore_100
+- beta_100
+- returns_skew_50
+- parkinson_50
+- parkinson_5
+- realized_vol_zscore_100_outside_band_1
+- vol_of_vol_50
+- returns_kurt_100
+- vol_xs_zscore_100_outside_band_1
+- return_xs_zscore_50
+- realized_vol_zscore_200

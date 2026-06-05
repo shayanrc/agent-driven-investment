@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "nasdaq100_up_10pct_50d_dd5pct_b_acceptance",
+  "iter_idx": 2,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-05T08:03:00+00:00",
+  "last_heartbeat_utc": "2026-06-05T08:02:56+00:00",
+  "best_val_brier": 0.24006553658836488,
+  "stop_reason": "cap"
+}
