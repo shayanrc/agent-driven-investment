@@ -1,0 +1,17 @@
+experiment_name: russell1000_up_40pct_25d_dd20pct_b_acceptance
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 40
+  horizon_days: 25
+  max_drawdown: 0.2
+backend:
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+random_seed: 42
+date_range:
+  end: 2026-06-04

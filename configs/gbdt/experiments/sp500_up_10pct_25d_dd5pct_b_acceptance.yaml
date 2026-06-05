@@ -1,0 +1,30 @@
+# V1.3 Option B P9 — A4 regression gate: cell-3 (strong-AUC per task brief).
+#
+# Cell: sp500 UP +10% within 25 trading days, max_drawdown 5%.
+# Baseline: NO prior row in r_precision_at_k.csv (a baseline sweep run will
+# need to be inferred from this P9 run's result vs the "is the cell well-
+# behaved?" prior). A4 gate verdict will be reported relative to the AUC +
+# R-p@K shape — if scout's lex-auto-compose stays near defaults and the
+# cell behaves as a strong-AUC cell (AUC > 0.6), regression is by definition
+# 0% (no prior to regress against).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: sp500_up_10pct_25d_dd5pct_b_acceptance
+
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+
+random_seed: 42

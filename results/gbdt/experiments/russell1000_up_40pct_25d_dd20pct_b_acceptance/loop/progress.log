@@ -1,0 +1,63 @@
+2026-06-05T07:35:01+00:00 [experiment] start spec=russell1000_up_40pct_25d_dd20pct_b_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/russell1000_up_40pct_25d_dd20pct_b_acceptance
+2026-06-05T07:35:01+00:00 [data] start universe=russell1000
+2026-06-05T07:35:31+00:00 [heartbeat] t=13:05:31 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=500
+2026-06-05T07:35:43+00:00 [data] complete in 42.5s rows=6059743 tickers_kept=889
+2026-06-05T07:36:01+00:00 [heartbeat] t=13:06:01 phase=features elapsed_phase=17s elapsed_total=60s rss_mb=2032
+2026-06-05T07:36:12+00:00 [features] loaded from universe cache (key match) in 10.5s shape=(6059743, 279)
+2026-06-05T07:36:31+00:00 [heartbeat] t=13:06:31 phase=features elapsed_phase=47s elapsed_total=90s rss_mb=27900
+2026-06-05T07:37:01+00:00 [heartbeat] t=13:07:01 phase=features elapsed_phase=77s elapsed_total=120s rss_mb=27900
+2026-06-05T07:37:29+00:00 [target] start
+2026-06-05T07:37:31+00:00 [heartbeat] t=13:07:31 phase=target elapsed_phase=2s elapsed_total=150s rss_mb=27900
+2026-06-05T07:37:55+00:00 [target] complete in 25.6s positive_prevalence=0.013
+2026-06-05T07:37:55+00:00 [uniqueness] start
+2026-06-05T07:38:01+00:00 [heartbeat] t=13:08:01 phase=uniqueness elapsed_phase=6s elapsed_total=180s rss_mb=27900
+2026-06-05T07:38:05+00:00 [uniqueness] complete in 9.9s horizon=25 rows=6059743 ESS=6049966 inflation=1.00x
+2026-06-05T07:38:05+00:00 [loop] V1.3 sweep_row matched cell='russell1000_up_40pct_25d_dd20pct' (AUC=0.846265, R-p@10=0.192111, base_rate=0.017863)
+2026-06-05T07:38:05+00:00 [loop] start max_iter=8 callback_mode=default
+2026-06-05T07:38:31+00:00 [heartbeat] t=13:08:31 phase=loop elapsed_phase=26s elapsed_total=210s rss_mb=27900
+2026-06-05T07:39:01+00:00 [heartbeat] t=13:09:01 phase=loop elapsed_phase=56s elapsed_total=240s rss_mb=27900
+2026-06-05T07:39:31+00:00 [heartbeat] t=13:09:31 phase=loop elapsed_phase=86s elapsed_total=270s rss_mb=27900
+2026-06-05T07:40:01+00:00 [heartbeat] t=13:10:01 phase=loop elapsed_phase=116s elapsed_total=300s rss_mb=27900
+2026-06-05T07:40:31+00:00 [heartbeat] t=13:10:31 phase=loop elapsed_phase=146s elapsed_total=330s rss_mb=27900
+2026-06-05T07:41:01+00:00 [heartbeat] t=13:11:01 phase=loop elapsed_phase=176s elapsed_total=360s rss_mb=27900
+2026-06-05T07:41:31+00:00 [heartbeat] t=13:11:31 phase=loop elapsed_phase=206s elapsed_total=390s rss_mb=27900
+2026-06-05T07:42:01+00:00 [heartbeat] t=13:12:01 phase=loop elapsed_phase=236s elapsed_total=420s rss_mb=27900
+2026-06-05T07:42:31+00:00 [heartbeat] t=13:12:31 phase=loop elapsed_phase=266s elapsed_total=450s rss_mb=27900
+2026-06-05T07:43:01+00:00 [heartbeat] t=13:13:01 phase=loop elapsed_phase=296s elapsed_total=480s rss_mb=27900
+2026-06-05T07:43:31+00:00 [heartbeat] t=13:13:31 phase=loop elapsed_phase=326s elapsed_total=510s rss_mb=27900
+2026-06-05T07:44:01+00:00 [heartbeat] t=13:14:01 phase=loop elapsed_phase=356s elapsed_total=540s rss_mb=27900
+2026-06-05T07:44:31+00:00 [heartbeat] t=13:14:31 phase=loop elapsed_phase=386s elapsed_total=570s rss_mb=27900
+2026-06-05T07:45:01+00:00 [heartbeat] t=13:15:01 phase=loop elapsed_phase=416s elapsed_total=600s rss_mb=27900
+2026-06-05T07:45:31+00:00 [heartbeat] t=13:15:31 phase=loop elapsed_phase=446s elapsed_total=630s rss_mb=27900
+2026-06-05T07:46:01+00:00 [heartbeat] t=13:16:01 phase=loop elapsed_phase=476s elapsed_total=660s rss_mb=27900
+2026-06-05T07:46:31+00:00 [heartbeat] t=13:16:31 phase=loop elapsed_phase=506s elapsed_total=690s rss_mb=27900
+2026-06-05T07:47:01+00:00 [heartbeat] t=13:17:01 phase=loop elapsed_phase=536s elapsed_total=720s rss_mb=27900
+2026-06-05T07:47:31+00:00 [heartbeat] t=13:17:31 phase=loop elapsed_phase=566s elapsed_total=750s rss_mb=27900
+2026-06-05T07:48:01+00:00 [heartbeat] t=13:18:01 phase=loop elapsed_phase=596s elapsed_total=780s rss_mb=27900
+2026-06-05T07:48:31+00:00 [heartbeat] t=13:18:31 phase=loop elapsed_phase=626s elapsed_total=810s rss_mb=27900
+2026-06-05T07:49:01+00:00 [heartbeat] t=13:19:01 phase=loop elapsed_phase=656s elapsed_total=840s rss_mb=27900
+2026-06-05T07:49:31+00:00 [heartbeat] t=13:19:31 phase=loop elapsed_phase=686s elapsed_total=870s rss_mb=27900
+2026-06-05T07:50:01+00:00 [heartbeat] t=13:20:01 phase=loop elapsed_phase=716s elapsed_total=900s rss_mb=27900
+2026-06-05T07:50:31+00:00 [heartbeat] t=13:20:31 phase=loop elapsed_phase=746s elapsed_total=930s rss_mb=27900
+2026-06-05T07:51:01+00:00 [heartbeat] t=13:21:01 phase=loop elapsed_phase=776s elapsed_total=960s rss_mb=27900
+2026-06-05T07:51:31+00:00 [heartbeat] t=13:21:31 phase=loop elapsed_phase=806s elapsed_total=990s rss_mb=27900
+2026-06-05T07:52:01+00:00 [heartbeat] t=13:22:01 phase=loop elapsed_phase=836s elapsed_total=1020s rss_mb=27900
+2026-06-05T07:52:31+00:00 [heartbeat] t=13:22:31 phase=loop elapsed_phase=866s elapsed_total=1050s rss_mb=27900
+2026-06-05T07:53:01+00:00 [heartbeat] t=13:23:01 phase=loop elapsed_phase=896s elapsed_total=1080s rss_mb=27900
+2026-06-05T07:53:31+00:00 [heartbeat] t=13:23:31 phase=loop elapsed_phase=926s elapsed_total=1110s rss_mb=27900
+2026-06-05T07:54:01+00:00 [heartbeat] t=13:24:01 phase=loop elapsed_phase=956s elapsed_total=1140s rss_mb=27900
+2026-06-05T07:54:31+00:00 [heartbeat] t=13:24:31 phase=loop elapsed_phase=986s elapsed_total=1170s rss_mb=27900
+2026-06-05T07:55:01+00:00 [heartbeat] t=13:25:01 phase=loop elapsed_phase=1016s elapsed_total=1200s rss_mb=27900
+2026-06-05T07:55:31+00:00 [heartbeat] t=13:25:31 phase=loop elapsed_phase=1046s elapsed_total=1230s rss_mb=27900
+2026-06-05T07:56:01+00:00 [heartbeat] t=13:26:01 phase=loop elapsed_phase=1076s elapsed_total=1260s rss_mb=27900
+2026-06-05T07:56:31+00:00 [heartbeat] t=13:26:31 phase=loop elapsed_phase=1106s elapsed_total=1290s rss_mb=27900
+2026-06-05T07:57:01+00:00 [heartbeat] t=13:27:01 phase=loop elapsed_phase=1136s elapsed_total=1320s rss_mb=27900
+2026-06-05T07:57:31+00:00 [heartbeat] t=13:27:31 phase=loop elapsed_phase=1166s elapsed_total=1350s rss_mb=27900
+2026-06-05T07:58:01+00:00 [heartbeat] t=13:28:01 phase=loop elapsed_phase=1196s elapsed_total=1380s rss_mb=27900
+2026-06-05T07:58:31+00:00 [heartbeat] t=13:28:31 phase=loop elapsed_phase=1226s elapsed_total=1410s rss_mb=27900
+2026-06-05T07:59:01+00:00 [heartbeat] t=13:29:01 phase=loop elapsed_phase=1256s elapsed_total=1440s rss_mb=27900
+2026-06-05T07:59:12+00:00 [loop] LOOP COMPLETE in 1267.5s best_iter=0 val_brier=0.0056 reason=plateau
+2026-06-05T07:59:12+00:00 [artifact] start
+2026-06-05T07:59:22+00:00 [artifact] complete in 9.5s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/russell1000_up_40pct_25d_dd20pct_b_acceptance
+2026-06-05T07:59:22+00:00 [loop] STOPPED reason=plateau
+2026-06-05T07:59:22+00:00 [experiment] complete in 1460.9s

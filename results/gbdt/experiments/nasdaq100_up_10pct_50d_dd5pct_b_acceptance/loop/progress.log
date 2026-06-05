@@ -1,0 +1,22 @@
+2026-06-05T07:59:26+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance
+2026-06-05T07:59:26+00:00 [data] start universe=nasdaq100
+2026-06-05T07:59:30+00:00 [data] complete in 4.5s rows=645189 tickers_kept=92
+2026-06-05T07:59:33+00:00 [features] loaded from universe cache (key match) in 1.3s shape=(645189, 279)
+2026-06-05T07:59:42+00:00 [target] start
+2026-06-05T07:59:44+00:00 [target] complete in 2.8s positive_prevalence=0.365
+2026-06-05T07:59:44+00:00 [uniqueness] start
+2026-06-05T07:59:45+00:00 [uniqueness] complete in 0.5s horizon=50 rows=645189 ESS=643166 inflation=1.00x
+2026-06-05T07:59:45+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-05T07:59:45+00:00 [loop] start max_iter=8 callback_mode=default
+2026-06-05T07:59:56+00:00 [heartbeat] t=13:29:56 phase=loop elapsed_phase=11s elapsed_total=30s rss_mb=3937
+2026-06-05T08:00:26+00:00 [heartbeat] t=13:30:26 phase=loop elapsed_phase=41s elapsed_total=60s rss_mb=4027
+2026-06-05T08:00:56+00:00 [heartbeat] t=13:30:56 phase=loop elapsed_phase=71s elapsed_total=90s rss_mb=4027
+2026-06-05T08:01:26+00:00 [heartbeat] t=13:31:26 phase=loop elapsed_phase=101s elapsed_total=120s rss_mb=4027
+2026-06-05T08:01:56+00:00 [heartbeat] t=13:31:56 phase=loop elapsed_phase=131s elapsed_total=150s rss_mb=4027
+2026-06-05T08:02:26+00:00 [heartbeat] t=13:32:26 phase=loop elapsed_phase=161s elapsed_total=180s rss_mb=4027
+2026-06-05T08:02:56+00:00 [heartbeat] t=13:32:56 phase=loop elapsed_phase=191s elapsed_total=210s rss_mb=4393
+2026-06-05T08:02:58+00:00 [loop] LOOP COMPLETE in 193.1s best_iter=2 val_brier=0.2401 reason=cap
+2026-06-05T08:02:58+00:00 [artifact] start
+2026-06-05T08:03:00+00:00 [artifact] complete in 2.2s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance
+2026-06-05T08:03:00+00:00 [loop] STOPPED reason=cap
+2026-06-05T08:03:00+00:00 [experiment] complete in 214.3s

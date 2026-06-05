@@ -1,0 +1,31 @@
+# V1.3 Option B P9 — A3 acceptance: cell-5 (anti-AUC strong-top-1) under
+# scout + combine machinery, DEFAULT mode (runner auto-composes
+# lexicographic per-knob argmax).
+#
+# Cell: nasdaq100 UP +10% within 50 trading days, max_drawdown 5%.
+# Baseline (V1.3 Option A, _223 revalidation, agent_file_protocol): R-p@1 = 0.7143.
+# Acceptance: R-p@1 >= 0.75 (PASS). Stretch: >= 0.78 (within 6% of manual 0.8286).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: nasdaq100_up_10pct_50d_dd5pct_b_acceptance
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 50
+  max_drawdown: 0.05
+
+backend:
+  library: xgboost                                # tiny-model regime cell — XGBoost per _211.
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    # All knob grids + caps + oracle locked at runner defaults.
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  # fs_hp_loop omitted -> default mode + runner defaults (max_iterations etc.).
+
+random_seed: 42

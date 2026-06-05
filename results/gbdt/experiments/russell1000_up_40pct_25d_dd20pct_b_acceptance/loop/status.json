@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "russell1000_up_40pct_25d_dd20pct_b_acceptance",
+  "iter_idx": 0,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-05T07:59:22+00:00",
+  "last_heartbeat_utc": "2026-06-05T07:59:01+00:00",
+  "best_val_brier": 0.005637378663578336,
+  "stop_reason": "plateau"
+}

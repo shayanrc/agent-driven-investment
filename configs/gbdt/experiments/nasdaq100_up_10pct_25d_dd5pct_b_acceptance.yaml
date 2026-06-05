@@ -1,0 +1,30 @@
+# V1.3 Option B P9 — A4 regression gate: cell-1 (strong-AUC per task brief).
+#
+# Cell: nasdaq100 UP +10% within 25 trading days, max_drawdown 5%.
+# Baseline (V1.3 sweep row `nasdaq100_up_10pct_25d_dd5pct`,
+# trailing-anchor segments): R-p@1 = 0.5368.
+#
+# A4 gate: scout-enabled must NOT regress >5% on test R-p@1 vs the
+# V1.3 Option A / sweep baseline. Floor = 0.5368 * 0.95 = 0.5100.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: nasdaq100_up_10pct_25d_dd5pct_b_acceptance
+
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  # fs_hp_loop omitted -> default mode + runner defaults.
+
+random_seed: 42

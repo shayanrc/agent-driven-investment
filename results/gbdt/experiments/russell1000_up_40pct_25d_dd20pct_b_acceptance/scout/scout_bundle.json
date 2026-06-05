@@ -1,0 +1,118 @@
+{
+  "enabled": true,
+  "backend": "catboost",
+  "n_configs_total": 31,
+  "n_configs_completed": 27,
+  "runtime_seconds": 876.725094795227,
+  "defaults_metrics": {
+    "config": {
+      "knob_name": "defaults",
+      "knob_value": null,
+      "hp_overlay": {}
+    },
+    "val_brier": 0.005622537774926305,
+    "train_brier": 0.008884457004451979,
+    "eval_R_p_at_K": {
+      "1": 0.37,
+      "3": 0.21916666666666665,
+      "5": 0.20258333333333334,
+      "10": 0.2281547619047619,
+      "20": 0.3391753038628039
+    },
+    "train_val_gap": -0.003261919229525674,
+    "spiegelhalter_z": 0.5472594359915112,
+    "fit_seconds": 35.26669144630432,
+    "status": "ok",
+    "error_message": null
+  },
+  "per_knob_winner": {
+    "max_depth": {
+      "knob_value": 6,
+      "eval_R_p_at_K": {
+        "1": 0.37,
+        "3": 0.21916666666666665,
+        "5": 0.20258333333333334,
+        "10": 0.2281547619047619,
+        "20": 0.3391753038628039
+      },
+      "val_brier": 0.005622537774926305
+    },
+    "eta": {
+      "knob_value": 0.2,
+      "eval_R_p_at_K": {
+        "1": 0.38,
+        "3": 0.18083333333333332,
+        "5": 0.2065,
+        "10": 0.25039087301587304,
+        "20": 0.3567875527250527
+      },
+      "val_brier": 0.005652760754654664
+    },
+    "colsample_bytree": {
+      "knob_value": 0.4,
+      "eval_R_p_at_K": {
+        "1": 0.415,
+        "3": 0.20416666666666664,
+        "5": 0.22008333333333335,
+        "10": 0.23552777777777778,
+        "20": 0.3865144647019647
+      },
+      "val_brier": 0.005608185795606066
+    },
+    "min_child_weight": {
+      "knob_value": 1,
+      "eval_R_p_at_K": {
+        "1": 0.37,
+        "3": 0.21916666666666665,
+        "5": 0.20258333333333334,
+        "10": 0.2281547619047619,
+        "20": 0.3391753038628039
+      },
+      "val_brier": 0.005622537774926305
+    },
+    "alpha": {
+      "knob_value": 1.0,
+      "eval_R_p_at_K": {
+        "1": 0.395,
+        "3": 0.21333333333333332,
+        "5": 0.22299999999999998,
+        "10": 0.226015873015873,
+        "20": 0.3576069416694416
+      },
+      "val_brier": 0.0056229115899043315
+    },
+    "scale_pos_weight": {
+      "knob_value": 1.0,
+      "eval_R_p_at_K": {
+        "1": 0.37,
+        "3": 0.21916666666666665,
+        "5": 0.20258333333333334,
+        "10": 0.2281547619047619,
+        "20": 0.3391753038628039
+      },
+      "val_brier": 0.005622537774926305
+    }
+  },
+  "lexicographic_auto_compose": {
+    "hp_overlay": {
+      "learning_rate": 0.2,
+      "rsm": 0.4,
+      "l2_leaf_reg": 1.0
+    }
+  },
+  "status": "lex_auto_compose",
+  "degenerate_sink_fallback": false,
+  "grid_spec": {},
+  "fs_prefit": {
+    "enabled": true,
+    "cliff_pct": 0.01,
+    "n_kept": 26,
+    "n_dropped": 253,
+    "top_importance": 41.63103098635895,
+    "cliff_threshold": 0.4163103098635895,
+    "fit_seconds": 189.29040002822876,
+    "backend": "catboost",
+    "cache_hit": false,
+    "cache_key": "efc41c7642c1ff2f293c0a0599a23874"
+  }
+}
