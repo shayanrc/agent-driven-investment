@@ -346,11 +346,20 @@ def run_scout(
     the per-backend D3a.C caps when None (30 / 300 for XGBoost; 120 / 1800
     for CatBoost). Caps are enforced as a SOFT wall-clock budget per D3a:
     once exceeded, subsequent configs get ``status="timeout"`` with empty
-    metrics — they're not actually fit. The per-config timeout is enforced
-    as a post-hoc check on ``fit_seconds`` since we don't have a portable
-    in-process interrupt; configs whose fit exceeds the per-config timeout
-    are flagged ``status="timeout"`` but their results are kept (the
-    oracle excludes them).
+    metrics — they're not actually fit.
+
+    Note (PR #125 review Medium 3): the per-config timeout is POST-HOC —
+    a runaway fit that exceeds the cap will still run to completion
+    before its result is recorded as ``status="timeout"``. We do not use
+    ``signal.alarm`` / ``concurrent.futures.timeout`` because CatBoost's
+    signal handling is unreliable cross-platform and the risk of "kill
+    mid-fit corrupts state" outweighs the predictability gain. The soft
+    wall-clock cap bounds the total scout duration; the per-config cap
+    bounds which configs the oracle considers (timeout configs are
+    excluded from ``lexicographic_winner`` + ``per_knob_winners`` via
+    the ``status == "ok"`` filter). Total scout duration is therefore
+    bounded by ``soft_wall_clock_seconds + max_fit_duration`` — at most
+    one runaway fit can slip past the wall-clock cap.
     """
     scout_cfg = ((spec or {}).get("backend", {}) or {}).get("scout", {}) or {}
     if per_config_timeout_seconds is None:
