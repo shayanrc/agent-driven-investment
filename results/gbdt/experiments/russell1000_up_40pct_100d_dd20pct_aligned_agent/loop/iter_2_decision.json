@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "min_child_weight": 1,
+    "subsample": 0.5
+  },
+  "rationale": "iter_2 (mcw=3, n_est=100) verdict: val_brier 0.0566→0.0568 (essentially flat); eval R-p@1 0.445→0.540 (recovered from iter_1 collapse but BELOW iter_0's 0.665 by 0.125). mcw=3 degrades R-p@1 vs iter_0 mcw=1; per playbook rule 8 (no mcw=10 default), mcw=3 also under-performs here. PIVOT: revert mcw 3→1 and pivot to subsample. iter_0's subsample=0.7 was the surprise lex-winner; map subsample=0.5 to see the response — if it improves R-p@1 monotonically, we have a direction; if it degrades sharply, we know subsample=0.7 was the peak and we should pivot to other knobs (gamma, eta variants). Knobs explored so far: n_estimators (one value, 300, regressed top-1, reverted), min_child_weight (3 — flat/regressive, reverted). Now exploring: subsample. Keeping n_estimators=100 (the iter_0 sweet spot)."
+}

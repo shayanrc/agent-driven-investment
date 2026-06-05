@@ -1,0 +1,438 @@
+2026-06-05T13:20:18+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T13:20:19+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T13:20:21+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T13:20:21+00:00 [data] start universe=russell1000
+2026-06-05T13:20:48+00:00 [heartbeat] t=18:50:48 phase=data elapsed_phase=27s elapsed_total=30s rss_mb=493
+2026-06-05T13:21:02+00:00 [data] complete in 41.3s rows=6058854 tickers_kept=889
+2026-06-05T13:21:18+00:00 [heartbeat] t=18:51:18 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=2009
+2026-06-05T13:21:19+00:00 [features] start (no cache hit — building)
+2026-06-05T13:21:49+00:00 [heartbeat] t=18:51:49 phase=features elapsed_phase=46s elapsed_total=91s rss_mb=3769
+2026-06-05T13:22:19+00:00 [heartbeat] t=18:52:19 phase=features elapsed_phase=76s elapsed_total=121s rss_mb=4971
+2026-06-05T13:22:49+00:00 [heartbeat] t=18:52:49 phase=features elapsed_phase=106s elapsed_total=151s rss_mb=5745
+2026-06-05T13:23:19+00:00 [heartbeat] t=18:53:19 phase=features elapsed_phase=136s elapsed_total=181s rss_mb=5745
+2026-06-05T13:23:49+00:00 [heartbeat] t=18:53:49 phase=features elapsed_phase=166s elapsed_total=211s rss_mb=5745
+2026-06-05T13:24:19+00:00 [heartbeat] t=18:54:19 phase=features elapsed_phase=196s elapsed_total=241s rss_mb=6453
+2026-06-05T13:24:49+00:00 [heartbeat] t=18:54:49 phase=features elapsed_phase=226s elapsed_total=271s rss_mb=6453
+2026-06-05T13:25:19+00:00 [heartbeat] t=18:55:19 phase=features elapsed_phase=256s elapsed_total=301s rss_mb=6453
+2026-06-05T13:25:49+00:00 [heartbeat] t=18:55:49 phase=features elapsed_phase=286s elapsed_total=331s rss_mb=6453
+2026-06-05T13:26:19+00:00 [heartbeat] t=18:56:19 phase=features elapsed_phase=316s elapsed_total=361s rss_mb=6499
+2026-06-05T13:26:49+00:00 [heartbeat] t=18:56:49 phase=features elapsed_phase=346s elapsed_total=391s rss_mb=6603
+2026-06-05T13:27:19+00:00 [heartbeat] t=18:57:19 phase=features elapsed_phase=376s elapsed_total=421s rss_mb=6707
+2026-06-05T13:27:49+00:00 [heartbeat] t=18:57:49 phase=features elapsed_phase=406s elapsed_total=451s rss_mb=7966
+2026-06-05T13:28:19+00:00 [heartbeat] t=18:58:19 phase=features elapsed_phase=436s elapsed_total=481s rss_mb=7966
+2026-06-05T13:28:49+00:00 [heartbeat] t=18:58:49 phase=features elapsed_phase=466s elapsed_total=511s rss_mb=7966
+2026-06-05T13:29:19+00:00 [heartbeat] t=18:59:19 phase=features elapsed_phase=496s elapsed_total=541s rss_mb=8520
+2026-06-05T13:29:49+00:00 [heartbeat] t=18:59:49 phase=features elapsed_phase=526s elapsed_total=571s rss_mb=8520
+2026-06-05T13:30:19+00:00 [heartbeat] t=19:00:19 phase=features elapsed_phase=556s elapsed_total=601s rss_mb=8520
+2026-06-05T13:30:49+00:00 [heartbeat] t=19:00:49 phase=features elapsed_phase=586s elapsed_total=631s rss_mb=8520
+2026-06-05T13:31:19+00:00 [heartbeat] t=19:01:19 phase=features elapsed_phase=616s elapsed_total=661s rss_mb=8800
+2026-06-05T13:31:49+00:00 [heartbeat] t=19:01:49 phase=features elapsed_phase=646s elapsed_total=691s rss_mb=9113
+2026-06-05T13:32:19+00:00 [heartbeat] t=19:02:19 phase=features elapsed_phase=676s elapsed_total=721s rss_mb=9113
+2026-06-05T13:32:50+00:00 [heartbeat] t=19:02:49 phase=features elapsed_phase=706s elapsed_total=751s rss_mb=9425
+2026-06-05T13:33:20+00:00 [heartbeat] t=19:03:20 phase=features elapsed_phase=736s elapsed_total=781s rss_mb=9976
+2026-06-05T13:33:50+00:00 [heartbeat] t=19:03:50 phase=features elapsed_phase=766s elapsed_total=811s rss_mb=10916
+2026-06-05T13:34:20+00:00 [heartbeat] t=19:04:20 phase=features elapsed_phase=796s elapsed_total=841s rss_mb=11756
+2026-06-05T13:34:50+00:00 [heartbeat] t=19:04:50 phase=features elapsed_phase=826s elapsed_total=871s rss_mb=11756
+2026-06-05T13:35:20+00:00 [heartbeat] t=19:05:20 phase=features elapsed_phase=856s elapsed_total=901s rss_mb=11756
+2026-06-05T13:35:50+00:00 [heartbeat] t=19:05:50 phase=features elapsed_phase=886s elapsed_total=931s rss_mb=11756
+2026-06-05T13:36:20+00:00 [heartbeat] t=19:06:20 phase=features elapsed_phase=916s elapsed_total=961s rss_mb=11825
+2026-06-05T13:36:50+00:00 [heartbeat] t=19:06:50 phase=features elapsed_phase=946s elapsed_total=991s rss_mb=11964
+2026-06-05T13:37:20+00:00 [heartbeat] t=19:07:20 phase=features elapsed_phase=976s elapsed_total=1021s rss_mb=12103
+2026-06-05T13:37:50+00:00 [heartbeat] t=19:07:50 phase=features elapsed_phase=1006s elapsed_total=1051s rss_mb=12311
+2026-06-05T13:38:20+00:00 [heartbeat] t=19:08:20 phase=features elapsed_phase=1037s elapsed_total=1081s rss_mb=12449
+2026-06-05T13:38:50+00:00 [heartbeat] t=19:08:50 phase=features elapsed_phase=1067s elapsed_total=1111s rss_mb=12588
+2026-06-05T13:39:20+00:00 [heartbeat] t=19:09:20 phase=features elapsed_phase=1097s elapsed_total=1141s rss_mb=12797
+2026-06-05T13:39:50+00:00 [heartbeat] t=19:09:50 phase=features elapsed_phase=1127s elapsed_total=1171s rss_mb=12936
+2026-06-05T13:40:20+00:00 [heartbeat] t=19:10:20 phase=features elapsed_phase=1157s elapsed_total=1201s rss_mb=13075
+2026-06-05T13:40:50+00:00 [heartbeat] t=19:10:50 phase=features elapsed_phase=1187s elapsed_total=1231s rss_mb=13213
+2026-06-05T13:41:20+00:00 [heartbeat] t=19:11:20 phase=features elapsed_phase=1217s elapsed_total=1261s rss_mb=13352
+2026-06-05T13:41:50+00:00 [heartbeat] t=19:11:50 phase=features elapsed_phase=1247s elapsed_total=1291s rss_mb=13561
+2026-06-05T13:42:20+00:00 [heartbeat] t=19:12:20 phase=features elapsed_phase=1277s elapsed_total=1321s rss_mb=13700
+2026-06-05T13:42:50+00:00 [heartbeat] t=19:12:50 phase=features elapsed_phase=1307s elapsed_total=1351s rss_mb=13839
+2026-06-05T13:43:20+00:00 [heartbeat] t=19:13:20 phase=features elapsed_phase=1337s elapsed_total=1381s rss_mb=13977
+2026-06-05T13:43:50+00:00 [heartbeat] t=19:13:50 phase=features elapsed_phase=1367s elapsed_total=1411s rss_mb=14116
+2026-06-05T13:44:20+00:00 [heartbeat] t=19:14:20 phase=features elapsed_phase=1397s elapsed_total=1441s rss_mb=14325
+2026-06-05T13:44:50+00:00 [heartbeat] t=19:14:50 phase=features elapsed_phase=1427s elapsed_total=1471s rss_mb=14464
+2026-06-05T13:45:20+00:00 [heartbeat] t=19:15:20 phase=features elapsed_phase=1457s elapsed_total=1501s rss_mb=14603
+2026-06-05T13:45:50+00:00 [heartbeat] t=19:15:50 phase=features elapsed_phase=1487s elapsed_total=1531s rss_mb=14742
+2026-06-05T13:46:20+00:00 [heartbeat] t=19:16:20 phase=features elapsed_phase=1517s elapsed_total=1561s rss_mb=14950
+2026-06-05T13:46:50+00:00 [heartbeat] t=19:16:50 phase=features elapsed_phase=1547s elapsed_total=1591s rss_mb=15089
+2026-06-05T13:47:20+00:00 [heartbeat] t=19:17:20 phase=features elapsed_phase=1577s elapsed_total=1621s rss_mb=15228
+2026-06-05T13:47:50+00:00 [heartbeat] t=19:17:50 phase=features elapsed_phase=1607s elapsed_total=1651s rss_mb=15367
+2026-06-05T13:48:20+00:00 [heartbeat] t=19:18:20 phase=features elapsed_phase=1637s elapsed_total=1681s rss_mb=15506
+2026-06-05T13:48:50+00:00 [heartbeat] t=19:18:50 phase=features elapsed_phase=1667s elapsed_total=1711s rss_mb=15714
+2026-06-05T13:49:20+00:00 [heartbeat] t=19:19:20 phase=features elapsed_phase=1697s elapsed_total=1741s rss_mb=15853
+2026-06-05T13:49:50+00:00 [heartbeat] t=19:19:50 phase=features elapsed_phase=1727s elapsed_total=1771s rss_mb=15992
+2026-06-05T13:50:20+00:00 [heartbeat] t=19:20:20 phase=features elapsed_phase=1757s elapsed_total=1801s rss_mb=16131
+2026-06-05T13:50:50+00:00 [heartbeat] t=19:20:50 phase=features elapsed_phase=1787s elapsed_total=1831s rss_mb=16339
+2026-06-05T13:51:20+00:00 [heartbeat] t=19:21:20 phase=features elapsed_phase=1817s elapsed_total=1861s rss_mb=16478
+2026-06-05T13:51:50+00:00 [heartbeat] t=19:21:50 phase=features elapsed_phase=1847s elapsed_total=1891s rss_mb=16617
+2026-06-05T13:52:20+00:00 [heartbeat] t=19:22:20 phase=features elapsed_phase=1877s elapsed_total=1921s rss_mb=16825
+2026-06-05T13:52:50+00:00 [heartbeat] t=19:22:50 phase=features elapsed_phase=1907s elapsed_total=1951s rss_mb=16967
+2026-06-05T13:53:20+00:00 [heartbeat] t=19:23:20 phase=features elapsed_phase=1937s elapsed_total=1981s rss_mb=17106
+2026-06-05T13:53:50+00:00 [heartbeat] t=19:23:50 phase=features elapsed_phase=1967s elapsed_total=2011s rss_mb=17314
+2026-06-05T13:54:20+00:00 [heartbeat] t=19:24:20 phase=features elapsed_phase=1997s elapsed_total=2041s rss_mb=17453
+2026-06-05T13:54:50+00:00 [heartbeat] t=19:24:50 phase=features elapsed_phase=2027s elapsed_total=2071s rss_mb=17592
+2026-06-05T13:55:20+00:00 [heartbeat] t=19:25:20 phase=features elapsed_phase=2057s elapsed_total=2102s rss_mb=29045
+2026-06-05T13:55:22+00:00 [features] complete in 2043.3s shape=(6058854, 279)
+2026-06-05T13:55:50+00:00 [heartbeat] t=19:25:50 phase=features elapsed_phase=2087s elapsed_total=2132s rss_mb=29045
+2026-06-05T13:56:20+00:00 [heartbeat] t=19:26:20 phase=features elapsed_phase=2117s elapsed_total=2162s rss_mb=29045
+2026-06-05T13:56:34+00:00 [features] per-cell cache written (key=23f6b353556d…)
+2026-06-05T13:56:50+00:00 [heartbeat] t=19:26:50 phase=features elapsed_phase=2147s elapsed_total=2192s rss_mb=29045
+2026-06-05T13:57:20+00:00 [heartbeat] t=19:27:20 phase=features elapsed_phase=2177s elapsed_total=2222s rss_mb=29045
+2026-06-05T13:57:45+00:00 [features] universe cache written (key=3fcfaee5883f…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-05T13:57:50+00:00 [heartbeat] t=19:27:50 phase=features elapsed_phase=2207s elapsed_total=2252s rss_mb=29045
+2026-06-05T13:57:52+00:00 [target] start
+2026-06-05T13:58:17+00:00 [target] complete in 24.9s positive_prevalence=0.096
+2026-06-05T13:58:17+00:00 [uniqueness] start
+2026-06-05T13:58:20+00:00 [heartbeat] t=19:28:20 phase=uniqueness elapsed_phase=3s elapsed_total=2282s rss_mb=29165
+2026-06-05T13:58:27+00:00 [uniqueness] complete in 10.1s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T13:58:27+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T13:58:50+00:00 [heartbeat] t=19:28:50 phase=uniqueness elapsed_phase=33s elapsed_total=2312s rss_mb=29165
+2026-06-05T13:59:01+00:00 [scout] cycle 1 — starting FS-prefit + scout response curves
+2026-06-05T13:59:20+00:00 [heartbeat] t=19:29:20 phase=scout elapsed_phase=19s elapsed_total=2342s rss_mb=29165
+2026-06-05T13:59:50+00:00 [heartbeat] t=19:29:50 phase=scout elapsed_phase=49s elapsed_total=2372s rss_mb=29165
+2026-06-05T14:00:20+00:00 [heartbeat] t=19:30:20 phase=scout elapsed_phase=79s elapsed_total=2402s rss_mb=29165
+2026-06-05T14:00:29+00:00 [scout] FS-prefit: kept 143, dropped 136 (cliff_pct=0.01, top_importance=17.17, cache_key=a9378f90415a…)
+2026-06-05T14:00:50+00:00 [heartbeat] t=19:30:50 phase=scout elapsed_phase=109s elapsed_total=2432s rss_mb=29165
+2026-06-05T14:01:20+00:00 [heartbeat] t=19:31:20 phase=scout elapsed_phase=139s elapsed_total=2462s rss_mb=29165
+2026-06-05T14:01:50+00:00 [heartbeat] t=19:31:50 phase=scout elapsed_phase=169s elapsed_total=2492s rss_mb=29165
+2026-06-05T14:02:20+00:00 [heartbeat] t=19:32:20 phase=scout elapsed_phase=199s elapsed_total=2522s rss_mb=29165
+2026-06-05T14:02:50+00:00 [heartbeat] t=19:32:50 phase=scout elapsed_phase=229s elapsed_total=2552s rss_mb=29165
+2026-06-05T14:03:20+00:00 [heartbeat] t=19:33:20 phase=scout elapsed_phase=259s elapsed_total=2582s rss_mb=29165
+2026-06-05T14:03:50+00:00 [heartbeat] t=19:33:50 phase=scout elapsed_phase=289s elapsed_total=2612s rss_mb=29165
+2026-06-05T14:04:20+00:00 [heartbeat] t=19:34:20 phase=scout elapsed_phase=319s elapsed_total=2642s rss_mb=29165
+2026-06-05T14:04:50+00:00 [heartbeat] t=19:34:50 phase=scout elapsed_phase=349s elapsed_total=2672s rss_mb=29165
+2026-06-05T14:05:20+00:00 [heartbeat] t=19:35:20 phase=scout elapsed_phase=379s elapsed_total=2702s rss_mb=29165
+2026-06-05T14:05:50+00:00 [heartbeat] t=19:35:50 phase=scout elapsed_phase=409s elapsed_total=2732s rss_mb=29165
+2026-06-05T14:06:20+00:00 [heartbeat] t=19:36:20 phase=scout elapsed_phase=439s elapsed_total=2762s rss_mb=29165
+2026-06-05T14:06:50+00:00 [heartbeat] t=19:36:50 phase=scout elapsed_phase=469s elapsed_total=2792s rss_mb=29165
+2026-06-05T14:07:20+00:00 [heartbeat] t=19:37:20 phase=scout elapsed_phase=499s elapsed_total=2822s rss_mb=29165
+2026-06-05T14:07:50+00:00 [heartbeat] t=19:37:50 phase=scout elapsed_phase=529s elapsed_total=2852s rss_mb=29165
+2026-06-05T14:08:20+00:00 [heartbeat] t=19:38:20 phase=scout elapsed_phase=559s elapsed_total=2882s rss_mb=29165
+2026-06-05T14:08:50+00:00 [heartbeat] t=19:38:50 phase=scout elapsed_phase=589s elapsed_total=2912s rss_mb=29165
+2026-06-05T14:09:20+00:00 [heartbeat] t=19:39:20 phase=scout elapsed_phase=619s elapsed_total=2942s rss_mb=29165
+2026-06-05T14:09:50+00:00 [heartbeat] t=19:39:50 phase=scout elapsed_phase=649s elapsed_total=2972s rss_mb=29165
+2026-06-05T14:10:20+00:00 [heartbeat] t=19:40:20 phase=scout elapsed_phase=679s elapsed_total=3002s rss_mb=29165
+2026-06-05T14:10:50+00:00 [heartbeat] t=19:40:50 phase=scout elapsed_phase=709s elapsed_total=3032s rss_mb=29165
+2026-06-05T14:11:20+00:00 [heartbeat] t=19:41:20 phase=scout elapsed_phase=739s elapsed_total=3062s rss_mb=29165
+2026-06-05T14:11:50+00:00 [heartbeat] t=19:41:50 phase=scout elapsed_phase=769s elapsed_total=3092s rss_mb=29165
+2026-06-05T14:12:20+00:00 [heartbeat] t=19:42:20 phase=scout elapsed_phase=799s elapsed_total=3122s rss_mb=29165
+2026-06-05T14:12:50+00:00 [heartbeat] t=19:42:50 phase=scout elapsed_phase=829s elapsed_total=3152s rss_mb=29165
+2026-06-05T14:13:20+00:00 [heartbeat] t=19:43:20 phase=scout elapsed_phase=859s elapsed_total=3182s rss_mb=29165
+2026-06-05T14:13:50+00:00 [heartbeat] t=19:43:50 phase=scout elapsed_phase=889s elapsed_total=3212s rss_mb=29165
+2026-06-05T14:14:20+00:00 [heartbeat] t=19:44:20 phase=scout elapsed_phase=919s elapsed_total=3242s rss_mb=29165
+2026-06-05T14:14:50+00:00 [heartbeat] t=19:44:50 phase=scout elapsed_phase=949s elapsed_total=3272s rss_mb=29165
+2026-06-05T14:15:20+00:00 [heartbeat] t=19:45:20 phase=scout elapsed_phase=979s elapsed_total=3302s rss_mb=29165
+2026-06-05T14:15:50+00:00 [heartbeat] t=19:45:50 phase=scout elapsed_phase=1009s elapsed_total=3332s rss_mb=29165
+2026-06-05T14:16:20+00:00 [heartbeat] t=19:46:20 phase=scout elapsed_phase=1039s elapsed_total=3362s rss_mb=29165
+2026-06-05T14:16:50+00:00 [heartbeat] t=19:46:50 phase=scout elapsed_phase=1069s elapsed_total=3392s rss_mb=29165
+2026-06-05T14:17:20+00:00 [heartbeat] t=19:47:20 phase=scout elapsed_phase=1099s elapsed_total=3422s rss_mb=29165
+2026-06-05T14:17:50+00:00 [heartbeat] t=19:47:50 phase=scout elapsed_phase=1129s elapsed_total=3452s rss_mb=29165
+2026-06-05T14:18:20+00:00 [heartbeat] t=19:48:20 phase=scout elapsed_phase=1159s elapsed_total=3482s rss_mb=29165
+2026-06-05T14:18:50+00:00 [heartbeat] t=19:48:50 phase=scout elapsed_phase=1189s elapsed_total=3512s rss_mb=29165
+2026-06-05T14:19:20+00:00 [heartbeat] t=19:49:20 phase=scout elapsed_phase=1219s elapsed_total=3542s rss_mb=29165
+2026-06-05T14:19:50+00:00 [heartbeat] t=19:49:50 phase=scout elapsed_phase=1249s elapsed_total=3572s rss_mb=29165
+2026-06-05T14:20:20+00:00 [heartbeat] t=19:50:20 phase=scout elapsed_phase=1279s elapsed_total=3602s rss_mb=29165
+2026-06-05T14:20:50+00:00 [heartbeat] t=19:50:50 phase=scout elapsed_phase=1309s elapsed_total=3632s rss_mb=29165
+2026-06-05T14:21:20+00:00 [heartbeat] t=19:51:20 phase=scout elapsed_phase=1339s elapsed_total=3662s rss_mb=29165
+2026-06-05T14:21:50+00:00 [heartbeat] t=19:51:50 phase=scout elapsed_phase=1369s elapsed_total=3692s rss_mb=29165
+2026-06-05T14:22:20+00:00 [heartbeat] t=19:52:20 phase=scout elapsed_phase=1399s elapsed_total=3722s rss_mb=29165
+2026-06-05T14:22:50+00:00 [heartbeat] t=19:52:50 phase=scout elapsed_phase=1429s elapsed_total=3752s rss_mb=29165
+2026-06-05T14:23:20+00:00 [heartbeat] t=19:53:20 phase=scout elapsed_phase=1459s elapsed_total=3782s rss_mb=29165
+2026-06-05T14:23:50+00:00 [heartbeat] t=19:53:50 phase=scout elapsed_phase=1489s elapsed_total=3812s rss_mb=29165
+2026-06-05T14:24:20+00:00 [heartbeat] t=19:54:20 phase=scout elapsed_phase=1519s elapsed_total=3842s rss_mb=29165
+2026-06-05T14:24:50+00:00 [heartbeat] t=19:54:50 phase=scout elapsed_phase=1549s elapsed_total=3872s rss_mb=29165
+2026-06-05T14:25:20+00:00 [heartbeat] t=19:55:20 phase=scout elapsed_phase=1579s elapsed_total=3902s rss_mb=29165
+2026-06-05T14:25:50+00:00 [heartbeat] t=19:55:50 phase=scout elapsed_phase=1609s elapsed_total=3932s rss_mb=29165
+2026-06-05T14:26:20+00:00 [heartbeat] t=19:56:20 phase=scout elapsed_phase=1639s elapsed_total=3962s rss_mb=29165
+2026-06-05T14:26:21+00:00 [scout] cycle 1 complete; 35/35 configs ok in 1551.0s
+2026-06-05T14:26:21+00:00 [scout] cycle 1 paused — wrote /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/scout/combine_request.json. Agent writes combine_decision.json and reruns: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent --snapshot-end <DATE>
+2026-06-05T14:28:23+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T14:28:23+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T14:28:25+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T14:28:25+00:00 [data] start universe=russell1000
+2026-06-05T14:28:53+00:00 [heartbeat] t=19:58:53 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=444
+2026-06-05T14:29:09+00:00 [data] complete in 44.1s rows=6058854 tickers_kept=889
+2026-06-05T14:29:23+00:00 [heartbeat] t=19:59:23 phase=features elapsed_phase=13s elapsed_total=60s rss_mb=1673
+2026-06-05T14:29:39+00:00 [features] loaded from per-cell cache (key match) in 9.7s shape=(6058854, 279)
+2026-06-05T14:29:41+00:00 [target] start
+2026-06-05T14:29:53+00:00 [heartbeat] t=19:59:53 phase=target elapsed_phase=12s elapsed_total=90s rss_mb=29371
+2026-06-05T14:30:07+00:00 [target] complete in 26.3s positive_prevalence=0.096
+2026-06-05T14:30:07+00:00 [uniqueness] start
+2026-06-05T14:30:17+00:00 [uniqueness] complete in 9.5s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T14:30:17+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T14:30:23+00:00 [heartbeat] t=20:00:23 phase=uniqueness elapsed_phase=16s elapsed_total=120s rss_mb=29371
+2026-06-05T14:30:48+00:00 [scout] cycle 2 — fitting 34 combine config(s) (D3b.A cap = 50)
+2026-06-05T14:30:53+00:00 [heartbeat] t=20:00:53 phase=uniqueness elapsed_phase=46s elapsed_total=150s rss_mb=29371
+2026-06-05T14:31:23+00:00 [heartbeat] t=20:01:23 phase=uniqueness elapsed_phase=76s elapsed_total=180s rss_mb=29371
+2026-06-05T14:31:53+00:00 [heartbeat] t=20:01:53 phase=uniqueness elapsed_phase=106s elapsed_total=210s rss_mb=29371
+2026-06-05T14:32:23+00:00 [heartbeat] t=20:02:23 phase=uniqueness elapsed_phase=136s elapsed_total=240s rss_mb=29371
+2026-06-05T14:32:53+00:00 [heartbeat] t=20:02:53 phase=uniqueness elapsed_phase=166s elapsed_total=270s rss_mb=29371
+2026-06-05T14:33:23+00:00 [heartbeat] t=20:03:23 phase=uniqueness elapsed_phase=196s elapsed_total=300s rss_mb=29371
+2026-06-05T14:33:53+00:00 [heartbeat] t=20:03:53 phase=uniqueness elapsed_phase=226s elapsed_total=330s rss_mb=29371
+2026-06-05T14:34:23+00:00 [heartbeat] t=20:04:23 phase=uniqueness elapsed_phase=256s elapsed_total=360s rss_mb=29371
+2026-06-05T14:34:53+00:00 [heartbeat] t=20:04:53 phase=uniqueness elapsed_phase=286s elapsed_total=390s rss_mb=29371
+2026-06-05T14:35:23+00:00 [heartbeat] t=20:05:23 phase=uniqueness elapsed_phase=316s elapsed_total=420s rss_mb=29371
+2026-06-05T14:35:53+00:00 [heartbeat] t=20:05:53 phase=uniqueness elapsed_phase=346s elapsed_total=450s rss_mb=29371
+2026-06-05T14:36:23+00:00 [heartbeat] t=20:06:23 phase=uniqueness elapsed_phase=376s elapsed_total=480s rss_mb=29371
+2026-06-05T14:36:53+00:00 [heartbeat] t=20:06:53 phase=uniqueness elapsed_phase=406s elapsed_total=510s rss_mb=29371
+2026-06-05T14:37:23+00:00 [heartbeat] t=20:07:23 phase=uniqueness elapsed_phase=436s elapsed_total=540s rss_mb=29371
+2026-06-05T14:37:53+00:00 [heartbeat] t=20:07:53 phase=uniqueness elapsed_phase=466s elapsed_total=570s rss_mb=29371
+2026-06-05T14:38:23+00:00 [heartbeat] t=20:08:23 phase=uniqueness elapsed_phase=496s elapsed_total=600s rss_mb=29371
+2026-06-05T14:38:53+00:00 [heartbeat] t=20:08:53 phase=uniqueness elapsed_phase=526s elapsed_total=630s rss_mb=29371
+2026-06-05T14:39:23+00:00 [heartbeat] t=20:09:23 phase=uniqueness elapsed_phase=556s elapsed_total=660s rss_mb=29371
+2026-06-05T14:39:53+00:00 [heartbeat] t=20:09:53 phase=uniqueness elapsed_phase=586s elapsed_total=690s rss_mb=29371
+2026-06-05T14:40:23+00:00 [heartbeat] t=20:10:23 phase=uniqueness elapsed_phase=616s elapsed_total=720s rss_mb=29371
+2026-06-05T14:40:53+00:00 [heartbeat] t=20:10:53 phase=uniqueness elapsed_phase=646s elapsed_total=750s rss_mb=29371
+2026-06-05T14:41:23+00:00 [heartbeat] t=20:11:23 phase=uniqueness elapsed_phase=676s elapsed_total=780s rss_mb=29371
+2026-06-05T14:41:53+00:00 [heartbeat] t=20:11:53 phase=uniqueness elapsed_phase=706s elapsed_total=810s rss_mb=29371
+2026-06-05T14:42:23+00:00 [heartbeat] t=20:12:23 phase=uniqueness elapsed_phase=736s elapsed_total=840s rss_mb=29371
+2026-06-05T14:42:53+00:00 [heartbeat] t=20:12:53 phase=uniqueness elapsed_phase=766s elapsed_total=870s rss_mb=29371
+2026-06-05T14:43:23+00:00 [heartbeat] t=20:13:23 phase=uniqueness elapsed_phase=796s elapsed_total=900s rss_mb=29371
+2026-06-05T14:43:53+00:00 [heartbeat] t=20:13:53 phase=uniqueness elapsed_phase=826s elapsed_total=930s rss_mb=29371
+2026-06-05T14:44:23+00:00 [heartbeat] t=20:14:23 phase=uniqueness elapsed_phase=856s elapsed_total=960s rss_mb=29371
+2026-06-05T14:44:53+00:00 [heartbeat] t=20:14:53 phase=uniqueness elapsed_phase=886s elapsed_total=990s rss_mb=29371
+2026-06-05T14:45:23+00:00 [heartbeat] t=20:15:23 phase=uniqueness elapsed_phase=916s elapsed_total=1020s rss_mb=29371
+2026-06-05T14:45:53+00:00 [heartbeat] t=20:15:53 phase=uniqueness elapsed_phase=946s elapsed_total=1050s rss_mb=29371
+2026-06-05T14:46:23+00:00 [heartbeat] t=20:16:23 phase=uniqueness elapsed_phase=976s elapsed_total=1080s rss_mb=29371
+2026-06-05T14:46:53+00:00 [heartbeat] t=20:16:53 phase=uniqueness elapsed_phase=1006s elapsed_total=1110s rss_mb=29371
+2026-06-05T14:47:23+00:00 [heartbeat] t=20:17:23 phase=uniqueness elapsed_phase=1036s elapsed_total=1140s rss_mb=29371
+2026-06-05T14:47:53+00:00 [heartbeat] t=20:17:53 phase=uniqueness elapsed_phase=1066s elapsed_total=1170s rss_mb=29371
+2026-06-05T14:48:23+00:00 [heartbeat] t=20:18:23 phase=uniqueness elapsed_phase=1096s elapsed_total=1200s rss_mb=29371
+2026-06-05T14:48:53+00:00 [heartbeat] t=20:18:53 phase=uniqueness elapsed_phase=1126s elapsed_total=1230s rss_mb=29371
+2026-06-05T14:49:23+00:00 [heartbeat] t=20:19:23 phase=uniqueness elapsed_phase=1156s elapsed_total=1260s rss_mb=29371
+2026-06-05T14:49:53+00:00 [heartbeat] t=20:19:53 phase=uniqueness elapsed_phase=1186s elapsed_total=1290s rss_mb=29371
+2026-06-05T14:50:23+00:00 [heartbeat] t=20:20:23 phase=uniqueness elapsed_phase=1216s elapsed_total=1320s rss_mb=29371
+2026-06-05T14:50:53+00:00 [heartbeat] t=20:20:53 phase=uniqueness elapsed_phase=1246s elapsed_total=1350s rss_mb=29371
+2026-06-05T14:51:23+00:00 [heartbeat] t=20:21:23 phase=uniqueness elapsed_phase=1276s elapsed_total=1380s rss_mb=29371
+2026-06-05T14:51:53+00:00 [heartbeat] t=20:21:53 phase=uniqueness elapsed_phase=1306s elapsed_total=1410s rss_mb=29371
+2026-06-05T14:52:23+00:00 [heartbeat] t=20:22:23 phase=uniqueness elapsed_phase=1336s elapsed_total=1440s rss_mb=29371
+2026-06-05T14:52:53+00:00 [heartbeat] t=20:22:53 phase=uniqueness elapsed_phase=1366s elapsed_total=1470s rss_mb=29371
+2026-06-05T14:53:15+00:00 [scout] cycle 2 complete; wrote /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/scout/combine_results.json. Agent writes iter_0_decision.json + reruns --resume --snapshot-end <DATE>.
+2026-06-05T14:54:21+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T14:54:21+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T14:54:22+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T14:54:22+00:00 [data] start universe=russell1000
+2026-06-05T14:54:51+00:00 [heartbeat] t=20:24:51 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=463
+2026-06-05T14:55:06+00:00 [data] complete in 43.2s rows=6058854 tickers_kept=889
+2026-06-05T14:55:21+00:00 [heartbeat] t=20:25:21 phase=features elapsed_phase=14s elapsed_total=60s rss_mb=1627
+2026-06-05T14:55:33+00:00 [features] loaded from per-cell cache (key match) in 9.5s shape=(6058854, 279)
+2026-06-05T14:55:36+00:00 [target] start
+2026-06-05T14:55:51+00:00 [heartbeat] t=20:25:51 phase=target elapsed_phase=15s elapsed_total=90s rss_mb=29308
+2026-06-05T14:56:02+00:00 [target] complete in 26.6s positive_prevalence=0.096
+2026-06-05T14:56:02+00:00 [uniqueness] start
+2026-06-05T14:56:12+00:00 [uniqueness] complete in 9.6s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T14:56:12+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T14:56:12+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T14:56:12+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol
+2026-06-05T14:56:21+00:00 [heartbeat] t=20:26:21 phase=loop elapsed_phase=9s elapsed_total=120s rss_mb=29308
+2026-06-05T14:56:51+00:00 [heartbeat] t=20:26:51 phase=loop elapsed_phase=39s elapsed_total=150s rss_mb=29308
+2026-06-05T14:57:21+00:00 [heartbeat] t=20:27:21 phase=loop elapsed_phase=69s elapsed_total=180s rss_mb=29308
+2026-06-05T14:57:28+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.05678166620502229)
+2026-06-05T14:57:28+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_0_request.json
+2026-06-05T14:57:28+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T14:57:28+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:00:04+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:00:04+00:00 [resume] loaded checkpoint at iter 0 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:00:04+00:00 [resume] RESUMED iter 1 (decision: pruned 0, hp_changes=['n_estimators'], should_stop=False)
+2026-06-05T15:00:04+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:00:05+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:00:05+00:00 [data] start universe=russell1000
+2026-06-05T15:00:34+00:00 [heartbeat] t=20:30:34 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=484
+2026-06-05T15:00:47+00:00 [data] complete in 41.9s rows=6058854 tickers_kept=889
+2026-06-05T15:01:04+00:00 [heartbeat] t=20:31:04 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=1628
+2026-06-05T15:01:15+00:00 [features] loaded from per-cell cache (key match) in 9.0s shape=(6058854, 279)
+2026-06-05T15:01:17+00:00 [target] start
+2026-06-05T15:01:34+00:00 [heartbeat] t=20:31:34 phase=target elapsed_phase=17s elapsed_total=90s rss_mb=29324
+2026-06-05T15:01:42+00:00 [target] complete in 24.5s positive_prevalence=0.096
+2026-06-05T15:01:42+00:00 [uniqueness] start
+2026-06-05T15:01:51+00:00 [uniqueness] complete in 9.1s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:01:51+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:01:51+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:01:51+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 1)
+2026-06-05T15:02:04+00:00 [heartbeat] t=20:32:04 phase=loop elapsed_phase=13s elapsed_total=120s rss_mb=29324
+2026-06-05T15:02:34+00:00 [heartbeat] t=20:32:34 phase=loop elapsed_phase=43s elapsed_total=150s rss_mb=29324
+2026-06-05T15:03:04+00:00 [heartbeat] t=20:33:04 phase=loop elapsed_phase=73s elapsed_total=180s rss_mb=29324
+2026-06-05T15:03:34+00:00 [heartbeat] t=20:33:34 phase=loop elapsed_phase=103s elapsed_total=210s rss_mb=29324
+2026-06-05T15:04:04+00:00 [heartbeat] t=20:34:04 phase=loop elapsed_phase=133s elapsed_total=240s rss_mb=29324
+2026-06-05T15:04:07+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:04:07+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_1_request.json
+2026-06-05T15:04:07+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:04:07+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:05:07+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:05:07+00:00 [resume] loaded checkpoint at iter 1 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:05:07+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=['min_child_weight', 'n_estimators'], should_stop=False)
+2026-06-05T15:05:07+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:05:09+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:05:09+00:00 [data] start universe=russell1000
+2026-06-05T15:05:37+00:00 [heartbeat] t=20:35:37 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=477
+2026-06-05T15:05:50+00:00 [data] complete in 41.4s rows=6058854 tickers_kept=889
+2026-06-05T15:06:07+00:00 [heartbeat] t=20:36:07 phase=features elapsed_phase=16s elapsed_total=60s rss_mb=1674
+2026-06-05T15:06:18+00:00 [features] loaded from per-cell cache (key match) in 9.3s shape=(6058854, 279)
+2026-06-05T15:06:20+00:00 [target] start
+2026-06-05T15:06:37+00:00 [heartbeat] t=20:36:37 phase=target elapsed_phase=17s elapsed_total=90s rss_mb=29374
+2026-06-05T15:06:46+00:00 [target] complete in 25.7s positive_prevalence=0.096
+2026-06-05T15:06:46+00:00 [uniqueness] start
+2026-06-05T15:06:56+00:00 [uniqueness] complete in 9.5s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:06:56+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:06:56+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:06:56+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 2)
+2026-06-05T15:07:07+00:00 [heartbeat] t=20:37:07 phase=loop elapsed_phase=11s elapsed_total=120s rss_mb=29374
+2026-06-05T15:07:37+00:00 [heartbeat] t=20:37:37 phase=loop elapsed_phase=41s elapsed_total=150s rss_mb=29374
+2026-06-05T15:08:07+00:00 [heartbeat] t=20:38:07 phase=loop elapsed_phase=71s elapsed_total=180s rss_mb=29374
+2026-06-05T15:08:10+00:00 [loop] PAUSED iter 2 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:08:10+00:00 [loop] paused at iter 2 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_2_request.json
+2026-06-05T15:08:10+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:08:10+00:00 [loop] paused at iter 2 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:08:58+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:08:58+00:00 [resume] loaded checkpoint at iter 2 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:08:58+00:00 [resume] RESUMED iter 3 (decision: pruned 0, hp_changes=['min_child_weight', 'subsample'], should_stop=False)
+2026-06-05T15:08:58+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:09:00+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:09:00+00:00 [data] start universe=russell1000
+2026-06-05T15:09:28+00:00 [heartbeat] t=20:39:28 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=463
+2026-06-05T15:09:42+00:00 [data] complete in 42.2s rows=6058854 tickers_kept=889
+2026-06-05T15:09:58+00:00 [heartbeat] t=20:39:58 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=1674
+2026-06-05T15:10:09+00:00 [features] loaded from per-cell cache (key match) in 8.4s shape=(6058854, 279)
+2026-06-05T15:10:11+00:00 [target] start
+2026-06-05T15:10:28+00:00 [heartbeat] t=20:40:28 phase=target elapsed_phase=17s elapsed_total=90s rss_mb=29356
+2026-06-05T15:10:36+00:00 [target] complete in 25.6s positive_prevalence=0.096
+2026-06-05T15:10:36+00:00 [uniqueness] start
+2026-06-05T15:10:46+00:00 [uniqueness] complete in 9.5s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:10:46+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:10:46+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:10:46+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 3)
+2026-06-05T15:10:58+00:00 [heartbeat] t=20:40:58 phase=loop elapsed_phase=12s elapsed_total=120s rss_mb=29356
+2026-06-05T15:11:28+00:00 [heartbeat] t=20:41:28 phase=loop elapsed_phase=42s elapsed_total=150s rss_mb=29356
+2026-06-05T15:11:58+00:00 [heartbeat] t=20:41:58 phase=loop elapsed_phase=72s elapsed_total=180s rss_mb=29356
+2026-06-05T15:11:59+00:00 [loop] PAUSED iter 3 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:11:59+00:00 [loop] paused at iter 3 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_3_request.json
+2026-06-05T15:11:59+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:11:59+00:00 [loop] paused at iter 3 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:12:42+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:12:42+00:00 [resume] loaded checkpoint at iter 3 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:12:42+00:00 [resume] RESUMED iter 4 (decision: pruned 0, hp_changes=['gamma', 'subsample'], should_stop=False)
+2026-06-05T15:12:43+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:12:44+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:12:44+00:00 [data] start universe=russell1000
+2026-06-05T15:13:12+00:00 [heartbeat] t=20:43:12 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=465
+2026-06-05T15:13:27+00:00 [data] complete in 42.4s rows=6058854 tickers_kept=889
+2026-06-05T15:13:42+00:00 [heartbeat] t=20:43:42 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=1674
+2026-06-05T15:13:54+00:00 [features] loaded from per-cell cache (key match) in 8.8s shape=(6058854, 279)
+2026-06-05T15:13:56+00:00 [target] start
+2026-06-05T15:14:12+00:00 [heartbeat] t=20:44:12 phase=target elapsed_phase=16s elapsed_total=90s rss_mb=29357
+2026-06-05T15:14:22+00:00 [target] complete in 26.6s positive_prevalence=0.096
+2026-06-05T15:14:22+00:00 [uniqueness] start
+2026-06-05T15:14:33+00:00 [uniqueness] complete in 10.3s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:14:33+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:14:33+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:14:33+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 4)
+2026-06-05T15:14:42+00:00 [heartbeat] t=20:44:42 phase=loop elapsed_phase=10s elapsed_total=120s rss_mb=29357
+2026-06-05T15:15:13+00:00 [heartbeat] t=20:45:12 phase=loop elapsed_phase=40s elapsed_total=150s rss_mb=29357
+2026-06-05T15:15:43+00:00 [heartbeat] t=20:45:43 phase=loop elapsed_phase=70s elapsed_total=180s rss_mb=29357
+2026-06-05T15:15:48+00:00 [loop] PAUSED iter 4 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:15:48+00:00 [loop] paused at iter 4 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_4_request.json
+2026-06-05T15:15:48+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:15:48+00:00 [loop] paused at iter 4 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:16:35+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:16:35+00:00 [resume] loaded checkpoint at iter 4 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:16:35+00:00 [resume] RESUMED iter 5 (decision: pruned 0, hp_changes=['gamma', 'max_depth'], should_stop=False)
+2026-06-05T15:16:35+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:16:36+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:16:36+00:00 [data] start universe=russell1000
+2026-06-05T15:17:05+00:00 [heartbeat] t=20:47:05 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=482
+2026-06-05T15:17:17+00:00 [data] complete in 41.1s rows=6058854 tickers_kept=889
+2026-06-05T15:17:35+00:00 [heartbeat] t=20:47:35 phase=features elapsed_phase=16s elapsed_total=60s rss_mb=1720
+2026-06-05T15:17:44+00:00 [features] loaded from per-cell cache (key match) in 8.8s shape=(6058854, 279)
+2026-06-05T15:17:46+00:00 [target] start
+2026-06-05T15:18:05+00:00 [heartbeat] t=20:48:05 phase=target elapsed_phase=18s elapsed_total=90s rss_mb=29356
+2026-06-05T15:18:12+00:00 [target] complete in 25.1s positive_prevalence=0.096
+2026-06-05T15:18:12+00:00 [uniqueness] start
+2026-06-05T15:18:21+00:00 [uniqueness] complete in 9.2s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:18:21+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:18:21+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:18:21+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 5)
+2026-06-05T15:18:35+00:00 [heartbeat] t=20:48:35 phase=loop elapsed_phase=14s elapsed_total=120s rss_mb=29356
+2026-06-05T15:19:05+00:00 [heartbeat] t=20:49:05 phase=loop elapsed_phase=44s elapsed_total=150s rss_mb=29356
+2026-06-05T15:19:33+00:00 [loop] PAUSED iter 5 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:19:33+00:00 [loop] paused at iter 5 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_5_request.json
+2026-06-05T15:19:33+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:19:33+00:00 [loop] paused at iter 5 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:20:18+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:20:18+00:00 [resume] loaded checkpoint at iter 5 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:20:18+00:00 [resume] RESUMED iter 6 (decision: pruned 0, hp_changes=['colsample_bytree', 'max_depth'], should_stop=False)
+2026-06-05T15:20:19+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:20:20+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:20:20+00:00 [data] start universe=russell1000
+2026-06-05T15:20:48+00:00 [heartbeat] t=20:50:48 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=464
+2026-06-05T15:21:02+00:00 [data] complete in 41.8s rows=6058854 tickers_kept=889
+2026-06-05T15:21:18+00:00 [heartbeat] t=20:51:18 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=1627
+2026-06-05T15:21:28+00:00 [features] loaded from per-cell cache (key match) in 8.3s shape=(6058854, 279)
+2026-06-05T15:21:30+00:00 [target] start
+2026-06-05T15:21:48+00:00 [heartbeat] t=20:51:48 phase=target elapsed_phase=19s elapsed_total=90s rss_mb=29309
+2026-06-05T15:21:57+00:00 [target] complete in 27.0s positive_prevalence=0.096
+2026-06-05T15:21:57+00:00 [uniqueness] start
+2026-06-05T15:22:07+00:00 [uniqueness] complete in 9.8s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:22:07+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:22:07+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:22:07+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 6)
+2026-06-05T15:22:18+00:00 [heartbeat] t=20:52:18 phase=loop elapsed_phase=12s elapsed_total=120s rss_mb=29309
+2026-06-05T15:22:48+00:00 [heartbeat] t=20:52:48 phase=loop elapsed_phase=42s elapsed_total=150s rss_mb=29309
+2026-06-05T15:23:18+00:00 [heartbeat] t=20:53:18 phase=loop elapsed_phase=72s elapsed_total=180s rss_mb=29309
+2026-06-05T15:23:22+00:00 [loop] PAUSED iter 6 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:23:22+00:00 [loop] paused at iter 6 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_6_request.json
+2026-06-05T15:23:22+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:23:22+00:00 [loop] paused at iter 6 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:24:19+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:24:19+00:00 [resume] loaded checkpoint at iter 6 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:24:19+00:00 [resume] RESUMED iter 7 (decision: pruned 0, hp_changes=['alpha', 'colsample_bytree'], should_stop=False)
+2026-06-05T15:24:20+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:24:21+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:24:21+00:00 [data] start universe=russell1000
+2026-06-05T15:24:49+00:00 [heartbeat] t=20:54:49 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=474
+2026-06-05T15:25:03+00:00 [data] complete in 41.9s rows=6058854 tickers_kept=889
+2026-06-05T15:25:19+00:00 [heartbeat] t=20:55:19 phase=features elapsed_phase=15s elapsed_total=60s rss_mb=1674
+2026-06-05T15:25:30+00:00 [features] loaded from per-cell cache (key match) in 8.5s shape=(6058854, 279)
+2026-06-05T15:25:32+00:00 [target] start
+2026-06-05T15:25:49+00:00 [heartbeat] t=20:55:49 phase=target elapsed_phase=17s elapsed_total=90s rss_mb=29359
+2026-06-05T15:25:57+00:00 [target] complete in 25.6s positive_prevalence=0.096
+2026-06-05T15:25:57+00:00 [uniqueness] start
+2026-06-05T15:26:07+00:00 [uniqueness] complete in 9.4s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:26:07+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:26:07+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:26:07+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 7)
+2026-06-05T15:26:19+00:00 [heartbeat] t=20:56:19 phase=loop elapsed_phase=12s elapsed_total=120s rss_mb=29359
+2026-06-05T15:26:49+00:00 [heartbeat] t=20:56:49 phase=loop elapsed_phase=42s elapsed_total=150s rss_mb=29359
+2026-06-05T15:27:19+00:00 [heartbeat] t=20:57:19 phase=loop elapsed_phase=72s elapsed_total=180s rss_mb=29359
+2026-06-05T15:27:20+00:00 [loop] PAUSED iter 7 awaiting decision (best_val_brier=0.0565650788668096)
+2026-06-05T15:27:20+00:00 [loop] paused at iter 7 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/iter_7_request.json
+2026-06-05T15:27:20+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent/loop/checkpoint.json
+2026-06-05T15:27:20+00:00 [loop] paused at iter 7 — resume with: uv run python -m gbdt experiment russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml --resume russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:28:15+00:00 [experiment] start spec=russell1000_up_40pct_100d_dd20pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:28:15+00:00 [resume] loaded checkpoint at iter 7 (run_id=russell1000_up_40pct_100d_dd20pct_aligned_agent)
+2026-06-05T15:28:15+00:00 [resume] RESUMED iter 8 (decision: pruned 0, hp_changes=[], should_stop=True)
+2026-06-05T15:28:15+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
+2026-06-05T15:28:16+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-10-06
+2026-06-05T15:28:16+00:00 [data] start universe=russell1000
+2026-06-05T15:28:45+00:00 [heartbeat] t=20:58:45 phase=data elapsed_phase=28s elapsed_total=30s rss_mb=471
+2026-06-05T15:28:58+00:00 [data] complete in 41.5s rows=6058854 tickers_kept=889
+2026-06-05T15:29:15+00:00 [heartbeat] t=20:59:15 phase=features elapsed_phase=16s elapsed_total=60s rss_mb=1626
+2026-06-05T15:29:24+00:00 [features] loaded from per-cell cache (key match) in 8.2s shape=(6058854, 279)
+2026-06-05T15:29:26+00:00 [target] start
+2026-06-05T15:29:45+00:00 [heartbeat] t=20:59:45 phase=target elapsed_phase=18s elapsed_total=90s rss_mb=29308
+2026-06-05T15:29:52+00:00 [target] complete in 26.2s positive_prevalence=0.096
+2026-06-05T15:29:52+00:00 [uniqueness] start
+2026-06-05T15:30:02+00:00 [uniqueness] complete in 9.7s horizon=100 rows=6058854 ESS=6020516 inflation=1.01x
+2026-06-05T15:30:02+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_40pct_100d_dd20pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T15:30:02+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['eta', 'gamma', 'max_depth', 'subsample'])
+2026-06-05T15:30:02+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 8)
+2026-06-05T15:30:15+00:00 [heartbeat] t=21:00:15 phase=loop elapsed_phase=12s elapsed_total=120s rss_mb=29308
+2026-06-05T15:30:45+00:00 [heartbeat] t=21:00:45 phase=loop elapsed_phase=42s elapsed_total=150s rss_mb=29308
+2026-06-05T15:31:15+00:00 [heartbeat] t=21:01:15 phase=loop elapsed_phase=72s elapsed_total=180s rss_mb=29308
+2026-06-05T15:31:45+00:00 [heartbeat] t=21:01:45 phase=loop elapsed_phase=102s elapsed_total=210s rss_mb=29308
+2026-06-05T15:31:46+00:00 [loop] LOOP COMPLETE in 104.1s best_iter=5 val_brier=0.0569 reason=agent_should_stop
+2026-06-05T15:31:46+00:00 [artifact] start
+2026-06-05T15:31:54+00:00 [artifact] complete in 8.0s -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up40-100d-agent/results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent
+2026-06-05T15:31:54+00:00 [loop] STOPPED reason=agent_should_stop
+2026-06-05T15:31:54+00:00 [experiment] complete in 219.6s

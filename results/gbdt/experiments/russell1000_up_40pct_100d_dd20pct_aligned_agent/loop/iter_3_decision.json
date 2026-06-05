@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "subsample": 0.7,
+    "gamma": 0.3
+  },
+  "rationale": "iter_3 (subsample=0.5) verdict: val_brier flat (0.0568→0.0568), eval R-p@1 flat at 0.540 — same as iter_2. subsample=0.5 did NOT recover iter_0's 0.665. Implied response curve over subsample {0.5, 0.7}: subsample=0.7 was the lex-winner's local optimum; lower hurts. Per playbook 'pivot if eval_R_p@1 movement < 0.005' (0.540→0.540 = 0.000), PIVOT to a new knob. Revert subsample to 0.7. New knob: gamma — currently 0.5 (lex winner), try gamma=0.3 (between gamma=0.1 single-knob R-p@1=0.39 and gamma=0.5 R-p@1=0.595 → 0.3 maps the steep part of the curve). If gamma=0.3 improves R-p@1 vs iter_0's 0.665 → push lower; if degrades → gamma=0.5 is the optimum and pivot next. Knobs explored: n_estimators (worse), min_child_weight (worse), subsample (peak at 0.7). Now exploring: gamma."
+}

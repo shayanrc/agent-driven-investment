@@ -1,0 +1,6 @@
+{
+  "should_stop": true,
+  "prune_features": [],
+  "hp_changes": {},
+  "rationale": "STOP. iter_7 (alpha=0.05): val_brier 0.0568→0.05675 (slightly best, ∆=-0.00005, well below 0.0005 pivot threshold), eval R-p@1 0.665→0.525 (REGRESSION -0.140, confirming the narrow-attractor pattern). 7 knobs probed across 8 iterations: n_estimators (worse at 300), min_child_weight (worse at 3), subsample (peak at iter_0's 0.7; 0.5 flat-degraded), gamma (flat 0.3-0.5), max_depth (peak at 3; 2 regressed), colsample_bytree (peak at 1.0; 0.7 regressed), alpha (peak at 0; 0.05 regressed). Every single-knob deviation from iter_0's config collapsed R-p@1 from 0.665 to the 0.52-0.54 attractor. iter_4 (gamma=0.3) was the only non-iter_0 variant matching 0.665 — and that's flat-equivalence, not improvement. val_brier is plateaued at 0.0568 across ALL iters (range 0.05675-0.05680, ∆=0.00005); R-p@K curves are flat-or-worse vs iter_0. Stop criteria met: explored 7 structurally-different knobs (vs the 4-knob threshold), and every iter moved eval R-p@1 by < 0.01 in the positive direction. iter_0 is the winner with HP {depth:3, eta:0.01, gamma:0.5, subsample:0.7} + defaults — R-p@1=0.665 (+21% over sweep baseline 0.550)."
+}
