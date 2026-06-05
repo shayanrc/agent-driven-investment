@@ -34,8 +34,30 @@ Aggregation is **macro**: mean of per-day ratios, equal weight per day. This mat
 | `R_precision_at_5` | … at K=5 |
 | `R_precision_at_10` | … at K=10 |
 | `R_precision_at_20` | … at K=20 |
+| `mode` | Training regime: `sweep` / `default_full_loop` / `agent_file_protocol` / `agentloop_legacy` (added 2026-06-05) |
+| `n_iterations_run` | Realized FS+HP iteration count from `<artifact>/iterations.jsonl` (or sidecar JSON for pruned `_agentloop*` cells; blank when neither carries it) |
+| `backend` | `xgboost` / `catboost` — read from `<artifact>/spec.yaml::backend.library`, defaulting to `catboost` when omitted (matches the runner's default) |
+| `train_start`, `train_end`, `val_start`, `val_end`, `eval_start`, `eval_end`, `test_start`, `test_end` | V1.4 P3 calendar-date columns — universe-anchored segment bounds |
 
 Rows are sorted by AUC descending for readability — re-sort as needed.
+
+### Mode classifier rules
+
+Primary (from `<artifact>/spec.yaml`):
+- `backend.fs_hp_loop.callback_mode == "agent_file_protocol"` → `agent_file_protocol`
+- `callback_mode == "default"` (or absent) AND `max_iterations <= 3` → `sweep`
+- `callback_mode == "default"` (or absent) AND `max_iterations >= 4` → `default_full_loop`
+
+Fallback (cell-name suffix — only when the artifact dir is gone; never overrides primary):
+- `_agentloop*` → `agentloop_legacy`
+- `_aligned` → `sweep`
+- `_pilot` → `default_full_loop`
+- `_b_acceptance_agent` → `agent_file_protocol`; `_b_acceptance` (alone) → `default_full_loop`
+- `_xgb_acceptance` / `_acceptance` → `agent_file_protocol`
+- `_phase8` / `_catboost_phase8` → `default_full_loop`
+- no suffix → `sweep`
+
+A static dispatch table in `scripts/gbdt/regenerate_r_precision_at_k_csv.py::_PRUNED_AGENTLOOP_FALLBACK` pins the 13 known pruned `_agentloop*` cells to their reported iteration counts (from `results/gbdt/data/_195`, `_222`, `_223` sidecars). The fallback only applies when no sibling worktree carries the artifact dir.
 
 ## Lift (computed on demand, not stored)
 
