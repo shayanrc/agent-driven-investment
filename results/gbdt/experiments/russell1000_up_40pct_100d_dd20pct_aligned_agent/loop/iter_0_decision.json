@@ -1,0 +1,8 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "n_estimators": 300
+  },
+  "rationale": "iter_0 metrics: val_brier=0.0568 (vs weighted_base_rate=0.0614, beats baseline), train_val_gap=-0.026 (UNDERFIT, runner flags no_overfit=true), eval R-p@1=0.665 (already +21% over sweep baseline 0.550). Learning curve: validation_logloss at trees 98-100 still decreasing (0.2195 → 0.2192 over last 3 trees) — n_estimators=100 default is the binding constraint, NOT eta or depth. degenerate_sink_warning=True is a false-positive from the heuristic (val_brier close to weighted_base_rate) — eval R-p@1=0.665 is high, not collapsed. Pivot: triple n_estimators to 300 keeping {depth:3, eta:0.01, gamma:0.5, subsample:0.7} fixed. This is the cleanest single-knob move per the rule 'pick ONE knob, map ≥ 2 values' — n_estimators=100 is the prior value, 300 is the new probe. NOT pruning features (rule 1: no overfit, no FS). Knobs explored so far: n_estimators (this iter). Next knob ladder if n_estimators plateaus: eta, max_depth, gamma."
+}

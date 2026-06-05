@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "gamma": 0.5,
+    "max_depth": 2
+  },
+  "rationale": "iter_4 (gamma=0.3) verdict: ESSENTIALLY EQUAL to iter_0 — val_brier 0.0568 (flat), eval R-p@1 0.665 (identical to iter_0), all R-p@K within 0.005. gamma is in a flat regime around 0.3-0.5; with subsample=0.7 the gamma sensitivity has collapsed. PIVOT to a new knob: max_depth. Revert gamma 0.3→0.5 (no signal, return to scout-winner default) and try max_depth=2 (tiny-model probe per playbook rule 12). Scout single-knob depth=2 was R-p@1=0.37 BUT that was at default eta=0.3 and gamma=0. In combine, tiny_depth2_eta0.05_csb0.5 reached R-p@1=0.465 with R-p@3=0.655 and R-p@5=0.627 — strong middle K, suggests depth=2 may produce more diffuse but accurate predictions. With current {eta=0.01, gamma=0.5, subsample=0.7, n_est=100} which is more conservative than the scout, depth=2 may yield a similar-or-better top-1 with more stable middle K. If depth=2 holds R-p@1 ≥ 0.6 → adopt; if it tanks → revert and pivot to alpha or colsample_bytree. Knobs explored: n_estimators (worse), mcw (worse), subsample (peak 0.7), gamma (flat 0.3-0.5). Now exploring: max_depth."
+}

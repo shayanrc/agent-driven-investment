@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "max_depth": 3,
+    "colsample_bytree": 0.7
+  },
+  "rationale": "iter_5 (max_depth=2) verdict: val_brier 0.0568→0.0569 (slightly worse), eval R-p@1 0.665→0.540 (REGRESSION -0.125), R-p@5 0.566→0.534. depth=2 underfits the prediction tail given eta=0.01+gamma=0.5+subsample=0.7. Revert max_depth 2→3 and PIVOT to colsample_bytree. Scout single-knob csb=0.5 gave R-p@1=0.46, csb=1.0 (default) 0.475; combine lex_minus_alpha_plus_csb0.5 (depth=3, eta=0.01, gamma=0.5, csb=0.5) gave R-p@1=0.48 with R-p@3=0.662, R-p@5=0.563, R-p@10=0.511 — strong middle K. csb=0.7 sits between current default 1.0 and that probe; it's a feature-subsample probe to test if the model can be made more robust at top-1 by decorrelating trees. Knobs explored: n_estimators, mcw, subsample (peak 0.7), gamma (flat), max_depth (peak 3). Now exploring: colsample_bytree."
+}

@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "colsample_bytree": 1.0,
+    "alpha": 0.05
+  },
+  "rationale": "iter_6 (colsample_bytree=0.7) verdict: val_brier 0.0568→0.0568 (flat 0.05677), eval R-p@1 0.665→0.540 (REGRESSION -0.125, identical magnitude to iters 2/3/5 deviations). PATTERN OBSERVED: iter_0's R-p@1=0.665 is a narrow attractor; any single-knob deviation collapses to R-p@1=0.540 (the next attractor). The model has bimodal top-1 behavior at this val_brier level. Revert csb 0.7→1.0 (no signal). PIVOT to alpha — the only structurally distinct unexplored knob (L1 regularization, no scout-mix tested it gently). alpha=0.1 was the worst single-knob val_brier (0.073), but with the lex combine + alpha=0.1 (config 0) it landed at R-p@1=0.535 — alpha pushes predictions toward the bulk. Try alpha=0.05 (half of scout probe): if it stays at 0.665 → adopt to validate iter_0 is alpha-robust; if it tanks → we've exhausted the knob space and should stop. Knobs explored: n_estimators, mcw, subsample, gamma, max_depth, colsample_bytree (6 knobs, 5 with at least 2 values). Now exploring final knob: alpha. Will stop after iter_7 unless alpha unlocks new territory."
+}

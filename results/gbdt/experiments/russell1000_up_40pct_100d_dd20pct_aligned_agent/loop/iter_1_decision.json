@@ -1,0 +1,9 @@
+{
+  "should_stop": false,
+  "prune_features": [],
+  "hp_changes": {
+    "n_estimators": 100,
+    "min_child_weight": 3
+  },
+  "rationale": "iter_1 (n_estimators=300) verdict: val_brier 0.0568→0.0566 (∆=−0.0002, BELOW 0.0005 pivot threshold) BUT eval R-p@1 0.665→0.445 (∆=−0.220, DESTRUCTIVE for top-1). Learning curve flatlines at trees 280-300 (vlog=0.2079) → more trees push predictions toward bulk-Brier optimum at the cost of the top tail; this is the 'val_brier improves marginally while top-1 collapses' anti-pattern. n_estimators=100 was the iter_0 sweet spot for R-p@1. Pivot: revert n_estimators 300→100 AND introduce min_child_weight=3 (per playbook ladder mcw {1,3,5}; iter_0 used default mcw=1). Rationale for mcw=3 (NOT 10 per playbook rule 8): rule 8 forbids defaulting to mcw=10 on strong-top-1 cells; scout showed mcw=5 R-p@1=0.38, mcw=10 R-p@1=0.405 at depth=6 defaults — but with depth=3+eta=0.01 the regularization arithmetic differs. mcw=3 is a conservative middle probe — if it helps R-p@1 monotonically vs iter_0, push to 5; if it hurts, drop. NOT pruning features (no_overfit=true; rule 1). Knobs explored: n_estimators (single value, pivoted). Now exploring: mcw."
+}
