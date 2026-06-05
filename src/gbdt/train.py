@@ -634,6 +634,10 @@ def _maybe_run_scout_and_prefit(
         )
 
     # ---- Phase 1.6 — Combine --------------------------------------------
+    # In ``agent_file_protocol`` mode this function already returned None at
+    # the top of the body (the runner handles cycles 1-3 in __main__.py via
+    # _handle_scout_cycles_agent_mode). So the only mode reaching this block
+    # is ``default`` — pure lex auto-compose + degenerate-sink fallback.
     composed_overlay: dict = {}
     combine_status = "skipped"
     degenerate_sink_fallback = False
@@ -646,34 +650,19 @@ def _maybe_run_scout_and_prefit(
         )
         baseline_brier = defaults_row.val_brier if defaults_row else None
 
-        if callback_mode == "agent_file_protocol":
-            # In agent mode the runner exits AFTER scout (Cycle 1 of D12).
-            # That exit-resume is handled in __main__.py. Here we leave
-            # composed_overlay empty so iter_0 uses ``current_hp`` until the
-            # agent's combine_decision lands.
-            #
-            # The agent may have already written its decision on a prior
-            # resume cycle; if so the runner stashes it in
-            # ``scout_cfg['_combine_winner_overlay']`` (P4).
-            combine_winner = scout_cfg.get("_combine_winner_overlay")
-            if combine_winner is not None:
-                composed_overlay = dict(combine_winner)
-                combine_status = "agent_combine_winner"
-            else:
-                combine_status = "awaiting_agent_combine_decision"
-        else:
-            # Default mode: lex auto-compose.
-            winner = scout_mod.lexicographic_winner(scout_results)
-            composed_overlay = dict(winner.hp_overlay)
-            combine_status = "lex_auto_compose"
-            # D9.2.A: degenerate-sink fallback in default mode.
-            if scout_mod.detect_degenerate_sink(
-                winner, scout_results, baseline_brier=baseline_brier,
-                brier_threshold=float(degenerate_sink_threshold),
-            ):
-                composed_overlay = {}
-                combine_status = "degenerate_sink_fallback"
-                degenerate_sink_fallback = True
+        # Default mode: lex auto-compose. (agent_file_protocol mode would
+        # short-circuit at the top; sweep mode would too.)
+        winner = scout_mod.lexicographic_winner(scout_results)
+        composed_overlay = dict(winner.hp_overlay)
+        combine_status = "lex_auto_compose"
+        # D9.2.A: degenerate-sink fallback in default mode.
+        if scout_mod.detect_degenerate_sink(
+            winner, scout_results, baseline_brier=baseline_brier,
+            brier_threshold=float(degenerate_sink_threshold),
+        ):
+            composed_overlay = {}
+            combine_status = "degenerate_sink_fallback"
+            degenerate_sink_fallback = True
 
     # Apply the composed overlay to current_hp.
     next_hp = dict(current_hp)
