@@ -1,0 +1,13 @@
+{
+  "hp": {
+    "gamma": 0.1
+  },
+  "drop_features": [],
+  "rationale": "Lex winner: combine config #1 'anchor_gamma_0.1' = {gamma: 0.1} (single-knob from defaults). Lex oracle ranking (R-p@1 > 3 > 5 > 10 > 20): R-p@1=0.865 (vs sweep baseline 0.737, +17%), R-p@3=0.732, R-p@5=0.645, R-p@10=0.536, R-p@20=0.453. val_brier=0.0870 (slightly above defaults 0.0883), train_val_gap=+0.0094 — NOT degenerate sink (gap positive but small; not collapsed to baseline). Runner-up #26 'mix_gamma0.1_csb0.7' (R-p@1=0.850) very close; #14 'mix_gamma0.05_eta0.01' would dominate on R-p@3/5/10 (0.798/0.742/0.659) and val_brier=0.0730 but lex priority on R-p@1 picks anchor_gamma_0.1. The sharp single-knob response (gamma=0 → R-p@1=0.730, gamma=0.1 → 0.865, gamma=0.5 → 0.585) suggests gamma=0.1 is a narrow optimum. fs_prefit kept 143/279 features at cliff_pct=0.01 — drop_features empty; let the loop prune from here.",
+  "lex_winner_config_index": 1,
+  "lex_winner_metrics": {
+    "eval_R_p_at_K": {"1": 0.865, "3": 0.732, "5": 0.645, "10": 0.536, "20": 0.453},
+    "val_brier": 0.0870,
+    "train_val_gap": 0.0094
+  }
+}
