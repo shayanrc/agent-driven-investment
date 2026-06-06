@@ -1,0 +1,40 @@
+# Sweep #242 cell — nifty500 +50%/25d/dd25% (V1.4 date-aligned, XGBoost).
+#
+# Lattice: 4 thresholds {10,20,30,50}% x 5 horizons {10,25,50,100,200} = 20 cells.
+# Sweep mode: fs_hp_loop.max_iterations=3, callback_mode=default (runner-driven).
+# XGBoost backend (cross-backend coverage vs prior catboost-dominated NSE row).
+#
+# train_start anchor: 2019-01-01 (canonical V1.4 D2 for H<200; pushed to 2018 for H=200 per #233 follow-up).
+# test_rows=100 (= H+100 for H=200 per #228 fix; default 100 otherwise).
+# min_rows_per_ticker=1600 (sum of segments + buffer for H=200).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: nifty500_up_50pct_25d_dd25pct_aligned
+
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 25
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 100
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 1600
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

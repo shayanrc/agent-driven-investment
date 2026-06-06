@@ -1,0 +1,5725 @@
+{
+  "experiment_name": "nifty500_up_50pct_200d_dd25pct_aligned",
+  "backend": {
+    "library": "xgboost",
+    "model_filename": "model.ubj"
+  },
+  "spec_hash": "sha256:8f13aa0e4ff9ebef6db30c29d12e4e214c1558576a718dc87ee6bea2d6125095",
+  "data_hash": "sha256:0af58af1817180db802817af8680fced6aa83a31ba612eb3547bfeb8e0f018ff",
+  "preflight": {
+    "cache_db": "/mnt/122CEE982CEE765F/cache_data/processed.db",
+    "cache_db_size": 1025110016,
+    "cache_db_mtime": "2026-05-29T04:24:13.578768+00:00",
+    "data_root": "/mnt/122CEE982CEE765F/cache_data",
+    "code_commit": "cd10687f522e6980cdf0bab2df187b83a46f42da",
+    "code_dirty": true,
+    "snapshot_end_override": "2026-05-22"
+  },
+  "split_mode": "date_aligned",
+  "split_train_start": "2018-01-01",
+  "segment_dates": {
+    "train": {
+      "start": "2018-01-01",
+      "end": "2021-03-30"
+    },
+    "val": {
+      "start": "2021-03-31",
+      "end": "2022-11-14"
+    },
+    "eval": {
+      "start": "2022-11-15",
+      "end": "2023-09-01"
+    },
+    "test": {
+      "start": "2023-09-04",
+      "end": "2024-11-21"
+    }
+  },
+  "data": {
+    "n_tickers_in_universe": 500,
+    "n_tickers_used": 357,
+    "tickers_excluded": [
+      "NSE:360ONE",
+      "NSE:AADHARHFC",
+      "NSE:AAVAS",
+      "NSE:ABDL",
+      "NSE:ABLBL",
+      "NSE:ABSLAMC",
+      "NSE:ACMESOLAR",
+      "NSE:ACUTAAS",
+      "NSE:ADANIGREEN",
+      "NSE:AEGISVOPAK",
+      "NSE:AFCONS",
+      "NSE:AFFLE",
+      "NSE:AIIL",
+      "NSE:ANANDRATHI",
+      "NSE:ANGELONE",
+      "NSE:ANTHEM",
+      "NSE:ANURAS",
+      "NSE:APTUS",
+      "NSE:ATGL",
+      "NSE:ATHERENERG",
+      "NSE:AWL",
+      "NSE:BAJAJHFL",
+      "NSE:BELRISE",
+      "NSE:BHARTIHEXA",
+      "NSE:BIKAJI",
+      "NSE:BLUEJET",
+      "NSE:CAMS",
+      "NSE:CANHLIFE",
+      "NSE:CARTRADE",
+      "NSE:CHALET",
+      "NSE:CHOICEIN",
+      "NSE:CLEAN",
+      "NSE:COHANCE",
+      "NSE:CONCORDBIO",
+      "NSE:CPPLUS",
+      "NSE:CRAFTSMAN",
+      "NSE:CREDITACC",
+      "NSE:DALBHARAT",
+      "NSE:DATAPATTNS",
+      "NSE:DELHIVERY",
+      "NSE:DEVYANI",
+      "NSE:DOMS",
+      "NSE:EMCURE",
+      "NSE:EMMVEE",
+      "NSE:ENRIN",
+      "NSE:ETERNAL",
+      "NSE:FIRSTCRY",
+      "NSE:FIVESTAR",
+      "NSE:FLUOROCHEM",
+      "NSE:FORCEMOT",
+      "NSE:GLAND",
+      "NSE:GODIGIT",
+      "NSE:GROWW",
+      "NSE:GRSE",
+      "NSE:HDBFS",
+      "NSE:HDFCAMC",
+      "NSE:HEXT",
+      "NSE:HOMEFIRST",
+      "NSE:HONASA",
+      "NSE:HYUNDAI",
+      "NSE:ICICIAMC",
+      "NSE:IGIL",
+      "NSE:IKS",
+      "NSE:INDGN",
+      "NSE:INDIAMART",
+      "NSE:IRCON",
+      "NSE:IRCTC",
+      "NSE:ITCHOTELS",
+      "NSE:JAINREC",
+      "NSE:JIOFIN",
+      "NSE:JSWCEMENT",
+      "NSE:JSWINFRA",
+      "NSE:JUBLINGREA",
+      "NSE:JYOTICNC",
+      "NSE:KALYANKJIL",
+      "NSE:KAYNES",
+      "NSE:KFINTECH",
+      "NSE:KIMS",
+      "NSE:KPITTECH",
+      "NSE:LATENTVIEW",
+      "NSE:LENSKART",
+      "NSE:LGEINDIA",
+      "NSE:LICI",
+      "NSE:LLOYDSME",
+      "NSE:LODHA",
+      "NSE:MANKIND",
+      "NSE:MAPMYINDIA",
+      "NSE:MAXHEALTH",
+      "NSE:MAZDOCK",
+      "NSE:MEDANTA",
+      "NSE:MEESHO",
+      "NSE:MSUMI",
+      "NSE:NETWEB",
+      "NSE:NIVABUPA",
+      "NSE:NSLNISP",
+      "NSE:NTPCGREEN",
+      "NSE:NUVAMA",
+      "NSE:NUVOCO",
+      "NSE:NYKAA",
+      "NSE:OLAELEC",
+      "NSE:ONESOURCE",
+      "NSE:PARADEEP",
+      "NSE:PAYTM",
+      "NSE:PINELABS",
+      "NSE:PIRAMALFIN",
+      "NSE:POLICYBZR",
+      "NSE:POLYCAB",
+      "NSE:POWERINDIA",
+      "NSE:PPLPHARMA",
+      "NSE:PREMIERENE",
+      "NSE:PTCIL",
+      "NSE:PWL",
+      "NSE:RAILTEL",
+      "NSE:RAINBOW",
+      "NSE:RITES",
+      "NSE:RRKABEL",
+      "NSE:RVNL",
+      "NSE:SAGILITY",
+      "NSE:SAILIFE",
+      "NSE:SAPPHIRE",
+      "NSE:SBFC",
+      "NSE:SBICARD",
+      "NSE:SHRIRAMFIN",
+      "NSE:SHYAMMETL",
+      "NSE:SIGNATURE",
+      "NSE:SONACOMS",
+      "NSE:STARHEALTH",
+      "NSE:SUMICHEM",
+      "NSE:SWIGGY",
+      "NSE:SYRMA",
+      "NSE:TATACAP",
+      "NSE:TATATECH",
+      "NSE:TBOTEK",
+      "NSE:TEGA",
+      "NSE:TENNIND",
+      "NSE:THELEELA",
+      "NSE:TMCV",
+      "NSE:TRAVELFOOD",
+      "NSE:URBANCO",
+      "NSE:UTIAMC",
+      "NSE:VIJAYA",
+      "NSE:VMM",
+      "NSE:WAAREEENER"
+    ],
+    "staleness_days_threshold": 20,
+    "stale_tickers": [
+      "NSE:NTPC"
+    ],
+    "n_tickers_stale": 1,
+    "cache_age_days_by_ticker": {
+      "NSE:3MINDIA": 0,
+      "NSE:AARTIIND": 0,
+      "NSE:ABB": 0,
+      "NSE:ABBOTINDIA": 0,
+      "NSE:ABCAPITAL": -5,
+      "NSE:ABFRL": 0,
+      "NSE:ABREL": -5,
+      "NSE:ACC": -5,
+      "NSE:ACE": -5,
+      "NSE:ADANIENSOL": -5,
+      "NSE:ADANIENT": -3,
+      "NSE:ADANIPORTS": -3,
+      "NSE:ADANIPOWER": -5,
+      "NSE:AEGISLOG": -5,
+      "NSE:AIAENG": -5,
+      "NSE:AJANTPHARM": -5,
+      "NSE:ALKEM": -5,
+      "NSE:AMBER": -5,
+      "NSE:AMBUJACEM": -5,
+      "NSE:ANANTRAJ": -5,
+      "NSE:APARINDS": -5,
+      "NSE:APLAPOLLO": -5,
+      "NSE:APOLLOHOSP": -3,
+      "NSE:APOLLOTYRE": -5,
+      "NSE:ARE&M": -5,
+      "NSE:ASAHIINDIA": -5,
+      "NSE:ASHOKLEY": -5,
+      "NSE:ASIANPAINT": -3,
+      "NSE:ASTERDM": -5,
+      "NSE:ASTRAL": -5,
+      "NSE:ATUL": -5,
+      "NSE:AUBANK": -5,
+      "NSE:AUROPHARMA": -5,
+      "NSE:AXISBANK": -3,
+      "NSE:BAJAJ-AUTO": -3,
+      "NSE:BAJAJFINSV": -3,
+      "NSE:BAJAJHLDNG": -5,
+      "NSE:BAJFINANCE": -3,
+      "NSE:BALKRISIND": -5,
+      "NSE:BALRAMCHIN": -5,
+      "NSE:BANDHANBNK": -5,
+      "NSE:BANKBARODA": -5,
+      "NSE:BANKINDIA": -5,
+      "NSE:BATAINDIA": -5,
+      "NSE:BAYERCROP": -5,
+      "NSE:BBTC": -5,
+      "NSE:BDL": -5,
+      "NSE:BEL": -3,
+      "NSE:BEML": -5,
+      "NSE:BERGEPAINT": -5,
+      "NSE:BHARATFORG": -5,
+      "NSE:BHARTIARTL": -3,
+      "NSE:BHEL": -5,
+      "NSE:BIOCON": -5,
+      "NSE:BLS": -5,
+      "NSE:BLUEDART": -5,
+      "NSE:BLUESTARCO": -5,
+      "NSE:BOSCHLTD": -5,
+      "NSE:BPCL": -5,
+      "NSE:BRIGADE": -5,
+      "NSE:BRITANNIA": -5,
+      "NSE:BSE": -5,
+      "NSE:BSOFT": -5,
+      "NSE:CANBK": -5,
+      "NSE:CANFINHOME": -5,
+      "NSE:CAPLIPOINT": -5,
+      "NSE:CARBORUNIV": -5,
+      "NSE:CASTROLIND": -5,
+      "NSE:CCL": -5,
+      "NSE:CDSL": -5,
+      "NSE:CEATLTD": -5,
+      "NSE:CEMPRO": -5,
+      "NSE:CENTRALBK": -5,
+      "NSE:CESC": -5,
+      "NSE:CGCL": -5,
+      "NSE:CGPOWER": -5,
+      "NSE:CHAMBLFERT": -5,
+      "NSE:CHENNPETRO": -5,
+      "NSE:CHOLAFIN": -5,
+      "NSE:CHOLAHLDNG": -5,
+      "NSE:CIEINDIA": -5,
+      "NSE:CIPLA": -3,
+      "NSE:COALINDIA": -3,
+      "NSE:COCHINSHIP": -5,
+      "NSE:COFORGE": -5,
+      "NSE:COLPAL": -5,
+      "NSE:CONCOR": -5,
+      "NSE:COROMANDEL": -5,
+      "NSE:CRISIL": -5,
+      "NSE:CROMPTON": -5,
+      "NSE:CUB": -5,
+      "NSE:CUMMINSIND": -5,
+      "NSE:CYIENT": -5,
+      "NSE:DABUR": -5,
+      "NSE:DCMSHRIRAM": -5,
+      "NSE:DEEPAKFERT": -5,
+      "NSE:DEEPAKNTR": -5,
+      "NSE:DIVISLAB": -5,
+      "NSE:DIXON": -5,
+      "NSE:DLF": -5,
+      "NSE:DMART": -5,
+      "NSE:DRREDDY": -3,
+      "NSE:ECLERX": -5,
+      "NSE:EICHERMOT": -3,
+      "NSE:EIDPARRY": -5,
+      "NSE:EIHOTEL": -5,
+      "NSE:ELECON": -5,
+      "NSE:ELGIEQUIP": -5,
+      "NSE:EMAMILTD": -5,
+      "NSE:ENDURANCE": -5,
+      "NSE:ENGINERSIN": -5,
+      "NSE:ERIS": -5,
+      "NSE:ESCORTS": -5,
+      "NSE:EXIDEIND": -5,
+      "NSE:FACT": -5,
+      "NSE:FEDERALBNK": -5,
+      "NSE:FINCABLES": -5,
+      "NSE:FORTIS": -5,
+      "NSE:FSL": -5,
+      "NSE:GABRIEL": -5,
+      "NSE:GAIL": -5,
+      "NSE:GALLANTT": -5,
+      "NSE:GESHIP": -5,
+      "NSE:GICRE": -5,
+      "NSE:GILLETTE": -5,
+      "NSE:GLAXO": -5,
+      "NSE:GLENMARK": -5,
+      "NSE:GMDCLTD": -5,
+      "NSE:GMRAIRPORT": -5,
+      "NSE:GODFRYPHLP": -5,
+      "NSE:GODREJCP": -5,
+      "NSE:GODREJIND": -5,
+      "NSE:GODREJPROP": -5,
+      "NSE:GPIL": -5,
+      "NSE:GRANULES": -5,
+      "NSE:GRAPHITE": -5,
+      "NSE:GRASIM": -3,
+      "NSE:GRAVITA": -5,
+      "NSE:GVT&D": -5,
+      "NSE:HAL": -5,
+      "NSE:HAVELLS": -5,
+      "NSE:HBLENGINE": -5,
+      "NSE:HCLTECH": -3,
+      "NSE:HDFCBANK": -3,
+      "NSE:HDFCLIFE": -5,
+      "NSE:HEG": -5,
+      "NSE:HEROMOTOCO": -5,
+      "NSE:HFCL": -5,
+      "NSE:HINDALCO": -3,
+      "NSE:HINDCOPPER": -5,
+      "NSE:HINDPETRO": -5,
+      "NSE:HINDUNILVR": -3,
+      "NSE:HINDZINC": -5,
+      "NSE:HONAUT": -5,
+      "NSE:HSCL": -5,
+      "NSE:HUDCO": -5,
+      "NSE:ICICIBANK": -3,
+      "NSE:ICICIGI": -5,
+      "NSE:ICICIPRULI": -5,
+      "NSE:IDBI": -5,
+      "NSE:IDEA": -5,
+      "NSE:IDFCFIRSTB": -5,
+      "NSE:IEX": -5,
+      "NSE:IFCI": -5,
+      "NSE:IGL": -5,
+      "NSE:IIFL": -5,
+      "NSE:INDHOTEL": -5,
+      "NSE:INDIACEM": -5,
+      "NSE:INDIANB": -5,
+      "NSE:INDIGO": -3,
+      "NSE:INDUSINDBK": -5,
+      "NSE:INDUSTOWER": -5,
+      "NSE:INFY": -3,
+      "NSE:INOXWIND": -5,
+      "NSE:INTELLECT": -5,
+      "NSE:IOB": -5,
+      "NSE:IOC": -5,
+      "NSE:IPCALAB": -5,
+      "NSE:IRB": -5,
+      "NSE:IREDA": -5,
+      "NSE:IRFC": -5,
+      "NSE:ITC": -3,
+      "NSE:ITI": -5,
+      "NSE:J&KBANK": -5,
+      "NSE:JBCHEPHARM": -5,
+      "NSE:JBMA": -5,
+      "NSE:JINDALSAW": -5,
+      "NSE:JINDALSTEL": -5,
+      "NSE:JKCEMENT": -5,
+      "NSE:JKTYRE": -5,
+      "NSE:JMFINANCIL": -5,
+      "NSE:JPPOWER": -5,
+      "NSE:JSL": -5,
+      "NSE:JSWDULUX": -5,
+      "NSE:JSWENERGY": -5,
+      "NSE:JSWSTEEL": -3,
+      "NSE:JUBLFOOD": -5,
+      "NSE:JUBLPHARMA": -5,
+      "NSE:JWL": -5,
+      "NSE:KAJARIACER": -5,
+      "NSE:KARURVYSYA": -5,
+      "NSE:KEC": -5,
+      "NSE:KEI": -5,
+      "NSE:KIRLOSENG": -5,
+      "NSE:KOTAKBANK": -3,
+      "NSE:KPIL": -5,
+      "NSE:KPRMILL": -5,
+      "NSE:LALPATHLAB": -5,
+      "NSE:LAURUSLABS": -5,
+      "NSE:LEMONTREE": -5,
+      "NSE:LICHSGFIN": -5,
+      "NSE:LINDEINDIA": -5,
+      "NSE:LT": -3,
+      "NSE:LTF": -5,
+      "NSE:LTFOODS": -5,
+      "NSE:LTM": -5,
+      "NSE:LTTS": -5,
+      "NSE:LUPIN": -5,
+      "NSE:M&M": -3,
+      "NSE:M&MFIN": -5,
+      "NSE:MAHABANK": -5,
+      "NSE:MANAPPURAM": -5,
+      "NSE:MARICO": -5,
+      "NSE:MARUTI": -3,
+      "NSE:MCX": -5,
+      "NSE:MFSL": -5,
+      "NSE:MGL": -5,
+      "NSE:MINDACORP": -5,
+      "NSE:MMTC": -5,
+      "NSE:MOTHERSON": -5,
+      "NSE:MOTILALOFS": -5,
+      "NSE:MPHASIS": -5,
+      "NSE:MRF": -5,
+      "NSE:MRPL": -5,
+      "NSE:MUTHOOTFIN": -5,
+      "NSE:NAM-INDIA": -5,
+      "NSE:NATCOPHARM": -5,
+      "NSE:NATIONALUM": -5,
+      "NSE:NAUKRI": -5,
+      "NSE:NAVA": -5,
+      "NSE:NAVINFLUOR": -5,
+      "NSE:NBCC": -5,
+      "NSE:NCC": -5,
+      "NSE:NESTLEIND": -3,
+      "NSE:NEULANDLAB": -5,
+      "NSE:NEWGEN": -5,
+      "NSE:NH": -5,
+      "NSE:NHPC": -5,
+      "NSE:NIACL": -5,
+      "NSE:NLCINDIA": -5,
+      "NSE:NMDC": -5,
+      "NSE:NTPC": 142,
+      "NSE:OBEROIRLTY": -5,
+      "NSE:OFSS": -5,
+      "NSE:OIL": -5,
+      "NSE:OLECTRA": -5,
+      "NSE:ONGC": -3,
+      "NSE:PAGEIND": -5,
+      "NSE:PATANJALI": -5,
+      "NSE:PCBL": -5,
+      "NSE:PERSISTENT": -5,
+      "NSE:PETRONET": -5,
+      "NSE:PFC": -5,
+      "NSE:PFIZER": -5,
+      "NSE:PGEL": -5,
+      "NSE:PHOENIXLTD": -5,
+      "NSE:PIDILITIND": -5,
+      "NSE:PIIND": -5,
+      "NSE:PNB": -5,
+      "NSE:PNBHOUSING": -5,
+      "NSE:POLYMED": -5,
+      "NSE:POONAWALLA": -5,
+      "NSE:POWERGRID": -3,
+      "NSE:PRESTIGE": -5,
+      "NSE:PVRINOX": -5,
+      "NSE:RADICO": -5,
+      "NSE:RAMCOCEM": -5,
+      "NSE:RBLBANK": -5,
+      "NSE:RECLTD": -5,
+      "NSE:REDINGTON": -5,
+      "NSE:RELIANCE": -3,
+      "NSE:RHIM": -5,
+      "NSE:RKFORGE": -5,
+      "NSE:RPOWER": -5,
+      "NSE:SAIL": -5,
+      "NSE:SAMMAANCAP": -5,
+      "NSE:SARDAEN": -5,
+      "NSE:SAREGAMA": -5,
+      "NSE:SBILIFE": -5,
+      "NSE:SBIN": -3,
+      "NSE:SCHAEFFLER": -5,
+      "NSE:SCHNEIDER": -5,
+      "NSE:SCI": -5,
+      "NSE:SHREECEM": -5,
+      "NSE:SIEMENS": -5,
+      "NSE:SJVN": -5,
+      "NSE:SOBHA": -5,
+      "NSE:SOLARINDS": -5,
+      "NSE:SONATSOFTW": -5,
+      "NSE:SPLPETRO": -5,
+      "NSE:SRF": -5,
+      "NSE:SUNDARMFIN": -5,
+      "NSE:SUNPHARMA": -3,
+      "NSE:SUNTV": -5,
+      "NSE:SUPREMEIND": -5,
+      "NSE:SUZLON": -5,
+      "NSE:SWANCORP": -5,
+      "NSE:SYNGENE": -5,
+      "NSE:TARIL": -5,
+      "NSE:TATACHEM": -5,
+      "NSE:TATACOMM": -5,
+      "NSE:TATACONSUM": -3,
+      "NSE:TATAELXSI": -5,
+      "NSE:TATAINVEST": -5,
+      "NSE:TATAPOWER": -5,
+      "NSE:TATASTEEL": -3,
+      "NSE:TCS": -3,
+      "NSE:TECHM": -3,
+      "NSE:TECHNOE": -5,
+      "NSE:TEJASNET": -5,
+      "NSE:THERMAX": -5,
+      "NSE:TIINDIA": -5,
+      "NSE:TIMKEN": -5,
+      "NSE:TITAGARH": -5,
+      "NSE:TITAN": -3,
+      "NSE:TMPV": -3,
+      "NSE:TORNTPHARM": -5,
+      "NSE:TORNTPOWER": -5,
+      "NSE:TRENT": -3,
+      "NSE:TRIDENT": -5,
+      "NSE:TRITURBINE": -5,
+      "NSE:TTML": -5,
+      "NSE:TVSMOTOR": -5,
+      "NSE:UBL": -5,
+      "NSE:UCOBANK": -5,
+      "NSE:ULTRACEMCO": -3,
+      "NSE:UNIONBANK": -5,
+      "NSE:UNITDSPR": -5,
+      "NSE:UNOMINDA": -5,
+      "NSE:UPL": -5,
+      "NSE:USHAMART": -5,
+      "NSE:VBL": -5,
+      "NSE:VEDL": -5,
+      "NSE:VOLTAS": -5,
+      "NSE:VTL": -5,
+      "NSE:WELCORP": -5,
+      "NSE:WELSPUNLIV": -5,
+      "NSE:WHIRLPOOL": -5,
+      "NSE:WIPRO": -3,
+      "NSE:WOCKPHARMA": -5,
+      "NSE:YESBANK": -5,
+      "NSE:ZEEL": -5,
+      "NSE:ZENSARTECH": -5,
+      "NSE:ZENTEC": -5,
+      "NSE:ZFCVINDIA": -5,
+      "NSE:ZYDUSLIFE": -5,
+      "NSE:ZYDUSWELL": -5
+    },
+    "nan_rows_dropped_by_ticker": {},
+    "n_rows_train": 286254,
+    "n_rows_val": 143505,
+    "n_rows_eval": 71387,
+    "n_rows_test": 107804,
+    "positive_prevalence_train": 0.2720101727836118,
+    "positive_prevalence_eval": 0.47849048146020984,
+    "test_split_warning": null,
+    "test_split_projection": {
+      "expected_test_rows": 35700,
+      "per_ticker_usable": 100,
+      "n_tickers": 357,
+      "test_rows_per_ticker": 300,
+      "horizon_days": 200
+    },
+    "n_tickers_per_segment": {
+      "train": 357,
+      "val": 357,
+      "eval": 357,
+      "test": 357
+    },
+    "tickers_per_segment": {
+      "train": [
+        "NSE:3MINDIA",
+        "NSE:AARTIIND",
+        "NSE:ABB",
+        "NSE:ABBOTINDIA",
+        "NSE:ABCAPITAL",
+        "NSE:ABFRL",
+        "NSE:ABREL",
+        "NSE:ACC",
+        "NSE:ACE",
+        "NSE:ADANIENSOL",
+        "NSE:ADANIENT",
+        "NSE:ADANIPORTS",
+        "NSE:ADANIPOWER",
+        "NSE:AEGISLOG",
+        "NSE:AIAENG",
+        "NSE:AJANTPHARM",
+        "NSE:ALKEM",
+        "NSE:AMBER",
+        "NSE:AMBUJACEM",
+        "NSE:ANANTRAJ",
+        "NSE:APARINDS",
+        "NSE:APLAPOLLO",
+        "NSE:APOLLOHOSP",
+        "NSE:APOLLOTYRE",
+        "NSE:ARE&M",
+        "NSE:ASAHIINDIA",
+        "NSE:ASHOKLEY",
+        "NSE:ASIANPAINT",
+        "NSE:ASTERDM",
+        "NSE:ASTRAL",
+        "NSE:ATUL",
+        "NSE:AUBANK",
+        "NSE:AUROPHARMA",
+        "NSE:AXISBANK",
+        "NSE:BAJAJ-AUTO",
+        "NSE:BAJAJFINSV",
+        "NSE:BAJAJHLDNG",
+        "NSE:BAJFINANCE",
+        "NSE:BALKRISIND",
+        "NSE:BALRAMCHIN",
+        "NSE:BANDHANBNK",
+        "NSE:BANKBARODA",
+        "NSE:BANKINDIA",
+        "NSE:BATAINDIA",
+        "NSE:BAYERCROP",
+        "NSE:BBTC",
+        "NSE:BDL",
+        "NSE:BEL",
+        "NSE:BEML",
+        "NSE:BERGEPAINT",
+        "NSE:BHARATFORG",
+        "NSE:BHARTIARTL",
+        "NSE:BHEL",
+        "NSE:BIOCON",
+        "NSE:BLS",
+        "NSE:BLUEDART",
+        "NSE:BLUESTARCO",
+        "NSE:BOSCHLTD",
+        "NSE:BPCL",
+        "NSE:BRIGADE",
+        "NSE:BRITANNIA",
+        "NSE:BSE",
+        "NSE:BSOFT",
+        "NSE:CANBK",
+        "NSE:CANFINHOME",
+        "NSE:CAPLIPOINT",
+        "NSE:CARBORUNIV",
+        "NSE:CASTROLIND",
+        "NSE:CCL",
+        "NSE:CDSL",
+        "NSE:CEATLTD",
+        "NSE:CEMPRO",
+        "NSE:CENTRALBK",
+        "NSE:CESC",
+        "NSE:CGCL",
+        "NSE:CGPOWER",
+        "NSE:CHAMBLFERT",
+        "NSE:CHENNPETRO",
+        "NSE:CHOLAFIN",
+        "NSE:CHOLAHLDNG",
+        "NSE:CIEINDIA",
+        "NSE:CIPLA",
+        "NSE:COALINDIA",
+        "NSE:COCHINSHIP",
+        "NSE:COFORGE",
+        "NSE:COLPAL",
+        "NSE:CONCOR",
+        "NSE:COROMANDEL",
+        "NSE:CRISIL",
+        "NSE:CROMPTON",
+        "NSE:CUB",
+        "NSE:CUMMINSIND",
+        "NSE:CYIENT",
+        "NSE:DABUR",
+        "NSE:DCMSHRIRAM",
+        "NSE:DEEPAKFERT",
+        "NSE:DEEPAKNTR",
+        "NSE:DIVISLAB",
+        "NSE:DIXON",
+        "NSE:DLF",
+        "NSE:DMART",
+        "NSE:DRREDDY",
+        "NSE:ECLERX",
+        "NSE:EICHERMOT",
+        "NSE:EIDPARRY",
+        "NSE:EIHOTEL",
+        "NSE:ELECON",
+        "NSE:ELGIEQUIP",
+        "NSE:EMAMILTD",
+        "NSE:ENDURANCE",
+        "NSE:ENGINERSIN",
+        "NSE:ERIS",
+        "NSE:ESCORTS",
+        "NSE:EXIDEIND",
+        "NSE:FACT",
+        "NSE:FEDERALBNK",
+        "NSE:FINCABLES",
+        "NSE:FORTIS",
+        "NSE:FSL",
+        "NSE:GABRIEL",
+        "NSE:GAIL",
+        "NSE:GALLANTT",
+        "NSE:GESHIP",
+        "NSE:GICRE",
+        "NSE:GILLETTE",
+        "NSE:GLAXO",
+        "NSE:GLENMARK",
+        "NSE:GMDCLTD",
+        "NSE:GMRAIRPORT",
+        "NSE:GODFRYPHLP",
+        "NSE:GODREJCP",
+        "NSE:GODREJIND",
+        "NSE:GODREJPROP",
+        "NSE:GPIL",
+        "NSE:GRANULES",
+        "NSE:GRAPHITE",
+        "NSE:GRASIM",
+        "NSE:GRAVITA",
+        "NSE:GVT&D",
+        "NSE:HAL",
+        "NSE:HAVELLS",
+        "NSE:HBLENGINE",
+        "NSE:HCLTECH",
+        "NSE:HDFCBANK",
+        "NSE:HDFCLIFE",
+        "NSE:HEG",
+        "NSE:HEROMOTOCO",
+        "NSE:HFCL",
+        "NSE:HINDALCO",
+        "NSE:HINDCOPPER",
+        "NSE:HINDPETRO",
+        "NSE:HINDUNILVR",
+        "NSE:HINDZINC",
+        "NSE:HONAUT",
+        "NSE:HSCL",
+        "NSE:HUDCO",
+        "NSE:ICICIBANK",
+        "NSE:ICICIGI",
+        "NSE:ICICIPRULI",
+        "NSE:IDBI",
+        "NSE:IDEA",
+        "NSE:IDFCFIRSTB",
+        "NSE:IEX",
+        "NSE:IFCI",
+        "NSE:IGL",
+        "NSE:IIFL",
+        "NSE:INDHOTEL",
+        "NSE:INDIACEM",
+        "NSE:INDIANB",
+        "NSE:INDIGO",
+        "NSE:INDUSINDBK",
+        "NSE:INDUSTOWER",
+        "NSE:INFY",
+        "NSE:INOXWIND",
+        "NSE:INTELLECT",
+        "NSE:IOB",
+        "NSE:IOC",
+        "NSE:IPCALAB",
+        "NSE:IRB",
+        "NSE:IREDA",
+        "NSE:IRFC",
+        "NSE:ITC",
+        "NSE:ITI",
+        "NSE:J&KBANK",
+        "NSE:JBCHEPHARM",
+        "NSE:JBMA",
+        "NSE:JINDALSAW",
+        "NSE:JINDALSTEL",
+        "NSE:JKCEMENT",
+        "NSE:JKTYRE",
+        "NSE:JMFINANCIL",
+        "NSE:JPPOWER",
+        "NSE:JSL",
+        "NSE:JSWDULUX",
+        "NSE:JSWENERGY",
+        "NSE:JSWSTEEL",
+        "NSE:JUBLFOOD",
+        "NSE:JUBLPHARMA",
+        "NSE:JWL",
+        "NSE:KAJARIACER",
+        "NSE:KARURVYSYA",
+        "NSE:KEC",
+        "NSE:KEI",
+        "NSE:KIRLOSENG",
+        "NSE:KOTAKBANK",
+        "NSE:KPIL",
+        "NSE:KPRMILL",
+        "NSE:LALPATHLAB",
+        "NSE:LAURUSLABS",
+        "NSE:LEMONTREE",
+        "NSE:LICHSGFIN",
+        "NSE:LINDEINDIA",
+        "NSE:LT",
+        "NSE:LTF",
+        "NSE:LTFOODS",
+        "NSE:LTM",
+        "NSE:LTTS",
+        "NSE:LUPIN",
+        "NSE:M&M",
+        "NSE:M&MFIN",
+        "NSE:MAHABANK",
+        "NSE:MANAPPURAM",
+        "NSE:MARICO",
+        "NSE:MARUTI",
+        "NSE:MCX",
+        "NSE:MFSL",
+        "NSE:MGL",
+        "NSE:MINDACORP",
+        "NSE:MMTC",
+        "NSE:MOTHERSON",
+        "NSE:MOTILALOFS",
+        "NSE:MPHASIS",
+        "NSE:MRF",
+        "NSE:MRPL",
+        "NSE:MUTHOOTFIN",
+        "NSE:NAM-INDIA",
+        "NSE:NATCOPHARM",
+        "NSE:NATIONALUM",
+        "NSE:NAUKRI",
+        "NSE:NAVA",
+        "NSE:NAVINFLUOR",
+        "NSE:NBCC",
+        "NSE:NCC",
+        "NSE:NESTLEIND",
+        "NSE:NEULANDLAB",
+        "NSE:NEWGEN",
+        "NSE:NH",
+        "NSE:NHPC",
+        "NSE:NIACL",
+        "NSE:NLCINDIA",
+        "NSE:NMDC",
+        "NSE:NTPC",
+        "NSE:OBEROIRLTY",
+        "NSE:OFSS",
+        "NSE:OIL",
+        "NSE:OLECTRA",
+        "NSE:ONGC",
+        "NSE:PAGEIND",
+        "NSE:PATANJALI",
+        "NSE:PCBL",
+        "NSE:PERSISTENT",
+        "NSE:PETRONET",
+        "NSE:PFC",
+        "NSE:PFIZER",
+        "NSE:PGEL",
+        "NSE:PHOENIXLTD",
+        "NSE:PIDILITIND",
+        "NSE:PIIND",
+        "NSE:PNB",
+        "NSE:PNBHOUSING",
+        "NSE:POLYMED",
+        "NSE:POONAWALLA",
+        "NSE:POWERGRID",
+        "NSE:PRESTIGE",
+        "NSE:PVRINOX",
+        "NSE:RADICO",
+        "NSE:RAMCOCEM",
+        "NSE:RBLBANK",
+        "NSE:RECLTD",
+        "NSE:REDINGTON",
+        "NSE:RELIANCE",
+        "NSE:RHIM",
+        "NSE:RKFORGE",
+        "NSE:RPOWER",
+        "NSE:SAIL",
+        "NSE:SAMMAANCAP",
+        "NSE:SARDAEN",
+        "NSE:SAREGAMA",
+        "NSE:SBILIFE",
+        "NSE:SBIN",
+        "NSE:SCHAEFFLER",
+        "NSE:SCHNEIDER",
+        "NSE:SCI",
+        "NSE:SHREECEM",
+        "NSE:SIEMENS",
+        "NSE:SJVN",
+        "NSE:SOBHA",
+        "NSE:SOLARINDS",
+        "NSE:SONATSOFTW",
+        "NSE:SPLPETRO",
+        "NSE:SRF",
+        "NSE:SUNDARMFIN",
+        "NSE:SUNPHARMA",
+        "NSE:SUNTV",
+        "NSE:SUPREMEIND",
+        "NSE:SUZLON",
+        "NSE:SWANCORP",
+        "NSE:SYNGENE",
+        "NSE:TARIL",
+        "NSE:TATACHEM",
+        "NSE:TATACOMM",
+        "NSE:TATACONSUM",
+        "NSE:TATAELXSI",
+        "NSE:TATAINVEST",
+        "NSE:TATAPOWER",
+        "NSE:TATASTEEL",
+        "NSE:TCS",
+        "NSE:TECHM",
+        "NSE:TECHNOE",
+        "NSE:TEJASNET",
+        "NSE:THERMAX",
+        "NSE:TIINDIA",
+        "NSE:TIMKEN",
+        "NSE:TITAGARH",
+        "NSE:TITAN",
+        "NSE:TMPV",
+        "NSE:TORNTPHARM",
+        "NSE:TORNTPOWER",
+        "NSE:TRENT",
+        "NSE:TRIDENT",
+        "NSE:TRITURBINE",
+        "NSE:TTML",
+        "NSE:TVSMOTOR",
+        "NSE:UBL",
+        "NSE:UCOBANK",
+        "NSE:ULTRACEMCO",
+        "NSE:UNIONBANK",
+        "NSE:UNITDSPR",
+        "NSE:UNOMINDA",
+        "NSE:UPL",
+        "NSE:USHAMART",
+        "NSE:VBL",
+        "NSE:VEDL",
+        "NSE:VOLTAS",
+        "NSE:VTL",
+        "NSE:WELCORP",
+        "NSE:WELSPUNLIV",
+        "NSE:WHIRLPOOL",
+        "NSE:WIPRO",
+        "NSE:WOCKPHARMA",
+        "NSE:YESBANK",
+        "NSE:ZEEL",
+        "NSE:ZENSARTECH",
+        "NSE:ZENTEC",
+        "NSE:ZFCVINDIA",
+        "NSE:ZYDUSLIFE",
+        "NSE:ZYDUSWELL"
+      ],
+      "val": [
+        "NSE:3MINDIA",
+        "NSE:AARTIIND",
+        "NSE:ABB",
+        "NSE:ABBOTINDIA",
+        "NSE:ABCAPITAL",
+        "NSE:ABFRL",
+        "NSE:ABREL",
+        "NSE:ACC",
+        "NSE:ACE",
+        "NSE:ADANIENSOL",
+        "NSE:ADANIENT",
+        "NSE:ADANIPORTS",
+        "NSE:ADANIPOWER",
+        "NSE:AEGISLOG",
+        "NSE:AIAENG",
+        "NSE:AJANTPHARM",
+        "NSE:ALKEM",
+        "NSE:AMBER",
+        "NSE:AMBUJACEM",
+        "NSE:ANANTRAJ",
+        "NSE:APARINDS",
+        "NSE:APLAPOLLO",
+        "NSE:APOLLOHOSP",
+        "NSE:APOLLOTYRE",
+        "NSE:ARE&M",
+        "NSE:ASAHIINDIA",
+        "NSE:ASHOKLEY",
+        "NSE:ASIANPAINT",
+        "NSE:ASTERDM",
+        "NSE:ASTRAL",
+        "NSE:ATUL",
+        "NSE:AUBANK",
+        "NSE:AUROPHARMA",
+        "NSE:AXISBANK",
+        "NSE:BAJAJ-AUTO",
+        "NSE:BAJAJFINSV",
+        "NSE:BAJAJHLDNG",
+        "NSE:BAJFINANCE",
+        "NSE:BALKRISIND",
+        "NSE:BALRAMCHIN",
+        "NSE:BANDHANBNK",
+        "NSE:BANKBARODA",
+        "NSE:BANKINDIA",
+        "NSE:BATAINDIA",
+        "NSE:BAYERCROP",
+        "NSE:BBTC",
+        "NSE:BDL",
+        "NSE:BEL",
+        "NSE:BEML",
+        "NSE:BERGEPAINT",
+        "NSE:BHARATFORG",
+        "NSE:BHARTIARTL",
+        "NSE:BHEL",
+        "NSE:BIOCON",
+        "NSE:BLS",
+        "NSE:BLUEDART",
+        "NSE:BLUESTARCO",
+        "NSE:BOSCHLTD",
+        "NSE:BPCL",
+        "NSE:BRIGADE",
+        "NSE:BRITANNIA",
+        "NSE:BSE",
+        "NSE:BSOFT",
+        "NSE:CANBK",
+        "NSE:CANFINHOME",
+        "NSE:CAPLIPOINT",
+        "NSE:CARBORUNIV",
+        "NSE:CASTROLIND",
+        "NSE:CCL",
+        "NSE:CDSL",
+        "NSE:CEATLTD",
+        "NSE:CEMPRO",
+        "NSE:CENTRALBK",
+        "NSE:CESC",
+        "NSE:CGCL",
+        "NSE:CGPOWER",
+        "NSE:CHAMBLFERT",
+        "NSE:CHENNPETRO",
+        "NSE:CHOLAFIN",
+        "NSE:CHOLAHLDNG",
+        "NSE:CIEINDIA",
+        "NSE:CIPLA",
+        "NSE:COALINDIA",
+        "NSE:COCHINSHIP",
+        "NSE:COFORGE",
+        "NSE:COLPAL",
+        "NSE:CONCOR",
+        "NSE:COROMANDEL",
+        "NSE:CRISIL",
+        "NSE:CROMPTON",
+        "NSE:CUB",
+        "NSE:CUMMINSIND",
+        "NSE:CYIENT",
+        "NSE:DABUR",
+        "NSE:DCMSHRIRAM",
+        "NSE:DEEPAKFERT",
+        "NSE:DEEPAKNTR",
+        "NSE:DIVISLAB",
+        "NSE:DIXON",
+        "NSE:DLF",
+        "NSE:DMART",
+        "NSE:DRREDDY",
+        "NSE:ECLERX",
+        "NSE:EICHERMOT",
+        "NSE:EIDPARRY",
+        "NSE:EIHOTEL",
+        "NSE:ELECON",
+        "NSE:ELGIEQUIP",
+        "NSE:EMAMILTD",
+        "NSE:ENDURANCE",
+        "NSE:ENGINERSIN",
+        "NSE:ERIS",
+        "NSE:ESCORTS",
+        "NSE:EXIDEIND",
+        "NSE:FACT",
+        "NSE:FEDERALBNK",
+        "NSE:FINCABLES",
+        "NSE:FORTIS",
+        "NSE:FSL",
+        "NSE:GABRIEL",
+        "NSE:GAIL",
+        "NSE:GALLANTT",
+        "NSE:GESHIP",
+        "NSE:GICRE",
+        "NSE:GILLETTE",
+        "NSE:GLAXO",
+        "NSE:GLENMARK",
+        "NSE:GMDCLTD",
+        "NSE:GMRAIRPORT",
+        "NSE:GODFRYPHLP",
+        "NSE:GODREJCP",
+        "NSE:GODREJIND",
+        "NSE:GODREJPROP",
+        "NSE:GPIL",
+        "NSE:GRANULES",
+        "NSE:GRAPHITE",
+        "NSE:GRASIM",
+        "NSE:GRAVITA",
+        "NSE:GVT&D",
+        "NSE:HAL",
+        "NSE:HAVELLS",
+        "NSE:HBLENGINE",
+        "NSE:HCLTECH",
+        "NSE:HDFCBANK",
+        "NSE:HDFCLIFE",
+        "NSE:HEG",
+        "NSE:HEROMOTOCO",
+        "NSE:HFCL",
+        "NSE:HINDALCO",
+        "NSE:HINDCOPPER",
+        "NSE:HINDPETRO",
+        "NSE:HINDUNILVR",
+        "NSE:HINDZINC",
+        "NSE:HONAUT",
+        "NSE:HSCL",
+        "NSE:HUDCO",
+        "NSE:ICICIBANK",
+        "NSE:ICICIGI",
+        "NSE:ICICIPRULI",
+        "NSE:IDBI",
+        "NSE:IDEA",
+        "NSE:IDFCFIRSTB",
+        "NSE:IEX",
+        "NSE:IFCI",
+        "NSE:IGL",
+        "NSE:IIFL",
+        "NSE:INDHOTEL",
+        "NSE:INDIACEM",
+        "NSE:INDIANB",
+        "NSE:INDIGO",
+        "NSE:INDUSINDBK",
+        "NSE:INDUSTOWER",
+        "NSE:INFY",
+        "NSE:INOXWIND",
+        "NSE:INTELLECT",
+        "NSE:IOB",
+        "NSE:IOC",
+        "NSE:IPCALAB",
+        "NSE:IRB",
+        "NSE:IREDA",
+        "NSE:IRFC",
+        "NSE:ITC",
+        "NSE:ITI",
+        "NSE:J&KBANK",
+        "NSE:JBCHEPHARM",
+        "NSE:JBMA",
+        "NSE:JINDALSAW",
+        "NSE:JINDALSTEL",
+        "NSE:JKCEMENT",
+        "NSE:JKTYRE",
+        "NSE:JMFINANCIL",
+        "NSE:JPPOWER",
+        "NSE:JSL",
+        "NSE:JSWDULUX",
+        "NSE:JSWENERGY",
+        "NSE:JSWSTEEL",
+        "NSE:JUBLFOOD",
+        "NSE:JUBLPHARMA",
+        "NSE:JWL",
+        "NSE:KAJARIACER",
+        "NSE:KARURVYSYA",
+        "NSE:KEC",
+        "NSE:KEI",
+        "NSE:KIRLOSENG",
+        "NSE:KOTAKBANK",
+        "NSE:KPIL",
+        "NSE:KPRMILL",
+        "NSE:LALPATHLAB",
+        "NSE:LAURUSLABS",
+        "NSE:LEMONTREE",
+        "NSE:LICHSGFIN",
+        "NSE:LINDEINDIA",
+        "NSE:LT",
+        "NSE:LTF",
+        "NSE:LTFOODS",
+        "NSE:LTM",
+        "NSE:LTTS",
+        "NSE:LUPIN",
+        "NSE:M&M",
+        "NSE:M&MFIN",
+        "NSE:MAHABANK",
+        "NSE:MANAPPURAM",
+        "NSE:MARICO",
+        "NSE:MARUTI",
+        "NSE:MCX",
+        "NSE:MFSL",
+        "NSE:MGL",
+        "NSE:MINDACORP",
+        "NSE:MMTC",
+        "NSE:MOTHERSON",
+        "NSE:MOTILALOFS",
+        "NSE:MPHASIS",
+        "NSE:MRF",
+        "NSE:MRPL",
+        "NSE:MUTHOOTFIN",
+        "NSE:NAM-INDIA",
+        "NSE:NATCOPHARM",
+        "NSE:NATIONALUM",
+        "NSE:NAUKRI",
+        "NSE:NAVA",
+        "NSE:NAVINFLUOR",
+        "NSE:NBCC",
+        "NSE:NCC",
+        "NSE:NESTLEIND",
+        "NSE:NEULANDLAB",
+        "NSE:NEWGEN",
+        "NSE:NH",
+        "NSE:NHPC",
+        "NSE:NIACL",
+        "NSE:NLCINDIA",
+        "NSE:NMDC",
+        "NSE:NTPC",
+        "NSE:OBEROIRLTY",
+        "NSE:OFSS",
+        "NSE:OIL",
+        "NSE:OLECTRA",
+        "NSE:ONGC",
+        "NSE:PAGEIND",
+        "NSE:PATANJALI",
+        "NSE:PCBL",
+        "NSE:PERSISTENT",
+        "NSE:PETRONET",
+        "NSE:PFC",
+        "NSE:PFIZER",
+        "NSE:PGEL",
+        "NSE:PHOENIXLTD",
+        "NSE:PIDILITIND",
+        "NSE:PIIND",
+        "NSE:PNB",
+        "NSE:PNBHOUSING",
+        "NSE:POLYMED",
+        "NSE:POONAWALLA",
+        "NSE:POWERGRID",
+        "NSE:PRESTIGE",
+        "NSE:PVRINOX",
+        "NSE:RADICO",
+        "NSE:RAMCOCEM",
+        "NSE:RBLBANK",
+        "NSE:RECLTD",
+        "NSE:REDINGTON",
+        "NSE:RELIANCE",
+        "NSE:RHIM",
+        "NSE:RKFORGE",
+        "NSE:RPOWER",
+        "NSE:SAIL",
+        "NSE:SAMMAANCAP",
+        "NSE:SARDAEN",
+        "NSE:SAREGAMA",
+        "NSE:SBILIFE",
+        "NSE:SBIN",
+        "NSE:SCHAEFFLER",
+        "NSE:SCHNEIDER",
+        "NSE:SCI",
+        "NSE:SHREECEM",
+        "NSE:SIEMENS",
+        "NSE:SJVN",
+        "NSE:SOBHA",
+        "NSE:SOLARINDS",
+        "NSE:SONATSOFTW",
+        "NSE:SPLPETRO",
+        "NSE:SRF",
+        "NSE:SUNDARMFIN",
+        "NSE:SUNPHARMA",
+        "NSE:SUNTV",
+        "NSE:SUPREMEIND",
+        "NSE:SUZLON",
+        "NSE:SWANCORP",
+        "NSE:SYNGENE",
+        "NSE:TARIL",
+        "NSE:TATACHEM",
+        "NSE:TATACOMM",
+        "NSE:TATACONSUM",
+        "NSE:TATAELXSI",
+        "NSE:TATAINVEST",
+        "NSE:TATAPOWER",
+        "NSE:TATASTEEL",
+        "NSE:TCS",
+        "NSE:TECHM",
+        "NSE:TECHNOE",
+        "NSE:TEJASNET",
+        "NSE:THERMAX",
+        "NSE:TIINDIA",
+        "NSE:TIMKEN",
+        "NSE:TITAGARH",
+        "NSE:TITAN",
+        "NSE:TMPV",
+        "NSE:TORNTPHARM",
+        "NSE:TORNTPOWER",
+        "NSE:TRENT",
+        "NSE:TRIDENT",
+        "NSE:TRITURBINE",
+        "NSE:TTML",
+        "NSE:TVSMOTOR",
+        "NSE:UBL",
+        "NSE:UCOBANK",
+        "NSE:ULTRACEMCO",
+        "NSE:UNIONBANK",
+        "NSE:UNITDSPR",
+        "NSE:UNOMINDA",
+        "NSE:UPL",
+        "NSE:USHAMART",
+        "NSE:VBL",
+        "NSE:VEDL",
+        "NSE:VOLTAS",
+        "NSE:VTL",
+        "NSE:WELCORP",
+        "NSE:WELSPUNLIV",
+        "NSE:WHIRLPOOL",
+        "NSE:WIPRO",
+        "NSE:WOCKPHARMA",
+        "NSE:YESBANK",
+        "NSE:ZEEL",
+        "NSE:ZENSARTECH",
+        "NSE:ZENTEC",
+        "NSE:ZFCVINDIA",
+        "NSE:ZYDUSLIFE",
+        "NSE:ZYDUSWELL"
+      ],
+      "eval": [
+        "NSE:3MINDIA",
+        "NSE:AARTIIND",
+        "NSE:ABB",
+        "NSE:ABBOTINDIA",
+        "NSE:ABCAPITAL",
+        "NSE:ABFRL",
+        "NSE:ABREL",
+        "NSE:ACC",
+        "NSE:ACE",
+        "NSE:ADANIENSOL",
+        "NSE:ADANIENT",
+        "NSE:ADANIPORTS",
+        "NSE:ADANIPOWER",
+        "NSE:AEGISLOG",
+        "NSE:AIAENG",
+        "NSE:AJANTPHARM",
+        "NSE:ALKEM",
+        "NSE:AMBER",
+        "NSE:AMBUJACEM",
+        "NSE:ANANTRAJ",
+        "NSE:APARINDS",
+        "NSE:APLAPOLLO",
+        "NSE:APOLLOHOSP",
+        "NSE:APOLLOTYRE",
+        "NSE:ARE&M",
+        "NSE:ASAHIINDIA",
+        "NSE:ASHOKLEY",
+        "NSE:ASIANPAINT",
+        "NSE:ASTERDM",
+        "NSE:ASTRAL",
+        "NSE:ATUL",
+        "NSE:AUBANK",
+        "NSE:AUROPHARMA",
+        "NSE:AXISBANK",
+        "NSE:BAJAJ-AUTO",
+        "NSE:BAJAJFINSV",
+        "NSE:BAJAJHLDNG",
+        "NSE:BAJFINANCE",
+        "NSE:BALKRISIND",
+        "NSE:BALRAMCHIN",
+        "NSE:BANDHANBNK",
+        "NSE:BANKBARODA",
+        "NSE:BANKINDIA",
+        "NSE:BATAINDIA",
+        "NSE:BAYERCROP",
+        "NSE:BBTC",
+        "NSE:BDL",
+        "NSE:BEL",
+        "NSE:BEML",
+        "NSE:BERGEPAINT",
+        "NSE:BHARATFORG",
+        "NSE:BHARTIARTL",
+        "NSE:BHEL",
+        "NSE:BIOCON",
+        "NSE:BLS",
+        "NSE:BLUEDART",
+        "NSE:BLUESTARCO",
+        "NSE:BOSCHLTD",
+        "NSE:BPCL",
+        "NSE:BRIGADE",
+        "NSE:BRITANNIA",
+        "NSE:BSE",
+        "NSE:BSOFT",
+        "NSE:CANBK",
+        "NSE:CANFINHOME",
+        "NSE:CAPLIPOINT",
+        "NSE:CARBORUNIV",
+        "NSE:CASTROLIND",
+        "NSE:CCL",
+        "NSE:CDSL",
+        "NSE:CEATLTD",
+        "NSE:CEMPRO",
+        "NSE:CENTRALBK",
+        "NSE:CESC",
+        "NSE:CGCL",
+        "NSE:CGPOWER",
+        "NSE:CHAMBLFERT",
+        "NSE:CHENNPETRO",
+        "NSE:CHOLAFIN",
+        "NSE:CHOLAHLDNG",
+        "NSE:CIEINDIA",
+        "NSE:CIPLA",
+        "NSE:COALINDIA",
+        "NSE:COCHINSHIP",
+        "NSE:COFORGE",
+        "NSE:COLPAL",
+        "NSE:CONCOR",
+        "NSE:COROMANDEL",
+        "NSE:CRISIL",
+        "NSE:CROMPTON",
+        "NSE:CUB",
+        "NSE:CUMMINSIND",
+        "NSE:CYIENT",
+        "NSE:DABUR",
+        "NSE:DCMSHRIRAM",
+        "NSE:DEEPAKFERT",
+        "NSE:DEEPAKNTR",
+        "NSE:DIVISLAB",
+        "NSE:DIXON",
+        "NSE:DLF",
+        "NSE:DMART",
+        "NSE:DRREDDY",
+        "NSE:ECLERX",
+        "NSE:EICHERMOT",
+        "NSE:EIDPARRY",
+        "NSE:EIHOTEL",
+        "NSE:ELECON",
+        "NSE:ELGIEQUIP",
+        "NSE:EMAMILTD",
+        "NSE:ENDURANCE",
+        "NSE:ENGINERSIN",
+        "NSE:ERIS",
+        "NSE:ESCORTS",
+        "NSE:EXIDEIND",
+        "NSE:FACT",
+        "NSE:FEDERALBNK",
+        "NSE:FINCABLES",
+        "NSE:FORTIS",
+        "NSE:FSL",
+        "NSE:GABRIEL",
+        "NSE:GAIL",
+        "NSE:GALLANTT",
+        "NSE:GESHIP",
+        "NSE:GICRE",
+        "NSE:GILLETTE",
+        "NSE:GLAXO",
+        "NSE:GLENMARK",
+        "NSE:GMDCLTD",
+        "NSE:GMRAIRPORT",
+        "NSE:GODFRYPHLP",
+        "NSE:GODREJCP",
+        "NSE:GODREJIND",
+        "NSE:GODREJPROP",
+        "NSE:GPIL",
+        "NSE:GRANULES",
+        "NSE:GRAPHITE",
+        "NSE:GRASIM",
+        "NSE:GRAVITA",
+        "NSE:GVT&D",
+        "NSE:HAL",
+        "NSE:HAVELLS",
+        "NSE:HBLENGINE",
+        "NSE:HCLTECH",
+        "NSE:HDFCBANK",
+        "NSE:HDFCLIFE",
+        "NSE:HEG",
+        "NSE:HEROMOTOCO",
+        "NSE:HFCL",
+        "NSE:HINDALCO",
+        "NSE:HINDCOPPER",
+        "NSE:HINDPETRO",
+        "NSE:HINDUNILVR",
+        "NSE:HINDZINC",
+        "NSE:HONAUT",
+        "NSE:HSCL",
+        "NSE:HUDCO",
+        "NSE:ICICIBANK",
+        "NSE:ICICIGI",
+        "NSE:ICICIPRULI",
+        "NSE:IDBI",
+        "NSE:IDEA",
+        "NSE:IDFCFIRSTB",
+        "NSE:IEX",
+        "NSE:IFCI",
+        "NSE:IGL",
+        "NSE:IIFL",
+        "NSE:INDHOTEL",
+        "NSE:INDIACEM",
+        "NSE:INDIANB",
+        "NSE:INDIGO",
+        "NSE:INDUSINDBK",
+        "NSE:INDUSTOWER",
+        "NSE:INFY",
+        "NSE:INOXWIND",
+        "NSE:INTELLECT",
+        "NSE:IOB",
+        "NSE:IOC",
+        "NSE:IPCALAB",
+        "NSE:IRB",
+        "NSE:IREDA",
+        "NSE:IRFC",
+        "NSE:ITC",
+        "NSE:ITI",
+        "NSE:J&KBANK",
+        "NSE:JBCHEPHARM",
+        "NSE:JBMA",
+        "NSE:JINDALSAW",
+        "NSE:JINDALSTEL",
+        "NSE:JKCEMENT",
+        "NSE:JKTYRE",
+        "NSE:JMFINANCIL",
+        "NSE:JPPOWER",
+        "NSE:JSL",
+        "NSE:JSWDULUX",
+        "NSE:JSWENERGY",
+        "NSE:JSWSTEEL",
+        "NSE:JUBLFOOD",
+        "NSE:JUBLPHARMA",
+        "NSE:JWL",
+        "NSE:KAJARIACER",
+        "NSE:KARURVYSYA",
+        "NSE:KEC",
+        "NSE:KEI",
+        "NSE:KIRLOSENG",
+        "NSE:KOTAKBANK",
+        "NSE:KPIL",
+        "NSE:KPRMILL",
+        "NSE:LALPATHLAB",
+        "NSE:LAURUSLABS",
+        "NSE:LEMONTREE",
+        "NSE:LICHSGFIN",
+        "NSE:LINDEINDIA",
+        "NSE:LT",
+        "NSE:LTF",
+        "NSE:LTFOODS",
+        "NSE:LTM",
+        "NSE:LTTS",
+        "NSE:LUPIN",
+        "NSE:M&M",
+        "NSE:M&MFIN",
+        "NSE:MAHABANK",
+        "NSE:MANAPPURAM",
+        "NSE:MARICO",
+        "NSE:MARUTI",
+        "NSE:MCX",
+        "NSE:MFSL",
+        "NSE:MGL",
+        "NSE:MINDACORP",
+        "NSE:MMTC",
+        "NSE:MOTHERSON",
+        "NSE:MOTILALOFS",
+        "NSE:MPHASIS",
+        "NSE:MRF",
+        "NSE:MRPL",
+        "NSE:MUTHOOTFIN",
+        "NSE:NAM-INDIA",
+        "NSE:NATCOPHARM",
+        "NSE:NATIONALUM",
+        "NSE:NAUKRI",
+        "NSE:NAVA",
+        "NSE:NAVINFLUOR",
+        "NSE:NBCC",
+        "NSE:NCC",
+        "NSE:NESTLEIND",
+        "NSE:NEULANDLAB",
+        "NSE:NEWGEN",
+        "NSE:NH",
+        "NSE:NHPC",
+        "NSE:NIACL",
+        "NSE:NLCINDIA",
+        "NSE:NMDC",
+        "NSE:NTPC",
+        "NSE:OBEROIRLTY",
+        "NSE:OFSS",
+        "NSE:OIL",
+        "NSE:OLECTRA",
+        "NSE:ONGC",
+        "NSE:PAGEIND",
+        "NSE:PATANJALI",
+        "NSE:PCBL",
+        "NSE:PERSISTENT",
+        "NSE:PETRONET",
+        "NSE:PFC",
+        "NSE:PFIZER",
+        "NSE:PGEL",
+        "NSE:PHOENIXLTD",
+        "NSE:PIDILITIND",
+        "NSE:PIIND",
+        "NSE:PNB",
+        "NSE:PNBHOUSING",
+        "NSE:POLYMED",
+        "NSE:POONAWALLA",
+        "NSE:POWERGRID",
+        "NSE:PRESTIGE",
+        "NSE:PVRINOX",
+        "NSE:RADICO",
+        "NSE:RAMCOCEM",
+        "NSE:RBLBANK",
+        "NSE:RECLTD",
+        "NSE:REDINGTON",
+        "NSE:RELIANCE",
+        "NSE:RHIM",
+        "NSE:RKFORGE",
+        "NSE:RPOWER",
+        "NSE:SAIL",
+        "NSE:SAMMAANCAP",
+        "NSE:SARDAEN",
+        "NSE:SAREGAMA",
+        "NSE:SBILIFE",
+        "NSE:SBIN",
+        "NSE:SCHAEFFLER",
+        "NSE:SCHNEIDER",
+        "NSE:SCI",
+        "NSE:SHREECEM",
+        "NSE:SIEMENS",
+        "NSE:SJVN",
+        "NSE:SOBHA",
+        "NSE:SOLARINDS",
+        "NSE:SONATSOFTW",
+        "NSE:SPLPETRO",
+        "NSE:SRF",
+        "NSE:SUNDARMFIN",
+        "NSE:SUNPHARMA",
+        "NSE:SUNTV",
+        "NSE:SUPREMEIND",
+        "NSE:SUZLON",
+        "NSE:SWANCORP",
+        "NSE:SYNGENE",
+        "NSE:TARIL",
+        "NSE:TATACHEM",
+        "NSE:TATACOMM",
+        "NSE:TATACONSUM",
+        "NSE:TATAELXSI",
+        "NSE:TATAINVEST",
+        "NSE:TATAPOWER",
+        "NSE:TATASTEEL",
+        "NSE:TCS",
+        "NSE:TECHM",
+        "NSE:TECHNOE",
+        "NSE:TEJASNET",
+        "NSE:THERMAX",
+        "NSE:TIINDIA",
+        "NSE:TIMKEN",
+        "NSE:TITAGARH",
+        "NSE:TITAN",
+        "NSE:TMPV",
+        "NSE:TORNTPHARM",
+        "NSE:TORNTPOWER",
+        "NSE:TRENT",
+        "NSE:TRIDENT",
+        "NSE:TRITURBINE",
+        "NSE:TTML",
+        "NSE:TVSMOTOR",
+        "NSE:UBL",
+        "NSE:UCOBANK",
+        "NSE:ULTRACEMCO",
+        "NSE:UNIONBANK",
+        "NSE:UNITDSPR",
+        "NSE:UNOMINDA",
+        "NSE:UPL",
+        "NSE:USHAMART",
+        "NSE:VBL",
+        "NSE:VEDL",
+        "NSE:VOLTAS",
+        "NSE:VTL",
+        "NSE:WELCORP",
+        "NSE:WELSPUNLIV",
+        "NSE:WHIRLPOOL",
+        "NSE:WIPRO",
+        "NSE:WOCKPHARMA",
+        "NSE:YESBANK",
+        "NSE:ZEEL",
+        "NSE:ZENSARTECH",
+        "NSE:ZENTEC",
+        "NSE:ZFCVINDIA",
+        "NSE:ZYDUSLIFE",
+        "NSE:ZYDUSWELL"
+      ],
+      "test": [
+        "NSE:3MINDIA",
+        "NSE:AARTIIND",
+        "NSE:ABB",
+        "NSE:ABBOTINDIA",
+        "NSE:ABCAPITAL",
+        "NSE:ABFRL",
+        "NSE:ABREL",
+        "NSE:ACC",
+        "NSE:ACE",
+        "NSE:ADANIENSOL",
+        "NSE:ADANIENT",
+        "NSE:ADANIPORTS",
+        "NSE:ADANIPOWER",
+        "NSE:AEGISLOG",
+        "NSE:AIAENG",
+        "NSE:AJANTPHARM",
+        "NSE:ALKEM",
+        "NSE:AMBER",
+        "NSE:AMBUJACEM",
+        "NSE:ANANTRAJ",
+        "NSE:APARINDS",
+        "NSE:APLAPOLLO",
+        "NSE:APOLLOHOSP",
+        "NSE:APOLLOTYRE",
+        "NSE:ARE&M",
+        "NSE:ASAHIINDIA",
+        "NSE:ASHOKLEY",
+        "NSE:ASIANPAINT",
+        "NSE:ASTERDM",
+        "NSE:ASTRAL",
+        "NSE:ATUL",
+        "NSE:AUBANK",
+        "NSE:AUROPHARMA",
+        "NSE:AXISBANK",
+        "NSE:BAJAJ-AUTO",
+        "NSE:BAJAJFINSV",
+        "NSE:BAJAJHLDNG",
+        "NSE:BAJFINANCE",
+        "NSE:BALKRISIND",
+        "NSE:BALRAMCHIN",
+        "NSE:BANDHANBNK",
+        "NSE:BANKBARODA",
+        "NSE:BANKINDIA",
+        "NSE:BATAINDIA",
+        "NSE:BAYERCROP",
+        "NSE:BBTC",
+        "NSE:BDL",
+        "NSE:BEL",
+        "NSE:BEML",
+        "NSE:BERGEPAINT",
+        "NSE:BHARATFORG",
+        "NSE:BHARTIARTL",
+        "NSE:BHEL",
+        "NSE:BIOCON",
+        "NSE:BLS",
+        "NSE:BLUEDART",
+        "NSE:BLUESTARCO",
+        "NSE:BOSCHLTD",
+        "NSE:BPCL",
+        "NSE:BRIGADE",
+        "NSE:BRITANNIA",
+        "NSE:BSE",
+        "NSE:BSOFT",
+        "NSE:CANBK",
+        "NSE:CANFINHOME",
+        "NSE:CAPLIPOINT",
+        "NSE:CARBORUNIV",
+        "NSE:CASTROLIND",
+        "NSE:CCL",
+        "NSE:CDSL",
+        "NSE:CEATLTD",
+        "NSE:CEMPRO",
+        "NSE:CENTRALBK",
+        "NSE:CESC",
+        "NSE:CGCL",
+        "NSE:CGPOWER",
+        "NSE:CHAMBLFERT",
+        "NSE:CHENNPETRO",
+        "NSE:CHOLAFIN",
+        "NSE:CHOLAHLDNG",
+        "NSE:CIEINDIA",
+        "NSE:CIPLA",
+        "NSE:COALINDIA",
+        "NSE:COCHINSHIP",
+        "NSE:COFORGE",
+        "NSE:COLPAL",
+        "NSE:CONCOR",
+        "NSE:COROMANDEL",
+        "NSE:CRISIL",
+        "NSE:CROMPTON",
+        "NSE:CUB",
+        "NSE:CUMMINSIND",
+        "NSE:CYIENT",
+        "NSE:DABUR",
+        "NSE:DCMSHRIRAM",
+        "NSE:DEEPAKFERT",
+        "NSE:DEEPAKNTR",
+        "NSE:DIVISLAB",
+        "NSE:DIXON",
+        "NSE:DLF",
+        "NSE:DMART",
+        "NSE:DRREDDY",
+        "NSE:ECLERX",
+        "NSE:EICHERMOT",
+        "NSE:EIDPARRY",
+        "NSE:EIHOTEL",
+        "NSE:ELECON",
+        "NSE:ELGIEQUIP",
+        "NSE:EMAMILTD",
+        "NSE:ENDURANCE",
+        "NSE:ENGINERSIN",
+        "NSE:ERIS",
+        "NSE:ESCORTS",
+        "NSE:EXIDEIND",
+        "NSE:FACT",
+        "NSE:FEDERALBNK",
+        "NSE:FINCABLES",
+        "NSE:FORTIS",
+        "NSE:FSL",
+        "NSE:GABRIEL",
+        "NSE:GAIL",
+        "NSE:GALLANTT",
+        "NSE:GESHIP",
+        "NSE:GICRE",
+        "NSE:GILLETTE",
+        "NSE:GLAXO",
+        "NSE:GLENMARK",
+        "NSE:GMDCLTD",
+        "NSE:GMRAIRPORT",
+        "NSE:GODFRYPHLP",
+        "NSE:GODREJCP",
+        "NSE:GODREJIND",
+        "NSE:GODREJPROP",
+        "NSE:GPIL",
+        "NSE:GRANULES",
+        "NSE:GRAPHITE",
+        "NSE:GRASIM",
+        "NSE:GRAVITA",
+        "NSE:GVT&D",
+        "NSE:HAL",
+        "NSE:HAVELLS",
+        "NSE:HBLENGINE",
+        "NSE:HCLTECH",
+        "NSE:HDFCBANK",
+        "NSE:HDFCLIFE",
+        "NSE:HEG",
+        "NSE:HEROMOTOCO",
+        "NSE:HFCL",
+        "NSE:HINDALCO",
+        "NSE:HINDCOPPER",
+        "NSE:HINDPETRO",
+        "NSE:HINDUNILVR",
+        "NSE:HINDZINC",
+        "NSE:HONAUT",
+        "NSE:HSCL",
+        "NSE:HUDCO",
+        "NSE:ICICIBANK",
+        "NSE:ICICIGI",
+        "NSE:ICICIPRULI",
+        "NSE:IDBI",
+        "NSE:IDEA",
+        "NSE:IDFCFIRSTB",
+        "NSE:IEX",
+        "NSE:IFCI",
+        "NSE:IGL",
+        "NSE:IIFL",
+        "NSE:INDHOTEL",
+        "NSE:INDIACEM",
+        "NSE:INDIANB",
+        "NSE:INDIGO",
+        "NSE:INDUSINDBK",
+        "NSE:INDUSTOWER",
+        "NSE:INFY",
+        "NSE:INOXWIND",
+        "NSE:INTELLECT",
+        "NSE:IOB",
+        "NSE:IOC",
+        "NSE:IPCALAB",
+        "NSE:IRB",
+        "NSE:IREDA",
+        "NSE:IRFC",
+        "NSE:ITC",
+        "NSE:ITI",
+        "NSE:J&KBANK",
+        "NSE:JBCHEPHARM",
+        "NSE:JBMA",
+        "NSE:JINDALSAW",
+        "NSE:JINDALSTEL",
+        "NSE:JKCEMENT",
+        "NSE:JKTYRE",
+        "NSE:JMFINANCIL",
+        "NSE:JPPOWER",
+        "NSE:JSL",
+        "NSE:JSWDULUX",
+        "NSE:JSWENERGY",
+        "NSE:JSWSTEEL",
+        "NSE:JUBLFOOD",
+        "NSE:JUBLPHARMA",
+        "NSE:JWL",
+        "NSE:KAJARIACER",
+        "NSE:KARURVYSYA",
+        "NSE:KEC",
+        "NSE:KEI",
+        "NSE:KIRLOSENG",
+        "NSE:KOTAKBANK",
+        "NSE:KPIL",
+        "NSE:KPRMILL",
+        "NSE:LALPATHLAB",
+        "NSE:LAURUSLABS",
+        "NSE:LEMONTREE",
+        "NSE:LICHSGFIN",
+        "NSE:LINDEINDIA",
+        "NSE:LT",
+        "NSE:LTF",
+        "NSE:LTFOODS",
+        "NSE:LTM",
+        "NSE:LTTS",
+        "NSE:LUPIN",
+        "NSE:M&M",
+        "NSE:M&MFIN",
+        "NSE:MAHABANK",
+        "NSE:MANAPPURAM",
+        "NSE:MARICO",
+        "NSE:MARUTI",
+        "NSE:MCX",
+        "NSE:MFSL",
+        "NSE:MGL",
+        "NSE:MINDACORP",
+        "NSE:MMTC",
+        "NSE:MOTHERSON",
+        "NSE:MOTILALOFS",
+        "NSE:MPHASIS",
+        "NSE:MRF",
+        "NSE:MRPL",
+        "NSE:MUTHOOTFIN",
+        "NSE:NAM-INDIA",
+        "NSE:NATCOPHARM",
+        "NSE:NATIONALUM",
+        "NSE:NAUKRI",
+        "NSE:NAVA",
+        "NSE:NAVINFLUOR",
+        "NSE:NBCC",
+        "NSE:NCC",
+        "NSE:NESTLEIND",
+        "NSE:NEULANDLAB",
+        "NSE:NEWGEN",
+        "NSE:NH",
+        "NSE:NHPC",
+        "NSE:NIACL",
+        "NSE:NLCINDIA",
+        "NSE:NMDC",
+        "NSE:NTPC",
+        "NSE:OBEROIRLTY",
+        "NSE:OFSS",
+        "NSE:OIL",
+        "NSE:OLECTRA",
+        "NSE:ONGC",
+        "NSE:PAGEIND",
+        "NSE:PATANJALI",
+        "NSE:PCBL",
+        "NSE:PERSISTENT",
+        "NSE:PETRONET",
+        "NSE:PFC",
+        "NSE:PFIZER",
+        "NSE:PGEL",
+        "NSE:PHOENIXLTD",
+        "NSE:PIDILITIND",
+        "NSE:PIIND",
+        "NSE:PNB",
+        "NSE:PNBHOUSING",
+        "NSE:POLYMED",
+        "NSE:POONAWALLA",
+        "NSE:POWERGRID",
+        "NSE:PRESTIGE",
+        "NSE:PVRINOX",
+        "NSE:RADICO",
+        "NSE:RAMCOCEM",
+        "NSE:RBLBANK",
+        "NSE:RECLTD",
+        "NSE:REDINGTON",
+        "NSE:RELIANCE",
+        "NSE:RHIM",
+        "NSE:RKFORGE",
+        "NSE:RPOWER",
+        "NSE:SAIL",
+        "NSE:SAMMAANCAP",
+        "NSE:SARDAEN",
+        "NSE:SAREGAMA",
+        "NSE:SBILIFE",
+        "NSE:SBIN",
+        "NSE:SCHAEFFLER",
+        "NSE:SCHNEIDER",
+        "NSE:SCI",
+        "NSE:SHREECEM",
+        "NSE:SIEMENS",
+        "NSE:SJVN",
+        "NSE:SOBHA",
+        "NSE:SOLARINDS",
+        "NSE:SONATSOFTW",
+        "NSE:SPLPETRO",
+        "NSE:SRF",
+        "NSE:SUNDARMFIN",
+        "NSE:SUNPHARMA",
+        "NSE:SUNTV",
+        "NSE:SUPREMEIND",
+        "NSE:SUZLON",
+        "NSE:SWANCORP",
+        "NSE:SYNGENE",
+        "NSE:TARIL",
+        "NSE:TATACHEM",
+        "NSE:TATACOMM",
+        "NSE:TATACONSUM",
+        "NSE:TATAELXSI",
+        "NSE:TATAINVEST",
+        "NSE:TATAPOWER",
+        "NSE:TATASTEEL",
+        "NSE:TCS",
+        "NSE:TECHM",
+        "NSE:TECHNOE",
+        "NSE:TEJASNET",
+        "NSE:THERMAX",
+        "NSE:TIINDIA",
+        "NSE:TIMKEN",
+        "NSE:TITAGARH",
+        "NSE:TITAN",
+        "NSE:TMPV",
+        "NSE:TORNTPHARM",
+        "NSE:TORNTPOWER",
+        "NSE:TRENT",
+        "NSE:TRIDENT",
+        "NSE:TRITURBINE",
+        "NSE:TTML",
+        "NSE:TVSMOTOR",
+        "NSE:UBL",
+        "NSE:UCOBANK",
+        "NSE:ULTRACEMCO",
+        "NSE:UNIONBANK",
+        "NSE:UNITDSPR",
+        "NSE:UNOMINDA",
+        "NSE:UPL",
+        "NSE:USHAMART",
+        "NSE:VBL",
+        "NSE:VEDL",
+        "NSE:VOLTAS",
+        "NSE:VTL",
+        "NSE:WELCORP",
+        "NSE:WELSPUNLIV",
+        "NSE:WHIRLPOOL",
+        "NSE:WIPRO",
+        "NSE:WOCKPHARMA",
+        "NSE:YESBANK",
+        "NSE:ZEEL",
+        "NSE:ZENSARTECH",
+        "NSE:ZENTEC",
+        "NSE:ZFCVINDIA",
+        "NSE:ZYDUSLIFE",
+        "NSE:ZYDUSWELL"
+      ]
+    },
+    "row_counts_per_segment_per_ticker": {
+      "NSE:3MINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AARTIIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ABB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ABBOTINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ABCAPITAL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ABFRL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ABREL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ACC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ACE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ADANIENSOL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ADANIENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ADANIPORTS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ADANIPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AEGISLOG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AIAENG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AJANTPHARM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ALKEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AMBER": {
+        "train": 783,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AMBUJACEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ANANTRAJ": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:APARINDS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:APLAPOLLO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:APOLLOHOSP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:APOLLOTYRE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ARE&M": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ASAHIINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ASHOKLEY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ASIANPAINT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ASTERDM": {
+        "train": 765,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ASTRAL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ATUL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AUBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AUROPHARMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:AXISBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BAJAJ-AUTO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BAJAJFINSV": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BAJAJHLDNG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BAJFINANCE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BALKRISIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BALRAMCHIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BANDHANBNK": {
+        "train": 745,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BANKBARODA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BANKINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BATAINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BAYERCROP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BBTC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BDL": {
+        "train": 747,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BEML": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BERGEPAINT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BHARATFORG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BHARTIARTL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BHEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BIOCON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BLS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BLUEDART": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BLUESTARCO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BOSCHLTD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BPCL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BRIGADE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BRITANNIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BSE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:BSOFT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CANBK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CANFINHOME": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CAPLIPOINT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CARBORUNIV": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CASTROLIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CCL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CDSL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CEATLTD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CEMPRO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CENTRALBK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CESC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CGCL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CGPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CHAMBLFERT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CHENNPETRO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CHOLAFIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CHOLAHLDNG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CIEINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CIPLA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:COALINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:COCHINSHIP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:COFORGE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:COLPAL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CONCOR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:COROMANDEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CRISIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CROMPTON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CUB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CUMMINSIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:CYIENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DABUR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DCMSHRIRAM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DEEPAKFERT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DEEPAKNTR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DIVISLAB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DIXON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DLF": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DMART": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:DRREDDY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ECLERX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:EICHERMOT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:EIDPARRY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:EIHOTEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ELECON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ELGIEQUIP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:EMAMILTD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ENDURANCE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ENGINERSIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ERIS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ESCORTS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:EXIDEIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:FACT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:FEDERALBNK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:FINCABLES": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:FORTIS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:FSL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GABRIEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GAIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GALLANTT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GESHIP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GICRE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GILLETTE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GLAXO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GLENMARK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GMDCLTD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GMRAIRPORT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GODFRYPHLP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GODREJCP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GODREJIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GODREJPROP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GPIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GRANULES": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GRAPHITE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GRASIM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GRAVITA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:GVT&D": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HAL": {
+        "train": 744,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HAVELLS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HBLENGINE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HCLTECH": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HDFCBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HDFCLIFE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HEG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HEROMOTOCO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HFCL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HINDALCO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HINDCOPPER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HINDPETRO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HINDUNILVR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HINDZINC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HONAUT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HSCL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:HUDCO": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ICICIBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ICICIGI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ICICIPRULI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IDBI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IDEA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IDFCFIRSTB": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IEX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IFCI": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IGL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IIFL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDHOTEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDIACEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDIANB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDIGO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDUSINDBK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INDUSTOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INFY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INOXWIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:INTELLECT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IOB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IOC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IPCALAB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IRB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:IREDA": {
+        "train": 713,
+        "val": 393,
+        "eval": 187,
+        "test": 292
+      },
+      "NSE:IRFC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ITC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ITI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:J&KBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JBCHEPHARM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JBMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JINDALSAW": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JINDALSTEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JKCEMENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JKTYRE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JMFINANCIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JPPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JSL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JSWDULUX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JSWENERGY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JSWSTEEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JUBLFOOD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JUBLPHARMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:JWL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KAJARIACER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KARURVYSYA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KEC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KEI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KIRLOSENG": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KOTAKBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KPIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:KPRMILL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LALPATHLAB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LAURUSLABS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LEMONTREE": {
+        "train": 738,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LICHSGFIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LINDEINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LTF": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LTFOODS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LTM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LTTS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:LUPIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:M&M": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:M&MFIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MAHABANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MANAPPURAM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MARICO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MARUTI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MCX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MFSL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MGL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MINDACORP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MMTC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MOTHERSON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MOTILALOFS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MPHASIS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MRF": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MRPL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:MUTHOOTFIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NAM-INDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NATCOPHARM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NATIONALUM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NAUKRI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NAVA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NAVINFLUOR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NBCC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NCC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NESTLEIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NEULANDLAB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NEWGEN": {
+        "train": 784,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NH": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NHPC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NIACL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NLCINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NMDC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:NTPC": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:OBEROIRLTY": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:OFSS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:OIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:OLECTRA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ONGC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PAGEIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PATANJALI": {
+        "train": 801,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PCBL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PERSISTENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PETRONET": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PFC": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PFIZER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PGEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PHOENIXLTD": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PIDILITIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PIIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PNB": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PNBHOUSING": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:POLYMED": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:POONAWALLA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:POWERGRID": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PRESTIGE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:PVRINOX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RADICO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RAMCOCEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RBLBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RECLTD": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:REDINGTON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RELIANCE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RHIM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RKFORGE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:RPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SAIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SAMMAANCAP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SARDAEN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SAREGAMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SBILIFE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SBIN": {
+        "train": 802,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SCHAEFFLER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SCHNEIDER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SCI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SHREECEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SIEMENS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SJVN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SOBHA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SOLARINDS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SONATSOFTW": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SPLPETRO": {
+        "train": 800,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SRF": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SUNDARMFIN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SUNPHARMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SUNTV": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SUPREMEIND": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SUZLON": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SWANCORP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:SYNGENE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TARIL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATACHEM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATACOMM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATACONSUM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATAELXSI": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATAINVEST": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATAPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TATASTEEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TCS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TECHM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TECHNOE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TEJASNET": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:THERMAX": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TIINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TIMKEN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TITAGARH": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TITAN": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TMPV": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TORNTPHARM": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TORNTPOWER": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TRENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TRIDENT": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TRITURBINE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TTML": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:TVSMOTOR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UBL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UCOBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ULTRACEMCO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UNIONBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UNITDSPR": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UNOMINDA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:UPL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:USHAMART": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:VBL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:VEDL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:VOLTAS": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:VTL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:WELCORP": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:WELSPUNLIV": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:WHIRLPOOL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:WIPRO": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:WOCKPHARMA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:YESBANK": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZEEL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZENSARTECH": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZENTEC": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZFCVINDIA": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZYDUSLIFE": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      },
+      "NSE:ZYDUSWELL": {
+        "train": 803,
+        "val": 402,
+        "eval": 200,
+        "test": 302
+      }
+    }
+  },
+  "loop": {
+    "n_iterations_run": 2,
+    "best_iteration": 0,
+    "inner_stop_signal": "degradation",
+    "hp_search_active": false,
+    "hp_search_iter_threshold": 5,
+    "max_iterations": 3
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "isotonic",
+    "spiegelhalter_z": 74.59334273633753,
+    "spiegelhalter_p": 0.0
+  },
+  "sample_uniqueness": {
+    "uniqueness_weighting": true,
+    "horizon_days": 200,
+    "effective_sample_size_per_fold": {
+      "fold_0": {
+        "train": {
+          "ess_kish": 285793.8920019317,
+          "sum_weights": 719.8374252898786,
+          "n_rows": 286254,
+          "overlap_inflation_ratio": 397.66479199761733
+        },
+        "val": {
+          "ess_kish": 143505.0,
+          "sum_weights": 359.6616541353383,
+          "n_rows": 143505,
+          "overlap_inflation_ratio": 399.0
+        },
+        "eval": {
+          "ess_kish": 71387.0,
+          "sum_weights": 178.91478696741854,
+          "n_rows": 71387,
+          "overlap_inflation_ratio": 399.0
+        },
+        "test": {
+          "ess_kish": 107804.00000000001,
+          "sum_weights": 270.1854636591479,
+          "n_rows": 107804,
+          "overlap_inflation_ratio": 398.99999999999994
+        }
+      }
+    }
+  },
+  "cache": {
+    "matrix_key": "00b5db03d3702e2913486b11ffdab17941f0195a7a12b8f4cd6068f3f360d3c9",
+    "universe_key": "76f27bcf82a8d6b80d4b2423d7f72be3539f475a549096f2c3ba223e660a4aec",
+    "matrix_hit": false,
+    "universe_hit": true,
+    "panel_signature": {
+      "panel_rows": 990493,
+      "panel_n_tickers": 357,
+      "panel_date_min": "2010-01-04 00:00:00",
+      "panel_date_max": "2026-05-21 00:00:00",
+      "panel_index_hash": "28d9e7a26eac2ea001571d20a99663085b9939feb5b08e1919b5f646ff41e8bf",
+      "index_series_rows": 2811,
+      "index_series_date_min": "2015-01-01 00:00:00",
+      "index_series_date_max": "2026-05-21 00:00:00"
+    }
+  },
+  "headline_eval": {
+    "brier": 0.3593773912719001,
+    "brier_baseline_baserate": 0.24953734061218646,
+    "brier_improvement_vs_baseline": -0.10984005065971364,
+    "log_loss": 1.0161634658779592,
+    "brier_unweighted": 0.3593773912719001,
+    "brier_baseline_baserate_unweighted": 0.24953734061218644,
+    "brier_improvement_vs_baseline_unweighted": -0.10984005065971367,
+    "effective_sample_size_kish": 71387.0,
+    "sum_weights": 178.91478696741854,
+    "n_rows": 71387,
+    "weighted_prevalence": 0.47849048146020984,
+    "roc_auc": 0.5142257844901219
+  },
+  "headline_test": {
+    "brier": 0.23265732676969317,
+    "brier_baseline_baserate": 0.20593053903231176,
+    "brier_improvement_vs_baseline": -0.026726787737381408,
+    "log_loss": 0.7007232898267268,
+    "brier_unweighted": 0.23265732676969314,
+    "brier_baseline_baserate_unweighted": 0.2059305390323118,
+    "brier_improvement_vs_baseline_unweighted": -0.026726787737381352,
+    "effective_sample_size_kish": 107804.00000000001,
+    "sum_weights": 270.1854636591479,
+    "n_rows": 107804,
+    "weighted_prevalence": 0.2900727245742272,
+    "roc_auc": 0.43989004494174094
+  },
+  "segment_diagnostics": {
+    "eval": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.47849048146020984,
+        "n_rows": 71387,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.525,
+            "n_picks_total": 200,
+            "n_positives_in_picks": 105,
+            "n_denom": 200,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 1.0972005093975057
+          },
+          "5": {
+            "p_at_k": 0.562,
+            "n_picks_total": 1000,
+            "n_positives_in_picks": 562,
+            "n_denom": 1000,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 1.1745270214883776
+          },
+          "10": {
+            "p_at_k": 0.601,
+            "n_picks_total": 2000,
+            "n_positives_in_picks": 1202,
+            "n_denom": 2000,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 1.2560333450436207
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 1.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 1,
+            "n_denom": 1,
+            "lift": 2.0899057321857253
+          },
+          "5": {
+            "p_at_k": 1.0,
+            "n_picks": 5,
+            "n_positives_in_picks": 5,
+            "n_denom": 5,
+            "lift": 2.0899057321857253
+          },
+          "10": {
+            "p_at_k": 1.0,
+            "n_picks": 10,
+            "n_positives_in_picks": 10,
+            "n_denom": 10,
+            "lift": 2.0899057321857253
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NSE:TARIL",
+            "n_picks": 76,
+            "n_positives": 70,
+            "hit_rate": 0.9210526315789473
+          },
+          {
+            "ticker": "NSE:CHOLAHLDNG",
+            "n_picks": 69,
+            "n_positives": 7,
+            "hit_rate": 0.10144927536231885
+          },
+          {
+            "ticker": "NSE:ADANIENSOL",
+            "n_picks": 62,
+            "n_positives": 13,
+            "hit_rate": 0.20967741935483872
+          },
+          {
+            "ticker": "NSE:ENDURANCE",
+            "n_picks": 38,
+            "n_positives": 12,
+            "hit_rate": 0.3157894736842105
+          },
+          {
+            "ticker": "NSE:FINCABLES",
+            "n_picks": 37,
+            "n_positives": 37,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:CCL",
+            "n_picks": 36,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:FACT",
+            "n_picks": 34,
+            "n_positives": 34,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:KIRLOSENG",
+            "n_picks": 34,
+            "n_positives": 33,
+            "hit_rate": 0.9705882352941176
+          },
+          {
+            "ticker": "NSE:NCC",
+            "n_picks": 34,
+            "n_positives": 34,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:AMBUJACEM",
+            "n_picks": 32,
+            "n_positives": 5,
+            "hit_rate": 0.15625
+          },
+          {
+            "ticker": "NSE:APARINDS",
+            "n_picks": 31,
+            "n_positives": 31,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:GVT&D",
+            "n_picks": 27,
+            "n_positives": 27,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JWL",
+            "n_picks": 25,
+            "n_positives": 25,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:BLUESTARCO",
+            "n_picks": 23,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ELECON",
+            "n_picks": 20,
+            "n_positives": 19,
+            "hit_rate": 0.95
+          },
+          {
+            "ticker": "NSE:GABRIEL",
+            "n_picks": 20,
+            "n_positives": 7,
+            "hit_rate": 0.35
+          },
+          {
+            "ticker": "NSE:INOXWIND",
+            "n_picks": 18,
+            "n_positives": 18,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:CGCL",
+            "n_picks": 17,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KEC",
+            "n_picks": 17,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SUPREMEIND",
+            "n_picks": 17,
+            "n_positives": 4,
+            "hit_rate": 0.23529411764705882
+          },
+          {
+            "ticker": "NSE:JBCHEPHARM",
+            "n_picks": 16,
+            "n_positives": 1,
+            "hit_rate": 0.0625
+          },
+          {
+            "ticker": "NSE:FSL",
+            "n_picks": 15,
+            "n_positives": 11,
+            "hit_rate": 0.7333333333333333
+          },
+          {
+            "ticker": "NSE:INTELLECT",
+            "n_picks": 15,
+            "n_positives": 15,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ZENTEC",
+            "n_picks": 15,
+            "n_positives": 8,
+            "hit_rate": 0.5333333333333333
+          },
+          {
+            "ticker": "NSE:IOB",
+            "n_picks": 13,
+            "n_positives": 12,
+            "hit_rate": 0.9230769230769231
+          },
+          {
+            "ticker": "NSE:MANAPPURAM",
+            "n_picks": 13,
+            "n_positives": 7,
+            "hit_rate": 0.5384615384615384
+          },
+          {
+            "ticker": "NSE:SPLPETRO",
+            "n_picks": 13,
+            "n_positives": 13,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:SUZLON",
+            "n_picks": 13,
+            "n_positives": 13,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:TTML",
+            "n_picks": 13,
+            "n_positives": 13,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:OLECTRA",
+            "n_picks": 12,
+            "n_positives": 12,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:KPIL",
+            "n_picks": 11,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NEULANDLAB",
+            "n_picks": 11,
+            "n_positives": 11,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ERIS",
+            "n_picks": 10,
+            "n_positives": 8,
+            "hit_rate": 0.8
+          },
+          {
+            "ticker": "NSE:IRB",
+            "n_picks": 10,
+            "n_positives": 2,
+            "hit_rate": 0.2
+          },
+          {
+            "ticker": "NSE:ALKEM",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CASTROLIND",
+            "n_picks": 8,
+            "n_positives": 3,
+            "hit_rate": 0.375
+          },
+          {
+            "ticker": "NSE:NLCINDIA",
+            "n_picks": 8,
+            "n_positives": 8,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:NATCOPHARM",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SWANCORP",
+            "n_picks": 7,
+            "n_positives": 7,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JSWDULUX",
+            "n_picks": 6,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KEI",
+            "n_picks": 6,
+            "n_positives": 6,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:REDINGTON",
+            "n_picks": 6,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SCHAEFFLER",
+            "n_picks": 6,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ADANIENT",
+            "n_picks": 5,
+            "n_positives": 1,
+            "hit_rate": 0.2
+          },
+          {
+            "ticker": "NSE:CEMPRO",
+            "n_picks": 5,
+            "n_positives": 1,
+            "hit_rate": 0.2
+          },
+          {
+            "ticker": "NSE:NHPC",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ADANIPORTS",
+            "n_picks": 4,
+            "n_positives": 4,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JMFINANCIL",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:PIIND",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CANBK",
+            "n_picks": 3,
+            "n_positives": 2,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:CGPOWER",
+            "n_picks": 3,
+            "n_positives": 2,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:JINDALSAW",
+            "n_picks": 3,
+            "n_positives": 3,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JKCEMENT",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:M&MFIN",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NH",
+            "n_picks": 3,
+            "n_positives": 1,
+            "hit_rate": 0.3333333333333333
+          },
+          {
+            "ticker": "NSE:RAMCOCEM",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ACE",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ANANTRAJ",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:APLAPOLLO",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:AUBANK",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BANKINDIA",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BRIGADE",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:DEEPAKFERT",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:GODFRYPHLP",
+            "n_picks": 2,
+            "n_positives": 1,
+            "hit_rate": 0.5
+          },
+          {
+            "ticker": "NSE:LTFOODS",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:PVRINOX",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SCI",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ZENSARTECH",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ASTERDM",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:CEATLTD",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CIEINDIA",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:CYIENT",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:EIDPARRY",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ENGINERSIN",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:GICRE",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:GPIL",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:IFCI",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JINDALSTEL",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JSL",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JUBLPHARMA",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:MAHABANK",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:MOTILALOFS",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:PATANJALI",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:POLYMED",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:RHIM",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SARDAEN",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:USHAMART",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2022Q4",
+            "n_picks": 170,
+            "n_positives": 137,
+            "p_at_k": 0.8058823529411765,
+            "base_rate": 0.47849048146020984,
+            "lift": 1.6842181488790844
+          },
+          {
+            "quarter": "2023Q1",
+            "n_picks": 310,
+            "n_positives": 198,
+            "p_at_k": 0.6387096774193548,
+            "base_rate": 0.47849048146020984,
+            "lift": 1.334843016041205
+          },
+          {
+            "quarter": "2023Q2",
+            "n_picks": 300,
+            "n_positives": 146,
+            "p_at_k": 0.4866666666666667,
+            "base_rate": 0.47849048146020984,
+            "lift": 1.0170874563303862
+          },
+          {
+            "quarter": "2023Q3",
+            "n_picks": 220,
+            "n_positives": 81,
+            "p_at_k": 0.36818181818181817,
+            "base_rate": 0.47849048146020984,
+            "lift": 0.7694652923047443
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.7756654024124146,
+        "mean": 0.15273550201611516,
+        "std": 0.06076595224020001,
+        "n_rows": 71387,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": false
+      }
+    },
+    "test": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.2900727245742273,
+        "n_rows": 107804,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.33774834437086093,
+            "n_picks_total": 302,
+            "n_positives_in_picks": 102,
+            "n_denom": 302,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 302,
+            "n_days_total": 302,
+            "lift": 1.1643574723084102
+          },
+          "5": {
+            "p_at_k": 0.3576158940397351,
+            "n_picks_total": 1510,
+            "n_positives_in_picks": 540,
+            "n_denom": 1510,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 302,
+            "n_days_total": 302,
+            "lift": 1.232849088326552
+          },
+          "10": {
+            "p_at_k": 0.347682119205298,
+            "n_picks_total": 3020,
+            "n_positives_in_picks": 1050,
+            "n_denom": 3020,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 302,
+            "n_days_total": 302,
+            "lift": 1.198603280317481
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 0.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 0,
+            "n_denom": 1,
+            "lift": 0.0
+          },
+          "5": {
+            "p_at_k": 0.0,
+            "n_picks": 5,
+            "n_positives_in_picks": 0,
+            "n_denom": 5,
+            "lift": 0.0
+          },
+          "10": {
+            "p_at_k": 0.2,
+            "n_picks": 10,
+            "n_positives_in_picks": 2,
+            "n_denom": 10,
+            "lift": 0.6894822679159606
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NSE:TARIL",
+            "n_picks": 69,
+            "n_positives": 69,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:INOXWIND",
+            "n_picks": 67,
+            "n_positives": 18,
+            "hit_rate": 0.26865671641791045
+          },
+          {
+            "ticker": "NSE:FACT",
+            "n_picks": 63,
+            "n_positives": 28,
+            "hit_rate": 0.4444444444444444
+          },
+          {
+            "ticker": "NSE:SCHAEFFLER",
+            "n_picks": 57,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:IRFC",
+            "n_picks": 56,
+            "n_positives": 18,
+            "hit_rate": 0.32142857142857145
+          },
+          {
+            "ticker": "NSE:ASAHIINDIA",
+            "n_picks": 54,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BRIGADE",
+            "n_picks": 51,
+            "n_positives": 22,
+            "hit_rate": 0.43137254901960786
+          },
+          {
+            "ticker": "NSE:ERIS",
+            "n_picks": 51,
+            "n_positives": 1,
+            "hit_rate": 0.0196078431372549
+          },
+          {
+            "ticker": "NSE:IDEA",
+            "n_picks": 51,
+            "n_positives": 7,
+            "hit_rate": 0.13725490196078433
+          },
+          {
+            "ticker": "NSE:RADICO",
+            "n_picks": 48,
+            "n_positives": 14,
+            "hit_rate": 0.2916666666666667
+          },
+          {
+            "ticker": "NSE:GVT&D",
+            "n_picks": 42,
+            "n_positives": 35,
+            "hit_rate": 0.8333333333333334
+          },
+          {
+            "ticker": "NSE:GALLANTT",
+            "n_picks": 40,
+            "n_positives": 39,
+            "hit_rate": 0.975
+          },
+          {
+            "ticker": "NSE:CAPLIPOINT",
+            "n_picks": 38,
+            "n_positives": 31,
+            "hit_rate": 0.8157894736842105
+          },
+          {
+            "ticker": "NSE:JBCHEPHARM",
+            "n_picks": 38,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HBLENGINE",
+            "n_picks": 37,
+            "n_positives": 30,
+            "hit_rate": 0.8108108108108109
+          },
+          {
+            "ticker": "NSE:CARBORUNIV",
+            "n_picks": 34,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CHOLAHLDNG",
+            "n_picks": 34,
+            "n_positives": 14,
+            "hit_rate": 0.4117647058823529
+          },
+          {
+            "ticker": "NSE:MMTC",
+            "n_picks": 33,
+            "n_positives": 33,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JUBLPHARMA",
+            "n_picks": 26,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KEC",
+            "n_picks": 25,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:DCMSHRIRAM",
+            "n_picks": 23,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HAL",
+            "n_picks": 20,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:KPRMILL",
+            "n_picks": 20,
+            "n_positives": 1,
+            "hit_rate": 0.05
+          },
+          {
+            "ticker": "NSE:BSE",
+            "n_picks": 18,
+            "n_positives": 17,
+            "hit_rate": 0.9444444444444444
+          },
+          {
+            "ticker": "NSE:KPIL",
+            "n_picks": 18,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:IREDA",
+            "n_picks": 17,
+            "n_positives": 17,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ZENTEC",
+            "n_picks": 17,
+            "n_positives": 15,
+            "hit_rate": 0.8823529411764706
+          },
+          {
+            "ticker": "NSE:GRAVITA",
+            "n_picks": 16,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:EMAMILTD",
+            "n_picks": 15,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:AJANTPHARM",
+            "n_picks": 14,
+            "n_positives": 1,
+            "hit_rate": 0.07142857142857142
+          },
+          {
+            "ticker": "NSE:MRPL",
+            "n_picks": 14,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NLCINDIA",
+            "n_picks": 14,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:COCHINSHIP",
+            "n_picks": 13,
+            "n_positives": 6,
+            "hit_rate": 0.46153846153846156
+          },
+          {
+            "ticker": "NSE:JPPOWER",
+            "n_picks": 13,
+            "n_positives": 12,
+            "hit_rate": 0.9230769230769231
+          },
+          {
+            "ticker": "NSE:ELGIEQUIP",
+            "n_picks": 12,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:OIL",
+            "n_picks": 12,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:PFIZER",
+            "n_picks": 12,
+            "n_positives": 4,
+            "hit_rate": 0.3333333333333333
+          },
+          {
+            "ticker": "NSE:AMBUJACEM",
+            "n_picks": 11,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:IFCI",
+            "n_picks": 11,
+            "n_positives": 11,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:NAM-INDIA",
+            "n_picks": 11,
+            "n_positives": 10,
+            "hit_rate": 0.9090909090909091
+          },
+          {
+            "ticker": "NSE:ADANIPORTS",
+            "n_picks": 10,
+            "n_positives": 1,
+            "hit_rate": 0.1
+          },
+          {
+            "ticker": "NSE:CESC",
+            "n_picks": 10,
+            "n_positives": 2,
+            "hit_rate": 0.2
+          },
+          {
+            "ticker": "NSE:IRB",
+            "n_picks": 10,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JINDALSAW",
+            "n_picks": 9,
+            "n_positives": 8,
+            "hit_rate": 0.8888888888888888
+          },
+          {
+            "ticker": "NSE:NHPC",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SJVN",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TIMKEN",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ADANIENSOL",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:POWERGRID",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SOBHA",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SUPREMEIND",
+            "n_picks": 8,
+            "n_positives": 1,
+            "hit_rate": 0.125
+          },
+          {
+            "ticker": "NSE:TITAGARH",
+            "n_picks": 8,
+            "n_positives": 8,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:3MINDIA",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ADANIENT",
+            "n_picks": 7,
+            "n_positives": 2,
+            "hit_rate": 0.2857142857142857
+          },
+          {
+            "ticker": "NSE:SAREGAMA",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CENTRALBK",
+            "n_picks": 6,
+            "n_positives": 6,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ICICIPRULI",
+            "n_picks": 6,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NBCC",
+            "n_picks": 6,
+            "n_positives": 6,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:NEULANDLAB",
+            "n_picks": 6,
+            "n_positives": 4,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:VTL",
+            "n_picks": 6,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:AMBER",
+            "n_picks": 5,
+            "n_positives": 5,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:TATAINVEST",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TECHNOE",
+            "n_picks": 5,
+            "n_positives": 4,
+            "hit_rate": 0.8
+          },
+          {
+            "ticker": "NSE:WOCKPHARMA",
+            "n_picks": 5,
+            "n_positives": 3,
+            "hit_rate": 0.6
+          },
+          {
+            "ticker": "NSE:AEGISLOG",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CANBK",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CGCL",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:EIHOTEL",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ENDURANCE",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:GLAXO",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JWL",
+            "n_picks": 4,
+            "n_positives": 4,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:NATCOPHARM",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:PHOENIXLTD",
+            "n_picks": 4,
+            "n_positives": 4,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:SUNDARMFIN",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ANANTRAJ",
+            "n_picks": 3,
+            "n_positives": 2,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:BEML",
+            "n_picks": 3,
+            "n_positives": 3,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ENGINERSIN",
+            "n_picks": 3,
+            "n_positives": 2,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:GAIL",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:INDIACEM",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:INDIANB",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:INTELLECT",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JSWDULUX",
+            "n_picks": 3,
+            "n_positives": 3,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:PRESTIGE",
+            "n_picks": 3,
+            "n_positives": 2,
+            "hit_rate": 0.6666666666666666
+          },
+          {
+            "ticker": "NSE:ACE",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BHARATFORG",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:BHEL",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:CUMMINSIND",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:ESCORTS",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:FSL",
+            "n_picks": 2,
+            "n_positives": 1,
+            "hit_rate": 0.5
+          },
+          {
+            "ticker": "NSE:GRANULES",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:IIFL",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:IPCALAB",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NEWGEN",
+            "n_picks": 2,
+            "n_positives": 1,
+            "hit_rate": 0.5
+          },
+          {
+            "ticker": "NSE:SARDAEN",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SCI",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:THERMAX",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:TVSMOTOR",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:UNOMINDA",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:APARINDS",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:BAJAJHLDNG",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BBTC",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:BDL",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:CHENNPETRO",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:GILLETTE",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:GMDCLTD",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:HUDCO",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:ITI",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:JMFINANCIL",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:JUBLFOOD",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:M&MFIN",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:MINDACORP",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NATIONALUM",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:NAUKRI",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:OLECTRA",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:PFC",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:PGEL",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:POLYMED",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NSE:SPLPETRO",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NSE:SWANCORP",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2023Q3",
+            "n_picks": 95,
+            "n_positives": 56,
+            "p_at_k": 0.5894736842105263,
+            "base_rate": 0.2900727245742273,
+            "lift": 2.032158263331252
+          },
+          {
+            "quarter": "2023Q4",
+            "n_picks": 305,
+            "n_positives": 210,
+            "p_at_k": 0.6885245901639344,
+            "base_rate": 0.2900727245742273,
+            "lift": 2.3736274797106836
+          },
+          {
+            "quarter": "2024Q1",
+            "n_picks": 310,
+            "n_positives": 131,
+            "p_at_k": 0.42258064516129035,
+            "base_rate": 0.2900727245742273,
+            "lift": 1.4568093080159812
+          },
+          {
+            "quarter": "2024Q2",
+            "n_picks": 305,
+            "n_positives": 99,
+            "p_at_k": 0.32459016393442625,
+            "base_rate": 0.2900727245742273,
+            "lift": 1.118995811863608
+          },
+          {
+            "quarter": "2024Q3",
+            "n_picks": 320,
+            "n_positives": 41,
+            "p_at_k": 0.128125,
+            "base_rate": 0.2900727245742273,
+            "lift": 0.44169957788366215
+          },
+          {
+            "quarter": "2024Q4",
+            "n_picks": 175,
+            "n_positives": 3,
+            "p_at_k": 0.017142857142857144,
+            "base_rate": 0.2900727245742273,
+            "lift": 0.05909848010708233
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.5411821603775024,
+        "mean": 0.14686054955881603,
+        "std": 0.04423148858434798,
+        "n_rows": 107804,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": true
+      }
+    }
+  },
+  "wall_time_total_sec": 104.74148607254028
+}

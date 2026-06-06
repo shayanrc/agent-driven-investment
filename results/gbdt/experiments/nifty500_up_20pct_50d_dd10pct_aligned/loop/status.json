@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "nifty500_up_20pct_50d_dd10pct_aligned",
+  "iter_idx": 0,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-06T18:40:26+00:00",
+  "last_heartbeat_utc": "2026-06-06T18:39:58+00:00",
+  "best_val_brier": 0.20417226873334918,
+  "stop_reason": "plateau"
+}
