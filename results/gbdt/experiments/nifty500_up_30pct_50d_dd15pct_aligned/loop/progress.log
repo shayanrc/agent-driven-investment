@@ -1,0 +1,21 @@
+2026-06-06T18:49:38+00:00 [experiment] start spec=nifty500_up_30pct_50d_dd15pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
+2026-06-06T18:49:38+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NSE (2332 trading days available from 2018-01-01)
+2026-06-06T18:49:39+00:00 [preflight] cache currency OK: 500 ticker(s) covered through 2025-04-11
+2026-06-06T18:49:39+00:00 [data] start universe=nifty500
+2026-06-06T18:49:48+00:00 [data] complete in 9.5s rows=1024677 tickers_kept=376
+2026-06-06T18:49:53+00:00 [features] loaded from universe cache (key match) in 1.3s shape=(1024677, 279)
+2026-06-06T18:50:05+00:00 [target] start
+2026-06-06T18:50:08+00:00 [heartbeat] t=00:20:08 phase=target elapsed_phase=2s elapsed_total=30s rss_mb=5303
+2026-06-06T18:50:10+00:00 [target] complete in 4.2s positive_prevalence=0.126
+2026-06-06T18:50:10+00:00 [uniqueness] start
+2026-06-06T18:50:11+00:00 [uniqueness] complete in 1.4s horizon=50 rows=1024677 ESS=1016706 inflation=1.01x
+2026-06-06T18:50:11+00:00 [loop] V1.3 sweep_row matched cell='nifty500_up_30pct_50d_dd15pct' (AUC=0.715449, R-p@10=0.213119, base_rate=0.056596)
+2026-06-06T18:50:11+00:00 [loop] start max_iter=3 callback_mode=default
+2026-06-06T18:50:38+00:00 [heartbeat] t=00:20:38 phase=loop elapsed_phase=27s elapsed_total=60s rss_mb=8302
+2026-06-06T18:51:08+00:00 [heartbeat] t=00:21:08 phase=loop elapsed_phase=57s elapsed_total=90s rss_mb=8814
+2026-06-06T18:51:38+00:00 [heartbeat] t=00:21:38 phase=loop elapsed_phase=87s elapsed_total=120s rss_mb=8814
+2026-06-06T18:51:55+00:00 [loop] LOOP COMPLETE in 103.8s best_iter=1 val_brier=0.1231 reason=plateau
+2026-06-06T18:51:55+00:00 [artifact] start
+2026-06-06T18:51:59+00:00 [artifact] complete in 4.3s -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
+2026-06-06T18:51:59+00:00 [loop] STOPPED reason=plateau
+2026-06-06T18:51:59+00:00 [experiment] complete in 141.2s
