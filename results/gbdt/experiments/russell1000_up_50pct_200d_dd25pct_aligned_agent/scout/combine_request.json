@@ -1,0 +1,24 @@
+{
+  "run_id": "russell1000_up_50pct_200d_dd25pct_aligned_agent",
+  "backend": "xgboost",
+  "prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "cap_n_configs": 50,
+  "lex_auto_compose_overlay": {
+    "eta": 0.1,
+    "gamma": 0.1,
+    "alpha": 0.1,
+    "scale_pos_weight": 4.5249482343272875
+  },
+  "zeroth_candidate_recommendation": {
+    "label": "lex_auto_compose",
+    "hp": {
+      "eta": 0.1,
+      "gamma": 0.1,
+      "alpha": 0.1,
+      "scale_pos_weight": 4.5249482343272875
+    }
+  },
+  "speed_biased_prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "scout_results_jsonl": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/scout_results.jsonl",
+  "scout_bundle_json": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/scout_bundle.json"
+}

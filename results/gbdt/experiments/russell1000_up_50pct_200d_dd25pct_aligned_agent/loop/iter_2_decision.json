@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "STOP. Mapped gamma apex: iter_0 (gamma=0.1) val_brier=0.0870 R-p@1=0.865 ← TRUE BEST; iter_1 (gamma=0.08) val_brier=0.0878 R-p@1=0.805; iter_2 (gamma=0.12) val_brier=0.0847 R-p@1=0.680. gamma=0.1 is a SHARP narrow peak on R-p@1 — confirmed by 30 combine configs (all gamma=0.1 combos with other knobs degraded R-p@1) and now 2 bracket probes. Other knobs were tested in combine (eta, alpha, max_depth, colsample, mcw, subsample, scale_pos_weight — all degrade gamma=0.1's R-p@1 by 5-50%). Further iter loop exploration would just re-confirm. CRITICAL #240 RISK: val_brier range across iters = |0.0878 - 0.0847| = 0.0031 < tie_band=0.005, L1 will enter tie-break mode. iter_2 has best val_brier (0.0847) AND smallest train_val_gap (+0.0064), so L1 may select iter_2 (R-p@1=0.680) over iter_0 (R-p@1=0.865) — the strictly-dominated-iter bug from #239. Documenting this as 2nd data point for #240."
+}
