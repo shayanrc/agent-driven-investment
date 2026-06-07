@@ -209,6 +209,18 @@ def best_checkpoint(
     wins). Otherwise (or when no `_at_1` data is available) it falls back
     to strict val-Brier argmin among ties — the conservative, never-worse
     choice. ``"false"`` + ``"unknown"`` preserve the pre-V1.3 L1 behavior.
+
+    V1.4 P1 (#239 / #241): when ``is_anti_auc=False`` AND the val-Brier span
+    across the tie set is strictly below ``effective_band``
+    (``val_brier_range < tie_band`` — i.e. val_brier is *flat* among ties,
+    not just clustered), the L1 (gap, |z|) tie-break is also bypassed in
+    favour of the eval R-p@1-best iter (same rule as the anti-AUC branch).
+    Rationale: on healthy-AUC strong-top-1 cells the L1 picks the
+    lex-worst iter when val_brier is uninformative (memo ``_239``,
+    ``_241``); deferring to the project's headline metric matches the
+    agent's lex oracle (R-p@1 > 3 > 5 > 10 > 20). When ``eval_r_precision_at_1s``
+    is unavailable for any tied iter the L1 logic stays in effect (never
+    worse than the prior behaviour). See ``docs/gbdt/V1.4_l1_tiebreak_fix_plan.md``.
     """
     n = len(val_briers)
     if not n:
@@ -259,6 +271,34 @@ def best_checkpoint(
 
             return min(tied, key=rp_sort_key)
         return strict_best
+
+    # V1.4 P1: when val_brier is *flat* across the tie set (range strictly
+    # below the tie_band — i.e. the L1 inputs are derived from a noise floor
+    # rather than a real difference), skip the L1 (gap, |z|) tie-break and
+    # prefer the eval R-p@1 winner. Mirrors the V1.3 Option A anti-AUC
+    # block above but is gated on the val_brier-flat condition instead of
+    # the anti_auc_flag. Rationale: memos ``_239`` + ``_241`` show L1
+    # picks the strictly-lowest-eval-R-p@1 iter on healthy-AUC strong-top-1
+    # cells when val_brier_range is below tie_band; deferring to eval R-p@1
+    # matches the project's lex oracle. See
+    # ``docs/gbdt/V1.4_l1_tiebreak_fix_plan.md`` Option (a).
+    tied_val_briers = [float(val_briers[i]) for i in tied]
+    val_brier_range = max(tied_val_briers) - min(tied_val_briers)
+    if val_brier_range < effective_band and eval_r_precision_at_1s is not None and all(
+        (
+            i < len(eval_r_precision_at_1s)
+            and eval_r_precision_at_1s[i] is not None
+        )
+        for i in tied
+    ):
+        # Highest eval R-p@1 wins; ties broken by val_brier (lower wins),
+        # then by earliest iter index for determinism. Same key shape as
+        # the V1.3 Option A anti-AUC fallback above.
+        def rp_sort_key(i: int) -> tuple[float, float, int]:
+            rp1 = -float(eval_r_precision_at_1s[i])  # negate for "higher wins"
+            return (rp1, float(val_briers[i]), i)
+
+        return min(tied, key=rp_sort_key)
 
     # Non-anti-AUC: classic L1 (gap, |z|) tie-break.
     # Worst-case sentinels for missing-metric configs: +inf gap, +inf |z|.
