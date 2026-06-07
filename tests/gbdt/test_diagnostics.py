@@ -186,4 +186,7 @@ def test_inner_stop_cap_fires_when_plateau_disabled():
 
 def test_best_checkpoint_picks_min():
     history = [0.30, 0.27, 0.24, 0.26, 0.25]
-    assert best_checkpoint(history) == 2
+    # V1.4 P2: best_checkpoint returns (best_idx, tiebreak_path_label).
+    best_idx, path = best_checkpoint(history)
+    assert best_idx == 2
+    assert path == "strict_val_brier"

@@ -390,15 +390,19 @@ def test_best_checkpoint_l1_disabled_on_anti_auc_falls_back_to_strict_argmin():
     gaps = [0.05, 0.04, 0.05, 0.005]
     zs = [1.0, 1.0, 1.0, 1.0]
     # Sanity: with flag != "true", the L1 tie-break picks iter 3 as before.
-    assert best_checkpoint(
+    best_idx_a, path_a = best_checkpoint(
         val_briers, train_val_gaps=gaps, spiegelhalter_zs=zs,
         tie_band=0.005, anti_auc_flag="false",
-    ) == 3
+    )
+    assert best_idx_a == 3
+    assert path_a == "classic_l1"
     # With flag == "true", L1 is auto-disabled — strict val-Brier argmin wins.
-    assert best_checkpoint(
+    best_idx_b, path_b = best_checkpoint(
         val_briers, train_val_gaps=gaps, spiegelhalter_zs=zs,
         tie_band=0.005, anti_auc_flag="true",
-    ) == 1
+    )
+    assert best_idx_b == 1
+    assert path_b == "strict_val_brier"
 
 
 def test_best_checkpoint_anti_auc_tie_breaks_on_eval_rp1_when_supplied():
@@ -408,11 +412,13 @@ def test_best_checkpoint_anti_auc_tie_breaks_on_eval_rp1_when_supplied():
     # Iters 1 + 3 are tied within the band [0.200, 0.205]. Iter 3 has the
     # higher eval R-p@1.
     eval_rp1 = [0.10, 0.30, 0.05, 0.55]
-    assert best_checkpoint(
+    best_idx, path = best_checkpoint(
         val_briers, train_val_gaps=None, spiegelhalter_zs=None,
         tie_band=0.005, anti_auc_flag="true",
         eval_r_precision_at_1s=eval_rp1,
-    ) == 3
+    )
+    assert best_idx == 3
+    assert path == "anti_auc_eval_rp1"
 
 
 def test_best_checkpoint_anti_auc_falls_back_when_eval_rp1_partial():
@@ -420,11 +426,13 @@ def test_best_checkpoint_anti_auc_falls_back_when_eval_rp1_partial():
     val-Brier argmin (no mixed-metric ranking)."""
     val_briers = [0.30, 0.200, 0.28, 0.203]
     eval_rp1 = [0.10, None, 0.05, 0.55]  # iter 1 missing
-    assert best_checkpoint(
+    best_idx, path = best_checkpoint(
         val_briers, train_val_gaps=None, spiegelhalter_zs=None,
         tie_band=0.005, anti_auc_flag="true",
         eval_r_precision_at_1s=eval_rp1,
-    ) == 1  # strict val-Brier winner
+    )
+    assert best_idx == 1  # strict val-Brier winner
+    assert path == "strict_val_brier"
 
 
 def test_best_checkpoint_unknown_flag_preserves_l1_behavior():
@@ -432,10 +440,12 @@ def test_best_checkpoint_unknown_flag_preserves_l1_behavior():
     gaps = [0.05, 0.04, 0.05, 0.005]
     zs = [1.0, 1.0, 1.0, 1.0]
     # Default flag is "unknown" → L1 active.
-    assert best_checkpoint(
+    best_idx, path = best_checkpoint(
         val_briers, train_val_gaps=gaps, spiegelhalter_zs=zs,
         tie_band=0.005,
-    ) == 3
+    )
+    assert best_idx == 3
+    assert path == "classic_l1"
 
 
 # ---------------------------------------------------------------------------

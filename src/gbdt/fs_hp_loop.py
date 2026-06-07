@@ -53,7 +53,21 @@ default behavior of :func:`_resolve_tie_band` no longer consults
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Literal, Sequence
+
+
+# V1.4 P2 — tie-break path labels emitted by ``best_checkpoint``. The label
+# identifies which conditional branch produced the returned iter, so
+# downstream artifacts (``metrics.json::loop.tiebreak_path``, ``report.md``)
+# can surface "L1 fired but fell back to eval R-p@1-best" instead of just
+# "best iter = N". Single source of truth for the label set.
+TiebreakPath = Literal[
+    "strict_val_brier",        # short-circuit to argmin (no tie-break entered)
+    "anti_auc_eval_rp1",       # V1.3 Option A — anti-AUC eval R-p@1 fallback
+    "v14_val_flat_eval_rp1",   # V1.4 P1 — non-anti-AUC val_brier-flat fallback
+    "classic_l1",              # historical gap + |z| tie-break
+    "l1_fallthrough",          # Bug #216 — L1 tail with no metrics present
+]
 
 
 def inner_stop_check(
@@ -163,8 +177,18 @@ def best_checkpoint(
     plateau_threshold: float | None = None,
     anti_auc_flag: str = "unknown",
     eval_r_precision_at_1s: Sequence[float | None] | None = None,
-) -> int:
-    """Return the index of the best checkpoint to ship.
+) -> tuple[int, TiebreakPath]:
+    """Return ``(best_index, tiebreak_path_label)``.
+
+    V1.4 P2: the function returns a 2-tuple — the chosen iter index AND a
+    label identifying which branch produced it. The label is one of
+    :data:`TiebreakPath` (5 values: ``strict_val_brier``, ``anti_auc_eval_rp1``,
+    ``v14_val_flat_eval_rp1``, ``classic_l1``, ``l1_fallthrough``). Callers
+    that only need the index can unpack via ``best_i, _ = best_checkpoint(...)``;
+    callers that surface the decision (``train.py`` → ``WalkForwardResult`` →
+    ``metrics.json::loop.tiebreak_path`` → ``report.md``) thread the label
+    through. Pre-P2 callers using a bare ``int`` will break — caller surface
+    is intentionally small (one production call site + the unit-test file).
 
     Default behaviour (no tie-break inputs): the strict val-Brier ``argmin``,
     bit-for-bit identical to the v1 contract.
@@ -235,11 +259,11 @@ def best_checkpoint(
     # UNLESS eval_r_precision_at_1s is available, in which case we expand the
     # tie set and break on eval R-p@1 (plan § 3.5).
     if train_val_gaps is None and spiegelhalter_zs is None and not is_anti_auc:
-        return strict_best
+        return strict_best, "strict_val_brier"
 
     effective_band = _resolve_tie_band(tie_band, plateau_threshold)
     if effective_band <= 0.0:
-        return strict_best
+        return strict_best, "strict_val_brier"
 
     min_vb = float(val_briers[strict_best])
     threshold = min_vb + effective_band
@@ -247,7 +271,7 @@ def best_checkpoint(
     # Find the tie set (all configs within the band).
     tied = [i for i in range(n) if float(val_briers[i]) <= threshold]
     if len(tied) <= 1:
-        return strict_best
+        return strict_best, "strict_val_brier"
 
     if is_anti_auc:
         # V1.3 Option A: skip the L1 gap+Z tie-break (provably wrong on
@@ -269,8 +293,13 @@ def best_checkpoint(
                 rp1 = -float(eval_r_precision_at_1s[i])  # negate for "higher wins"
                 return (rp1, float(val_briers[i]), i)
 
-            return min(tied, key=rp_sort_key)
-        return strict_best
+            return min(tied, key=rp_sort_key), "anti_auc_eval_rp1"
+        # eval R-p@1 unavailable for the tied set → conservative strict
+        # val-Brier argmin among ties. Label it ``strict_val_brier`` because
+        # behaviourally that's what's returned (the anti-AUC branch made the
+        # decision NOT to run L1, but the actual chosen iter is the strict
+        # argmin — same iter the no-tiebreak fast path would have picked).
+        return strict_best, "strict_val_brier"
 
     # V1.4 P1: when val_brier is *flat* across the tie set (range strictly
     # below the tie_band — i.e. the L1 inputs are derived from a noise floor
@@ -298,7 +327,7 @@ def best_checkpoint(
             rp1 = -float(eval_r_precision_at_1s[i])  # negate for "higher wins"
             return (rp1, float(val_briers[i]), i)
 
-        return min(tied, key=rp_sort_key)
+        return min(tied, key=rp_sort_key), "v14_val_flat_eval_rp1"
 
     # Non-anti-AUC: classic L1 (gap, |z|) tie-break.
     # Worst-case sentinels for missing-metric configs: +inf gap, +inf |z|.
@@ -329,7 +358,10 @@ def best_checkpoint(
         for i in tied
     )
     if not any_l1_metric_present:
-        return strict_best
+        # Bug #216 path: L1 had nothing to break on → fall back to strict
+        # val-Brier argmin. Label distinguishes this from the no-tiebreak
+        # fast path so the report can surface it as a defensive fall-through.
+        return strict_best, "l1_fallthrough"
 
     def sort_key(i: int) -> tuple[float, float, int]:
         gap = (
@@ -344,12 +376,13 @@ def best_checkpoint(
         )
         return (gap, z, i)
 
-    return min(tied, key=sort_key)
+    return min(tied, key=sort_key), "classic_l1"
 
 
 __all__ = [
     "inner_stop_check",
     "best_checkpoint",
+    "TiebreakPath",
     "DEFAULT_TIE_BAND_FRACTION",
     "DEFAULT_TIE_BAND_ABSOLUTE",
 ]

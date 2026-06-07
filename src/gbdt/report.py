@@ -274,6 +274,16 @@ def render_report(experiment_dir: Path) -> Path:
     lines.append(f"- iterations run: {loop.get('n_iterations_run')}")
     lines.append(f"- inner stop signal: `{loop.get('inner_stop_signal')}`")
     lines.append(f"- fs_hp_loop callback_mode: `{callback_mode}`")
+    # V1.4 P2 — surface which branch in ``fs_hp_loop.best_checkpoint`` chose
+    # the best iter. The label distinguishes "L1 fired but fell back to eval
+    # R-p@1-best" (V1.4 P1) from "classic L1 (gap+|z|) winner" — they share
+    # the same iter index but the decision rationale is different. Older
+    # ``metrics.json`` files predating P2 won't carry ``tiebreak_path``; we
+    # silently skip the line in that case so resumed/legacy runs stay
+    # readable.
+    tb_path = loop.get("tiebreak_path")
+    if tb_path:
+        lines.append(f"- tie-break path: `{tb_path}` — {_tiebreak_path_description(tb_path)}")
     # ``agent_should_stop`` is the V1.1 agent-driven stop (the agent emitted
     # ``should_stop: true`` in a decision file); ``plateau`` / ``degradation`` /
     # ``cap`` are the runner's built-in inner-stop gates (fire under either mode).
@@ -573,6 +583,35 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
             f"`{block.get('flag_low_separation', False)}` |"
         )
     lines.append("")
+
+
+def _tiebreak_path_description(label: str) -> str:
+    """Human-readable expansion of the V1.4 P2 tie-break path label.
+
+    Maps the internal :data:`fs_hp_loop.TiebreakPath` codes to the sentence
+    that appears in ``report.md``. Unknown labels (forward-compat) pass
+    through verbatim so a future label added in code doesn't silently get
+    swallowed by the report renderer.
+    """
+    descriptions = {
+        "strict_val_brier": "Strict val_brier argmin (no tie-break entered)",
+        "anti_auc_eval_rp1": (
+            "Anti-AUC fallback: tie set picked by eval R-Precision@1 "
+            "(V1.3 Option A)"
+        ),
+        "v14_val_flat_eval_rp1": (
+            "Val_brier flat: tie set picked by eval R-Precision@1 "
+            "(V1.4 P1)"
+        ),
+        "classic_l1": (
+            "Classic L1 (train_val_gap + Spiegelhalter |z|)"
+        ),
+        "l1_fallthrough": (
+            "L1 sort-keys collapsed (no L1 metrics present on tied set); "
+            "strict val_brier argmin fallback (Bug #216)"
+        ),
+    }
+    return descriptions.get(label, label)
 
 
 def _algorithmic_verdict(metrics: dict) -> str:

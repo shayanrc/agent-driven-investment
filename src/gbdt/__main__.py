@@ -2473,6 +2473,14 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             "n_iterations_run": len(result.iterations),
             "best_iteration": int(result.best_iteration),
             "inner_stop_signal": result.inner_stop_signal,
+            # V1.4 P2 — which branch in ``fs_hp_loop.best_checkpoint``
+            # produced the ``best_iteration``. Surfaced into ``report.md``
+            # so readers can tell "L1 fired but fell back to eval R-p@1-best"
+            # apart from "classic L1 (gap+|z|) winner". See
+            # ``src/gbdt/fs_hp_loop.TiebreakPath`` for the 5 label values.
+            "tiebreak_path": str(
+                getattr(result, "tiebreak_path", "strict_val_brier")
+            ),
             # Issue #32 — the default FS+HP callback only nudges HPs in
             # response to overfit/cap signals; when ``max_iterations`` is
             # small (sweep mode = 3) the loop typically reuses the
