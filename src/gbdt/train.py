@@ -740,6 +740,14 @@ class WalkForwardResult:
     # default; existing specs unchanged). Populated by walk_forward_train
     # when ``backend.scout.enabled: true``.
     scout_report: dict | None = None
+    # V1.4 P2 — which branch in ``fs_hp_loop.best_checkpoint`` produced the
+    # ``best_iteration``. One of :data:`fs_hp_loop.TiebreakPath` (5 values).
+    # Surfaced into ``metrics.json::loop.tiebreak_path`` + ``report.md`` so a
+    # reader can tell "L1 fired but fell back to eval R-p@1-best" from "L1
+    # picked the gap+|z| winner" at a glance. Default ``"strict_val_brier"``
+    # preserves back-compat for any code path that constructs a
+    # ``WalkForwardResult`` without explicitly threading the label.
+    tiebreak_path: str = "strict_val_brier"
 
 
 def _carve_X_y(
@@ -1225,7 +1233,7 @@ def walk_forward_train(
             break
     if anti_auc_flag == "unknown" and resume_state is not None:
         anti_auc_flag = str(resume_state.get("anti_auc_flag", "unknown"))
-    best_i = best_checkpoint(
+    best_i, tiebreak_path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps_seq,
         spiegelhalter_zs=zs_seq,
@@ -1321,6 +1329,7 @@ def walk_forward_train(
         predictions=predictions,
         segment_dates=best_parts.get("__segment_dates__"),
         scout_report=scout_report,
+        tiebreak_path=tiebreak_path,
     )
 
 

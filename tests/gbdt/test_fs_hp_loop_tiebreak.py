@@ -41,7 +41,9 @@ from gbdt.fs_hp_loop import (
 def test_best_checkpoint_no_tiebreak_inputs_is_strict_argmin():
     # Same fixture as test_diagnostics.test_best_checkpoint_picks_min.
     val_briers = [0.30, 0.27, 0.24, 0.26, 0.25]
-    assert best_checkpoint(val_briers) == 2
+    best_idx, path = best_checkpoint(val_briers)
+    assert best_idx == 2
+    assert path == "strict_val_brier"
 
 
 def test_best_checkpoint_strict_winner_returned_when_singleton_tie_set():
@@ -49,15 +51,14 @@ def test_best_checkpoint_strict_winner_returned_when_singleton_tie_set():
     val_briers = [0.30, 0.28, 0.20, 0.25, 0.24]
     gaps = [0.001, 0.001, 0.05, 0.001, 0.001]  # iter 2 has worst gap
     zs = [1.0, 1.0, 10.0, 1.0, 1.0]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.01,
-        )
-        == 2
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.01,
     )
+    assert best_idx == 2
+    assert path == "strict_val_brier"
 
 
 def test_best_checkpoint_tie_band_zero_disables_tiebreak():
@@ -66,15 +67,14 @@ def test_best_checkpoint_tie_band_zero_disables_tiebreak():
     val_briers = [0.30, 0.28, 0.20, 0.25, 0.201]
     gaps = [0.05, 0.05, 0.05, 0.05, 0.001]
     zs = [5.0, 5.0, 5.0, 5.0, 0.5]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.0,
-        )
-        == 2
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.0,
     )
+    assert best_idx == 2
+    assert path == "strict_val_brier"
 
 
 # ---------------------------------------------------------------------------
@@ -87,13 +87,14 @@ def test_best_checkpoint_lower_gap_wins_within_band():
     val_briers = [0.30, 0.200, 0.28, 0.203]
     gaps = [0.05, 0.04, 0.05, 0.005]
     zs = [1.0, 1.0, 1.0, 1.0]
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
         tie_band=0.005,
     )
     assert out == 3
+    assert path == "classic_l1"
 
 
 # ---------------------------------------------------------------------------
@@ -106,15 +107,14 @@ def test_best_checkpoint_lower_abs_z_breaks_gap_ties():
     val_briers = [0.200, 0.30, 0.202]
     gaps = [0.005, 0.05, 0.005]
     zs = [10.0, 1.0, 0.5]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.005,
-        )
-        == 2
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
     )
+    assert best_idx == 2
+    assert path == "classic_l1"
 
 
 def test_best_checkpoint_abs_z_treats_negative_as_distance():
@@ -122,15 +122,14 @@ def test_best_checkpoint_abs_z_treats_negative_as_distance():
     val_briers = [0.200, 0.201, 0.202]
     gaps = [0.01, 0.01, 0.01]
     zs = [-5.0, 1.0, -2.0]  # iter 1 has |z|=1 (closest to 0)
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.005,
-        )
-        == 1
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
     )
+    assert best_idx == 1
+    assert path == "classic_l1"
 
 
 # ---------------------------------------------------------------------------
@@ -142,15 +141,14 @@ def test_best_checkpoint_earlier_index_breaks_full_tie():
     val_briers = [0.200, 0.201, 0.202]
     gaps = [0.01, 0.01, 0.01]
     zs = [1.0, 1.0, 1.0]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.005,
-        )
-        == 0
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
     )
+    assert best_idx == 0
+    assert path == "classic_l1"
 
 
 # ---------------------------------------------------------------------------
@@ -207,27 +205,25 @@ def test_best_checkpoint_explicit_tie_band_overrides_plateau_default():
     zs = [5.0, 5.0, 0.5]
 
     # With default tie_band (0.005), iter 2 is outside the band [0.200, 0.205]
-    # → strict winner iter 0.
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            plateau_threshold=0.005,  # ignored by default-resolver post-#223
-        )
-        == 0
+    # → strict winner iter 0 (singleton tie set short-circuit).
+    best_idx_a, path_a = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        plateau_threshold=0.005,  # ignored by default-resolver post-#223
     )
+    assert best_idx_a == 0
+    assert path_a == "strict_val_brier"
     # With an explicit widening, iter 2 enters the band and wins on gap.
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.05,
-            plateau_threshold=0.005,
-        )
-        == 2
+    best_idx_b, path_b = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.05,
+        plateau_threshold=0.005,
     )
+    assert best_idx_b == 2
+    assert path_b == "classic_l1"
 
 
 def test_best_checkpoint_anti_auc_workaround_does_not_collapse_tie_band():
@@ -253,13 +249,14 @@ def test_best_checkpoint_anti_auc_workaround_does_not_collapse_tie_band():
     # is the right pick because it's tied within tie_band of the val-Brier
     # min AND has the highest eval R-p@1.
     # Apply the SKILL.md-recommended workaround (plateau_threshold=0.0001).
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=None, spiegelhalter_zs=None,
         plateau_threshold=0.0001,  # #204 workaround — tie_band MUST NOT collapse to 5e-5
         anti_auc_flag="true",
         eval_r_precision_at_1s=eval_rp1,
     )
+    assert path == "anti_auc_eval_rp1"
     # Post-fix: iter 4 (or any other R-p@1=0.717 iter within the band) wins.
     # iter 4 is structurally first among ties; eval R-p@1 ties broken by
     # val_brier (lower wins) → iter 4 (0.2246) beats iter 7 (0.2246) only
@@ -284,15 +281,14 @@ def test_best_checkpoint_none_gap_treated_as_worst_case():
     val_briers = [0.30, 0.200, 0.203]
     gaps = [0.05, None, 0.001]
     zs = [1.0, 0.5, 0.5]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.005,
-        )
-        == 2
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
     )
+    assert best_idx == 2
+    assert path == "classic_l1"
 
 
 def test_best_checkpoint_none_z_treated_as_worst_case():
@@ -300,15 +296,14 @@ def test_best_checkpoint_none_z_treated_as_worst_case():
     val_briers = [0.30, 0.200, 0.203]
     gaps = [0.05, 0.001, 0.001]
     zs = [1.0, None, 0.5]
-    assert (
-        best_checkpoint(
-            val_briers,
-            train_val_gaps=gaps,
-            spiegelhalter_zs=zs,
-            tie_band=0.005,
-        )
-        == 2
+    best_idx, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
     )
+    assert best_idx == 2
+    assert path == "classic_l1"
 
 
 # ---------------------------------------------------------------------------
@@ -340,13 +335,14 @@ def test_best_checkpoint_216_all_tied_l1_metrics_none_returns_strict_argmin():
     # Pre-V1.3 resume case — all L1 metrics absent.
     gaps_all_none: list[float | None] = [None] * 7
     zs_all_none: list[float | None] = [None] * 7
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps_all_none,
         spiegelhalter_zs=zs_all_none,
         plateau_threshold=0.005,  # cell-5's spec value; tie_band defaults
                                   # to 0.005 absolute (post-#223).
     )
+    assert path == "l1_fallthrough"
     assert out == 6, (
         f"expected iter 6 (strict val-Brier argmin) when no tied iter has L1 "
         f"metrics; got iter {out} (val_brier={val_briers[out]}). The bug "
@@ -375,12 +371,13 @@ def test_best_checkpoint_216_pre_fix_behavior_demonstration():
         "tied set)"
     )
     # Post-fix real call: strict argmin (iter 6) wins.
-    post_fix_winner = best_checkpoint(
+    post_fix_winner, post_fix_path = best_checkpoint(
         val_briers,
         train_val_gaps=[None] * 7,
         spiegelhalter_zs=[None] * 7,
         tie_band=0.005,
     )
+    assert post_fix_path == "l1_fallthrough"
     assert post_fix_winner == 6, (
         f"post-fix should pick the strict val-Brier argmin (iter 6) when "
         f"no tied iter has L1 metrics present; got iter {post_fix_winner}"
@@ -398,12 +395,13 @@ def test_best_checkpoint_216_some_tied_present_some_none_uses_l1():
     val_briers = [0.30, 0.30, 0.30, 0.30, 0.30, 0.235, 0.234]
     gaps = [None, None, None, None, None, None, 0.039]
     zs = [None, None, None, None, None, None, 3.37]
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
         tie_band=0.005,
     )
+    assert path == "classic_l1"
     assert out == 6, (
         f"expected iter 6 (present L1 with finite gap/z) to beat iter 5 "
         f"(None L1, worst-case sentinel); got iter {out}"
@@ -416,7 +414,7 @@ def test_best_checkpoint_216_no_regression_on_v13_anti_auc():
     all-None check, so its behavior is unchanged."""
     val_briers = [0.250, 0.249, 0.248]
     # All L1 metrics None — same shape as the cell-5 trajectory.
-    out_anti_auc = best_checkpoint(
+    out_anti_auc, path_anti_auc = best_checkpoint(
         val_briers,
         train_val_gaps=[None, None, None],
         spiegelhalter_zs=[None, None, None],
@@ -424,12 +422,17 @@ def test_best_checkpoint_216_no_regression_on_v13_anti_auc():
         anti_auc_flag="true",  # V1.3 auto-disable engaged
         eval_r_precision_at_1s=None,  # no R-p@1 series → strict_best fallback
     )
+    # When the anti-AUC branch falls back to strict argmin (no R-p@1 series
+    # for the tied set), the path label reports the behavioural outcome
+    # (``strict_val_brier``) — the chosen iter is the strict-argmin winner,
+    # not an L1 or eval-R-p@1 tie-break result.
+    assert path_anti_auc == "strict_val_brier"
     assert out_anti_auc == 2, (
         f"anti-AUC branch should fall back to strict argmin (iter 2) when "
         f"R-p@1 unavailable; got iter {out_anti_auc}"
     )
     # And with R-p@1 supplied: iter 0 has highest R-p@1 → wins.
-    out_anti_auc_rp1 = best_checkpoint(
+    out_anti_auc_rp1, path_anti_auc_rp1 = best_checkpoint(
         val_briers,
         train_val_gaps=[None, None, None],
         spiegelhalter_zs=[None, None, None],
@@ -437,6 +440,7 @@ def test_best_checkpoint_216_no_regression_on_v13_anti_auc():
         anti_auc_flag="true",
         eval_r_precision_at_1s=[0.8, 0.5, 0.6],
     )
+    assert path_anti_auc_rp1 == "anti_auc_eval_rp1"
     assert out_anti_auc_rp1 == 0, (
         f"anti-AUC branch with R-p@1 supplied should pick the highest "
         f"R-p@1 winner (iter 0); got iter {out_anti_auc_rp1}"
@@ -454,16 +458,18 @@ def test_best_checkpoint_empty_raises():
 
 
 def test_best_checkpoint_single_entry_returns_zero():
-    assert best_checkpoint([0.25]) == 0
-    assert (
-        best_checkpoint(
-            [0.25],
-            train_val_gaps=[0.01],
-            spiegelhalter_zs=[1.0],
-            tie_band=0.005,
-        )
-        == 0
+    best_idx_a, path_a = best_checkpoint([0.25])
+    assert best_idx_a == 0
+    assert path_a == "strict_val_brier"
+    best_idx_b, path_b = best_checkpoint(
+        [0.25],
+        train_val_gaps=[0.01],
+        spiegelhalter_zs=[1.0],
+        tie_band=0.005,
     )
+    assert best_idx_b == 0
+    # Singleton tie set → short-circuit to strict val-Brier argmin.
+    assert path_b == "strict_val_brier"
 
 
 # ---------------------------------------------------------------------------
@@ -496,7 +502,7 @@ def test_non_anti_auc_val_brier_flat_falls_back_to_eval_r_p_1_best():
     zs = [1.0, 5.0, 10.0]
     # eval R-p@1 anti-correlated with L1 — iter 2 is the lex oracle winner.
     eval_rp1 = [0.500, 0.600, 0.700]
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
@@ -504,6 +510,7 @@ def test_non_anti_auc_val_brier_flat_falls_back_to_eval_r_p_1_best():
         anti_auc_flag="false",
         eval_r_precision_at_1s=eval_rp1,
     )
+    assert path == "v14_val_flat_eval_rp1"
     assert out == 2, (
         f"expected iter 2 (highest eval R-p@1={eval_rp1[2]}) on the V1.4 P1 "
         f"non-anti-AUC val_brier-flat fallback; got iter {out} "
@@ -532,7 +539,7 @@ def test_non_anti_auc_val_brier_sharp_L1_stays():
     gaps = [0.050, 0.020, 0.001]
     zs = [10.0, 5.0, 0.5]
     eval_rp1 = [0.300, 0.500, 0.900]
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
@@ -540,6 +547,9 @@ def test_non_anti_auc_val_brier_sharp_L1_stays():
         anti_auc_flag="false",
         eval_r_precision_at_1s=eval_rp1,
     )
+    # Singleton tie set short-circuits to ``strict_val_brier`` — the V1.4 P1
+    # gate is never entered.
+    assert path == "strict_val_brier"
     assert out == 0, (
         f"expected iter 0 (strict val-Brier argmin) when val_brier range "
         f"({max(val_briers) - min(val_briers):.3f}) exceeds tie_band "
@@ -565,7 +575,7 @@ def test_anti_auc_path_unchanged_by_v14_p1_patch():
     gaps = [0.001, 0.020, 0.050]  # L1 would prefer iter 0 if it ran
     zs = [1.0, 5.0, 10.0]
     eval_rp1 = [0.500, 0.600, 0.700]
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
@@ -575,6 +585,7 @@ def test_anti_auc_path_unchanged_by_v14_p1_patch():
                                # block.
         eval_r_precision_at_1s=eval_rp1,
     )
+    assert path == "anti_auc_eval_rp1"
     assert out == 2, (
         f"V1.3 Option A regression: expected iter 2 (highest eval R-p@1) on "
         f"the anti-AUC branch; got iter {out}. The V1.4 P1 patch must leave "
@@ -629,15 +640,104 @@ def test_best_checkpoint_recovers_187_finding():
     # All 9 configs span 0.16859–0.16967 = 0.00108 absolute, well within the
     # default tie_band of 0.0025 → entire grid is one tie set. The lowest-gap
     # config (iter 4, gap 0.00163) should win.
-    out = best_checkpoint(
+    out, path = best_checkpoint(
         val_briers,
         train_val_gaps=gaps,
         spiegelhalter_zs=zs,
         plateau_threshold=0.005,  # default → tie_band=0.0025
     )
+    assert path == "classic_l1"
     assert out == 4, (
         f"expected iter 4 (d4/λ6, gap 0.00163, |z|=6.26) to win at default "
         f"tie_band; got iter {out} (gap={gaps[out]}, |z|={abs(zs[out])})"
     )
     # And critically: the winner is NOT one of the high-gap overfit configs.
     assert gaps[out] <= 0.005, "winner should have low train-val gap"
+
+
+# ---------------------------------------------------------------------------
+# V1.4 P2 — tie-break path labels
+# ---------------------------------------------------------------------------
+
+
+def test_tiebreak_path_label_anti_auc():
+    """V1.4 P2 — when the V1.3 Option A anti-AUC fallback fires (anti_auc_flag
+    'true' + non-singleton tie set + eval R-p@1 present for all tied), the
+    returned label is ``anti_auc_eval_rp1``.
+
+    Same fixture shape as ``test_anti_auc_path_unchanged_by_v14_p1_patch`` —
+    here we focus on the LABEL contract, not the chosen iter (which is
+    already covered there). The label is the load-bearing piece for
+    ``report.md`` to render "Anti-AUC fallback: tie set picked by eval
+    R-Precision@1 (V1.3 Option A)".
+    """
+    val_briers = [0.100, 0.101, 0.102]
+    gaps = [0.001, 0.020, 0.050]
+    zs = [1.0, 5.0, 10.0]
+    eval_rp1 = [0.500, 0.600, 0.700]
+    _, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+        anti_auc_flag="true",
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    assert path == "anti_auc_eval_rp1", (
+        f"expected anti_auc_eval_rp1 label when V1.3 Option A fallback fires; "
+        f"got {path!r}"
+    )
+
+
+def test_tiebreak_path_label_v14_val_flat():
+    """V1.4 P2 — when the V1.4 P1 non-anti-AUC val-Brier-flat fallback fires
+    (anti_auc_flag 'false' + val_brier_range < tie_band + eval R-p@1 present
+    for all tied), the returned label is ``v14_val_flat_eval_rp1``.
+
+    The label distinguishes this branch from ``anti_auc_eval_rp1`` (same
+    output mechanism — eval R-p@1-best iter — but a different gate condition)
+    so ``report.md`` can render "Val_brier flat: tie set picked by eval
+    R-Precision@1 (V1.4 P1)".
+    """
+    val_briers = [0.100, 0.101, 0.102]
+    gaps = [0.001, 0.020, 0.050]
+    zs = [1.0, 5.0, 10.0]
+    eval_rp1 = [0.500, 0.600, 0.700]
+    _, path = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+        anti_auc_flag="false",
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    assert path == "v14_val_flat_eval_rp1", (
+        f"expected v14_val_flat_eval_rp1 label when V1.4 P1 fallback fires; "
+        f"got {path!r}"
+    )
+
+
+def test_tiebreak_path_label_set_is_exhaustive():
+    """V1.4 P2 — pin the label set so accidental new branches are forced to
+    register a new code in :data:`fs_hp_loop.TiebreakPath` instead of being
+    silently swallowed by the report renderer. If you add a new branch to
+    ``best_checkpoint`` AND it returns a label outside this set, this test
+    fails and you must update :func:`report._tiebreak_path_description` too.
+    """
+    from typing import get_args
+
+    from gbdt.fs_hp_loop import TiebreakPath
+
+    expected = {
+        "strict_val_brier",
+        "anti_auc_eval_rp1",
+        "v14_val_flat_eval_rp1",
+        "classic_l1",
+        "l1_fallthrough",
+    }
+    actual = set(get_args(TiebreakPath))
+    assert actual == expected, (
+        f"TiebreakPath label set drifted; expected {expected}, got {actual}. "
+        f"Update both the Literal in fs_hp_loop.py AND the description map "
+        f"in report._tiebreak_path_description if you add/remove a label."
+    )
