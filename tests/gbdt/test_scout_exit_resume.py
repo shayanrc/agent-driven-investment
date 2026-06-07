@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
+from gbdt.__main__ import _handle_scout_cycles_agent_mode
 from gbdt.scout_io import (
     COMBINE_DECISION_MAX_CONFIGS,
     CombineDecisionError,
@@ -239,3 +241,113 @@ def test_detect_cycle_state_at_cycle3(tmp_path):
     p2.write_text(json.dumps({"hp": {"max_depth": 2}}))
     state = detect_cycle_state(tmp_path)
     assert state.has_iter_0_decision is True
+
+
+# ---------------------------------------------------------------------------
+# Bug #248 regression — cycle-2-complete pause path
+# ---------------------------------------------------------------------------
+
+
+def test_post_combine_results_pauses_for_iter_0_decision_no_scout_rerun(
+    tmp_path, monkeypatch,
+):
+    """Bug #248 — when combine_results.json is present but iter_0_decision.json
+    is not, ``_handle_scout_cycles_agent_mode`` must PAUSE (return None) and
+    leave the cycle-1 artifacts (combine_request.json, scout_results.jsonl)
+    untouched. Pre-fix, the conditional ladder fell through to cycle 1 and
+    re-ran FS-prefit + scout response curves every --resume, clobbering
+    combine_request.json + bumping its mtime each time.
+    """
+    import os
+    import time
+
+    # Stage the artifact dir: cycle 1 complete (combine_request +
+    # scout_bundle + scout_results), cycle 2 complete (combine_decision +
+    # combine_results), but NO iter_0_decision.json yet.
+    write_scout_results(tmp_path, [
+        {"config": {"knob_name": "defaults"}, "val_brier": 0.25, "status": "ok"},
+    ])
+    write_scout_bundle(tmp_path, {"run_id": "test", "n_configs_total": 1})
+    write_combine_request(tmp_path, {"prompt": "test", "run_id": "test"})
+    cdp = combine_decision_path(tmp_path)
+    cdp.write_text(json.dumps({"configs": [{"hp": {"max_depth": 2}}]}))
+    write_combine_results(tmp_path, [{"index": 0, "status": "ok"}])
+    assert not iter_0_decision_path(tmp_path).exists()
+
+    # Capture pre-call mtimes + content of the cycle-1 artifacts. Sleep a
+    # touch so any rewrite would advance mtime past the resolution floor.
+    cr_path = combine_request_path(tmp_path)
+    sr_path = scout_results_path(tmp_path)
+    cr_mtime_before = cr_path.stat().st_mtime_ns
+    sr_mtime_before = sr_path.stat().st_mtime_ns
+    cr_text_before = cr_path.read_text()
+    sr_text_before = sr_path.read_text()
+    time.sleep(0.01)
+
+    # Hard-fail the carve so if the cycle-1 fall-through path runs we
+    # see it loudly. The new pause branch sits BEFORE the carve, so this
+    # patch must not be exercised.
+    from gbdt import train as gbdt_train
+
+    def _carve_should_not_run(*_args, **_kwargs):
+        raise AssertionError(
+            "_carve_X_y was called — the cycle-2-complete pause branch did "
+            "NOT trigger; cycle 1 fall-through happened (Bug #248 regression)."
+        )
+
+    monkeypatch.setattr(gbdt_train, "_carve_X_y", _carve_should_not_run)
+
+    milestones: list[str] = []
+
+    def milestone(msg: str) -> None:
+        milestones.append(msg)
+
+    status = MagicMock()
+    heartbeat = MagicMock()
+    progress_log = MagicMock()
+
+    # Most other params are unused in the pause path. Sentinels make any
+    # accidental dereference obvious.
+    sentinel = MagicMock()
+    result = _handle_scout_cycles_agent_mode(
+        out_dir=tmp_path,
+        spec={},
+        run_id="test",
+        spec_path=Path("unused.yaml"),
+        panel=sentinel, X=sentinel, y=sentinel, sample_weights=None,
+        split=sentinel, universe_calendar=None,
+        backend_library="catboost",
+        hp_starting={"iterations": 30, "depth": 3},
+        calibration_method="native",
+        calibration_z_threshold=2.0,
+        random_seed=0,
+        scout_cfg={"enabled": True},
+        fs_prefit_cfg={"enabled": True},
+        milestone=milestone,
+        heartbeat=heartbeat,
+        status=status,
+        progress_log=progress_log,
+    )
+
+    # 1. The pause returned None (= cleanly exit + wait for agent).
+    assert result is None
+    # 2. status.update was called with awaiting_decision=True (visually
+    # parallel to cycle 1's status.update).
+    status.update.assert_any_call(
+        phase="scout_cycle_2", awaiting_decision=True,
+    )
+    # 3. A milestone log line surfaces the pause reason.
+    assert any(
+        "cycle 2 already complete" in m
+        and "awaiting iter_0_decision.json" in m
+        for m in milestones
+    ), f"expected pause milestone in {milestones!r}"
+    # 4. Cycle-1 artifacts UNTOUCHED — no rewrite, no mtime bump.
+    assert cr_path.stat().st_mtime_ns == cr_mtime_before, (
+        "combine_request.json mtime advanced — scout cycle 1 re-ran"
+    )
+    assert sr_path.stat().st_mtime_ns == sr_mtime_before, (
+        "scout_results.jsonl mtime advanced — scout cycle 1 re-ran"
+    )
+    assert cr_path.read_text() == cr_text_before
+    assert sr_path.read_text() == sr_text_before

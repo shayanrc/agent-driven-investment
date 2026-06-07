@@ -761,6 +761,21 @@ def _handle_scout_cycles_agent_mode(
             "scout_report": bundle_payload,
         }
 
+    # Cycle 2-complete pause — combine_results.json is on disk but the agent
+    # has not yet written iter_0_decision.json. Bug #248 — without this
+    # explicit branch the conditional ladder fell through to cycle 1 every
+    # --resume, re-running FS-prefit + the scout response curves from scratch
+    # (~5 min per resume) and clobbering combine_request.json / scout_bundle
+    # / scout_results.jsonl. Pause cleanly here instead.
+    if cycle_state.has_combine_results and not cycle_state.has_iter_0_decision:
+        status.update(phase="scout_cycle_2", awaiting_decision=True)
+        milestone(
+            "[scout] cycle 2 already complete; awaiting iter_0_decision.json "
+            "in scout/. Agent writes scout/iter_0_decision.json and reruns "
+            "--resume."
+        )
+        return None
+
     # Carve once for cycles 1 + 2 (re-uses the same segments iter_0 will use).
     from gbdt.train import _carve_X_y
     parts = _carve_X_y(
