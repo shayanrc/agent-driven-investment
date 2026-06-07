@@ -52,7 +52,7 @@ Agent-driven mode (`callback_mode: agent_file_protocol`) — the runner pauses e
 ```
 # launch (trains iter 0, writes the bundle + checkpoint, exits at the pause)
 uv run python -m gbdt experiment <spec_path> --callback-mode agent_file_protocol
-# ... agent reads loop/iter_0_request.json, writes loop/iter_0_decision.json ...
+# ... agent reads loop/iter_0_request.json, writes scout/iter_0_decision.json ...
 # resume (applies the iter-0 decision, trains iter 1, pauses again)
 uv run python -m gbdt experiment <spec_path> --resume <run_id>
 ```
@@ -322,7 +322,7 @@ uv run python -m gbdt experiment smoke_synth.yaml --callback-mode agent_file_pro
 ```
 Read `loop/iter_0_request.json`: `iter=0`, `available_features` has the 6 features (incl. `realized_vol_20`), `diagnostics.metrics.val_brier` is set, `diagnostics.full_diagnose_available=false`. Suppose the gap is healthy and `realized_vol_20` is the lowest-importance window — write the iter-0 decision:
 ```jsonc
-// loop/iter_0_decision.json
+// scout/iter_0_decision.json
 { "iter": 0, "prune_features": ["realized_vol_20"],
   "hp_changes": { "l2_leaf_reg": 5.0, "depth": 3 },
   "should_stop": false,
