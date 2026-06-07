@@ -471,6 +471,117 @@ def test_best_checkpoint_single_entry_returns_zero():
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# V1.4 P1 — non-anti-AUC val_brier-flat fallback to eval R-p@1-best
+# ---------------------------------------------------------------------------
+
+
+def test_non_anti_auc_val_brier_flat_falls_back_to_eval_r_p_1_best():
+    """V1.4 P1 — when val_brier is flat across the tie set AND we are on the
+    non-anti-AUC branch AND every tied iter has an eval R-p@1 value, fall back
+    to eval R-p@1-best (matches the V1.3 Option A anti-AUC rule).
+
+    Fixture mirrors the #239 / #241 failure mode (memos ``_239``, ``_241``):
+    val_briers ``[0.100, 0.101, 0.102]`` — range 0.002 < default tie_band
+    0.005 → all 3 iters are tied AND the new gate fires. L1 (gap, |z|) would
+    pick iter 0 (gap 0.001, |z| 1.0 → smallest L1 sort key), but iter 2 has
+    the highest eval R-p@1 (0.700) and should win post-patch.
+    """
+    val_briers = [0.100, 0.101, 0.102]
+    # L1 metrics arranged so the pre-V1.4 L1 path would prefer iter 0:
+    #   iter 0 sort key = (0.001, 1.0, 0)
+    #   iter 1 sort key = (0.020, 5.0, 1)
+    #   iter 2 sort key = (0.050, 10.0, 2)
+    gaps = [0.001, 0.020, 0.050]
+    zs = [1.0, 5.0, 10.0]
+    # eval R-p@1 anti-correlated with L1 — iter 2 is the lex oracle winner.
+    eval_rp1 = [0.500, 0.600, 0.700]
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+        anti_auc_flag="false",
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    assert out == 2, (
+        f"expected iter 2 (highest eval R-p@1={eval_rp1[2]}) on the V1.4 P1 "
+        f"non-anti-AUC val_brier-flat fallback; got iter {out} "
+        f"(R-p@1={eval_rp1[out]}). The pre-V1.4 L1 path would have picked "
+        f"iter 0 via (gap, |z|) — the strictly-lowest-R-p@1 iter."
+    )
+
+
+def test_non_anti_auc_val_brier_sharp_L1_stays():
+    """V1.4 P1 — when val_brier has real spread (not flat) on the non-anti-AUC
+    branch, the new fallback gate (val_brier_range < tie_band) does NOT fire
+    and the tie-break path is not entered at all — the strict val-Brier
+    argmin wins.
+
+    Fixture: val_briers ``[0.100, 0.120, 0.150]`` — only iter 0 falls inside
+    the band ``[0.100, 0.105]`` (range = 0.05 ≫ tie_band 0.005), so the tie
+    set is a singleton and the function short-circuits to ``strict_best=0``
+    without entering either the V1.4 P1 fallback OR the L1 (gap, |z|) path.
+    This preserves the documented behaviour on cells where val_brier IS
+    informative (rare-event cells per ``_185`` / ``_187``).
+    """
+    val_briers = [0.100, 0.120, 0.150]
+    # Arrange L1 + eval R-p@1 so that IF the tie set were expanded, both
+    # alternatives would prefer iter 2 — proving that the function never
+    # entered tie-break mode.
+    gaps = [0.050, 0.020, 0.001]
+    zs = [10.0, 5.0, 0.5]
+    eval_rp1 = [0.300, 0.500, 0.900]
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+        anti_auc_flag="false",
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    assert out == 0, (
+        f"expected iter 0 (strict val-Brier argmin) when val_brier range "
+        f"({max(val_briers) - min(val_briers):.3f}) exceeds tie_band "
+        f"(0.005) so tie-break is not entered; got iter {out}. The V1.4 P1 "
+        f"fallback must NOT fire on cells where val_brier has real spread."
+    )
+
+
+def test_anti_auc_path_unchanged_by_v14_p1_patch():
+    """V1.4 P1 — regression test: the V1.3 Option A anti-AUC code path is
+    unmodified. When ``anti_auc_flag='true'`` and val_brier is flat, the
+    function returns the eval R-p@1-best iter via the existing anti-AUC
+    block (NOT via the new V1.4 P1 block).
+
+    Same fixture shape as the V1.4 P1 test: val_briers ``[0.100, 0.101, 0.102]``,
+    range 0.002 < tie_band 0.005, all 3 tied. With ``anti_auc_flag='true'``
+    the function enters the V1.3 Option A branch first and picks iter 2
+    (highest eval R-p@1) — same outcome as the V1.4 P1 patch would produce,
+    proving the patch is additive (a NEW branch for the non-anti-AUC case)
+    and not a rewrite of the anti-AUC branch.
+    """
+    val_briers = [0.100, 0.101, 0.102]
+    gaps = [0.001, 0.020, 0.050]  # L1 would prefer iter 0 if it ran
+    zs = [1.0, 5.0, 10.0]
+    eval_rp1 = [0.500, 0.600, 0.700]
+    out = best_checkpoint(
+        val_briers,
+        train_val_gaps=gaps,
+        spiegelhalter_zs=zs,
+        tie_band=0.005,
+        anti_auc_flag="true",  # V1.3 Option A engaged — exercises the
+                               # existing anti-AUC branch, NOT the V1.4 P1
+                               # block.
+        eval_r_precision_at_1s=eval_rp1,
+    )
+    assert out == 2, (
+        f"V1.3 Option A regression: expected iter 2 (highest eval R-p@1) on "
+        f"the anti-AUC branch; got iter {out}. The V1.4 P1 patch must leave "
+        f"this path unmodified."
+    )
+
+
 def test_best_checkpoint_recovers_187_finding():
     """The L1 motivating case from ``docs/gbdt/_187_*.md``.
 
