@@ -75,9 +75,39 @@ The PNG goes inline with `SendUserFile`; the SVG is for crisp zoom.
    - `tasks: #251 + #252 → in-flight (V1.4 follow-up workstream)`
    - `tasks: re-render after V1.4 plan close-out`
 
+## Parallel instances
+
+Multiple agent instances (different machines, sibling worktrees on the same machine, or parent + sub-agent) all editing the DOT independently is supported, but only with explicit coordination. The DOT is a single shared text file: git handles the sync, but the agent has to follow the workflow below or the rendered PNG + SVG drift.
+
+**What works:**
+
+| scenario | OK? | mechanism |
+|---|:---:|---|
+| Different machines, both pull main | ✓ | Standard git workflow. First push wins; second hits non-fast-forward and rebases. |
+| Same machine, separate sibling worktrees | ✓ | git treats them as independent checkouts. |
+| Parent + background sub-agent in their own worktrees | ✓ | Sub-agent commits the DOT edit in its PR; parent picks up the merged state from main after it lands. |
+| **Same machine, same working tree** | **✗** | Both instances stomp the index + working tree. Don't do this. |
+
+**Rules:**
+
+1. **`git pull --rebase` before editing the DOT.** From a worktree: `git fetch origin main && git rebase origin/main`. Kills the most common conflict source.
+
+2. **On conflict, re-render from the merged DOT — never hand-merge PNG/SVG.** Git can't reconcile binaries. After resolving the DOT text conflict:
+   ```bash
+   rm docs/task_dependencies.png docs/task_dependencies.svg
+   ( cd docs && dot -Tpng -Gdpi=150 task_dependencies.dot -o task_dependencies.png && dot -Tsvg task_dependencies.dot -o task_dependencies.svg )
+   git add docs/task_dependencies.{dot,png,svg}
+   ```
+
+3. **One writer per PR cycle.** Sub-agents that close a task bundle the DOT edit into their PR. The parent agent does NOT also write the DOT in the same cycle — it picks up the merged state from main after the sub-agent's PR lands. Same principle: avoid two writers racing on the same file.
+
+4. **Sibling worktrees, not shared working trees.** Two foreground instances against the same `.git` checkout stomp the index. `git worktree add wt-<purpose>` is cheap; use it for isolation.
+
+5. **No locking.** The file is too small to need a mutex. Pull-rebase + re-render handles the common case cleanly.
+
 ## How to apply this skill
 
-- After any TaskCreate / TaskUpdate that meaningfully changes the dependency picture: edit `docs/task_dependencies.dot`, re-render, stage all three files, commit.
+- After any TaskCreate / TaskUpdate that meaningfully changes the dependency picture: `git pull --rebase origin main` → edit `docs/task_dependencies.dot` → re-render → stage all three files → commit.
 - Do NOT edit the DOT file when the only thing that changed is a routine `[in_progress]` flip that's part of an already-modeled task (the node was already colored correctly).
 - When the user asks "what's pending" / "what's next" / "audit the todos" / similar: re-render and surface PNG via `SendUserFile`.
 - When opening PRs that close out plan phases: include the corresponding DOT edit in the SAME PR (the graph state and the merged work should land together).
