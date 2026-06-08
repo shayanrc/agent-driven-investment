@@ -305,10 +305,35 @@
   "open_questions": [
     "cell-5 (nasdaq100 +10%/50d, AUC=0.475, R-p@1=0.671) anti-AUC anomaly — dedicated investigation needed",
     "cells 1+3 still in regression — try UNDER-regularization (mcw=1 + smaller FS + no other reg) on these strong-top-1 sp500 cells",
-    "task #206 — /gbdt-diagnose pairwise interaction data not captured (both runs crashed); retry on cell-4 mix artifact (30 features)",
     "bug #203 (hist + nj=8 swap, 15-90x speedup) — separate PR in flight",
     "bug #204 (plateau-stop, auto-fires per-knob) — separate PR in flight"
   ],
+  "cell4_mix_interactions": {
+    "captured_at_utc": "2026-06-08T18:25:00Z",
+    "task_ref": "#206 follow-up to this memo",
+    "artifact": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/",
+    "diagnose_out": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/diagnose/",
+    "method": "shap",
+    "n_rows_used": 5000,
+    "n_features": 30,
+    "backend": "xgboost",
+    "interaction_high_threshold": 0.07825,
+    "top_pairs_top5": [
+      {"a": "index_runup_50",   "b": "parkinson_200",            "strength": 0.090008, "sign_consistency": 0.6570},
+      {"a": "parkinson_200",    "b": "return_xs_zscore_200",     "strength": 0.042449, "sign_consistency": 0.6300},
+      {"a": "vol_xs_zscore_50", "b": "vol_xs_rank_200",          "strength": 0.041688, "sign_consistency": 0.9142},
+      {"a": "garman_klass_200", "b": "vol_xs_rank_200",          "strength": 0.040675, "sign_consistency": 0.7573},
+      {"a": "vol_xs_rank_200",  "b": "realized_vol_zscore_200",  "strength": 0.039441, "sign_consistency": 0.7586}
+    ],
+    "top_involvement_features": [
+      {"feature": "vol_xs_rank_200",     "involvement": 0.2200, "main_effect": 0.3339},
+      {"feature": "parkinson_200",       "involvement": 0.2163, "main_effect": 0.4782},
+      {"feature": "index_runup_50",      "involvement": 0.1599, "main_effect": 0.1684},
+      {"feature": "index_drawdown_200",  "involvement": 0.1566, "main_effect": 0.0354},
+      {"feature": "returns_skew_200",    "involvement": 0.1439, "main_effect": 0.0915}
+    ],
+    "interpretation": "Dense interaction-driven signal centered on parkinson_200 + vol_xs_rank_200 (both involvement > high-interaction threshold). The dominant index_runup_50 x parkinson_200 pair is ~2.1x the next, and 5 of the top 10 pairs route through parkinson_200 or vol_xs_rank_200. Explains why FS+mcw=5+colsample=0.5+gamma=0.5 won on cell-4 specifically: colsample=0.5 forces each tree to re-discover the dominant interaction paths through different feature subsets (preserving top-1 tail when interaction IS the signal); gamma=0.5 filters spurious low-importance splits. Cells 1+3 (sp500, larger panel) likely have flatter interaction surfaces so the same recipe strangles their diversity. Confirms F2/F3 mechanism."
+  },
   "wall_time_summary": {
     "per_cell_sec": {
       "cell-1": 1282.8,

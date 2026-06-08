@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 23:55 IST)\nafter #246 audit (L1 tail is legacy-resume fallback, not dead code)", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-09 00:25 IST)\nafter #206 /gbdt-diagnose retry on cell-4 mix captured pairwise interactions (post-#246 merge)", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -86,7 +86,7 @@ digraph tasks {
     fontsize = 11;
 
     t246 [label=<<B>#246</B><BR/>L1 (gap,|z|) tail —<BR/>NOT dead<BR/>(legacy-resume fallback)>, fillcolor="#cccccc"];
-    t206 [label=<<B>#206</B><BR/>/gbdt-diagnose retry<BR/>on cell-4 mix<BR/>(_195 memo polish)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    t206 [label=<<B>#206</B><BR/>/gbdt-diagnose retry<BR/>on cell-4 mix<BR/>(_195 memo polish)>, fillcolor="#cccccc", style="rounded,filled"];
   }
 
   // Scheduled / recurring

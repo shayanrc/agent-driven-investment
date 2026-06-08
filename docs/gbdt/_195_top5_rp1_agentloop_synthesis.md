@@ -127,10 +127,43 @@ PR). Net change:
   recipe failure means deeper per-cell exploration is needed. Likely UNDER-regularization
   is the answer (sweep with default HPs nails top-1 → try `mcw=1` + smaller FS prune + no
   other reg). Untested.
-- **`/gbdt-diagnose` pairwise interaction data not captured** (task #206) — both attempted
-  runs crashed. Cell-4 mix artifact (30 features) is the best retry target.
+- **`/gbdt-diagnose` pairwise interaction data** (task #206) — captured 2026-06-08 (PR #206
+  follow-up); see appendix below.
 - **Bug #203** (`hist + nj=8`) and **bug #204** (plateau-stop) shipping as separate PRs
   alongside this memo.
+
+## Cell-4 mix interaction structure (#206 follow-up)
+
+`/gbdt-diagnose` re-run 2026-06-08 on the cell-4 mix artifact (xgboost, SHAP-based
+`pred_interactions`, 5000 in-sample rows, 30 features). Method: TreeSHAP.
+
+Top 5 pairwise interactions by SHAP strength:
+
+| feature A             | feature B                | strength |
+|-----------------------|--------------------------|---------:|
+| index_runup_50        | parkinson_200            |    0.090 |
+| parkinson_200         | return_xs_zscore_200     |    0.042 |
+| vol_xs_zscore_50      | vol_xs_rank_200          |    0.042 |
+| garman_klass_200      | vol_xs_rank_200          |    0.041 |
+| vol_xs_rank_200       | realized_vol_zscore_200  |    0.039 |
+
+Two features dominate the interaction load: `parkinson_200` (involvement 0.22, main
+effect 0.48) and `vol_xs_rank_200` (involvement 0.22, main effect 0.33) — both well above
+the high-interaction threshold (0.078). The single dominant pair
+(`index_runup_50 × parkinson_200`) is **~2.1× the next pair**, and 5 of the top 10 pairs
+route through `parkinson_200` or `vol_xs_rank_200`. This is a dense, interaction-driven
+signal — the model leans on *conditional* (regime-by-volatility) structure, not on
+isolated marginal effects. Mechanistic reading of why `mcw=5 + colsample_bytree=0.5 +
+γ=0.5` won on this cell (rule 8 / playbook): `colsample=0.5` forces each tree to
+re-discover the dominant interaction paths through different feature subsets (preserving
+top-1 tail when the interaction is the signal), while `γ=0.5` filters spurious splits on
+the low-importance long tail; `mcw=5` keeps leaf weights high enough not to erase the
+interaction-tail rare-event picks. Cells 1+3 (sp500, larger panel, sweep R-p@1 ≥ 0.6)
+likely have flatter interaction surfaces (more independent main-effect features) — the
+same recipe strangles the diversity those cells were exploiting. **Confirms F2/F3**: the
+mix recipe is cell-4-specific because cell-4's signal IS structurally interaction-heavy.
+
+Source artifact: `results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/diagnose/`.
 
 ## Artifacts (per-cell)
 
