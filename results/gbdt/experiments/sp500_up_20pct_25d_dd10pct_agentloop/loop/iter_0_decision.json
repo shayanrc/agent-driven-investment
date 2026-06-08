@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "min_child_weight": 5.0
+  },
+  "rationale": "iter 0 baseline (mcw=1): val_brier=0.0382, train_brier=0.0253, gap=0.0129 << 0.02 → NO overfit (no_overfit=true). Positive prev 0.0397 (mid-rare, between cell-1's 0.79% and cell-2's 12.1%). Top features vol-dominated (parkinson_200 importance 15.45, garman_klass_200 5.51, realized_vol_100 4.41) — same shape as cell-1. Per Option B (pure L2 grid {1, 5, 10}), bump mcw 1→5. FS prune deferred (no overfit, mcw change will reshuffle importance). interaction_constraints deferred. Cell-2's subsample deviation collapsed the model on test (R-p@1 -87.5%) — sticking strictly to validated L2 grid here. NOTE: iter_1 onward runs on patched model.py (tree_method=hist, n_jobs=8) for ~10-90× faster training — same byte-determinism property as exact+nj=1 within a fixed (machine, n_jobs) pair; algorithm differs from iter_0 (which ran on exact+nj=1), so the iter_0→iter_1 val_brier delta now includes algorithm switch + mcw change (small confound, flag in memo).",
+  "should_stop": false
+}

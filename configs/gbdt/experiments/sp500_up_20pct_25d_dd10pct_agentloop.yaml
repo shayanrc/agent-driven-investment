@@ -1,0 +1,27 @@
+# Experiment: sp500_up_20pct_25d_dd10pct_agentloop
+#
+# Cell: top-5 R-p@1 sweep winner re-run under the full agent-driven FS+HP loop.
+# Tests whether the L1+L2+#184 playbook preserves or improves top-1 skill on
+# cells where sweep-mode FS already nailed it. See _195 for cross-cell memo.
+#
+# Backend: XGBoost (L2 mcw grid + #184 interaction_constraints; original sweep
+# was CatBoost default).
+#
+# Loop: 5 iterations max (baseline + 4 tuning passes); agent_file_protocol so
+# the data scientist (sub-agent) makes per-iter FS+HP decisions.
+
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 25
+  max_drawdown: 0.10
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 5
+    plateau_threshold: 0.005
+    degradation_gate: 0.01

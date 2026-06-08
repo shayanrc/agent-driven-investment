@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "gamma": 0.5
+  },
+  "rationale": "gamma=0.1 tiny val improvement (Δ -0.00002, near noise). Mapping response: gamma=0.5 (5× more aggressive). If still flat/hurt, knob exhausted — iter_4 pivots to max_depth (defaults to 6; cell-4 is OVER-regularized per gap=-0.009 + Z near 0, so depth=8 = MORE capacity = less reg might help; opposite direction from typical depth-tuning). FS+mcw=10+colsample=0.5 still sticky.",
+  "should_stop": false
+}

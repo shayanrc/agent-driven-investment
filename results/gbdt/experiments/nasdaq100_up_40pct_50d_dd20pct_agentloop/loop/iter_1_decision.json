@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "min_child_weight": 10.0
+  },
+  "rationale": "iter 1 (FS-only, 279→30) confirmed playbook rule 2: val_brier 0.0249→0.0247 (neutral), gap 0.0161→0.0124 (closed), train_brier UP. Jumping directly to mcw=10 (skipping mcw=5) — cells 1+3 + r1k trio all plateau-won at mcw=10 on 279-feature models. Tests whether mcw=10 still wins on a lean 30-feature model, OR whether reduced capacity (from FS) means lower optimal regularization. Stacks FS + mcw=10 (the strongest playbook configuration). If iter_2 plateaus or regresses, iter_3 can step back to mcw=5. interaction_constraints deferred.",
+  "should_stop": false
+}

@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "gamma": 1.0
+  },
+  "rationale": "gamma=0.5 delivered the biggest single-iter val improvement on this cell (Δ -0.00017). Gradient still pointing down. iter_4 tries gamma=1.0 (2× more aggressive) to find the gamma response peak. If iter_4 keeps improving → try gamma=2.0. If plateaus or reverses → revert to best gamma + pivot to max_depth=8 (the opposite direction; tests over-regularization hypothesis from gap=-0.010 + Z near 0). max_iterations uncapped to 99 for this run.",
+  "should_stop": false
+}

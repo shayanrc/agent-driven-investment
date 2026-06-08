@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "min_child_weight": 10.0
+  },
+  "rationale": "iter 1 (mcw=5, hist+nj=8) result: val_brier 0.0382 -> 0.0375 (Δ -0.00068 ~1.8%), train_brier 0.0253 -> 0.0307 (+0.0054), gap 0.0129 -> 0.0068 (well under 0.02 threshold). Caveat: iter_0 ran on exact+nj=1, iter_1 on hist+nj=8 — algorithm switch confounds the mcw effect; iter_2 vs iter_1 will be a clean algorithm-equal comparison. Per Option B (pure L2 grid {1,5,10}), bump mcw 5→10 (the _185 winning value, r1k trio plateau winner, cell-1 plateau winner). FS prune SKIPPED. interaction_constraints deferred. Expected ~1-2 min wall-clock on hist+nj=8.",
+  "should_stop": false
+}

@@ -1,0 +1,14 @@
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 4
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05

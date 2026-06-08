@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 23:15 IST)\nafter #251 loop metadata + #252 canonical R-Precision@K reconciliation", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 23:40 IST)\nafter #227 preserve orphan artifacts (gate to #219 open)", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -73,8 +73,8 @@ digraph tasks {
     fontname = "Helvetica-Bold";
     fontsize = 11;
 
-    t227 [label=<<B>#227</B><BR/>preserve orphan<BR/>CSV row in<BR/>wt-top5-rp1-agentloop>, fillcolor="#a4e9a4"];
-    t219 [label=<<B>#219</B><BR/>prune 2 NTFS-corrupted<BR/>worktrees (needs sudo)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    t227 [label=<<B>#227</B><BR/>preserve orphan<BR/>artifacts from<BR/>wt-top5-rp1-agentloop>, fillcolor="#cccccc"];
+    t219 [label=<<B>#219</B><BR/>prune 2 NTFS-corrupted<BR/>worktrees + wt-top5<BR/>(needs sudo)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
   // Cleanup polish
@@ -131,7 +131,7 @@ digraph tasks {
   cell5_manual -> t218 [style="dashed", color="#999999", label="enables"];
 
   // Hard deps within pending
-  t227 -> t219 [color="#cc3333", penwidth=2.5, label="preserve\nbefore prune"];
+  t227 -> t219 [color="#cc3333", penwidth=2.5, label="gate open\n(preserved)"];
 
   // Soft deps: #252 may obviate #218
   t252 -> t218 [style="dashed", color="#888888", label="may\nobviate"];

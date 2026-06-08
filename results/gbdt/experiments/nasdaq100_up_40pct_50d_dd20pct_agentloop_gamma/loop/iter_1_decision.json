@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "gamma": 0.1
+  },
+  "rationale": "iter 1 replicated colsample-variant iter_3 byte-identically (val 0.023567, gap -0.0089). Now testing gamma (min_split_loss) — structurally-different regularizer from mcw (leaf-weight cap) and colsample (column subset). gamma=0.1 prevents splits that don't reduce loss by ≥0.1 — controls the structure-level pruning. FS+mcw=10+colsample=0.5 carry forward (sticky). If gamma=0.1 helps, iter_3 tries gamma=0.5; if no-op, iter_3 pivots to subsample or max_depth.",
+  "should_stop": false
+}
