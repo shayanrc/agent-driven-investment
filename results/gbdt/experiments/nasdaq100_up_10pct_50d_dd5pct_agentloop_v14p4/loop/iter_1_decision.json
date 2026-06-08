@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {"max_depth": 2, "eta": 0.05, "colsample_bytree": 0.4, "early_stopping_rounds": 20},
+  "should_stop": false,
+  "rationale": "iter_1 (md=2, eta=0.1, ES=20): val_brier=0.2245 ≈ weighted_base_rate_brier 0.2251 (val at noise floor, degenerate_sink warns — EXPECTED for anti-AUC cells per V1.3 Option A), gap=-0.001 (perfect fit), early_stop=4 (4-tree model — manual winner was 6 trees). eval R-p@1=0.582 (UP from iter_0 0.557 but BELOW sweep 0.6714). 4 trees → underfit on top tail. Per playbook rule 12: try slower eta (0.05) + colsample_bytree=0.4 randomness — combination should let ES allow more trees before plateau + capture richer signal. Manual track winner regime: 6-tree depth-2 with eta=0.1. Trying eta=0.05 to push tree count higher while keeping shallow trees. anti_auc_flag still true — V1.3 Option A bundle signals working correctly."
+}

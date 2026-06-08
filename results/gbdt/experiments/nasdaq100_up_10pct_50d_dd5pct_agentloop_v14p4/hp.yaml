@@ -1,0 +1,4 @@
+hp:
+  max_depth: 2
+  eta: 0.1
+  early_stopping_rounds: 20

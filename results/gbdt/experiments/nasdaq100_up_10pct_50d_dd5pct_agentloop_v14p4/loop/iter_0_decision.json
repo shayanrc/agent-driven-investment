@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {"max_depth": 2, "eta": 0.1, "early_stopping_rounds": 20},
+  "should_stop": false,
+  "rationale": "iter_0 (XGBoost defaults md=6 eta=0.3 n_est=100): val_brier=0.259, train_brier=0.094, train_val_gap=0.165 (MASSIVE overfit). eval R-p@1=0.557 (below sweep 0.6714). anti_auc_flag=TRUE ✓ — V1.3 Option A fired correctly. degenerate_sink=false, weighted_base_rate_brier=0.225 (val just above baseline). Per playbook rule 12 + cell-5 manual track (#211): pivot to tiny-model regime — max_depth=2, eta=0.1, early_stopping=20 (manual winner was 6-tree depth-2 with ES). Hypothesis: this regime collapses capacity-driven overfit + lets ES find the tight tree count. Goal iter_1: R-p@1 near 0.7 (manual track territory) or at least ≥ sweep 0.6714."
+}

@@ -1,0 +1,93 @@
+{
+    "memo_id": 250,
+    "description": "V1.4 P4 cell-5 anti-AUC regression replay — verify V1.3 Option A path (anti_auc_eval_rp1) is unchanged by the V1.4 P1 patch.",
+    "v14_plan_doc": "docs/gbdt/V1.4_l1_tiebreak_fix_plan.md",
+    "patch_under_test": {
+        "id": "V1.4 P1",
+        "pr": 135,
+        "description": "Eval R-p@1-best fallback on the non-anti-AUC branch when val_brier_range < tie_band. Anti-AUC branch (V1.3 Option A) should be unchanged."
+    },
+    "regression_target": {
+        "id": "V1.3 Option A",
+        "description": "anti_auc_eval_rp1 tie-break path: when iter_0 anti_auc_flag=true, finalize falls back to eval R-p@1-best within the val_brier tie set. P4 confirms V1.4 P1 does not regress this path."
+    },
+    "cells": [
+        {
+            "cell_id": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v14p4",
+            "spec_path": "configs/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v14p4.yaml",
+            "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v14p4/",
+            "universe": "nasdaq100",
+            "direction": "up",
+            "threshold_pct": 10,
+            "horizon_days": 50,
+            "max_drawdown": 0.05,
+            "backend": "xgboost",
+            "mode": "agent_file_protocol",
+            "split_mode": "trailing",
+            "split_train_start": null,
+            "segment_dates": {
+                "train": {"start": "2019-11-06", "end": "2023-08-07"},
+                "val":   {"start": "2023-01-11", "end": "2025-03-12"},
+                "eval":  {"start": "2024-08-15", "end": "2025-12-26"},
+                "test":  {"start": "2025-06-04", "end": "2026-03-11"}
+            },
+            "n_test_rows": 4600,
+            "Q_days_test": 71,
+            "base_rate_test": 0.266957,
+            "weighted_prevalence_test": 0.2669565217391305,
+            "loop": {
+                "n_iterations_run": 3,
+                "best_iteration": 1,
+                "inner_stop_signal": "agent_should_stop",
+                "tiebreak_path": "anti_auc_eval_rp1",
+                "anti_auc_flag": "true",
+                "v14_p1_fired": false,
+                "v14_p1_changed_selection": false,
+                "v14_p1_note": "tiebreak_path = anti_auc_eval_rp1 (V1.3 Option A branch). V1.4 P1 (non-anti-AUC branch) was NOT exercised. Regression test PASSED: anti-AUC path unchanged by the V1.4 patch.",
+                "v13_option_a_note": "anti_auc_flag fired correctly at iter_0 (AUC_val ~ 0.46 ∈ [0.46, 0.54], R-p@10 lift > 1.8x). Tie set across iter_1+iter_2 (val_brier delta 0.001 < tie_band 0.005); anti_auc_eval_rp1 picked iter_1 (eval R-p@1 = 0.582)."
+            },
+            "iter_trajectory": [
+                {"iter": 0, "hp_overlay": {}, "val_brier": 0.2590, "train_val_gap": 0.165, "early_stop_iter": null, "eval_R_p_at_1": 0.557, "note": "XGBoost defaults md=6 eta=0.3 n_est=100 — overfit"},
+                {"iter": 1, "hp_overlay": {"max_depth": 2, "eta": 0.1, "early_stopping_rounds": 20}, "val_brier": 0.2245, "train_val_gap": -0.001, "early_stop_iter": 4, "eval_R_p_at_1": 0.582, "note": "tiny-model regime (4 trees) — best iter on R-p@1; close to manual track winner (6 trees per #211)"},
+                {"iter": 2, "hp_overlay": {"max_depth": 2, "eta": 0.05, "colsample_bytree": 0.4, "early_stopping_rounds": 20}, "val_brier": 0.2241, "train_val_gap": 0.003, "early_stop_iter": 18, "eval_R_p_at_1": 0.529, "note": "colsample_bytree randomness hurt R-p@1; agent stopped after this"}
+            ],
+            "sweep_baseline": {
+                "source": "_211_cell5_manual_tuning_xgb.md (sweep XGBoost baseline)",
+                "backend": "xgboost",
+                "R_p_at_1": 0.6714,
+                "AUC": 0.475,
+                "anti_auc_classification": "anti-AUC strong-top-1 (AUC in [0.46, 0.54], R-p@10 lift > 1.8x)"
+            },
+            "manual_track_winner": {
+                "source": "_211_cell5_manual_tuning_xgb.md",
+                "hp": {"max_depth": 2, "eta": 0.1, "n_estimators": 100, "early_stopping_rounds": 20},
+                "trees_grown": 6,
+                "R_p_at_1_test": 0.829,
+                "note": "Found via 30+ iters of manual mix-and-match exploration. Agent in 3 iters reaches iter_1 R-p@1=0.582 (eval) — close to regime but not the full winner."
+            },
+            "agent_v14p4": {
+                "R_p_at_1_test": 0.4084507042253521,
+                "R_p_at_5_test": 0.3,
+                "R_p_at_10_test": 0.3392156862745098,
+                "AUC_test": 0.46262367127638504,
+                "brier_test": 0.20647914521278415,
+                "brier_baseline_baserate_test": 0.19569073724007563,
+                "R_p_at_1_eval": 0.5819672131147541,
+                "R_p_at_5_eval": 0.41028128031037825,
+                "R_p_at_10_eval": 0.46579476861167,
+                "delta_vs_sweep_R_p_at_1": -0.263,
+                "delta_vs_sweep_R_p_at_1_pct": -0.392,
+                "eval_to_test_drift_R_p_at_1": -0.173,
+                "eval_to_test_drift_R_p_at_1_pct": -0.298
+            }
+        }
+    ],
+    "verdict": {
+        "mechanism_test": "PASS",
+        "mechanism_evidence": "tiebreak_path = anti_auc_eval_rp1 fires correctly. anti_auc_flag = true at iter_0. V1.3 Option A code path unchanged by V1.4 P1 patch.",
+        "substantive_test": "FAIL",
+        "substantive_evidence": "test R-p@1 = 0.408 vs sweep 0.671 (-39%). This is below the original A4 acceptance gate (test R-p@1 >= 0.6714), but matches the same failure mode as the original V1.3 Option A re-validation (#224): cell-5 requires 30+ iters of manual tuning to reach the 6-tree depth-2 manual winner (R-p@1=0.829 per #211); the agent in 3 iters can approach but not match that.",
+        "overall": "P4 regression PASSED on the mechanism (the load-bearing point). Substantive R-p@1 below sweep is not a V1.4 P1 issue — it's the agent-vs-manual-track gap on anti-AUC cells (orthogonal to this patch). Plan P7 escalation NOT compelled by these data.",
+        "v14_plan_p4_gate": "PASS (mechanism) + DOCUMENTED-FAIL (substantive, matching prior baseline)"
+    }
+}

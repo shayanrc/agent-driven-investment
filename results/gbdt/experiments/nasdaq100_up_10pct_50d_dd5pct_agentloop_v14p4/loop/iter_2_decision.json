@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "STOP. 3-iter summary on cell-5 anti-AUC (V1.4 P4 regression test): iter_0 defaults md=6+eta=0.3 val_brier=0.259 R-p@1=0.557 (overfit); iter_1 md=2+eta=0.1+ES val_brier=0.225 R-p@1=0.582 (best, 4 trees — close to manual winner regime); iter_2 md=2+eta=0.05+cs=0.4+ES val_brier=0.224 R-p@1=0.529 (worse, 18 trees — cs=0.4 randomness hurt). anti_auc_flag=true on all iters. val_brier range iter_1↔iter_2 = 0.001 << tie_band 0.005 → tie set = {iter_1, iter_2}, V1.3 Option A path should fire (tiebreak_path=anti_auc_eval_rp1) and pick iter_1 (R-p@1-best in tie set). Substantive R-p@1 ≈ 0.58 — below sweep 0.6714, but matching V1.3 Option A baseline (this cell's manual winner needs 30+ iters per #211; agent in 3 iters can't replicate). P4 regression test goal: verify V1.4 P1 patch does NOT regress anti-AUC behavior. Expected: tiebreak_path=anti_auc_eval_rp1 (V1.3 Option A path), test R-p@1 ~ iter_1's 0.58."
+}
