@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "STOP. iter_0 (gamma=0.1) reproduces combine cleanly: train_brier=0.0777, val_brier=0.0870, train_val_gap=0.0094 (no overfit), eval R-p@1=0.865 (+17% vs sweep 0.737), R-p@3=0.732, R-p@5=0.645, R-p@10=0.536. anti_auc=unknown, degenerate_sink=false. Clean dominant winner. Per cell 1 lesson: more iters chasing val_brier improvement risk reducing R-p@1. The R-p@1=0.865 result already CRUSHES sweep. should_stop ships iter_0 (the lex winner) directly. tiebreak_path expected to be strict_val_brier (singleton tie set) — V1.4 P1 dormant on this cell."
+}

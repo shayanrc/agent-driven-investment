@@ -1,0 +1,6 @@
+{
+  "drop_features": [],
+  "hp_changes": {"gamma": 0.5, "eta": 0.01},
+  "should_stop": false,
+  "rationale": "iter_0 (gamma=0.5): train_brier=0.0658, val_brier=0.0637, train_val_gap=-0.0020 (NO overfit; model under-fitting if anything), R-p@1=0.595 (already beats sweep 0.550 by 8%), R-p@3=0.532, R-p@5=0.507. no_overfit=true. Top features: realized_vol_100/200, parkinson_50/200, index_return_200 (clean vol-regime signal). iter_1: add eta=0.01 (slow learning) per combine evidence — gamma05_eta001 had R-p@1=0.540, R-p@3=0.588 vs gamma05_alone R-p@3=0.532. Hypothesis: slower learning may preserve top-tail signal at lower K. Per playbook diagnostic-first gate (gap ≤ 0.02 → don't add reg) — NOT adding alpha/L1 regularization."
+}

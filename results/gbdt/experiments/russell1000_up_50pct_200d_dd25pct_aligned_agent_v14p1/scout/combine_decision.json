@@ -1,0 +1,30 @@
+{
+  "configs": [
+    {"label": "lex_auto_compose", "hp": {"eta": 0.1, "gamma": 0.1, "alpha": 0.1, "scale_pos_weight": 4.5249482343272875}},
+    {"label": "gamma01_alone", "hp": {"gamma": 0.1}},
+    {"label": "gamma01_eta01", "hp": {"gamma": 0.1, "eta": 0.1}},
+    {"label": "gamma01_eta02", "hp": {"gamma": 0.1, "eta": 0.2}},
+    {"label": "gamma01_alpha01", "hp": {"gamma": 0.1, "alpha": 0.1}},
+    {"label": "gamma01_spw", "hp": {"gamma": 0.1, "scale_pos_weight": 4.5249482343272875}},
+    {"label": "lex_no_spw", "hp": {"eta": 0.1, "gamma": 0.1, "alpha": 0.1}},
+    {"label": "lex_no_alpha", "hp": {"eta": 0.1, "gamma": 0.1, "scale_pos_weight": 4.5249482343272875}},
+    {"label": "lex_no_eta", "hp": {"gamma": 0.1, "alpha": 0.1, "scale_pos_weight": 4.5249482343272875}},
+    {"label": "defaults", "hp": {}},
+    {"label": "spw_only", "hp": {"scale_pos_weight": 4.5249482343272875}},
+    {"label": "gamma005_alone", "hp": {"gamma": 0.05}},
+    {"label": "gamma02_alone", "hp": {"gamma": 0.2}},
+    {"label": "gamma01_eta005", "hp": {"gamma": 0.1, "eta": 0.05}},
+    {"label": "gamma01_eta01_alpha01", "hp": {"gamma": 0.1, "eta": 0.1, "alpha": 0.1}},
+    {"label": "gamma01_eta02_alpha01", "hp": {"gamma": 0.1, "eta": 0.2, "alpha": 0.1}},
+    {"label": "gamma01_alpha05", "hp": {"gamma": 0.1, "alpha": 0.5}},
+    {"label": "gamma01_md3", "hp": {"gamma": 0.1, "max_depth": 3}},
+    {"label": "gamma01_md4", "hp": {"gamma": 0.1, "max_depth": 4}},
+    {"label": "gamma01_eta01_md3", "hp": {"gamma": 0.1, "eta": 0.1, "max_depth": 3}},
+    {"label": "gamma01_eta01_alpha01_spw", "hp": {"gamma": 0.1, "eta": 0.1, "alpha": 0.1, "scale_pos_weight": 4.5249482343272875}},
+    {"label": "gamma01_eta005_alpha01", "hp": {"gamma": 0.1, "eta": 0.05, "alpha": 0.1}},
+    {"label": "gamma01_md4_alpha01", "hp": {"gamma": 0.1, "max_depth": 4, "alpha": 0.1}},
+    {"label": "eta01_alpha01", "hp": {"eta": 0.1, "alpha": 0.1}},
+    {"label": "gamma01_eta05_no_alpha", "hp": {"gamma": 0.1, "eta": 0.05}}
+  ],
+  "rationale": "Cell: r1k +50%/200d (strong-top-1, sweep R-p@1=0.737). Scout: gamma=0.1 alone hits eval R-p@1=0.865 (+17% vs sweep!), eta=0.1 → 0.760, alpha=0.1 → 0.760, scale_pos_weight=4.52 → 0.775. Defaults R-p@1=0.730. Per playbook rule 8 (strong-top-1): NOT defaulting mcw=10 or cell-4 mix. Anchoring on gamma=0.1 dominant winner + ablations. Lex auto-compose (eta=0.1, gamma=0.1, alpha=0.1, spw=4.52) included as zeroth. 25 configs total. Goal: confirm gamma=0.1 alone is the real winner vs the lex mix."
+}

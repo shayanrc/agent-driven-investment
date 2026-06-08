@@ -1,0 +1,193 @@
+{
+  "memo_id": 249,
+  "description": "V1.4 P3 replay of #239 + #241 with the V1.4 P1 patch (non-anti-AUC eval R-p@1-best fallback when val_brier_range < tie_band).",
+  "v14_plan_doc": "docs/gbdt/V1.4_l1_tiebreak_fix_plan.md",
+  "patch_under_test": {
+    "id": "V1.4 P1",
+    "pr": 135,
+    "description": "Mirror V1.3 Option A anti-AUC fallback at fs_hp_loop.py:240-261 into the non-anti-AUC branch, gated on val_brier_range < tie_band."
+  },
+  "cells": [
+    {
+      "cell_id": "russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
+      "spec_path": "configs/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1.yaml",
+      "artifact_dir": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1/",
+      "universe": "russell1000",
+      "direction": "up",
+      "threshold_pct": 40,
+      "horizon_days": 100,
+      "max_drawdown": 0.2,
+      "backend": "xgboost",
+      "mode": "agent_file_protocol",
+      "split_mode": "date_aligned",
+      "split_train_start": "2019-01-01",
+      "segment_dates": {
+        "train": {"start": "2019-01-02", "end": "2022-03-04"},
+        "val":   {"start": "2022-03-07", "end": "2023-10-06"},
+        "eval":  {"start": "2023-10-09", "end": "2024-07-25"},
+        "test":  {"start": "2024-07-26", "end": "2025-05-13"}
+      },
+      "n_test_rows": 177800,
+      "Q_days_test": 200,
+      "base_rate_test": 0.079640,
+      "weighted_prevalence_test": 0.0796400449943757,
+      "loop": {
+        "n_iterations_run": 1,
+        "best_iteration": 1,
+        "inner_stop_signal": "degradation",
+        "tiebreak_path": "v14_val_flat_eval_rp1",
+        "anti_auc_flag": "unknown",
+        "v14_p1_fired": true,
+        "v14_p1_changed_selection": false,
+        "v14_p1_note": "tiebreak_path labeled v14_val_flat_eval_rp1 = patch branch was exercised in finalize routing. iter_0 fell out of the tie set because iter_1 improved val_brier by 0.0070 > tie_band 0.005. Selection unchanged from strict val_brier (iter_1) — patch wired correctly + dormant on this particular selection because iter_0 honestly fell out of tie."
+      },
+      "sweep_baseline": {
+        "source": "_228_h100_rerun.md row 37",
+        "backend": "catboost",
+        "R_p_at_1": 0.550,
+        "R_p_at_3": 0.516667,
+        "R_p_at_5": 0.447,
+        "R_p_at_10": 0.382,
+        "R_p_at_20": 0.340689,
+        "AUC": 0.821031
+      },
+      "pre_patch_agent": {
+        "source": "_239_r1k_up40_100d_agent_mode.md",
+        "memo_id": 239,
+        "backend": "xgboost",
+        "R_p_at_1_test": 0.485,
+        "R_p_at_3_test": 0.406667,
+        "R_p_at_5_test": 0.431,
+        "R_p_at_10_test": 0.379167,
+        "R_p_at_20_test": 0.337519,
+        "AUC_test": 0.808194,
+        "delta_vs_sweep_R_p_at_1": -0.065,
+        "delta_vs_sweep_R_p_at_1_pct": -0.12
+      },
+      "agent_v14p1": {
+        "R_p_at_1_test": 0.540,
+        "R_p_at_3_test": 0.421667,
+        "R_p_at_5_test": 0.383,
+        "R_p_at_10_test": 0.371972,
+        "R_p_at_20_test": 0.331159,
+        "AUC_test": 0.814449,
+        "R_p_at_1_eval": 0.540,
+        "R_p_at_5_eval": 0.527,
+        "R_p_at_10_eval": 0.4955,
+        "delta_vs_sweep_R_p_at_1": -0.010,
+        "delta_vs_sweep_R_p_at_1_pct": -0.018,
+        "delta_vs_original_R_p_at_1": 0.055
+      },
+      "gate_strict_pass": false,
+      "recovery_directional_pass": true,
+      "recovery_points_pp": 5.5
+    },
+    {
+      "cell_id": "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
+      "spec_path": "configs/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1.yaml",
+      "artifact_dir": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1/",
+      "universe": "russell1000",
+      "direction": "up",
+      "threshold_pct": 50,
+      "horizon_days": 200,
+      "max_drawdown": 0.25,
+      "backend": "xgboost",
+      "mode": "agent_file_protocol",
+      "split_mode": "date_aligned",
+      "split_train_start": "2018-01-01",
+      "segment_dates": {
+        "train": {"start": "2018-01-02", "end": "2021-03-08"},
+        "val":   {"start": "2021-03-09", "end": "2022-10-06"},
+        "eval":  {"start": "2022-10-07", "end": "2023-07-26"},
+        "test":  {"start": "2023-07-27", "end": "2024-10-03"}
+      },
+      "n_test_rows": 257400,
+      "Q_days_test": 300,
+      "base_rate_test": 0.151818,
+      "weighted_prevalence_test": 0.15181818181818182,
+      "loop": {
+        "n_iterations_run": 0,
+        "best_iteration": 0,
+        "inner_stop_signal": "agent_should_stop",
+        "tiebreak_path": "strict_val_brier",
+        "anti_auc_flag": "unknown",
+        "v14_p1_fired": false,
+        "v14_p1_changed_selection": false,
+        "v14_p1_note": "Singleton tie set (only iter_0 ran; agent emitted should_stop=true). Patch dormant — no tie to break. Recovery on this cell came from the agent's iter_0-ship discipline, not from V1.4 P1."
+      },
+      "sweep_baseline": {
+        "source": "_224_russell1000_sweep_rerun.md cell row",
+        "backend": "catboost",
+        "R_p_at_1": 0.736667,
+        "R_p_at_3": 0.642222,
+        "R_p_at_5": 0.538667,
+        "R_p_at_10": 0.466,
+        "R_p_at_20": 0.396,
+        "AUC": 0.696796
+      },
+      "pre_patch_agent": {
+        "source": "_241_r1k_up50_200d_agent_mode.md",
+        "memo_id": 241,
+        "backend": "xgboost",
+        "R_p_at_1_test": 0.576667,
+        "R_p_at_3_test": 0.466667,
+        "R_p_at_5_test": 0.491333,
+        "R_p_at_10_test": 0.473,
+        "R_p_at_20_test": 0.423833,
+        "AUC_test": 0.724070,
+        "delta_vs_sweep_R_p_at_1": -0.160,
+        "delta_vs_sweep_R_p_at_1_pct": -0.22
+      },
+      "agent_v14p1": {
+        "R_p_at_1_test": 0.646667,
+        "R_p_at_3_test": 0.558889,
+        "R_p_at_5_test": 0.546667,
+        "R_p_at_10_test": 0.508667,
+        "R_p_at_20_test": 0.460167,
+        "AUC_test": 0.725645,
+        "R_p_at_1_eval": 0.865,
+        "R_p_at_5_eval": 0.645,
+        "R_p_at_10_eval": 0.536,
+        "delta_vs_sweep_R_p_at_1": -0.090,
+        "delta_vs_sweep_R_p_at_1_pct": -0.122,
+        "delta_vs_original_R_p_at_1": 0.070
+      },
+      "gate_strict_pass": false,
+      "recovery_directional_pass": true,
+      "recovery_points_pp": 7.0
+    }
+  ],
+  "verdict": {
+    "mechanical_validation": "pass",
+    "mechanical_note": "loop.tiebreak_path field set on both cells; cell 1 reads 'v14_val_flat_eval_rp1' (new patch branch exercised), cell 2 reads 'strict_val_brier' (singleton tie set — patch dormant as designed).",
+    "directional_recovery": "pass",
+    "directional_note": "Both cells recovered ~10 percentage points of test R-p@1 vs their pre-patch shipped values (cell 1: +5.5pp, cell 2: +7.0pp).",
+    "gate_strict": "fail",
+    "gate_strict_note": "Neither cell clears test R-p@1 >= sweep R-p@1. Cell 1 residual gap is val_brier vs R-p@1 misalignment on iter_1 (honest val_brier improvement cost R-p@1); cell 2 residual gap is eval->test drift on the iter_0-ship model. Both are different failure modes than the one V1.4 P1 was scoped to address; neither would be helped by escalation to option (b)."
+  },
+  "p7_implication": {
+    "data_compels_b": false,
+    "rationale": "V1.4 P1 is sufficient for the failure mode it was scoped to fix (tie-band-flat val_brier coin-flipping the lex-worst iter). The residual gaps in this replay are symptoms of different mechanisms (honest val_brier improvement costing R-p@1; eval->test drift on small test panel) that option (b) would not address. P7 gate remains conditional on #243 outcome.",
+    "note": "Open V1.4 TBD candidates: (1) val_brier-vs-R-p@1 misalignment outside the tie-band on strong-top-1 cells; (2) iter_0-ship eval->test drift class signature."
+  },
+  "files_shipped": {
+    "memo": "docs/gbdt/_249_v14_p3_replay.md",
+    "json_sidecar": "results/gbdt/data/_249_data.json",
+    "canonical_csv": "results/gbdt/data/r_precision_at_k.csv",
+    "csv_rows_added": [
+      "russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
+      "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1"
+    ]
+  },
+  "references": {
+    "v14_plan": "docs/gbdt/V1.4_l1_tiebreak_fix_plan.md",
+    "v14_plan_pr": 132,
+    "v14_fixes_pr": 134,
+    "v14_p1_pr": 135,
+    "v14_p2_pr": 136,
+    "original_239_memo": "docs/gbdt/_239_r1k_up40_100d_agent_mode.md",
+    "original_241_memo": "docs/gbdt/_241_r1k_up50_200d_agent_mode.md",
+    "playbook": ".claude/memories/project-gbdt-tuning-playbook.md",
+    "r_precision_methodology": ".claude/memories/project-r-precision-methodology.md"
+  }
+}
