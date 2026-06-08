@@ -1,0 +1,30 @@
+{
+  "configs": [
+    {"label": "lex_auto_compose", "hp": {"max_depth": 3, "eta": 0.01, "gamma": 0.5, "alpha": 0.1}},
+    {"label": "gamma05_alone", "hp": {"gamma": 0.5}},
+    {"label": "gamma05_eta001", "hp": {"gamma": 0.5, "eta": 0.01}},
+    {"label": "gamma05_alpha01", "hp": {"gamma": 0.5, "alpha": 0.1}},
+    {"label": "gamma05_md3", "hp": {"gamma": 0.5, "max_depth": 3}},
+    {"label": "gamma05_eta005", "hp": {"gamma": 0.5, "eta": 0.05}},
+    {"label": "gamma10_alone", "hp": {"gamma": 1.0}},
+    {"label": "gamma10_eta001", "hp": {"gamma": 1.0, "eta": 0.01}},
+    {"label": "lex_no_alpha", "hp": {"max_depth": 3, "eta": 0.01, "gamma": 0.5}},
+    {"label": "lex_no_md", "hp": {"eta": 0.01, "gamma": 0.5, "alpha": 0.1}},
+    {"label": "lex_no_eta", "hp": {"max_depth": 3, "gamma": 0.5, "alpha": 0.1}},
+    {"label": "defaults", "hp": {}},
+    {"label": "eta001_alone", "hp": {"eta": 0.01}},
+    {"label": "eta005_alone", "hp": {"eta": 0.05}},
+    {"label": "alpha01_alone", "hp": {"alpha": 0.1}},
+    {"label": "md3_alone", "hp": {"max_depth": 3}},
+    {"label": "gamma05_eta001_alpha01", "hp": {"gamma": 0.5, "eta": 0.01, "alpha": 0.1}},
+    {"label": "gamma05_eta001_md3", "hp": {"gamma": 0.5, "eta": 0.01, "max_depth": 3}},
+    {"label": "gamma05_alpha01_md3", "hp": {"gamma": 0.5, "alpha": 0.1, "max_depth": 3}},
+    {"label": "gamma05_eta005_alpha01", "hp": {"gamma": 0.5, "eta": 0.05, "alpha": 0.1}},
+    {"label": "gamma02_eta001", "hp": {"gamma": 0.2, "eta": 0.01}},
+    {"label": "gamma02_eta001_alpha01", "hp": {"gamma": 0.2, "eta": 0.01, "alpha": 0.1}},
+    {"label": "lex_alpha05", "hp": {"max_depth": 3, "eta": 0.01, "gamma": 0.5, "alpha": 0.5}},
+    {"label": "lex_md4", "hp": {"max_depth": 4, "eta": 0.01, "gamma": 0.5, "alpha": 0.1}},
+    {"label": "lex_eta005", "hp": {"max_depth": 3, "eta": 0.05, "gamma": 0.5, "alpha": 0.1}}
+  ],
+  "rationale": "Cell: r1k +40%/100d (strong-top-1, sweep R-p@1=0.550). Scout response: gamma=0.5 alone hits eval R-p@1=0.595 (beats sweep!), eta=0.01 → 0.540, alpha=0.1 → 0.530, md=3 → 0.490, defaults → 0.475. All top configs have negative or near-zero train_val_gap — model is NOT overfitting (rare cell, healthy AUC). Per playbook rule 8: NOT defaulting mcw=10 or cell-4 mix recipe (strong-top-1 cell). Anchoring on lex_auto_compose (md=3, eta=0.01, gamma=0.5, alpha=0.1) and exploring: (1) gamma=0.5 with each strong single-knob added; (2) lex variants with one knob removed (to attribute marginal contribution); (3) lex variants with one knob bumped (md=4, alpha=0.5, eta=0.05). 25 configs, well under cap=50."
+}

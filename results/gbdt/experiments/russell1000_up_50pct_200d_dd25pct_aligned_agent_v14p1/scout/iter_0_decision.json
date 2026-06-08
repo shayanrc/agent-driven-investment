@@ -1,0 +1,4 @@
+{
+  "hp": {"gamma": 0.1},
+  "rationale": "Combine lex winner: gamma01_alone (R-p@1=0.865, R-p@3=0.732, R-p@5=0.645, val_brier=0.0870, gap=0.009). Beats sweep R-p@1=0.737 by +17% on eval. Clean dominant winner — next config (gamma01_eta01) is R-p@1=0.800, gap = 0.065 (very wide). scale_pos_weight=4.52 inflates val_brier to 0.20+ without preserving R-p@1, so lex_auto_compose (which includes spw) is worse than gamma alone. Per playbook rule 8 + cell 1 lesson: agent should NOT chase val_brier improvement on strong-top-1 cells (it costs R-p@1). Will should_stop after iter_0 to preserve gamma=0.1's clean win."
+}

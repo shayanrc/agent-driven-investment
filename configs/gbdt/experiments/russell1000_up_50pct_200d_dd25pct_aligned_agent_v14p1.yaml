@@ -1,0 +1,61 @@
+# V1.3 Option B agent-mode run of russell1000 +50%/200d/dd25% (date-aligned).
+#
+# Companion to the sweep-mode aligned cell
+# (results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned/, CatBoost,
+# 2 iters, R-p@1 = 0.737, AUC = 0.697, rows = 257400, Q_days = 300).
+#
+# Cell: russell1000 UP 50% in 200 trading days with max drawdown 25%.
+# This is the HIGHEST sweep R-p@1 not yet validated under agent mode
+# (sweep table top-cell-by-R-p@1 of unvalidated). Strong-top-1 cell per
+# playbook rule 8 — agent must NOT default mcw=10 or the cell-4 mix recipe;
+# explore per-cell. Healthy AUC (0.697 — NOT anti-AUC; val_brier remains
+# a usable signal).
+#
+# Note on train_start: 2018-01-01 (NOT canonical D2 2019-01-01). H=200's
+# label window needs cache headroom — test_end + 200d must fall <= cache_end
+# 2026-05-22. The sweep companion uses the same anchor; we mirror it for
+# apples-to-apples comparison.
+#
+# Scout: V1.3 Option B defaults. Per-config timeout 120s, wall-clock 1800s
+# matches #239; this panel is ~45% larger than the cell-5 acceptance panel.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    per_config_timeout_seconds: 120
+    wall_clock_cap_seconds: 1800
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05
+    tie_band: 0.005
+
+random_seed: 42

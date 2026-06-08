@@ -1,0 +1,4 @@
+{
+  "hp": {"gamma": 0.5},
+  "rationale": "Combine lex winner: gamma05_alone (R-p@1=0.595, R-p@3=0.532, val_brier=0.0637, gap=-0.002). Already beats sweep R-p@1=0.550 by 8% on eval. Negative train_val_gap (val < train) confirms model not overfitting. Top 4 configs cluster R-p@1 in [0.540, 0.595]; lex priority (R-p@1 > 3 > 5 > 10 > 20) picks gamma05_alone clean — its R-p@1 lead is 0.055 over the next tier. Per playbook rule 8 (strong-top-1 cell): not defaulting mcw=10 or cell-4 mix recipe — gamma alone is the cell-specific winner. Top-5 val_brier range = 0.0071 > tie_band 0.005 in combine, BUT val_brier deltas across iter loop are likely to be smaller (single-knob exploration around gamma=0.5 anchor)."
+}
