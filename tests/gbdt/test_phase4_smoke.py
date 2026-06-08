@@ -377,11 +377,18 @@ def test_full_cycle_should_stop_finalizes_and_emits_artifacts(smoke_env):
     metrics = json.loads((cell_dir / "metrics.json").read_text())
     # force_stop path: the loop finalized on the agent's should_stop signal.
     assert metrics["loop"]["inner_stop_signal"] == "agent_should_stop"
-    # n_iterations_run = the iters trained IN the finalizing process (0 — the
-    # should_stop resume trains none; both exploratory iters were prior runs).
-    assert metrics["loop"]["n_iterations_run"] == 0
+    # Issue #251: ``n_iterations_run`` is the TOTAL iters seen across the
+    # loop's full history (prior resume-seeded iters + in-process iters).
+    # On this should_stop resume the finalizing process trains none, but
+    # iters 0 + 1 ran in earlier exit-resume cycles and survive in the
+    # checkpoint — the metrics block reports the full count, not just the
+    # in-process slice.
+    assert metrics["loop"]["n_iterations_run"] == 2
     # The best checkpoint indexes into the FULL prior history (iters 0 + 1).
     assert metrics["loop"]["best_iteration"] in (0, 1)
+    # Issue #251: best_val_brier now surfaced into metrics.json::loop.
+    assert metrics["loop"]["best_val_brier"] is not None
+    assert isinstance(metrics["loop"]["best_val_brier"], float)
 
     # The spec.yaml snapshot reflects the synthetic cell + agent_file_protocol.
     snap = yaml.safe_load((cell_dir / "spec.yaml").read_text())
