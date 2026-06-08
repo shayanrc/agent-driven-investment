@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "max_depth": 8
+  },
+  "rationale": "gamma response peaked at 0.5-1.0 (gamma=1.0 marginally beats 0.5 within noise). Knob exhausted. Pivoting to max_depth=8 — the OPPOSITE direction (more capacity, LESS regularization). Hypothesis from cumulative diagnostics: gap=-0.0107 + Z near 0 → model is over-regularized; depth=6 (current default) might not have enough capacity to capture interactions on the 30-feature set. depth=8 adds 1 level of tree depth (2× max leaves). FS+mcw=10+colsample=0.5+gamma=1.0 sticky. If depth=8 helps → try depth=10. If hurts (gap goes positive = overfit) → revert to depth=6 + done.",
+  "should_stop": false
+}

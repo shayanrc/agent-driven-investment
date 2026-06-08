@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2135,-467.95 2135,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:15 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #251 loop metadata + #252 canonical R&#45;Precision@K reconciliation</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:40 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #227 preserve orphan artifacts (gate to #219 open)</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -28,7 +28,7 @@
 </g>
 <g id="clust5" class="cluster">
 <title>cluster_worktree</title>
-<path fill="white" stroke="#888888" d="M1983,-25.33C1983,-25.33 2111,-25.33 2111,-25.33 2117,-25.33 2123,-31.33 2123,-37.33 2123,-37.33 2123,-282.2 2123,-282.2 2123,-288.2 2117,-294.2 2111,-294.2 2111,-294.2 1983,-294.2 1983,-294.2 1977,-294.2 1971,-288.2 1971,-282.2 1971,-282.2 1971,-37.33 1971,-37.33 1971,-31.33 1977,-25.33 1983,-25.33"/>
+<path fill="white" stroke="#888888" d="M1983,-20.33C1983,-20.33 2111,-20.33 2111,-20.33 2117,-20.33 2123,-26.33 2123,-32.33 2123,-32.33 2123,-282.2 2123,-282.2 2123,-288.2 2117,-294.2 2111,-294.2 2111,-294.2 1983,-294.2 1983,-294.2 1977,-294.2 1971,-288.2 1971,-282.2 1971,-282.2 1971,-32.33 1971,-32.33 1971,-26.33 1977,-20.33 1983,-20.33"/>
 <text xml:space="preserve" text-anchor="middle" x="2047" y="-279.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Worktree cleanup</text>
 </g>
 <g id="clust6" class="cluster">
@@ -109,10 +109,10 @@
 <!-- t227 -->
 <g id="node11" class="node">
 <title>t227</title>
-<path fill="#a4e9a4" stroke="black" d="M2098.55,-243.2C2098.55,-243.2 1991.45,-243.2 1991.45,-243.2 1985.45,-243.2 1979.45,-237.2 1979.45,-231.2 1979.45,-231.2 1979.45,-203.68 1979.45,-203.68 1979.45,-197.68 1985.45,-191.68 1991.45,-191.68 1991.45,-191.68 2098.55,-191.68 2098.55,-191.68 2104.55,-191.68 2110.55,-197.68 2110.55,-203.68 2110.55,-203.68 2110.55,-231.2 2110.55,-231.2 2110.55,-237.2 2104.55,-243.2 2098.55,-243.2"/>
+<path fill="#cccccc" stroke="black" d="M2098.55,-243.2C2098.55,-243.2 1991.45,-243.2 1991.45,-243.2 1985.45,-243.2 1979.45,-237.2 1979.45,-231.2 1979.45,-231.2 1979.45,-203.68 1979.45,-203.68 1979.45,-197.68 1985.45,-191.68 1991.45,-191.68 1991.45,-191.68 2098.55,-191.68 2098.55,-191.68 2104.55,-191.68 2110.55,-197.68 2110.55,-203.68 2110.55,-203.68 2110.55,-231.2 2110.55,-231.2 2110.55,-237.2 2104.55,-243.2 2098.55,-243.2"/>
 <text xml:space="preserve" text-anchor="start" x="2030.75" y="-228.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#227</text>
 <text xml:space="preserve" text-anchor="start" x="2005.25" y="-218.94" font-family="Helvetica,sans-Serif" font-size="10.00">preserve orphan</text>
-<text xml:space="preserve" text-anchor="start" x="2018.75" y="-208.94" font-family="Helvetica,sans-Serif" font-size="10.00">CSV row in</text>
+<text xml:space="preserve" text-anchor="start" x="2011.62" y="-208.94" font-family="Helvetica,sans-Serif" font-size="10.00">artifacts from</text>
 <text xml:space="preserve" text-anchor="start" x="1990.25" y="-198.94" font-family="Helvetica,sans-Serif" font-size="10.00">wt&#45;top5&#45;rp1&#45;agentloop</text>
 </g>
 <!-- legend&#45;&gt;t227 -->
@@ -264,18 +264,19 @@
 <!-- t219 -->
 <g id="node12" class="node">
 <title>t219</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M2103.18,-74.85C2103.18,-74.85 1990.83,-74.85 1990.83,-74.85 1984.83,-74.85 1978.83,-68.85 1978.83,-62.85 1978.83,-62.85 1978.83,-45.33 1978.83,-45.33 1978.83,-39.33 1984.83,-33.33 1990.83,-33.33 1990.83,-33.33 2103.18,-33.33 2103.18,-33.33 2109.18,-33.33 2115.18,-39.33 2115.18,-45.33 2115.18,-45.33 2115.18,-62.85 2115.18,-62.85 2115.18,-68.85 2109.18,-74.85 2103.18,-74.85"/>
-<text xml:space="preserve" text-anchor="start" x="2032.75" y="-60.59" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#219</text>
-<text xml:space="preserve" text-anchor="start" x="1989.62" y="-50.59" font-family="Helvetica,sans-Serif" font-size="10.00">prune 2 NTFS&#45;corrupted</text>
-<text xml:space="preserve" text-anchor="start" x="1989.62" y="-40.59" font-family="Helvetica,sans-Serif" font-size="10.00">worktrees (needs sudo)</text>
+<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M2103.18,-79.85C2103.18,-79.85 1990.83,-79.85 1990.83,-79.85 1984.83,-79.85 1978.83,-73.85 1978.83,-67.85 1978.83,-67.85 1978.83,-40.33 1978.83,-40.33 1978.83,-34.33 1984.83,-28.33 1990.83,-28.33 1990.83,-28.33 2103.18,-28.33 2103.18,-28.33 2109.18,-28.33 2115.18,-34.33 2115.18,-40.33 2115.18,-40.33 2115.18,-67.85 2115.18,-67.85 2115.18,-73.85 2109.18,-79.85 2103.18,-79.85"/>
+<text xml:space="preserve" text-anchor="start" x="2032.75" y="-65.59" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#219</text>
+<text xml:space="preserve" text-anchor="start" x="1989.62" y="-55.59" font-family="Helvetica,sans-Serif" font-size="10.00">prune 2 NTFS&#45;corrupted</text>
+<text xml:space="preserve" text-anchor="start" x="1996.75" y="-45.59" font-family="Helvetica,sans-Serif" font-size="10.00">worktrees + wt&#45;top5</text>
+<text xml:space="preserve" text-anchor="start" x="2015.5" y="-35.59" font-family="Helvetica,sans-Serif" font-size="10.00">(needs sudo)</text>
 </g>
 <!-- t227&#45;&gt;t219 -->
 <g id="edge12" class="edge">
 <title>t227&#45;&gt;t219</title>
-<path fill="none" stroke="#cc3333" stroke-width="2.5" d="M2045.31,-191.23C2045.65,-163.66 2046.2,-119.33 2046.58,-88.79"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2.5" points="2050.08,-88.87 2046.71,-78.82 2043.08,-88.78 2050.08,-88.87"/>
-<text xml:space="preserve" text-anchor="middle" x="2075.01" y="-165.13" font-family="Helvetica,sans-Serif" font-size="9.00">preserve</text>
-<text xml:space="preserve" text-anchor="middle" x="2075.01" y="-153.88" font-family="Helvetica,sans-Serif" font-size="9.00">before prune</text>
+<path fill="none" stroke="#cc3333" stroke-width="2.5" d="M2045.31,-191.23C2045.64,-165.06 2046.15,-123.81 2046.52,-93.56"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2.5" points="2050.02,-93.95 2046.64,-83.91 2043.02,-93.87 2050.02,-93.95"/>
+<text xml:space="preserve" text-anchor="middle" x="2072.01" y="-165.13" font-family="Helvetica,sans-Serif" font-size="9.00">gate open</text>
+<text xml:space="preserve" text-anchor="middle" x="2072.01" y="-153.88" font-family="Helvetica,sans-Serif" font-size="9.00">(preserved)</text>
 </g>
 <!-- g2 -->
 <g id="node17" class="node">

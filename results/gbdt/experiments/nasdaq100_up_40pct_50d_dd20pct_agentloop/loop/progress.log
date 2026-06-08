@@ -1,0 +1,60 @@
+2026-06-02T07:08:52+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:08:52+00:00 [data] start universe=nasdaq100
+2026-06-02T07:08:57+00:00 [data] complete in 5.5s rows=645189 tickers_kept=92
+2026-06-02T07:08:59+00:00 [features] start (no cache hit — building)
+2026-06-02T07:09:22+00:00 [heartbeat] t=12:39:22 phase=features elapsed_phase=24s elapsed_total=30s rss_mb=933
+2026-06-02T07:09:52+00:00 [heartbeat] t=12:39:52 phase=features elapsed_phase=54s elapsed_total=60s rss_mb=1191
+2026-06-02T07:10:22+00:00 [heartbeat] t=12:40:22 phase=features elapsed_phase=84s elapsed_total=90s rss_mb=1538
+2026-06-02T07:10:52+00:00 [heartbeat] t=12:40:52 phase=features elapsed_phase=114s elapsed_total=120s rss_mb=1694
+2026-06-02T07:11:22+00:00 [heartbeat] t=12:41:22 phase=features elapsed_phase=144s elapsed_total=150s rss_mb=1864
+2026-06-02T07:11:52+00:00 [heartbeat] t=12:41:52 phase=features elapsed_phase=174s elapsed_total=180s rss_mb=2044
+2026-06-02T07:12:21+00:00 [features] complete in 201.3s shape=(645189, 279)
+2026-06-02T07:12:22+00:00 [heartbeat] t=12:42:22 phase=features elapsed_phase=204s elapsed_total=210s rss_mb=3855
+2026-06-02T07:12:45+00:00 [features] per-cell cache written (key=08c4df2649d8…)
+2026-06-02T07:12:52+00:00 [heartbeat] t=12:42:52 phase=features elapsed_phase=235s elapsed_total=240s rss_mb=3855
+2026-06-02T07:13:12+00:00 [features] universe cache written (key=a96377e1849b…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-02T07:13:13+00:00 [target] start
+2026-06-02T07:13:18+00:00 [target] complete in 4.6s positive_prevalence=0.054
+2026-06-02T07:13:18+00:00 [uniqueness] start
+2026-06-02T07:13:20+00:00 [uniqueness] complete in 1.9s horizon=50 rows=645189 ESS=643166 inflation=1.00x
+2026-06-02T07:13:20+00:00 [loop] start max_iter=5 callback_mode=agent_file_protocol
+2026-06-02T07:13:22+00:00 [heartbeat] t=12:43:22 phase=loop elapsed_phase=2s elapsed_total=270s rss_mb=3918
+2026-06-02T07:13:52+00:00 [heartbeat] t=12:43:52 phase=loop elapsed_phase=32s elapsed_total=300s rss_mb=3918
+2026-06-02T07:14:22+00:00 [heartbeat] t=12:44:22 phase=loop elapsed_phase=62s elapsed_total=330s rss_mb=3918
+2026-06-02T07:14:52+00:00 [heartbeat] t=12:44:52 phase=loop elapsed_phase=92s elapsed_total=360s rss_mb=3918
+2026-06-02T07:14:53+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.024909145504686394)
+2026-06-02T07:14:53+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/loop/iter_0_request.json
+2026-06-02T07:14:53+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/loop/checkpoint.json
+2026-06-02T07:14:53+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nasdaq100_up_40pct_50d_dd20pct_agentloop.yaml --resume nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:18:34+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:18:34+00:00 [resume] loaded checkpoint at iter 0 (run_id=nasdaq100_up_40pct_50d_dd20pct_agentloop)
+2026-06-02T07:18:34+00:00 [resume] RESUMED iter 1 (decision: pruned 249, hp_changes=[], should_stop=False)
+2026-06-02T07:18:34+00:00 [data] start universe=nasdaq100
+2026-06-02T07:18:40+00:00 [data] complete in 6.0s rows=645189 tickers_kept=92
+2026-06-02T07:18:44+00:00 [features] loaded from per-cell cache (key match) in 1.2s shape=(645189, 279)
+2026-06-02T07:18:44+00:00 [target] start
+2026-06-02T07:18:47+00:00 [target] complete in 3.0s positive_prevalence=0.054
+2026-06-02T07:18:47+00:00 [uniqueness] start
+2026-06-02T07:18:48+00:00 [uniqueness] complete in 0.7s horizon=50 rows=645189 ESS=643166 inflation=1.00x
+2026-06-02T07:18:48+00:00 [loop] start max_iter=5 callback_mode=agent_file_protocol (resume from iter 1)
+2026-06-02T07:19:04+00:00 [heartbeat] t=12:49:04 phase=loop elapsed_phase=16s elapsed_total=30s rss_mb=3480
+2026-06-02T07:19:14+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.0247151096276572)
+2026-06-02T07:19:14+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/loop/iter_1_request.json
+2026-06-02T07:19:14+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/loop/checkpoint.json
+2026-06-02T07:19:14+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment nasdaq100_up_40pct_50d_dd20pct_agentloop.yaml --resume nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:23:41+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:23:41+00:00 [resume] loaded checkpoint at iter 1 (run_id=nasdaq100_up_40pct_50d_dd20pct_agentloop)
+2026-06-02T07:23:41+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=['min_child_weight'], should_stop=False)
+2026-06-02T07:23:41+00:00 [data] start universe=nasdaq100
+2026-06-02T07:23:47+00:00 [data] complete in 5.6s rows=645189 tickers_kept=92
+2026-06-02T07:23:50+00:00 [features] loaded from per-cell cache (key match) in 1.0s shape=(645189, 279)
+2026-06-02T07:23:51+00:00 [target] start
+2026-06-02T07:23:53+00:00 [target] complete in 2.3s positive_prevalence=0.054
+2026-06-02T07:23:53+00:00 [uniqueness] start
+2026-06-02T07:23:54+00:00 [uniqueness] complete in 0.7s horizon=50 rows=645189 ESS=643166 inflation=1.00x
+2026-06-02T07:23:54+00:00 [loop] start max_iter=5 callback_mode=agent_file_protocol (resume from iter 2)
+2026-06-02T07:24:08+00:00 [loop] LOOP COMPLETE in 14.2s best_iter=2 val_brier=0.0235 reason=plateau
+2026-06-02T07:24:08+00:00 [artifact] start
+2026-06-02T07:24:10+00:00 [artifact] complete in 1.7s -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop
+2026-06-02T07:24:10+00:00 [loop] STOPPED reason=plateau
+2026-06-02T07:24:10+00:00 [experiment] complete in 28.0s

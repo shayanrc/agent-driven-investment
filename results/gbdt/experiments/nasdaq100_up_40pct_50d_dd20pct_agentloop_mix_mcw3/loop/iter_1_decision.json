@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {},
+  "rationale": "Stop after iter_1 to capture mix-mcw3 test predictions",
+  "should_stop": true
+}

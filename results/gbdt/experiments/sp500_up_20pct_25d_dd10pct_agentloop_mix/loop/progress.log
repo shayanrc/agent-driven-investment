@@ -1,0 +1,59 @@
+2026-06-02T08:36:49+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:36:49+00:00 [data] start universe=sp500
+2026-06-02T08:37:19+00:00 [heartbeat] t=14:07:19 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=811
+2026-06-02T08:37:20+00:00 [data] complete in 30.8s rows=3638785 tickers_kept=486
+2026-06-02T08:37:40+00:00 [features] loaded from universe cache (key match) in 6.9s shape=(3638785, 279)
+2026-06-02T08:37:49+00:00 [heartbeat] t=14:07:49 phase=features elapsed_phase=29s elapsed_total=60s rss_mb=18435
+2026-06-02T08:38:19+00:00 [heartbeat] t=14:08:19 phase=features elapsed_phase=59s elapsed_total=90s rss_mb=18435
+2026-06-02T08:38:45+00:00 [target] start
+2026-06-02T08:38:49+00:00 [heartbeat] t=14:08:49 phase=target elapsed_phase=4s elapsed_total=120s rss_mb=18435
+2026-06-02T08:39:03+00:00 [target] complete in 18.0s positive_prevalence=0.059
+2026-06-02T08:39:03+00:00 [uniqueness] start
+2026-06-02T08:39:08+00:00 [uniqueness] complete in 5.3s horizon=25 rows=3638785 ESS=3633434 inflation=1.00x
+2026-06-02T08:39:08+00:00 [loop] start max_iter=4 callback_mode=agent_file_protocol
+2026-06-02T08:39:19+00:00 [heartbeat] t=14:09:19 phase=loop elapsed_phase=11s elapsed_total=150s rss_mb=18435
+2026-06-02T08:39:49+00:00 [heartbeat] t=14:09:49 phase=loop elapsed_phase=41s elapsed_total=180s rss_mb=18435
+2026-06-02T08:40:19+00:00 [heartbeat] t=14:10:19 phase=loop elapsed_phase=71s elapsed_total=210s rss_mb=18435
+2026-06-02T08:40:49+00:00 [heartbeat] t=14:10:49 phase=loop elapsed_phase=101s elapsed_total=240s rss_mb=18435
+2026-06-02T08:40:52+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.038422895135881534)
+2026-06-02T08:40:52+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/loop/iter_0_request.json
+2026-06-02T08:40:52+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/loop/checkpoint.json
+2026-06-02T08:40:52+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment sp500_up_20pct_25d_dd10pct_agentloop_mix.yaml --resume sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:41:17+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:41:17+00:00 [resume] loaded checkpoint at iter 0 (run_id=sp500_up_20pct_25d_dd10pct_agentloop_mix)
+2026-06-02T08:41:17+00:00 [resume] RESUMED iter 1 (decision: pruned 249, hp_changes=['colsample_bytree', 'gamma', 'min_child_weight'], should_stop=False)
+2026-06-02T08:41:17+00:00 [data] start universe=sp500
+2026-06-02T08:41:47+00:00 [heartbeat] t=14:11:47 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=853
+2026-06-02T08:41:47+00:00 [data] complete in 30.3s rows=3638785 tickers_kept=486
+2026-06-02T08:42:08+00:00 [features] loaded from per-cell cache (key match) in 7.5s shape=(3638785, 279)
+2026-06-02T08:42:10+00:00 [target] start
+2026-06-02T08:42:17+00:00 [heartbeat] t=14:12:17 phase=target elapsed_phase=7s elapsed_total=60s rss_mb=18994
+2026-06-02T08:42:28+00:00 [target] complete in 18.1s positive_prevalence=0.059
+2026-06-02T08:42:28+00:00 [uniqueness] start
+2026-06-02T08:42:34+00:00 [uniqueness] complete in 5.9s horizon=25 rows=3638785 ESS=3633434 inflation=1.00x
+2026-06-02T08:42:34+00:00 [loop] start max_iter=4 callback_mode=agent_file_protocol (resume from iter 1)
+2026-06-02T08:42:47+00:00 [heartbeat] t=14:12:47 phase=loop elapsed_phase=13s elapsed_total=90s rss_mb=18994
+2026-06-02T08:43:05+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.03645849344122904)
+2026-06-02T08:43:05+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/loop/iter_1_request.json
+2026-06-02T08:43:05+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/loop/checkpoint.json
+2026-06-02T08:43:05+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment sp500_up_20pct_25d_dd10pct_agentloop_mix.yaml --resume sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:43:22+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:43:22+00:00 [resume] loaded checkpoint at iter 1 (run_id=sp500_up_20pct_25d_dd10pct_agentloop_mix)
+2026-06-02T08:43:22+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=[], should_stop=True)
+2026-06-02T08:43:22+00:00 [data] start universe=sp500
+2026-06-02T08:43:52+00:00 [heartbeat] t=14:13:52 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=728
+2026-06-02T08:43:53+00:00 [data] complete in 31.0s rows=3638785 tickers_kept=486
+2026-06-02T08:44:13+00:00 [features] loaded from per-cell cache (key match) in 7.0s shape=(3638785, 279)
+2026-06-02T08:44:15+00:00 [target] start
+2026-06-02T08:44:22+00:00 [heartbeat] t=14:14:22 phase=target elapsed_phase=7s elapsed_total=60s rss_mb=19281
+2026-06-02T08:44:33+00:00 [target] complete in 18.0s positive_prevalence=0.059
+2026-06-02T08:44:33+00:00 [uniqueness] start
+2026-06-02T08:44:39+00:00 [uniqueness] complete in 5.6s horizon=25 rows=3638785 ESS=3633434 inflation=1.00x
+2026-06-02T08:44:39+00:00 [loop] start max_iter=4 callback_mode=agent_file_protocol (resume from iter 2)
+2026-06-02T08:44:52+00:00 [heartbeat] t=14:14:52 phase=loop elapsed_phase=13s elapsed_total=90s rss_mb=19281
+2026-06-02T08:45:22+00:00 [heartbeat] t=14:15:22 phase=loop elapsed_phase=43s elapsed_total=120s rss_mb=19281
+2026-06-02T08:45:26+00:00 [loop] LOOP COMPLETE in 47.2s best_iter=1 val_brier=0.0365 reason=agent_should_stop
+2026-06-02T08:45:26+00:00 [artifact] start
+2026-06-02T08:45:31+00:00 [artifact] complete in 5.3s -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix
+2026-06-02T08:45:31+00:00 [loop] STOPPED reason=agent_should_stop
+2026-06-02T08:45:31+00:00 [experiment] complete in 129.7s

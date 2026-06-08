@@ -1,0 +1,3 @@
+hp:
+  min_child_weight: 5.0
+  subsample: 0.8

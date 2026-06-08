@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "colsample_bytree": 0.5
+  },
+  "rationale": "iter 2 (colsample=0.7) was a no-op: val 0.023547 → 0.023558 (Δ +0.000011, noise). Per bug #204 framing, this is 'colsample=0.7 plateaued', not global plateau. Mapping the colsample response curve before pivoting: trying colsample=0.5 (more aggressive — each tree sees ~15 of 30 features = half). FS+mcw=10 sticky. If colsample=0.5 also flat (Δ < |0.0005|), iter_3 pivots to a different knob (gamma, subsample, or mcw revert).",
+  "should_stop": false
+}

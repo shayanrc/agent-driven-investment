@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "min_child_weight": 5.0
+  },
+  "rationale": "iter 0 baseline (mcw=default=1): val_brier=0.1071, train_brier=0.0643, train_val_gap=0.0428 → OVERFIT SIGNAL (gap > 0.02 threshold, no_overfit=false). Distinct from cell-1 (sp500 +50%/50d, no overfit) — cell-2 has higher positive_prevalence_val=0.121 (12.1% common event, vs cell-1's 0.79% rare event), so the model has more positive density to chase per leaf and is overfitting peaked leaves. Per L1+L2 playbook, mcw and FS are BOTH overfit levers; pick the highest-ROI single change. Bumping mcw 1 → 5 first (L2 grid traversal, attributable single-knob change, won across r1k trio + cell-1). If mcw=5 doesn't close the gap to <0.02, iter_1 decision can FS-prune. interaction_constraints (#184) deferred — mcw direction not settled. Spiegelhalter_z=13.46 (calibration off, isotonic post-loop will handle). eval_brier_provisional=0.1404 > val 0.1071 — prevalence shift suspected; flag for narrative.",
+  "should_stop": false
+}

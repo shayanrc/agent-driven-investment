@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "colsample_bytree": 0.7
+  },
+  "rationale": "iter 1 PERFECTLY replicated cell-4 iter_2 (val_brier 0.023547 byte-identical). FS+mcw=10 state has NEGATIVE gap (-0.0089, val < train) and spiegelhalter_z=-0.38 (near-perfect calibration) — model is HEAVILY over-regularized on train. Adding colsample_bytree=0.7 (XGBoost-typical moderate value) — column subsampling regularizes via tree-level feature variance reduction, mechanism distinct from row-weight cap (mcw) and FS. With FS already pruned to 30 essential features, colsample=0.7 means each tree sees ~21 random columns from the 30. mcw=10 sticky (carries forward). iter_2 onwards tests if col_sample helps test-set ranking (specifically R-p@1) where mcw alone fell -32%. If iter_2 plateau-improves further, iter_3 can try colsample=0.5 (more aggressive).",
+  "should_stop": false
+}

@@ -1,0 +1,8 @@
+{
+  "prune_features": [],
+  "hp_changes": {
+    "subsample": 0.8
+  },
+  "rationale": "iter 1 (mcw=5) closed the gap by 0.01 (0.0428 → 0.0328) — mcw direction productive, but val_brier only improved -0.00018 and gap still > 0.02 threshold. Deviating from L2 grid endpoint (mcw=10) to test a DIFFERENT regularization lever: subsample=0.8 (row sampling). Rationale: mcw and subsample regularize via different mechanisms (mcw caps leaf weights via Hessian sum; subsample reduces variance across boosting rounds by training each tree on a bootstrap subset of rows). On the cell-1 (rare-event sp500 +50%/50d) the L2 grid converged on mcw=10; cell-2 (common-event sp500 +20%/50d, 12% prevalence) may respond better to row-level variance reduction than leaf-weight capping. mcw=5 carries forward (sticky from iter_0 decision). If iter_2 plateaus (Δval_brier < 0.005) or degrades, iter_3 can revert subsample=1.0 and try mcw=10. FS prune still SKIPPED — one attributable change per iter (playbook rule 6). interaction_constraints (#184) deferred.",
+  "should_stop": false
+}

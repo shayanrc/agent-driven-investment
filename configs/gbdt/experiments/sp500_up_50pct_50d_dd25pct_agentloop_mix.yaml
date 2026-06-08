@@ -1,0 +1,17 @@
+# Mix-recipe replication on cell-1 (sp500_up_50pct_50d_dd25pct).
+# Tests whether the cell-4 winning config (FS top-30 + mcw=5 + colsample=0.5 +
+# gamma=0.5) generalizes to cell-1's stronger top-1 baseline (sweep R-p@1=0.800).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 4
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05

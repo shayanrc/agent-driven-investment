@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {},
+  "rationale": "Stop after iter_1 to capture test predictions. Mix (mcw=5+cs=0.5+\u03b3=0.5) val 0.023441 \u2014 between colsample (0.0235) and gamma (0.0234). Finalizing here to compare test R-Precision@K across all cell-4 variants.",
+  "should_stop": true
+}
