@@ -26,10 +26,13 @@ Design notes
 Public surface
 --------------
 - ``compute_top_k_metrics(df, k_values=(1, 5, 10))``
+- ``compute_r_precision_at_k(df, k_values=(1, 3, 5, 10, 20))`` — canonical
+  macro form (matches ``scripts/gbdt/regenerate_r_precision_at_k_csv.py``
+  and the canonical CSV ``results/gbdt/data/r_precision_at_k.csv``)
 - ``compute_per_ticker_hit_rate(df, k=5)``
 - ``compute_per_quarter_p_k(df, k=5)``
 - ``compute_prediction_range(df, low_separation_threshold=0.05)``
-- ``compute_all(df, ...)`` — bundle helper that calls the four above.
+- ``compute_all(df, ...)`` — bundle helper that calls all of the above.
 """
 
 from __future__ import annotations
@@ -209,6 +212,127 @@ def compute_top_k_metrics(
 
 
 # ---------------------------------------------------------------------------
+# 1b. Canonical R-Precision@K (macro) — matches the registry CSV
+# ---------------------------------------------------------------------------
+
+
+def compute_r_precision_at_k(
+    df: pd.DataFrame, k_values: Iterable[int] = (1, 3, 5, 10, 20)
+) -> dict[str, Any]:
+    """Canonical R-Precision@K — per-day fixed K, **macro-averaged**.
+
+    Reconciles the runner's segment_diagnostics surface with the
+    project-canonical R-Precision@K registry produced by
+    ``scripts/gbdt/regenerate_r_precision_at_k_csv.py`` (and the
+    ``results/gbdt/data/r_precision_at_k.csv`` registry of record).
+
+    Formula (per ``.claude/memories/project-r-precision-methodology.md``)::
+
+        R-Precision@K = (1 / Q) · Σ_{q in days with R_q > 0}  r_q / min(K, R_q)
+
+    where:
+      - ``R_q`` = number of positives on day ``q``
+      - ``r_q`` = positives caught in the top-``K`` picks on day ``q``,
+        sorted by ``(p_calibrated desc, ticker asc)`` with stable
+        mergesort (same tie-break as
+        :func:`compute_top_k_metrics` and the regenerate script)
+      - ``Q`` = count of days with ``R_q > 0``; days with no positives
+        are skipped (``min(K, 0)`` is ill-defined and contributes no
+        information).
+
+    Distinct from :func:`compute_top_k_metrics`'s ``per_day.p_at_k``,
+    which uses **micro** aggregation
+    ``sum_d(positives_in_top_k(d)) / sum_d(min(R(d), k))``. Both forms
+    are mathematically valid; macro is the cross-cell headline (the
+    canonical CSV stores it) and matches what memos must report.
+    See the methodology memory for the relationship between the two.
+
+    Returns a dict::
+
+        {
+          "formula_version": "macro_per_day_fixed_k",
+          "tie_break": "(p_calibrated desc, ticker asc) mergesort",
+          "base_rate": float | None,
+          "n_rows": int,
+          "Q_days": int,     # days with R_q > 0 (the macro denominator)
+          "by_k": {
+             "1": {"r_precision_at_k": float | None,
+                    "n_qualifying_days": int},
+             "3": ...,
+             "5": ...,
+             "10": ...,
+             "20": ...,
+          },
+        }
+
+    Empty segment / no day with ``R_q > 0`` → all ``r_precision_at_k``
+    values are ``None``.
+    """
+    k_values = tuple(sorted(int(k) for k in k_values))
+    empty_by_k = {
+        str(k): {"r_precision_at_k": None, "n_qualifying_days": 0}
+        for k in k_values
+    }
+    if df is None or df.empty:
+        return {
+            "formula_version": "macro_per_day_fixed_k",
+            "tie_break": "(p_calibrated desc, ticker asc) mergesort",
+            "base_rate": None,
+            "n_rows": 0,
+            "Q_days": 0,
+            "by_k": empty_by_k,
+        }
+
+    n_rows = int(len(df))
+    base_rate = float(df["y_true"].mean()) if n_rows else None
+
+    # Canonical tie-break, identical to compute_top_k_metrics + the
+    # regenerate script: (date asc, p_calibrated desc, ticker asc)
+    # stable mergesort. Sorting by date upfront lets the head(k) groupby
+    # honor the within-day ranking deterministically.
+    sorted_df = df.sort_values(
+        ["date", "p_calibrated", "ticker"],
+        ascending=[True, False, True],
+        kind="mergesort",
+    )
+    grouped = sorted_df.groupby("date", sort=False)
+    per_day_r = grouped["y_true"].sum().astype(int)
+    qualifying_days = per_day_r[per_day_r > 0].index
+    Q = int(len(qualifying_days))
+
+    by_k: dict[str, Any] = {}
+    if Q == 0:
+        by_k = empty_by_k
+    else:
+        per_day_R_qual = per_day_r.reindex(qualifying_days)
+        for k in k_values:
+            picks = grouped.head(int(k))
+            per_day_caught = (
+                picks.groupby("date", sort=False)["y_true"].sum().astype(int)
+            )
+            per_day_caught = per_day_caught.reindex(
+                qualifying_days, fill_value=0
+            )
+            per_day_denom = per_day_R_qual.clip(upper=int(k))
+            per_day_ratio = (
+                per_day_caught.astype(float) / per_day_denom.astype(float)
+            )
+            by_k[str(k)] = {
+                "r_precision_at_k": float(per_day_ratio.mean()),
+                "n_qualifying_days": Q,
+            }
+
+    return {
+        "formula_version": "macro_per_day_fixed_k",
+        "tie_break": "(p_calibrated desc, ticker asc) mergesort",
+        "base_rate": base_rate,
+        "n_rows": n_rows,
+        "Q_days": Q,
+        "by_k": by_k,
+    }
+
+
+# ---------------------------------------------------------------------------
 # 2. Per-ticker hit-rate when picked
 # ---------------------------------------------------------------------------
 
@@ -365,11 +489,24 @@ def compute_all(
     per_ticker_k: int = 5,
     per_quarter_k: int = 5,
     low_separation_threshold: float = 0.05,
+    r_precision_k_values: Iterable[int] = (1, 3, 5, 10, 20),
 ) -> dict[str, Any]:
-    """Compute all four diagnostics on one segment. Returns the bundle dict
-    the report layer threads into ``metrics.json``."""
+    """Compute all segment diagnostics. Returns the bundle dict
+    the report layer threads into ``metrics.json``.
+
+    The ``r_precision_at_k`` block carries the **macro-aggregated**
+    R-Precision@K values that match the canonical CSV at
+    ``results/gbdt/data/r_precision_at_k.csv`` — distinct from the
+    ``top_k_metrics.per_day.p_at_k`` field, which is the
+    micro-aggregated form (back-compat, ``formula_version: v2_min_R_d_k``).
+    Memo authors should read ``r_precision_at_k`` for cross-cell
+    headlines; see ``.claude/memories/project-r-precision-methodology.md``.
+    """
     return {
         "top_k_metrics": compute_top_k_metrics(df, k_values=k_values),
+        "r_precision_at_k": compute_r_precision_at_k(
+            df, k_values=r_precision_k_values
+        ),
         "per_ticker_hit_rate": compute_per_ticker_hit_rate(df, k=per_ticker_k),
         "per_quarter_p_k": compute_per_quarter_p_k(df, k=per_quarter_k),
         "prediction_range": compute_prediction_range(
@@ -380,6 +517,7 @@ def compute_all(
 
 __all__ = [
     "compute_top_k_metrics",
+    "compute_r_precision_at_k",
     "compute_per_ticker_hit_rate",
     "compute_per_quarter_p_k",
     "compute_prediction_range",

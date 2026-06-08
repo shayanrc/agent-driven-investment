@@ -398,7 +398,7 @@ def test_compute_all_returns_full_bundle():
     df = _tiny_df()
     bundle = topk_diagnostics.compute_all(df)
     assert set(bundle) == {
-        "top_k_metrics", "per_ticker_hit_rate",
+        "top_k_metrics", "r_precision_at_k", "per_ticker_hit_rate",
         "per_quarter_p_k", "prediction_range",
     }
 
@@ -443,6 +443,7 @@ def test_render_segment_diagnostics_appends_sections():
     _render_segment_diagnostics(lines, metrics)
     md = "\n".join(lines)
     assert "## Top-K precision" in md
+    assert "## R-Precision@K (canonical macro)" in md
     assert "## Per-ticker hit-rate" in md
     assert "## Per-quarter P@5 stability" in md
     assert "## Prediction-range diagnostics" in md

@@ -485,6 +485,50 @@ def _render_segment_diagnostics(lines: list[str], metrics: dict) -> None:
             )
         lines.append("")
 
+    # --- Canonical R-Precision@K (macro-averaged) ---
+    # Matches the registry of record at
+    # ``results/gbdt/data/r_precision_at_k.csv``. Distinct from the Top-K
+    # block's ``per_day.p_at_k`` (micro), which is preserved for
+    # back-compat. See ``.claude/memories/project-r-precision-methodology.md``.
+    lines.append("## R-Precision@K (canonical macro)")
+    lines.append("")
+    lines.append(
+        "Per-day fixed K, **macro-averaged** across days with "
+        "``R_q > 0``: ``R-Precision@K = (1/Q) · Σ r_q / min(K, R_q)`` "
+        "where ``R_q`` = positives that day, ``r_q`` = positives caught "
+        "in top-K, sorted by ``(p_calibrated desc, ticker asc)`` stable "
+        "mergesort. This is the cross-cell headline (matches "
+        "``results/gbdt/data/r_precision_at_k.csv``) — distinct from the "
+        "Top-K block's ``per_day.p_at_k`` above, which is micro-aggregated "
+        "(both forms are mathematically valid; macro is canonical for "
+        "cross-cell comparison). See "
+        "``.claude/memories/project-r-precision-methodology.md``."
+    )
+    lines.append("")
+    for seg in ("eval", "test"):
+        block = (seg_diag.get(seg, {}) or {}).get("r_precision_at_k") or {}
+        n_rows = block.get("n_rows", 0)
+        Q = block.get("Q_days", 0)
+        base = block.get("base_rate")
+        lines.append(
+            f"### {seg} — n_rows={n_rows}, Q_days={Q}, "
+            f"base_rate={_fmt(base, '.4f')}"
+        )
+        lines.append("")
+        by_k = block.get("by_k") or {}
+        if not by_k or Q == 0:
+            lines.append("_segment empty or no day with positives._")
+            lines.append("")
+            continue
+        lines.append("| k | R-Precision@k | base_rate | Q_days |")
+        lines.append("|---|---|---|---|")
+        for k, b in sorted(by_k.items(), key=lambda kv: int(kv[0])):
+            lines.append(
+                f"| {k} | {_fmt(b.get('r_precision_at_k'))} | "
+                f"{_fmt(base, '.4f')} | {b.get('n_qualifying_days')} |"
+            )
+        lines.append("")
+
     # --- Per-ticker hit-rate when picked ---
     lines.append("## Per-ticker hit-rate when picked (k=5)")
     lines.append("")

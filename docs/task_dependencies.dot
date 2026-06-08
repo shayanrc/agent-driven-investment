@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 23:00 IST)\nafter #251 metrics.json::loop metadata fix", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 23:15 IST)\nafter #251 loop metadata + #252 canonical R-Precision@K reconciliation", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -50,7 +50,7 @@ digraph tasks {
     fontsize = 11;
 
     t251 [label=<<B>#251</B> BUG (merged)<BR/>metrics.json::loop<BR/>metadata unset<BR/>(agent_file_protocol)>, fillcolor="#cccccc"];
-    t252 [label=<<B>#252</B> METHODOLOGY<BR/>segment_diagnostics<BR/>vs canonical CSV<BR/>(tie-break drift)>, fillcolor="#a4e9a4"];
+    t252 [label=<<B>#252</B> METHODOLOGY<BR/>segment_diagnostics<BR/>vs canonical CSV<BR/>(tie-break drift)>, fillcolor="#cccccc"];
     t218 [label=<<B>#218</B><BR/>cell-5 manual_xgb<BR/>artifact dir materialize>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
