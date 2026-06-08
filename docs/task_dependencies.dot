@@ -1,0 +1,153 @@
+digraph tasks {
+  rankdir=TB;
+  fontname="Helvetica";
+  bgcolor="white";
+  node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
+  edge [fontname="Helvetica", fontsize=9];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 22:13 IST)\ninitial commit: V1.4 P1-P4 closed out; #251 + #252 surfaced by P3+P4 reviews", fontsize=13, fontname="Helvetica-Bold"];
+
+  // Legend in isolated top rank
+  {
+    rank=source;
+    legend [shape=none, margin=0, label=<
+      <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+        <TR><TD COLSPAN="6" BGCOLOR="#f0f0f0"><B>Legend</B></TD></TR>
+        <TR>
+          <TD BGCOLOR="#a4e9a4">actionable</TD>
+          <TD BGCOLOR="#a3c8e8">in-flight</TD>
+          <TD BGCOLOR="#ffd966">goal</TD>
+          <TD BGCOLOR="#ffffff">pending / gated (dashed)</TD>
+          <TD BGCOLOR="#cccccc">done / merged</TD>
+          <TD BGCOLOR="#a3c8e8">recurring (dotted)</TD>
+        </TR>
+        <TR><TD COLSPAN="6" BGCOLOR="#f8f8f8">solid edge = hard dep · dashed = soft / "surfaced by" · red = critical path · green = clean-memo path · purple = data correctness</TD></TR>
+      </TABLE>
+    >];
+  }
+
+  // Done cluster
+  subgraph cluster_done {
+    label = "Recently merged (context)";
+    style = "filled";
+    fillcolor = "#fafafa";
+    color = "#cccccc";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    v14p1 [label="V1.4 P1\nL1 fallback\nPR #135", fillcolor="#cccccc"];
+    v14p2 [label="V1.4 P2\ntiebreak_path\nPR #136", fillcolor="#cccccc"];
+    v14p3 [label="V1.4 P3\nr1k replay\nPR #138", fillcolor="#cccccc"];
+    v14p4 [label="V1.4 P4\ncell-5 anti-AUC\nPR #139", fillcolor="#cccccc"];
+    cell5_manual [label="#211\ncell-5 manual track\n(R-p@1 = 0.829)", fillcolor="#cccccc"];
+  }
+
+  // Runner / methodology cluster
+  subgraph cluster_runner {
+    label = "Runner + canonical-CSV output consistency";
+    style = "rounded";
+    color = "#888888";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    t251 [label=<<B>#251</B> BUG (next-up)<BR/>metrics.json::loop<BR/>metadata unset<BR/>(agent_file_protocol)>, fillcolor="#a4e9a4"];
+    t252 [label=<<B>#252</B> METHODOLOGY<BR/>segment_diagnostics<BR/>vs canonical CSV<BR/>(tie-break drift)>, fillcolor="#a4e9a4"];
+    t218 [label=<<B>#218</B><BR/>cell-5 manual_xgb<BR/>artifact dir materialize>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+  }
+
+  // Data pipeline
+  subgraph cluster_data {
+    label = "Data pipeline";
+    style = "rounded";
+    color = "#888888";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    t244 [label=<<B>#244</B> BUG (quick win)<BR/>nselib Series=='EQ'<BR/>filter missing<BR/>(GH issue #133)>, fillcolor="#a4e9a4"];
+  }
+
+  // Worktree cleanup cluster
+  subgraph cluster_worktree {
+    label = "Worktree cleanup";
+    style = "rounded";
+    color = "#888888";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    t227 [label=<<B>#227</B><BR/>preserve orphan<BR/>CSV row in<BR/>wt-top5-rp1-agentloop>, fillcolor="#a4e9a4"];
+    t219 [label=<<B>#219</B><BR/>prune 2 NTFS-corrupted<BR/>worktrees (needs sudo)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+  }
+
+  // Cleanup polish
+  subgraph cluster_cleanup {
+    label = "Cleanup polish (low priority)";
+    style = "rounded";
+    color = "#888888";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    t246 [label=<<B>#246</B><BR/>L1 (gap,|z|) tail<BR/>dead code cleanup>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    t206 [label=<<B>#206</B><BR/>/gbdt-diagnose retry<BR/>on cell-4 mix<BR/>(_195 memo polish)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+  }
+
+  // Scheduled / recurring
+  subgraph cluster_recurring {
+    label = "Scheduled tasks / loops";
+    style = "rounded";
+    color = "#888888";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    t94 [label=<<B>#94</B><BR/>hourly wakeup<BR/>(health + PRs + sweeps)>, fillcolor="#a3c8e8", style="rounded,filled,dotted"];
+  }
+
+  // Goals
+  subgraph cluster_goals {
+    label = "Goals";
+    style = "filled";
+    fillcolor = "#fffcec";
+    color = "#cc9933";
+    fontname = "Helvetica-Bold";
+    fontsize = 11;
+
+    g1 [label="G1: clean canonical\nR-p@K reporting +\nmemos going forward", fillcolor="#ffd966", shape=octagon];
+    g2 [label="G2: free disk\n(prune corrupted\nworktrees)", fillcolor="#ffd966", shape=octagon];
+    g3 [label="G3: nselib adapter\nbackend correctness", fillcolor="#ffd966", shape=octagon];
+    g4 [label="G4: codebase\nhygiene", fillcolor="#ffd966", shape=octagon];
+  }
+
+  // Invisible anchor edges (legend → cluster tops)
+  legend -> v14p1 [style="invis", weight=100];
+  legend -> t251 [style="invis", weight=100];
+  legend -> t244 [style="invis", weight=100];
+  legend -> t227 [style="invis", weight=100];
+  legend -> t246 [style="invis", weight=100];
+  legend -> t94 [style="invis", weight=100];
+  legend -> g1 [style="invis", weight=100];
+
+  // Done → pending: "surfaced by" / "gates" edges
+  v14p3 -> t251 [style="dashed", color="#999999", label="surfaced"];
+  v14p4 -> t252 [style="dashed", color="#999999", label="surfaced"];
+  v14p1 -> t246 [style="dashed", color="#999999", label="gates\n(cleanup)"];
+  cell5_manual -> t218 [style="dashed", color="#999999", label="enables"];
+
+  // Hard deps within pending
+  t227 -> t219 [color="#cc3333", penwidth=2.5, label="preserve\nbefore prune"];
+
+  // Soft deps: #252 may obviate #218
+  t252 -> t218 [style="dashed", color="#888888", label="may\nobviate"];
+
+  // Pending → goals (colored per workstream)
+  t251 -> g1 [color="#338866", penwidth=2];
+  t252 -> g1 [color="#338866", penwidth=2];
+  t218 -> g1 [style="dashed", color="#338866"];
+  t227 -> g2 [color="#cc3333", penwidth=2];
+  t219 -> g2 [color="#cc3333", penwidth=2];
+  t244 -> g3 [color="#a040a0", penwidth=2];
+  t246 -> g4 [style="dashed", color="#888888"];
+  t206 -> g4 [style="dashed", color="#888888"];
+
+  // Recurring task supervises (dotted)
+  t94 -> g1 [style="dotted", color="#aaaaaa"];
+  t94 -> g2 [style="dotted", color="#aaaaaa"];
+  t94 -> g3 [style="dotted", color="#aaaaaa"];
+}
