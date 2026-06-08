@@ -145,6 +145,30 @@ def test_nselib_parse_then_normalize_passes_schema_index():
     _normalize_and_validate(df, NSElibAdapter(), "NIFTY:50")
 
 
+def test_nselib_parse_drops_non_eq_series(tmp_path):
+    """If the nselib CSV payload contains both EQ + BL rows for the same date,
+    parse() must keep only EQ. Mirrors the JugaadAdapter regression — same
+    bug class (#244 / GH #133): nselib's price_volume_data also returns the
+    multi-series rows, and BL/T0/N1 collide on the (ticker, date) PK."""
+    p = tmp_path / "mixed.csv"
+    p.write_text(
+        "Symbol,Series,Date,PrevClose,OpenPrice,HighPrice,LowPrice,LastPrice,"
+        "ClosePrice,AveragePrice,TotalTradedQuantity,Turnover₹,No.ofTrades\n"
+        # EQ row
+        'RELIANCE,EQ,01-Apr-2025,"99.0","100.0","102.0","99.0","101.0","101.0",'
+        '"100.5","1000","1,00,500.00","50"\n'
+        # BL row, same date — must be dropped
+        'RELIANCE,BL,01-Apr-2025,"99.0","99.5","99.5","99.5","99.5","99.5",'
+        '"99.5","50","4,975.00","1"\n'
+        # N1 row, same date — must also be dropped
+        'RELIANCE,N1,01-Apr-2025,"99.0","99.0","99.0","99.0","99.0","99.0",'
+        '"99.0","10","990.00","1"\n'
+    )
+    df = NSElibAdapter().parse(p)
+    assert len(df) == 1
+    assert df["close"].iloc[0] == 101.0  # EQ row, not BL/N1
+
+
 def test_nselib_meta_is_quality_none_inr():
     a = NSElibAdapter()
     assert a.extra_meta == {"adjustment_quality": QUALITY_NONE, "currency": "INR"}

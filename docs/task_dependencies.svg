@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2135,-467.95 2135,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 22:13 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">initial commit: V1.4 P1&#45;P4 closed out; #251 + #252 surfaced by P3+P4 reviews</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 22:30 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #244 nselib EQ filter fix</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -98,7 +98,7 @@
 <!-- t244 -->
 <g id="node10" class="node">
 <title>t244</title>
-<path fill="#a4e9a4" stroke="black" d="M1116.92,-243.2C1116.92,-243.2 1009.08,-243.2 1009.08,-243.2 1003.08,-243.2 997.08,-237.2 997.08,-231.2 997.08,-231.2 997.08,-203.68 997.08,-203.68 997.08,-197.68 1003.08,-191.68 1009.08,-191.68 1009.08,-191.68 1116.92,-191.68 1116.92,-191.68 1122.92,-191.68 1128.92,-197.68 1128.92,-203.68 1128.92,-203.68 1128.92,-231.2 1128.92,-231.2 1128.92,-237.2 1122.92,-243.2 1116.92,-243.2"/>
+<path fill="#cccccc" stroke="black" d="M1116.92,-243.2C1116.92,-243.2 1009.08,-243.2 1009.08,-243.2 1003.08,-243.2 997.08,-237.2 997.08,-231.2 997.08,-231.2 997.08,-203.68 997.08,-203.68 997.08,-197.68 1003.08,-191.68 1009.08,-191.68 1009.08,-191.68 1116.92,-191.68 1116.92,-191.68 1122.92,-191.68 1128.92,-197.68 1128.92,-203.68 1128.92,-203.68 1128.92,-231.2 1128.92,-231.2 1128.92,-237.2 1122.92,-243.2 1116.92,-243.2"/>
 <text xml:space="preserve" text-anchor="start" x="1007.88" y="-228.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#244</text>
 <text xml:space="preserve" text-anchor="start" x="1036.38" y="-228.94" font-family="Helvetica,sans-Serif" font-size="10.00"> BUG (quick win)</text>
 <text xml:space="preserve" text-anchor="start" x="1013.88" y="-218.94" font-family="Helvetica,sans-Serif" font-size="10.00">nselib Series==&#39;EQ&#39;</text>
