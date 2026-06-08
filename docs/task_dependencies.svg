@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2135,-467.95 2135,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:00 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #251 metrics.json::loop metadata fix</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:15 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #251 loop metadata + #252 canonical R&#45;Precision@K reconciliation</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -185,7 +185,7 @@
 <!-- t252 -->
 <g id="node8" class="node">
 <title>t252</title>
-<path fill="#a4e9a4" stroke="black" d="M820.17,-243.2C820.17,-243.2 713.83,-243.2 713.83,-243.2 707.83,-243.2 701.83,-237.2 701.83,-231.2 701.83,-231.2 701.83,-203.68 701.83,-203.68 701.83,-197.68 707.83,-191.68 713.83,-191.68 713.83,-191.68 820.17,-191.68 820.17,-191.68 826.17,-191.68 832.17,-197.68 832.17,-203.68 832.17,-203.68 832.17,-231.2 832.17,-231.2 832.17,-237.2 826.17,-243.2 820.17,-243.2"/>
+<path fill="#cccccc" stroke="black" d="M820.17,-243.2C820.17,-243.2 713.83,-243.2 713.83,-243.2 707.83,-243.2 701.83,-237.2 701.83,-231.2 701.83,-231.2 701.83,-203.68 701.83,-203.68 701.83,-197.68 707.83,-191.68 713.83,-191.68 713.83,-191.68 820.17,-191.68 820.17,-191.68 826.17,-191.68 832.17,-197.68 832.17,-203.68 832.17,-203.68 832.17,-231.2 832.17,-231.2 832.17,-237.2 826.17,-243.2 820.17,-243.2"/>
 <text xml:space="preserve" text-anchor="start" x="712.62" y="-228.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#252</text>
 <text xml:space="preserve" text-anchor="start" x="741.12" y="-228.94" font-family="Helvetica,sans-Serif" font-size="10.00"> METHODOLOGY</text>
 <text xml:space="preserve" text-anchor="start" x="715.25" y="-218.94" font-family="Helvetica,sans-Serif" font-size="10.00">segment_diagnostics</text>
