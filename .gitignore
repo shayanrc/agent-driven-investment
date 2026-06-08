@@ -39,6 +39,11 @@ results/forecasters/forecasts/*
 results/gbdt/experiments/**/_feature_matrix_cache.parquet
 results/gbdt/experiments/**/_feature_matrix_cache.key.json
 
+# gbdt-diagnose: per-cell in-sample matrix cache for /gbdt-diagnose
+# (derivable from the panel + spec; reused on re-run for fast iteration on
+# --top-n / --no-pdp; can be ~700 MB on US universes, never committed).
+results/gbdt/experiments/**/diagnose/_insample_matrix.parquet
+
 # Local secrets
 .env
 

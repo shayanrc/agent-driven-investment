@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2165,-467.95 2165,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:55 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #246 audit (L1 tail is legacy&#45;resume fallback, not dead code)</text>
+<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;09 00:25 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #206 /gbdt&#45;diagnose retry on cell&#45;4 mix captured pairwise interactions (post&#45;#246 merge)</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -315,7 +315,7 @@
 <!-- t206 -->
 <g id="node14" class="node">
 <title>t206</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M1423.3,-243.2C1423.3,-243.2 1326.7,-243.2 1326.7,-243.2 1320.7,-243.2 1314.7,-237.2 1314.7,-231.2 1314.7,-231.2 1314.7,-203.68 1314.7,-203.68 1314.7,-197.68 1320.7,-191.68 1326.7,-191.68 1326.7,-191.68 1423.3,-191.68 1423.3,-191.68 1429.3,-191.68 1435.3,-197.68 1435.3,-203.68 1435.3,-203.68 1435.3,-231.2 1435.3,-231.2 1435.3,-237.2 1429.3,-243.2 1423.3,-243.2"/>
+<path fill="#cccccc" stroke="black" d="M1423.3,-243.2C1423.3,-243.2 1326.7,-243.2 1326.7,-243.2 1320.7,-243.2 1314.7,-237.2 1314.7,-231.2 1314.7,-231.2 1314.7,-203.68 1314.7,-203.68 1314.7,-197.68 1320.7,-191.68 1326.7,-191.68 1326.7,-191.68 1423.3,-191.68 1423.3,-191.68 1429.3,-191.68 1435.3,-197.68 1435.3,-203.68 1435.3,-203.68 1435.3,-231.2 1435.3,-231.2 1435.3,-237.2 1429.3,-243.2 1423.3,-243.2"/>
 <text xml:space="preserve" text-anchor="start" x="1360.75" y="-228.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#206</text>
 <text xml:space="preserve" text-anchor="start" x="1325.5" y="-218.94" font-family="Helvetica,sans-Serif" font-size="10.00">/gbdt&#45;diagnose retry</text>
 <text xml:space="preserve" text-anchor="start" x="1343.12" y="-208.94" font-family="Helvetica,sans-Serif" font-size="10.00">on cell&#45;4 mix</text>

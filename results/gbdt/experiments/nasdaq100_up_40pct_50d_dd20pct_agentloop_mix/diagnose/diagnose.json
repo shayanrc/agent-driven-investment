@@ -1,0 +1,971 @@
+{
+  "artifact_dir": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
+  "cell": {
+    "universe": "nasdaq100",
+    "direction": "up",
+    "threshold_pct": 40,
+    "horizon_days": 50,
+    "max_drawdown": 0.2
+  },
+  "n_features_in_model": 30,
+  "insample_rows": 635989,
+  "insample_prevalence": 0.053977348664835396,
+  "overfit": {
+    "train_val_gap": null,
+    "early_stop": null,
+    "iteration_cap_hit": null,
+    "no_overfit": null
+  },
+  "prevalence_by_segment": {
+    "train": 0.04036684782608695,
+    "val": 0.025815217391304348,
+    "eval": 0.05983695652173913,
+    "test": 0.05543478260869565
+  },
+  "prevalence_drift": {
+    "spread": 0.03402173913043478,
+    "drift_flag": true,
+    "monotone_decline": false
+  },
+  "top_features": [
+    {
+      "feature": "garman_klass_200",
+      "importance": 27.279666900634766,
+      "marginal": {
+        "rho": 0.2638311130950497,
+        "consistency": 1.0,
+        "pr_lo": 0.000858035584192718,
+        "pr_hi": 0.21108017096231058,
+        "n": 617681
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.9140676570838827
+      },
+      "interaction_involvement": 0.07825138088725507,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "realized_vol_200",
+      "importance": 20.673316955566406,
+      "marginal": {
+        "rho": 0.2571468059338817,
+        "consistency": 1.0,
+        "pr_lo": 0.0,
+        "pr_hi": 0.18541427160413868,
+        "n": 617589
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.0372748602449894,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "vol_xs_rank_50",
+      "importance": 3.8323802947998047,
+      "marginal": {
+        "rho": 0.20698039928812698,
+        "consistency": 1.0,
+        "pr_lo": 0.002819176737040498,
+        "pr_hi": 0.16520692440488446,
+        "n": 631389
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.7752133455021029
+      },
+      "interaction_involvement": 0.06532290608715266,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "parkinson_200",
+      "importance": 3.7100818157196045,
+      "marginal": {
+        "rho": 0.2649001713288694,
+        "consistency": 1.0,
+        "pr_lo": 0.0008742249348378636,
+        "pr_hi": 0.21409143893278074,
+        "n": 617681
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.4597840902493927
+      },
+      "interaction_involvement": 0.21633395525012167,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "vol_xs_rank_200",
+      "importance": 2.581641674041748,
+      "marginal": {
+        "rho": 0.20843876190321484,
+        "consistency": 1.0,
+        "pr_lo": 0.001068670153337975,
+        "pr_hi": 0.15068249162065447,
+        "n": 617589
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.8914440754446111
+      },
+      "interaction_involvement": 0.21998811150016262,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "moy_sin",
+      "importance": 1.619901418685913,
+      "marginal": {
+        "rho": -0.010020582676754437,
+        "consistency": 0.4444444444444444,
+        "pr_lo": 0.06358590543876476,
+        "pr_hi": 0.06059843708234406,
+        "n": 635989
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -1.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.04080761132258922,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "index_runup_50",
+      "importance": 1.5266942977905273,
+      "marginal": {
+        "rho": 0.05277868899137361,
+        "consistency": 0.7777777777777778,
+        "pr_lo": 0.05737614476442679,
+        "pr_hi": 0.10880976024968081,
+        "n": 634405
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -0.3638686226668908,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.15987393220541998,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "vol_xs_zscore_50",
+      "importance": 1.3680055141448975,
+      "marginal": {
+        "rho": 0.2058052918951358,
+        "consistency": 1.0,
+        "pr_lo": 0.005353268186065665,
+        "pr_hi": 0.1581273064191704,
+        "n": 631389
+      },
+      "model_pdp": {
+        "monotone": false,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": -0.8292884350886305,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.09591925898808987,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "vol_xs_zscore_100",
+      "importance": 1.3371788263320923,
+      "marginal": {
+        "rho": 0.2151873467087016,
+        "consistency": 1.0,
+        "pr_lo": 0.0036854448858469344,
+        "pr_hi": 0.1576923690550264,
+        "n": 626789
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.05430138453375548,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "beta_100",
+      "importance": 1.2183948755264282,
+      "marginal": {
+        "rho": 0.09503998140370576,
+        "consistency": 0.7777777777777778,
+        "pr_lo": 0.03406244515707015,
+        "pr_hi": 0.11495078096332105,
+        "n": 626789
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.012302603713516146,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "realized_vol_zscore_200",
+      "importance": 1.1475929021835327,
+      "marginal": {
+        "rho": 0.03859093103520704,
+        "consistency": 0.6666666666666666,
+        "pr_lo": 0.04094845567254585,
+        "pr_hi": 0.0671138699773061,
+        "n": 599281
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -0.6146750196790205,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.08891579132135957,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "index_drawdown_200",
+      "importance": 1.1386252641677856,
+      "marginal": {
+        "rho": -0.0744352652742857,
+        "consistency": 1.0,
+        "pr_lo": 0.09271439011215962,
+        "pr_hi": 0.033632002033489025,
+        "n": 629455
+      },
+      "model_pdp": {
+        "monotone": false,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": -0.6540587707808272,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.1566314344920218,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "return_xs_zscore_200",
+      "importance": 1.0990097522735596,
+      "marginal": {
+        "rho": -0.01655042076018878,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.1055230816561149,
+        "pr_hi": 0.09606696999627584,
+        "n": 617589
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -0.597293923016489,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.11046067974455655,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "garman_klass_50",
+      "importance": 0.9558772444725037,
+      "marginal": {
+        "rho": 0.26582384561218303,
+        "consistency": 1.0,
+        "pr_lo": 0.001330187334716306,
+        "pr_hi": 0.2228415785139672,
+        "n": 631481
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.06164906908636913,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "index_vol_20",
+      "importance": 0.9480055570602417,
+      "marginal": {
+        "rho": 0.12068725374461883,
+        "consistency": 0.8888888888888888,
+        "pr_lo": 0.02017785472574172,
+        "pr_hi": 0.12386873376878886,
+        "n": 635349
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -1.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.056763360585831105,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "index_runup_200",
+      "importance": 0.9470123052597046,
+      "marginal": {
+        "rho": 0.03640121360271319,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.07210942712801449,
+        "pr_hi": 0.09792520573189718,
+        "n": 629455
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.7614997569668905
+      },
+      "interaction_involvement": 0.10325087326904758,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "dollar_move_xs_rank",
+      "importance": 0.8377071022987366,
+      "marginal": {
+        "rho": 0.021724851228077616,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.05712353967829683,
+        "pr_hi": 0.07729681284296923,
+        "n": 635988
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": true,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 1.0
+      },
+      "interaction_involvement": 0.04114326889235526,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "returns_skew_200",
+      "importance": 0.8084195256233215,
+      "marginal": {
+        "rho": 0.012019240090761541,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.06055797535581858,
+        "pr_hi": 0.05613756699428423,
+        "n": 617589
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -0.4220487092675249,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.1439272575557232,
+      "constraint_advice": "AVOID \u2014 high interaction; constraint degrades conditional structure"
+    },
+    {
+      "feature": "runup_50",
+      "importance": 0.8011777400970459,
+      "marginal": {
+        "rho": 0.1230796625538899,
+        "consistency": 0.7777777777777778,
+        "pr_lo": 0.0365168094506643,
+        "pr_hi": 0.15717045670488378,
+        "n": 631481
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": true,
+        "worst_dip_frac": -1.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.050181354519166055,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "index_return_200",
+      "importance": 0.7595410346984863,
+      "marginal": {
+        "rho": 0.014613055041698547,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.08229668112419172,
+        "pr_hi": 0.10379232003558775,
+        "n": 629422
+      },
+      "model_pdp": {
+        "monotone": false,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": -1.0,
+        "worst_rise_frac": 0.7374015405645697
+      },
+      "interaction_involvement": 0.0637266190749593,
+      "constraint_advice": "AVOID \u2014 model learned a non-monotone (e.g. inverted-U) shape here"
+    },
+    {
+      "feature": "index_return_50",
+      "importance": 0.0,
+      "marginal": {
+        "rho": -0.009653028372769693,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.09240518301333586,
+        "pr_hi": 0.08747123175383839,
+        "n": 634372
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "drawdown_20",
+      "importance": 0.0,
+      "marginal": {
+        "rho": -0.1480879502756574,
+        "consistency": 1.0,
+        "pr_lo": 0.15783996846669293,
+        "pr_hi": 0.022972376387487385,
+        "n": 634241
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "runup_200",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.10673051143830319,
+        "consistency": 0.6666666666666666,
+        "pr_lo": 0.04696530622156745,
+        "pr_hi": 0.152684237793032,
+        "n": 617681
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "parkinson_50",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.2663312108840231,
+        "consistency": 1.0,
+        "pr_lo": 0.0010609827550713392,
+        "pr_hi": 0.22504275669854945,
+        "n": 631481
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "garman_klass_100",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.2660555955329266,
+        "consistency": 1.0,
+        "pr_lo": 0.0012920927116400007,
+        "pr_hi": 0.21948379275140378,
+        "n": 626881
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "sma_distance_200",
+      "importance": 0.0,
+      "marginal": {
+        "rho": -0.03270671303254139,
+        "consistency": 0.5555555555555556,
+        "pr_lo": 0.147080250611148,
+        "pr_hi": 0.11413676984846523,
+        "n": 617681
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "vol_xs_rank_100",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.2143971231279424,
+        "consistency": 1.0,
+        "pr_lo": 0.002345283109175322,
+        "pr_hi": 0.16702563857113228,
+        "n": 626789
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "vol_xs_zscore_200_outside_band_2",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.10188801187548269,
+        "consistency": 0.7777777777777778,
+        "pr_lo": 0.048656875920918406,
+        "pr_hi": 0.09159798571868068,
+        "n": 617589
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "stock_return_zscore_100_outside_band_1",
+      "importance": 0.0,
+      "marginal": {
+        "rho": -0.006549148197796279,
+        "consistency": 0.7777777777777778,
+        "pr_lo": 0.06385079894445433,
+        "pr_hi": 0.0531181194145836,
+        "n": 617681
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    },
+    {
+      "feature": "realized_vol_zscore_200_outside_band_1",
+      "importance": 0.0,
+      "marginal": {
+        "rho": 0.040255191373389274,
+        "consistency": 0.6666666666666666,
+        "pr_lo": 0.027115419913564386,
+        "pr_hi": 0.05893739153651048,
+        "n": 599281
+      },
+      "model_pdp": {
+        "monotone": true,
+        "increasing": false,
+        "decreasing": false,
+        "worst_dip_frac": 0.0,
+        "worst_rise_frac": 0.0
+      },
+      "interaction_involvement": 0.0,
+      "constraint_advice": "NEUTRAL at best \u2014 low interaction, but expect no gain (fixed constraints-on cost)"
+    }
+  ],
+  "top_interaction_pairs": [
+    [
+      "index_runup_50",
+      "parkinson_200",
+      0.0900081113285385
+    ],
+    [
+      "parkinson_200",
+      "return_xs_zscore_200",
+      0.042449048521649095
+    ],
+    [
+      "vol_xs_zscore_50",
+      "vol_xs_rank_200",
+      0.04168790582753718
+    ],
+    [
+      "garman_klass_200",
+      "vol_xs_rank_200",
+      0.04067498234398663
+    ],
+    [
+      "vol_xs_rank_200",
+      "realized_vol_zscore_200",
+      0.03944141985643655
+    ],
+    [
+      "realized_vol_200",
+      "vol_xs_zscore_50",
+      0.0372748602449894
+    ],
+    [
+      "index_drawdown_200",
+      "parkinson_200",
+      0.03650567134935409
+    ],
+    [
+      "returns_skew_200",
+      "vol_xs_rank_50",
+      0.03635042860787362
+    ],
+    [
+      "return_xs_zscore_200",
+      "vol_xs_rank_200",
+      0.03530866799000651
+    ],
+    [
+      "index_vol_20",
+      "index_drawdown_200",
+      0.033758329392410816
+    ],
+    [
+      "index_return_200",
+      "vol_xs_rank_200",
+      0.03168463631719351
+    ],
+    [
+      "index_drawdown_200",
+      "vol_xs_rank_200",
+      0.031190499165002255
+    ],
+    [
+      "vol_xs_zscore_100",
+      "moy_sin",
+      0.029539968048594892
+    ],
+    [
+      "vol_xs_rank_50",
+      "realized_vol_zscore_200",
+      0.02897247747927904
+    ],
+    [
+      "index_drawdown_200",
+      "index_runup_50",
+      0.028725309552811086
+    ]
+  ],
+  "interaction_high_threshold": 0.07825138088725507,
+  "interactions": {
+    "top_pairs": [
+      [
+        "index_runup_50",
+        "parkinson_200",
+        0.0900081113285385,
+        0.6570175292680808
+      ],
+      [
+        "parkinson_200",
+        "return_xs_zscore_200",
+        0.042449048521649095,
+        0.6300436658210781
+      ],
+      [
+        "vol_xs_zscore_50",
+        "vol_xs_rank_200",
+        0.04168790582753718,
+        0.9141894755307899
+      ],
+      [
+        "garman_klass_200",
+        "vol_xs_rank_200",
+        0.04067498234398663,
+        0.7573330127412412
+      ],
+      [
+        "vol_xs_rank_200",
+        "realized_vol_zscore_200",
+        0.03944141985643655,
+        0.7585656514674409
+      ],
+      [
+        "realized_vol_200",
+        "vol_xs_zscore_50",
+        0.0372748602449894,
+        0.662940934866263
+      ],
+      [
+        "index_drawdown_200",
+        "parkinson_200",
+        0.03650567134935409,
+        0.7780080196688464
+      ],
+      [
+        "returns_skew_200",
+        "vol_xs_rank_50",
+        0.03635042860787362,
+        0.7180985039351518
+      ],
+      [
+        "return_xs_zscore_200",
+        "vol_xs_rank_200",
+        0.03530866799000651,
+        0.7164836285162597
+      ],
+      [
+        "index_vol_20",
+        "index_drawdown_200",
+        0.033758329392410816,
+        0.7911553251794115
+      ],
+      [
+        "index_return_200",
+        "vol_xs_rank_200",
+        0.03168463631719351,
+        0.7569261832237256
+      ],
+      [
+        "index_drawdown_200",
+        "vol_xs_rank_200",
+        0.031190499165002255,
+        0.5193293697287552
+      ],
+      [
+        "vol_xs_zscore_100",
+        "moy_sin",
+        0.029539968048594892,
+        0.8406753848693742
+      ],
+      [
+        "vol_xs_rank_50",
+        "realized_vol_zscore_200",
+        0.02897247747927904,
+        0.5281697866807031
+      ],
+      [
+        "index_drawdown_200",
+        "index_runup_50",
+        0.028725309552811086,
+        0.5299606548569898
+      ],
+      [
+        "runup_50",
+        "dollar_move_xs_rank",
+        0.02687411243412644,
+        0.5451705675763007
+      ],
+      [
+        "returns_skew_200",
+        "vol_xs_zscore_100",
+        0.02476141648516059,
+        0.9098072937434296
+      ],
+      [
+        "returns_skew_200",
+        "garman_klass_50",
+        0.023903933064173908,
+        0.7277580507774029
+      ],
+      [
+        "index_runup_200",
+        "parkinson_200",
+        0.023624557213578375,
+        0.8229678792317021
+      ],
+      [
+        "runup_50",
+        "garman_klass_200",
+        0.023307242085039617,
+        0.6830033817335068
+      ],
+      [
+        "index_vol_20",
+        "index_runup_200",
+        0.023005031193420292,
+        0.7056225918581029
+      ],
+      [
+        "index_runup_50",
+        "garman_klass_50",
+        0.02277125707920641,
+        0.6126428444651857
+      ],
+      [
+        "returns_skew_200",
+        "realized_vol_zscore_200",
+        0.020501893985643983,
+        0.7540802489100831
+      ],
+      [
+        "index_runup_50",
+        "returns_skew_200",
+        0.018369254244863988,
+        0.5738452702387508
+      ],
+      [
+        "index_return_200",
+        "index_runup_200",
+        0.017081284278258682,
+        0.6634052574441591
+      ],
+      [
+        "vol_xs_zscore_50",
+        "return_xs_zscore_200",
+        0.016956492915563285,
+        0.6187051441611593
+      ],
+      [
+        "index_runup_200",
+        "return_xs_zscore_200",
+        0.01574647031733766,
+        0.6647209644328068
+      ],
+      [
+        "parkinson_200",
+        "garman_klass_50",
+        0.014973878942988813,
+        0.8311465406043766
+      ],
+      [
+        "index_return_200",
+        "index_drawdown_200",
+        0.014960698479507118,
+        0.697417970764528
+      ],
+      [
+        "dollar_move_xs_rank",
+        "garman_klass_200",
+        0.014269156458228826,
+        0.5339327272267035
+      ]
+    ],
+    "per_feature_involvement": {
+      "index_return_50": 0.0,
+      "index_return_200": 0.0637266190749593,
+      "realized_vol_200": 0.0372748602449894,
+      "index_vol_20": 0.056763360585831105,
+      "drawdown_20": 0.0,
+      "runup_50": 0.050181354519166055,
+      "runup_200": 0.0,
+      "index_drawdown_200": 0.1566314344920218,
+      "index_runup_50": 0.15987393220541998,
+      "index_runup_200": 0.10325087326904758,
+      "dollar_move_xs_rank": 0.04114326889235526,
+      "returns_skew_200": 0.1439272575557232,
+      "beta_100": 0.012302603713516146,
+      "parkinson_50": 0.0,
+      "parkinson_200": 0.21633395525012167,
+      "garman_klass_50": 0.06164906908636913,
+      "garman_klass_100": 0.0,
+      "garman_klass_200": 0.07825138088725507,
+      "sma_distance_200": 0.0,
+      "vol_xs_rank_50": 0.06532290608715266,
+      "vol_xs_zscore_50": 0.09591925898808987,
+      "vol_xs_rank_100": 0.0,
+      "vol_xs_zscore_100": 0.05430138453375548,
+      "return_xs_zscore_200": 0.11046067974455655,
+      "vol_xs_rank_200": 0.21998811150016262,
+      "moy_sin": 0.04080761132258922,
+      "realized_vol_zscore_200": 0.08891579132135957,
+      "vol_xs_zscore_200_outside_band_2": 0.0,
+      "stock_return_zscore_100_outside_band_1": 0.0,
+      "realized_vol_zscore_200_outside_band_1": 0.0
+    },
+    "per_feature_main_effect": {
+      "index_return_50": 0.0,
+      "index_return_200": 0.04660136768221855,
+      "realized_vol_200": 0.20210077186226844,
+      "index_vol_20": 0.04759820666909218,
+      "drawdown_20": 0.0,
+      "runup_50": 0.042001388255879284,
+      "runup_200": 0.0,
+      "index_drawdown_200": 0.03535405425932259,
+      "index_runup_50": 0.1683870027668774,
+      "index_runup_200": 0.0957287031672895,
+      "dollar_move_xs_rank": 0.04285273533090949,
+      "returns_skew_200": 0.0915197910182178,
+      "beta_100": 0.033919970754906534,
+      "parkinson_50": 0.0,
+      "parkinson_200": 0.4782395404618233,
+      "garman_klass_50": 0.05639441958069801,
+      "garman_klass_100": 0.0,
+      "garman_klass_200": 0.3391401405990124,
+      "sma_distance_200": 0.0,
+      "vol_xs_rank_50": 0.1686984998166561,
+      "vol_xs_zscore_50": 0.04596610529087484,
+      "vol_xs_rank_100": 0.0,
+      "vol_xs_zscore_100": 0.06865272818729282,
+      "return_xs_zscore_200": 0.08723089128881693,
+      "vol_xs_rank_200": 0.33394884762465954,
+      "moy_sin": 0.06002821714282036,
+      "realized_vol_zscore_200": 0.12054055941924453,
+      "vol_xs_zscore_200_outside_band_2": 0.0,
+      "stock_return_zscore_100_outside_band_1": 0.0,
+      "realized_vol_zscore_200_outside_band_1": 0.0
+    },
+    "method": "shap",
+    "n_rows_used": 5000,
+    "n_features": 30
+  },
+  "kept_count": 20,
+  "pruned_count": 10,
+  "pruned_summary": {
+    "n_pruned": 10,
+    "n_real_relationship": 5,
+    "n_redundant": 3,
+    "n_noise": 5
+  },
+  "importance_threshold": 0.01,
+  "backend": "xgboost"
+}
