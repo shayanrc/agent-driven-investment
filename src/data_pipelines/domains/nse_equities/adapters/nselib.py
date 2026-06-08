@@ -162,6 +162,12 @@ class NSElibAdapter(Adapter):
             df["date"] = pd.to_datetime(df["date"], format="%d-%b-%Y", errors="coerce")
         else:
             # Equity payload — has the Indian-comma + unicode rupee quirks.
+            # nselib's price_volume_data returns the same multi-series rows
+            # jugaad does (EQ + BL + T0 + …). Keep only EQ — block-deal/bond
+            # rows collide on the cache's (ticker, date) primary key. Mirrors
+            # JugaadAdapter's filter (#244 / GH #133).
+            if "Series" in df.columns:
+                df = df[df["Series"] == "EQ"].copy()
             # Normalize Turnover column name (₹ suffix dropped).
             df = df.rename(columns={c: "Turnover" for c in df.columns if c.startswith("Turnover")})
             df = df.rename(columns={

@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 22:13 IST)\ninitial commit: V1.4 P1-P4 closed out; #251 + #252 surfaced by P3+P4 reviews", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-08 22:30 IST)\nafter #244 nselib EQ filter fix", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -62,7 +62,7 @@ digraph tasks {
     fontname = "Helvetica-Bold";
     fontsize = 11;
 
-    t244 [label=<<B>#244</B> BUG (quick win)<BR/>nselib Series=='EQ'<BR/>filter missing<BR/>(GH issue #133)>, fillcolor="#a4e9a4"];
+    t244 [label=<<B>#244</B> BUG (quick win)<BR/>nselib Series=='EQ'<BR/>filter missing<BR/>(GH issue #133)>, fillcolor="#cccccc"];
   }
 
   // Worktree cleanup cluster
