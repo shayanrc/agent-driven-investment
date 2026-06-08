@@ -330,6 +330,13 @@ def best_checkpoint(
         return min(tied, key=rp_sort_key), "v14_val_flat_eval_rp1"
 
     # Non-anti-AUC: classic L1 (gap, |z|) tie-break.
+    #
+    # Reachability post-V1.4 P1: fires when the V1.4 P1 fallback above
+    # couldn't decide — either val_brier has real spread (>= effective_band)
+    # OR some tied iter's eval_r_precision_at_1s is None (pre-V1.3
+    # legacy-resume case). #246 audit (2026-06-08) confirmed this branch is
+    # NOT dead code post-V1.4 P1; the legacy-resume path is the live one.
+    #
     # Worst-case sentinels for missing-metric configs: +inf gap, +inf |z|.
     # Earlier iter index breaks the final remaining tie deterministically
     # (favours the simpler/earlier config — typically the unperturbed base).
