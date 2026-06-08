@@ -748,6 +748,15 @@ class WalkForwardResult:
     # preserves back-compat for any code path that constructs a
     # ``WalkForwardResult`` without explicitly threading the label.
     tiebreak_path: str = "strict_val_brier"
+    # Total iterations seen across the run (prior resume-seeded iters +
+    # in-process iters). ``len(iterations)`` reports ONLY the in-process
+    # bundles built in this finalize call — which on the agent_file_protocol
+    # exit-and-resume path undercounts (or zeros out on a should_stop resume).
+    # Surfaced into ``metrics.json::loop.n_iterations_run`` so the metrics
+    # block reflects the full loop history regardless of which process
+    # finalized it. Default 0 preserves back-compat for tests that
+    # construct a ``WalkForwardResult`` directly.
+    n_iterations_total: int = 0
 
 
 def _carve_X_y(
@@ -1330,6 +1339,12 @@ def walk_forward_train(
         segment_dates=best_parts.get("__segment_dates__"),
         scout_report=scout_report,
         tiebreak_path=tiebreak_path,
+        # Issue #251: ``len(history)`` is in-process bundles only; on a
+        # ``--resume`` finalize this is < total iters (or 0 on a
+        # should_stop resume). ``len(val_briers)`` covers prior
+        # resume-seeded iters + the in-process additions and is the
+        # source of truth for the loop's full iteration count.
+        n_iterations_total=len(val_briers),
     )
 
 

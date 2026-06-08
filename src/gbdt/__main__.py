@@ -2485,8 +2485,29 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             ],
         },
         "loop": {
-            "n_iterations_run": len(result.iterations),
+            # Issue #251: total iterations seen across the loop's full
+            # history (prior resume-seeded iters + in-process iters). On
+            # the default callback path ``len(result.iterations)`` equals
+            # this total because there are no prior iters; on the
+            # agent_file_protocol exit-and-resume path the prior iters
+            # live in the resume checkpoint and ``len(result.iterations)``
+            # covers ONLY the in-process bundles built in this finalize
+            # call — which undercounts (e.g. 0 on a should_stop resume
+            # where the loop body is skipped). ``result.n_iterations_total``
+            # is the source of truth in both modes; ``getattr`` keeps
+            # back-compat for tests constructing a ``WalkForwardResult``
+            # without the field.
+            "n_iterations_run": int(
+                getattr(result, "n_iterations_total", len(result.iterations))
+            ),
             "best_iteration": int(result.best_iteration),
+            # Issue #251: surface the loop's best val Brier (the val
+            # Brier at ``best_iteration``) alongside the iter index so
+            # the metrics block self-describes the chosen checkpoint
+            # without forcing a cross-reference to status.json or
+            # iterations.jsonl. Already on ``WalkForwardResult`` —
+            # previously surfaced into status.json only.
+            "best_val_brier": float(result.best_val_brier),
             "inner_stop_signal": result.inner_stop_signal,
             # V1.4 P2 — which branch in ``fs_hp_loop.best_checkpoint``
             # produced the ``best_iteration``. Surfaced into ``report.md``

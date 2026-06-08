@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2135,-467.95 2135,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 22:30 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #244 nselib EQ filter fix</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;08 23:00 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1065.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #251 metrics.json::loop metadata fix</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -87,9 +87,9 @@
 <!-- t251 -->
 <g id="node7" class="node">
 <title>t251</title>
-<path fill="#a4e9a4" stroke="black" d="M961.42,-243.2C961.42,-243.2 862.58,-243.2 862.58,-243.2 856.58,-243.2 850.58,-237.2 850.58,-231.2 850.58,-231.2 850.58,-203.68 850.58,-203.68 850.58,-197.68 856.58,-191.68 862.58,-191.68 862.58,-191.68 961.42,-191.68 961.42,-191.68 967.42,-191.68 973.42,-197.68 973.42,-203.68 973.42,-203.68 973.42,-231.2 973.42,-231.2 973.42,-237.2 967.42,-243.2 961.42,-243.2"/>
+<path fill="#cccccc" stroke="black" d="M961.42,-243.2C961.42,-243.2 862.58,-243.2 862.58,-243.2 856.58,-243.2 850.58,-237.2 850.58,-231.2 850.58,-231.2 850.58,-203.68 850.58,-203.68 850.58,-197.68 856.58,-191.68 862.58,-191.68 862.58,-191.68 961.42,-191.68 961.42,-191.68 967.42,-191.68 973.42,-197.68 973.42,-203.68 973.42,-203.68 973.42,-231.2 973.42,-231.2 973.42,-237.2 967.42,-243.2 961.42,-243.2"/>
 <text xml:space="preserve" text-anchor="start" x="861.38" y="-228.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#251</text>
-<text xml:space="preserve" text-anchor="start" x="889.88" y="-228.94" font-family="Helvetica,sans-Serif" font-size="10.00"> BUG (next&#45;up)</text>
+<text xml:space="preserve" text-anchor="start" x="889.88" y="-228.94" font-family="Helvetica,sans-Serif" font-size="10.00"> BUG (merged)</text>
 <text xml:space="preserve" text-anchor="start" x="868.5" y="-218.94" font-family="Helvetica,sans-Serif" font-size="10.00">metrics.json::loop</text>
 <text xml:space="preserve" text-anchor="start" x="873.38" y="-208.94" font-family="Helvetica,sans-Serif" font-size="10.00">metadata unset</text>
 <text xml:space="preserve" text-anchor="start" x="861.75" y="-198.94" font-family="Helvetica,sans-Serif" font-size="10.00">(agent_file_protocol)</text>
