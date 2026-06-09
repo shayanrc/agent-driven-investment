@@ -8,18 +8,29 @@ Reads the winner test predictions CSV from
 and computes the canonical schema row using the
 (p_calibrated desc, ticker asc) stable mergesort tie-break + min(K, R_q)
 denominator per [[project-r-precision-methodology]].
+
+**FROZEN ONE-SHOT.** Outputs already in ``results/gbdt/data/r_precision_at_k.csv``
+(rows committed under #214). To re-run, set the ``WORKSPACE_ROOT`` env var to
+the parent dir where ``wt-214-cells13/`` lives — see per-user memory
+``scratch-cache-path`` for the literal on the author's machine. The referenced
+worktree may have been pruned; if so the script will fail at first file read
+with a clear FileNotFoundError pointing at the missing path.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-REPO = Path("/mnt/122CEE982CEE765F/Workspace/wt-214-cells13")
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine, see
+# per-user memory ``scratch-cache-path`` for the literal. Defaults to a
+# sentinel so a missing env var produces a clear failure path on first use.
+REPO = Path(os.environ.get("WORKSPACE_ROOT", "<SET-WORKSPACE_ROOT>")) / "wt-214-cells13"
 CSV_PATH = REPO / "results/gbdt/data/r_precision_at_k.csv"
 KS = (1, 3, 5, 10, 20)
 COLS = ["experiment", "rows", "Q_days", "base_rate", "AUC",

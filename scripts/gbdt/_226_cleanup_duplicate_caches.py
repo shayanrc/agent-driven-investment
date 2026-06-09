@@ -61,12 +61,19 @@ FIXTURE_COLS = 6
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    # Default reads ${SCRATCH_CACHE}/gbdt_feature_cache; ``SCRATCH_CACHE`` is
+    # the per-machine scratch path documented in per-user memory
+    # ``scratch-cache-path``. If unset, the default resolves to the
+    # ``<SET-SCRATCH_CACHE>`` placeholder so the failing path is obvious in
+    # the resulting "not a directory" error.
+    _default_cache = f"{os.environ.get('SCRATCH_CACHE', '<SET-SCRATCH_CACHE>')}/gbdt_feature_cache"
     parser.add_argument(
         "cache_root",
         nargs="?",
-        default="/mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache",
+        default=_default_cache,
         help="Path to gbdt_feature_cache/ directory "
-             "(default: %(default)s).",
+             "(default: %(default)s — set SCRATCH_CACHE env var "
+             "or pass an explicit path).",
     )
     parser.add_argument(
         "--dry-run",

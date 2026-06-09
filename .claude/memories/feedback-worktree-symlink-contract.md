@@ -5,7 +5,12 @@ metadata:
   type: feedback
 ---
 
-**`${SCRATCH_CACHE}` placeholder.** Every command below uses `${SCRATCH_CACHE}` as the local scratch path the worktree's `data/` symlink targets. It is **per-machine**: the partition layout, the FS choice, the wedge state of any candidate cache, and the available headroom all differ across machines. The literal value for the current machine lives in the **per-user memory** `scratch-cache-path` (under `~/.claude/projects/<project-hash>/memory/`); substitute it inline or `export SCRATCH_CACHE=<path>` once per shell before running the commands quoted in this memory. New contributors create their own `scratch-cache-path` per-user memory with a local scratch dir of ≥ 10 G headroom on a non-corrupted FS.
+**`${SCRATCH_CACHE}` + `${WORKSPACE_ROOT}` placeholders.** The recipe below uses two per-machine path placeholders:
+
+- **`${SCRATCH_CACHE}`** — the local scratch path the worktree's `data/` symlink targets (FS choice, partition layout, headroom, and the wedge state of any candidate cache all differ per machine).
+- **`${WORKSPACE_ROOT}`** — the parent directory of the main checkout, where sibling `wt-<scope>/` worktrees live. Also per-machine (checkout layout differs).
+
+The literal values for the current machine live in the **per-user memory** `scratch-cache-path` (under `~/.claude/projects/<project-hash>/memory/`); substitute them inline or `export SCRATCH_CACHE=<path>` and `export WORKSPACE_ROOT=<path>` once per shell before running the commands quoted in this memory or executing the frozen `scripts/gbdt/` one-shots that resolve these env vars at import time. New contributors create their own `scratch-cache-path` per-user memory with a local scratch dir of ≥ 10 G headroom on a non-corrupted FS + their workspace parent dir.
 
 Three related foot-guns surfaced during the GBDT v1 pilot experiment launches (2026-05-26):
 

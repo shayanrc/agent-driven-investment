@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -402,8 +403,15 @@ def main() -> int:
     p.add_argument(
         "--workspace-root",
         type=Path,
-        default=Path("/mnt/122CEE982CEE765F/Workspace"),
-        help="Directory containing sibling wt-* worktrees to also scan",
+        # WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live;
+        # per-machine, see per-user memory ``scratch-cache-path``. Empty
+        # default ("") fails the ``is_dir()`` check below and silently skips
+        # wt-* siblings — so on a fresh machine with no env var set, the
+        # script still works (just scans repo_root only). Pass --workspace-root
+        # explicitly to override.
+        default=Path(os.environ.get("WORKSPACE_ROOT", "")),
+        help="Directory containing sibling wt-* worktrees to also scan "
+             "(default: $WORKSPACE_ROOT env var, or empty = skip wt-* scan)",
     )
     p.add_argument(
         "--out",

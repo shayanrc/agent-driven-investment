@@ -4,8 +4,16 @@ before = screening model (all-279, depth6, NO constraints)
 after  = iter5 model      (all-279, depth6, +17 monotone +1 on vol estimators)
 3 panels: before | after | delta(after-before). Shows how the monotone
 constraint redistributed/destroyed pairwise interaction structure.
+
+**FROZEN ONE-SHOT.** The figures are committed under the nifty50 H=25
+monotone-constraint memo. To re-run, set ``WORKSPACE_ROOT`` per per-user
+memory ``scratch-cache-path``; the referenced wt-exp-nifty50-up10-25d/
+worktree may have been pruned, in which case the BEFORE model load fails
+loudly at first read.
 """
 from __future__ import annotations
+
+import os
 
 import matplotlib
 matplotlib.use("Agg")
@@ -13,7 +21,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from catboost import CatBoostClassifier
 
-BEFORE = "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+# see per-user memory ``scratch-cache-path`` for the literal.
+BEFORE = f"{os.environ.get('WORKSPACE_ROOT', '<SET-WORKSPACE_ROOT>')}/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
 AFTER = "results/gbdt/experiments/nifty50_manualloop_iter5/model.cbm"
 
 # Display set: 9 constrained vol estimators (left/top) then 7 unconstrained refs.

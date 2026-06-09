@@ -20,15 +20,21 @@ This script:
   6. Diffs the two payloads. If anything differs, that's our discriminator.
 
 Then walks the 3 russell1000 sidecar JSONs at
-``/mnt/.../gbdt_feature_cache/`` (keys ``6e716519...``, ``fe67c944...``,
-``a20842fc...``) and prints what we CAN extract from them post-hoc — the
-pre-#226 sidecars carry only ``key + n_rows + n_cols + columns``, no payload,
-which is exactly the limitation P1 fixes for future writes.
+``${SCRATCH_CACHE}/gbdt_feature_cache/`` (keys ``6e716519...``,
+``fe67c944...``, ``a20842fc...``) and prints what we CAN extract from them
+post-hoc — the pre-#226 sidecars carry only ``key + n_rows + n_cols + columns``,
+no payload, which is exactly the limitation P1 fixes for future writes.
 
 Usage::
 
+    export SCRATCH_CACHE=<persistent scratch dir>  # see per-user memory `scratch-cache-path`
     uv run python scripts/gbdt/_226_reproduce_cache_drift.py \
         2>&1 | tee /tmp/v1_226_repro.log
+
+**FROZEN ONE-SHOT.** Bug #226 was diagnosed + fixed in a downstream PR. The
+script is preserved for traceability; re-running requires ``SCRATCH_CACHE``
+set per per-user memory ``scratch-cache-path`` AND the historical sidecar
+JSONs still present in the cache.
 """
 
 from __future__ import annotations
@@ -51,7 +57,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SPEC_PATH = REPO_ROOT / "configs" / "gbdt" / "experiments" / \
     "russell1000_up_10pct_25d_dd5pct.yaml"
 DEFAULT_SPEC_PATH = REPO_ROOT / "configs" / "gbdt" / "default.yaml"
-CACHE_DIR = Path("/mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache")
+CACHE_DIR = Path(os.environ.get("SCRATCH_CACHE", "<SET-SCRATCH_CACHE>")) / "gbdt_feature_cache"
 
 RUSSELL1000_HISTORIC_KEYS = [
     "6e716519e109697b25e51daa6624acab4a7c78765b32ca8162f13a0f7aafc545",

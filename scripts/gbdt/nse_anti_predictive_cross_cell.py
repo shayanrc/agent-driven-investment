@@ -20,11 +20,19 @@ the R-precision convention.
 Output: one table per segment (eval, test) for each cell, plus a
 cross-cell intersect table for tickers anti-predictive in BOTH nifty50
 and nifty100.
+
+**FROZEN ONE-SHOT.** The cross-cell intersect table is committed in the
+H=25 cross-market memo (#138). The script reads from sibling worktrees
+under ``${WORKSPACE_ROOT}/wt-exp-nifty{50,100}-up10-25d/``. To re-run, set
+``WORKSPACE_ROOT`` per per-user memory ``scratch-cache-path``; the
+referenced worktrees may have been pruned, in which case the per-cell
+``predictions/*.csv`` reads fail loudly with a clear FileNotFoundError.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -83,9 +91,12 @@ def per_ticker_stats(preds_csv: Path, min_picks: int = 5) -> pd.DataFrame:
 
 
 def main() -> int:
+    # WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+    # see per-user memory ``scratch-cache-path`` for the literal.
+    workspace_root = os.environ.get("WORKSPACE_ROOT", "<SET-WORKSPACE_ROOT>")
     runs = {
-        "nifty50":  "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct",
-        "nifty100": "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty100-up10-25d/results/gbdt/experiments/nifty100_up_10pct_25d_dd5pct",
+        "nifty50":  f"{workspace_root}/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct",
+        "nifty100": f"{workspace_root}/wt-exp-nifty100-up10-25d/results/gbdt/experiments/nifty100_up_10pct_25d_dd5pct",
     }
 
     by_cell_seg = {}
