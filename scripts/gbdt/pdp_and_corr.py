@@ -5,8 +5,13 @@
    BEFORE (unconstrained screening model) vs AFTER (iter5 constrained model).
    This shows the *functional form* — the regime-conditional sign-flip that the
    monotone constraint flattens, which the interaction-strength heatmap can't show.
+
+**FROZEN ONE-SHOT.** Figures committed under the nifty50 H=25 monotone-constraint
+memo. To re-run, set ``WORKSPACE_ROOT`` per per-user memory ``scratch-cache-path``.
 """
 from __future__ import annotations
+
+import os
 
 import matplotlib
 matplotlib.use("Agg")
@@ -20,7 +25,9 @@ from gbdt import features as gbdt_features
 
 UNIVERSE = "nifty50"
 TEST_TAIL_ROWS = 100
-BEFORE = "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+# see per-user memory ``scratch-cache-path`` for the literal.
+BEFORE = f"{os.environ.get('WORKSPACE_ROOT', '<SET-WORKSPACE_ROOT>')}/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
 AFTER = "results/gbdt/experiments/nifty50_manualloop_iter5/model.cbm"
 
 # The PDP pair: stock vol (constrained +1) x index momentum (unconstrained).

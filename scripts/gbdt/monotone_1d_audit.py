@@ -8,8 +8,15 @@ other features at their in-sample values (averaged over a subsample), record
 mean predicted P(+breakout). Report whether the curve is non-decreasing.
 
 Also caches the in-sample feature matrix to parquet to avoid future rebuilds.
+
+**FROZEN ONE-SHOT.** Results live in the nifty50 H=25 monotone-constraint
+memo. To re-run, set ``WORKSPACE_ROOT`` per per-user memory
+``scratch-cache-path``; the referenced ``wt-exp-nifty50-up10-25d/`` worktree
+may have been pruned.
 """
 from __future__ import annotations
+
+import os
 
 import numpy as np
 import pandas as pd
@@ -20,7 +27,9 @@ from gbdt import features as gbdt_features
 
 UNIVERSE = "nifty50"
 TEST_TAIL_ROWS = 100
-BEFORE = "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+# see per-user memory ``scratch-cache-path`` for the literal.
+BEFORE = f"{os.environ.get('WORKSPACE_ROOT', '<SET-WORKSPACE_ROOT>')}/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
 AFTER = "results/gbdt/experiments/nifty50_manualloop_iter5/model.cbm"
 CACHE = "results/gbdt/experiments/_nifty50_insample_matrix.parquet"
 GRID, SUBSAMPLE = 12, 4000

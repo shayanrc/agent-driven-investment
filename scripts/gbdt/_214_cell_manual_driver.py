@@ -12,21 +12,29 @@ test:
       is different?
 
 Reuses the agentloop artifact dirs (feature cache + iter_0 importance ranking)
-under `/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/...`. This is the
-standard "second worktree drives off the first worktree's caches" pattern from
-cell-5 (`docs/gbdt/_211_*.md`).
+under ``${WORKSPACE_ROOT}/wt-top5-rp1-agentloop/``. This is the standard
+"second worktree drives off the first worktree's caches" pattern from cell-5
+(`docs/gbdt/_211_*.md`).
 
 Usage:
+  export WORKSPACE_ROOT=<parent of main checkout>
   uv run python -m scripts.gbdt._214_cell_manual_driver cell1
   uv run python -m scripts.gbdt._214_cell_manual_driver cell3
 
 Per-cell output: a JSON sidecar with all stage results + the winner config and
 its test predictions (so the canonical CSV row can be appended downstream).
+
+**FROZEN ONE-SHOT.** Outputs already in ``results/gbdt/experiments/sp500_up_*_manual_cells13/``
+and ``docs/gbdt/_214_*.md`` (committed via PR-of-record). To re-run, set
+``WORKSPACE_ROOT`` per per-user memory ``scratch-cache-path``; the
+referenced worktrees may have been pruned, in which case the script fails
+at first artifact read with a clear FileNotFoundError.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -40,8 +48,11 @@ from sklearn.metrics import roc_auc_score
 # Cell registry
 # ---------------------------------------------------------------------------
 
-REPO = Path("/mnt/122CEE982CEE765F/Workspace/wt-214-cells13")
-PRIOR_REPO = Path("/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop")
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+# see per-user memory ``scratch-cache-path`` for the literal.
+_WORKSPACE_ROOT = Path(os.environ.get("WORKSPACE_ROOT", "<SET-WORKSPACE_ROOT>"))
+REPO = _WORKSPACE_ROOT / "wt-214-cells13"
+PRIOR_REPO = _WORKSPACE_ROOT / "wt-top5-rp1-agentloop"
 
 CELLS = {
     "cell1": {

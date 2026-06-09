@@ -7,9 +7,13 @@ Uses the cached in-sample matrix (no rebuild). For each pruned feature:
 
 Heuristic expected direction per family is annotated so we can compare
 "should it be monotone?" against "is it monotone in the data?".
+
+**FROZEN ONE-SHOT.** Results committed under the nifty50 H=25 monotone-constraint
+memo. To re-run, set ``WORKSPACE_ROOT`` per per-user memory ``scratch-cache-path``.
 """
 from __future__ import annotations
 
+import os
 import re
 import numpy as np
 import pandas as pd
@@ -20,7 +24,9 @@ from gbdt import data as gbdt_data
 from gbdt.targets import build_target
 
 CACHE = "results/gbdt/experiments/_nifty50_insample_matrix.parquet"
-BEFORE = "/mnt/122CEE982CEE765F/Workspace/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
+# WORKSPACE_ROOT = parent dir where ``wt-*/`` worktrees live; per-machine,
+# see per-user memory ``scratch-cache-path`` for the literal.
+BEFORE = f"{os.environ.get('WORKSPACE_ROOT', '<SET-WORKSPACE_ROOT>')}/wt-exp-nifty50-up10-25d/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct/model.cbm"
 
 # Logic/heuristic: should this family be monotone in target, and which sign?
 # (+1 expect increasing, -1 expect decreasing, 0 = no clean prior / non-monotone expected)
