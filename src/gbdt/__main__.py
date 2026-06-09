@@ -424,7 +424,45 @@ def _collect_preflight(repo_root: Path) -> dict:
     }
 
 
-def _format_preflight_line(pf: dict) -> str:
+def _sanitize_preflight_for_emission(pf: dict, repo_root: Path) -> dict:
+    """Return a copy of ``pf`` with absolute paths rewritten as repo-relative.
+
+    The raw ``preflight`` dict carries ``os.path.realpath``-resolved paths
+    for ``cache_db`` and ``data_root`` (downstream consumers — universe
+    feature cache, FS-prefit cache — pass them to ``Path()``). Those
+    realpaths point inside the per-machine cache mount (e.g.
+    ``/mnt/<UUID>/cache_data``) and would leak the host's partition layout
+    into committed ``metrics.json`` files and run logs.
+
+    This helper produces an emission-only view: each path field gets
+    rewritten relative to ``repo_root`` (so ``data_root="data"``,
+    ``cache_db="data/processed.db"`` on a normal checkout). Paths outside
+    the repo collapse to ``"<external>/<basename>"`` — the basename is
+    preserved so post-hoc audits can still tell ``processed.db`` from
+    a sibling, but the host-specific prefix is dropped.
+
+    Apply at every serialization site (the ``[preflight]`` log line and
+    the ``metrics.json::preflight`` write). The raw ``pf`` continues to
+    carry realpaths for live consumers.
+    """
+    out = dict(pf)
+    for key in ("cache_db", "data_root"):
+        p = out.get(key, "")
+        if not p:
+            continue
+        try:
+            rel = os.path.relpath(p, repo_root)
+        except ValueError:
+            rel = ".."  # different drive on Windows; fall through to external
+        if rel.startswith(".."):
+            out[key] = "<external>/" + os.path.basename(p)
+        else:
+            out[key] = rel
+    return out
+
+
+def _format_preflight_line(pf: dict, repo_root: Path) -> str:
+    pf = _sanitize_preflight_for_emission(pf, repo_root)
     return (
         f"[preflight] cache_db={pf['cache_db']} "
         f"cache_db_size={pf['cache_db_size']} "
@@ -1380,7 +1418,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     # checks / data load so even an aborted run leaves a trail in stdout.
     # Persisted into ``metrics.json::preflight`` below for post-hoc audit.
     preflight = _collect_preflight(repo_root)
-    print(_format_preflight_line(preflight), flush=True)
+    print(_format_preflight_line(preflight, repo_root), flush=True)
 
     spec = load_spec(spec_path, default_path=repo_root / "configs/gbdt/default.yaml")
     name = spec_path.stem
@@ -2423,8 +2461,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         "spec_hash": _spec_hash(spec),
         "data_hash": _data_hash(panel_obj.panel),
         # Pre-flight cache + code fingerprint (see ``_collect_preflight``).
-        # Six fields populated even when git is unavailable.
-        "preflight": preflight,
+        # Six fields populated even when git is unavailable. Paths sanitized
+        # to repo-relative for emission (see ``_sanitize_preflight_for_emission``);
+        # live downstream consumers continue to use the raw realpath copy.
+        "preflight": _sanitize_preflight_for_emission(preflight, repo_root),
         # V1.4 (plan §5.2): top-level segment-date envelope + carve mode.
         # ``split_mode`` mirrors the spec; ``split_train_start`` is the
         # ISO date used for the date-aligned anchor (None for trailing).

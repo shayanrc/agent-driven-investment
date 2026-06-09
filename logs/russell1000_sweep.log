@@ -1,7 +1,7 @@
-[SWEEP] start 2026-05-30T08:55:45Z repo=/mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep
+[SWEEP] start 2026-05-30T08:55:45Z repo=<repo>
 [SWEEP] python -m gbdt.experiment via uv run
 [RUN ] russell1000_up_10pct_100d_dd5pct 2026-05-30T08:55:45Z
-[SWEEP] start 2026-05-30T09:56:15Z repo=/mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep
+[SWEEP] start 2026-05-30T09:56:15Z repo=<repo>
 [SWEEP] python -m gbdt.experiment via uv run
 [SKIP] russell1000_up_10pct_100d_dd5pct exists (non-empty)
 [RUN ] russell1000_up_10pct_10d_dd5pct 2026-05-30T09:56:15Z

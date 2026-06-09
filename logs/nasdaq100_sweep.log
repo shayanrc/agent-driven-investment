@@ -1,4 +1,4 @@
-[SWEEP] start 2026-05-31T06:00:52Z repo=/mnt/122CEE982CEE765F/Workspace/wt-nasdaq-sweep
+[SWEEP] start 2026-05-31T06:00:52Z repo=<repo>
 [SWEEP] python -m gbdt.experiment via uv run
 [SKIP] nasdaq100_up_10pct_100d_dd5pct exists (non-empty)
 [RUN ] nasdaq100_up_10pct_10d_dd5pct 2026-05-31T06:00:52Z
@@ -21,7 +21,7 @@
 [RUN ] nasdaq100_up_20pct_5d_dd10pct 2026-05-31T06:56:14Z
 [DONE] nasdaq100_up_20pct_5d_dd10pct exit=0 elapsed=186s
 [RUN ] nasdaq100_up_40pct_100d_dd20pct 2026-05-31T06:59:20Z
-[SWEEP] start 2026-05-31T07:01:50Z repo=/mnt/122CEE982CEE765F/Workspace/wt-nasdaq-sweep
+[SWEEP] start 2026-05-31T07:01:50Z repo=<repo>
 [SWEEP] python -m gbdt.experiment via uv run
 [SKIP] nasdaq100_up_10pct_100d_dd5pct exists (non-empty)
 [SKIP] nasdaq100_up_10pct_10d_dd5pct exists (non-empty)

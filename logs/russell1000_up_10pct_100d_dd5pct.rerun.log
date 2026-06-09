@@ -1,5 +1,5 @@
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=1025110016 cache_db_mtime=2026-05-29T04:24:13.578768+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=03bf272d48feefd047db17d509931227d7442e6f code_dirty=True
-[experiment] start spec=russell1000_up_10pct_100d_dd5pct.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
+[preflight] cache_db=data/processed.db cache_db_size=1025110016 cache_db_mtime=2026-05-29T04:24:13.578768+00:00 data_root=data code_commit=03bf272d48feefd047db17d509931227d7442e6f code_dirty=True
+[experiment] start spec=russell1000_up_10pct_100d_dd5pct.yaml -> <repo>/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
 [data] start universe=russell1000
 [heartbeat] t=22:37:26 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=504
 [data] complete in 42.4s rows=6059743 tickers_kept=889
@@ -28,6 +28,6 @@
 [loop] LOOP COMPLETE in 288.8s best_iter=1 val_brier=0.2421 reason=plateau
 [artifact] start
 [heartbeat] t=22:44:56 phase=artifact elapsed_phase=3s elapsed_total=480s rss_mb=27886
-[artifact] complete in 8.2s -> /mnt/122CEE982CEE765F/Workspace/wt-russell1000-sweep/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
+[artifact] complete in 8.2s -> <repo>/results/gbdt/experiments/russell1000_up_10pct_100d_dd5pct
 [loop] STOPPED reason=plateau
 [experiment] complete in 484.8s

@@ -44,6 +44,13 @@ results/gbdt/experiments/**/_feature_matrix_cache.key.json
 # --top-n / --no-pdp; can be ~700 MB on US universes, never committed).
 results/gbdt/experiments/**/diagnose/_insample_matrix.parquet
 
+# Run logs — captured stdout, often carries machine-specific paths from
+# Python tracebacks. The cache fingerprint that mattered (size + mtime +
+# code_commit) lives in metrics.json instead. Evidence-worthy logs can
+# still be force-added via ``git add -f`` (the 5 pre-existing tracked
+# logs were sanitized in #253 and remain as memo evidence).
+logs/
+
 # Local secrets
 .env
 
