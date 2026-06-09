@@ -9,8 +9,8 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 467.95)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-467.95 2165,-467.95 2165,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;09 00:25 IST)</text>
-<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">after #206 /gbdt&#45;diagnose retry on cell&#45;4 mix captured pairwise interactions (post&#45;#246 merge)</text>
+<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-447.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — pending task dependencies (2026&#45;06&#45;09 10:20 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="1080.5" y="-431.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">#218 closed — obviated by #252 (runner now emits canonical macro R&#45;p@K natively)</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-184.56 8,-293.33 543,-293.33 543,-184.56 8,-184.56"/>
@@ -18,7 +18,7 @@
 </g>
 <g id="clust3" class="cluster">
 <title>cluster_runner</title>
-<path fill="white" stroke="#888888" d="M706,-25.33C706,-25.33 969,-25.33 969,-25.33 975,-25.33 981,-31.33 981,-37.33 981,-37.33 981,-282.2 981,-282.2 981,-288.2 975,-294.2 969,-294.2 969,-294.2 706,-294.2 706,-294.2 700,-294.2 694,-288.2 694,-282.2 694,-282.2 694,-37.33 694,-37.33 694,-31.33 700,-25.33 706,-25.33"/>
+<path fill="white" stroke="#888888" d="M706,-20.33C706,-20.33 969,-20.33 969,-20.33 975,-20.33 981,-26.33 981,-32.33 981,-32.33 981,-282.2 981,-282.2 981,-288.2 975,-294.2 969,-294.2 969,-294.2 706,-294.2 706,-294.2 700,-294.2 694,-288.2 694,-282.2 694,-282.2 694,-32.33 694,-32.33 694,-26.33 700,-20.33 706,-20.33"/>
 <text xml:space="preserve" text-anchor="middle" x="837.5" y="-279.75" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Runner + canonical&#45;CSV output consistency</text>
 </g>
 <g id="clust4" class="cluster">
@@ -211,17 +211,18 @@
 <!-- t218 -->
 <g id="node9" class="node">
 <title>t218</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M821.55,-74.85C821.55,-74.85 714.45,-74.85 714.45,-74.85 708.45,-74.85 702.45,-68.85 702.45,-62.85 702.45,-62.85 702.45,-45.33 702.45,-45.33 702.45,-39.33 708.45,-33.33 714.45,-33.33 714.45,-33.33 821.55,-33.33 821.55,-33.33 827.55,-33.33 833.55,-39.33 833.55,-45.33 833.55,-45.33 833.55,-62.85 833.55,-62.85 833.55,-68.85 827.55,-74.85 821.55,-74.85"/>
-<text xml:space="preserve" text-anchor="start" x="753.75" y="-60.59" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#218</text>
-<text xml:space="preserve" text-anchor="start" x="723" y="-50.59" font-family="Helvetica,sans-Serif" font-size="10.00">cell&#45;5 manual_xgb</text>
-<text xml:space="preserve" text-anchor="start" x="713.25" y="-40.59" font-family="Helvetica,sans-Serif" font-size="10.00">artifact dir materialize</text>
+<path fill="#cccccc" stroke="black" d="M810.8,-79.85C810.8,-79.85 723.2,-79.85 723.2,-79.85 717.2,-79.85 711.2,-73.85 711.2,-67.85 711.2,-67.85 711.2,-40.33 711.2,-40.33 711.2,-34.33 717.2,-28.33 723.2,-28.33 723.2,-28.33 810.8,-28.33 810.8,-28.33 816.8,-28.33 822.8,-34.33 822.8,-40.33 822.8,-40.33 822.8,-67.85 822.8,-67.85 822.8,-73.85 816.8,-79.85 810.8,-79.85"/>
+<text xml:space="preserve" text-anchor="start" x="752.75" y="-65.59" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">#218</text>
+<text xml:space="preserve" text-anchor="start" x="722" y="-55.59" font-family="Helvetica,sans-Serif" font-size="10.00">cell&#45;5 manual_xgb</text>
+<text xml:space="preserve" text-anchor="start" x="735.12" y="-45.59" font-family="Helvetica,sans-Serif" font-size="10.00">artifact dir —</text>
+<text xml:space="preserve" text-anchor="start" x="723.5" y="-35.59" font-family="Helvetica,sans-Serif" font-size="10.00">obviated by #252</text>
 </g>
 <!-- cell5_manual&#45;&gt;t218 -->
 <g id="edge11" class="edge">
 <title>cell5_manual&#45;&gt;t218</title>
-<path fill="none" stroke="#999999" stroke-dasharray="5,2" d="M321.16,-192.21C327.75,-189.17 334.49,-186.24 341,-183.68 460.63,-136.78 604.63,-96.64 691.11,-74.21"/>
-<polygon fill="#999999" stroke="#999999" points="691.87,-77.63 700.68,-71.75 690.12,-70.85 691.87,-77.63"/>
-<text xml:space="preserve" text-anchor="middle" x="438.33" y="-159.51" font-family="Helvetica,sans-Serif" font-size="9.00">enables</text>
+<path fill="none" stroke="#999999" stroke-dasharray="5,2" d="M321.16,-192.21C327.75,-189.17 334.49,-186.24 341,-183.68 464.88,-135.07 614.94,-93.65 699.85,-71.76"/>
+<polygon fill="#999999" stroke="#999999" points="700.6,-75.18 709.42,-69.31 698.86,-68.4 700.6,-75.18"/>
+<text xml:space="preserve" text-anchor="middle" x="438.15" y="-159.51" font-family="Helvetica,sans-Serif" font-size="9.00">enables</text>
 </g>
 <!-- t251&#45;&gt;g1 -->
 <g id="edge14" class="edge">
@@ -232,10 +233,10 @@
 <!-- t252&#45;&gt;t218 -->
 <g id="edge13" class="edge">
 <title>t252&#45;&gt;t218</title>
-<path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M767.16,-191.23C767.33,-162.91 767.62,-116.9 767.81,-86.32"/>
-<polygon fill="#888888" stroke="#888888" points="771.3,-86.57 767.87,-76.55 764.3,-86.53 771.3,-86.57"/>
-<text xml:space="preserve" text-anchor="middle" x="783.88" y="-165.13" font-family="Helvetica,sans-Serif" font-size="9.00">may</text>
-<text xml:space="preserve" text-anchor="middle" x="783.88" y="-153.88" font-family="Helvetica,sans-Serif" font-size="9.00">obviate</text>
+<path fill="none" stroke="#888888" stroke-dasharray="5,2" d="M767,-191.23C767,-164.47 767,-121.93 767,-91.53"/>
+<polygon fill="#888888" stroke="#888888" points="770.5,-91.64 767,-81.64 763.5,-91.64 770.5,-91.64"/>
+<text xml:space="preserve" text-anchor="middle" x="783.5" y="-165.13" font-family="Helvetica,sans-Serif" font-size="9.00">may</text>
+<text xml:space="preserve" text-anchor="middle" x="783.5" y="-153.88" font-family="Helvetica,sans-Serif" font-size="9.00">obviate</text>
 </g>
 <!-- t252&#45;&gt;g1 -->
 <g id="edge15" class="edge">
@@ -246,8 +247,8 @@
 <!-- t218&#45;&gt;g1 -->
 <g id="edge16" class="edge">
 <title>t218&#45;&gt;g1</title>
-<path fill="none" stroke="#338866" stroke-dasharray="5,2" d="M833.81,-54.09C967.24,-54.09 1100.67,-54.09 1234.1,-54.09"/>
-<polygon fill="#338866" stroke="#338866" points="1233.84,-57.59 1243.84,-54.09 1233.84,-50.59 1233.84,-57.59"/>
+<path fill="none" stroke="#338866" stroke-dasharray="5,2" d="M823.07,-54.09C960.02,-54.09 1096.97,-54.09 1233.93,-54.09"/>
+<polygon fill="#338866" stroke="#338866" points="1233.54,-57.59 1243.54,-54.09 1233.54,-50.59 1233.54,-57.59"/>
 </g>
 <!-- g3 -->
 <g id="node18" class="node">
