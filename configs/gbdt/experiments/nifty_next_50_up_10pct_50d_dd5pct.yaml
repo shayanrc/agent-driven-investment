@@ -1,0 +1,24 @@
+# Experiment: nifty_next_50_up_10pct_50d_dd5pct
+#
+# Cell 2/2 of the post-path-leak-cleanup validation sweep. Same +10%/dd5%
+# target as cell 1 but at a 50d horizon to add minimal cross-cell coverage
+# (verifies the sweep driver actually iterates + the second cell's metrics.json
+# is also path-clean). See cell 1's spec for the broader purpose.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty_next_50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 50
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3                           # sweep convention
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

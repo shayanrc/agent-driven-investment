@@ -1,0 +1,26 @@
+# Experiment: nifty_next_50_up_10pct_25d_dd5pct
+#
+# Cell 1/2 of the post-path-leak-cleanup validation sweep. Small NSE panel
+# (~44 effective tickers after the 1600-row gate; 6 recent IPOs drop) +
+# short horizon for fast turnaround. The substantive purpose is to exercise
+# the gbdt runner end-to-end with the sanitized preflight emission (#150 /
+# task #253) and verify that no `/mnt/<UUID>/...` substring appears in the
+# resulting metrics.json or sweep log.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: nifty_next_50
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3                           # sweep convention
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
