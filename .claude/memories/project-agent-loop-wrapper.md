@@ -38,7 +38,7 @@ metadata:
 bash scripts/gbdt/run_agent_loop_resumable.sh \
   --spec configs/gbdt/experiments/<cell>.yaml \
   --out-dir results/gbdt/experiments/<cell> \
-  --data-root /mnt/122CEE982CEE765F/cache_data \
+  --data-root ${SCRATCH_CACHE} \
   [--max-retries 3] \
   [--heartbeat-stall-secs 1800]
 ```

@@ -25,16 +25,17 @@ The official archives.nseindia.com lists include 4× `DUMMYVEDL*` entries (Vedan
 **3. `processed.db-wal` can be filesystem-corrupted after a disk wedge.**
 After the 2026-05-26 disk wedge (see `[[feedback-disk-wedge-pattern]]`), `data/processed.db-wal` returned I/O errors on stat/read/unlink — independent of the underlying DB integrity. Symptoms: `sqlite3 data/processed.db 'PRAGMA quick_check'` returns `unable to open database file`. The DB itself (`processed.db`) is fine when copied to a clean FS.
 
-**Current scratch path** (as of 2026-05-27): **`/mnt/122CEE982CEE765F/cache_data/`** — persistent on the host disk, survives reboots. `/tmp/exp_data` is now a symlink to `/mnt/.../cache_data/`. **Do NOT put the cache on raw `/tmp` (tmpfs)** — we lost ~12 hr of NSE Broad+Sectoral back-extends to a tmpfs wipe on 2026-05-27. The original tmpfs-warning note in this memory was prescient and is now paid for.
+**Current scratch path** (as of 2026-05-27): a persistent, non-tmpfs scratch directory referenced as `${SCRATCH_CACHE}` in project memories — the literal lives in per-user memory `scratch-cache-path`. `/tmp/exp_data` is symlinked to `${SCRATCH_CACHE}` for script back-compat. **Do NOT put the cache on raw `/tmp` (tmpfs)** — we lost ~12 hr of NSE Broad+Sectoral back-extends to a tmpfs wipe on 2026-05-27. The original tmpfs-warning note in this memory was prescient and is now paid for.
 
 **Workaround / re-bootstrap** (if the WAL corrupts again or the scratch path is lost):
 ```bash
-SCRATCH="/mnt/122CEE982CEE765F/cache_data"   # persistent, non-NTFS-corrupted
-mkdir -p "$SCRATCH" && cp data/processed.db "$SCRATCH/processed.db"
-# Link raw/ from main checkout (preserves immutable provider downloads)
-ln -sfn /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/data/raw "$SCRATCH/raw"
+# ${SCRATCH_CACHE} = persistent scratch dir on a non-corrupted FS; per-user memory `scratch-cache-path`.
+mkdir -p "${SCRATCH_CACHE}" && cp data/processed.db "${SCRATCH_CACHE}/processed.db"
+# Link raw/ from main checkout (preserves immutable provider downloads).
+# Substitute <main-checkout-abs> with the repo's absolute path on this machine.
+ln -sfn <main-checkout-abs>/data/raw "${SCRATCH_CACHE}/raw"
 # Re-symlink /tmp/exp_data for any scripts hardcoded to the old path
-ln -sfn "$SCRATCH" /tmp/exp_data
+ln -sfn "${SCRATCH_CACHE}" /tmp/exp_data
 # Then in each worktree:
 rm -rf data && ln -s /tmp/exp_data data
 git update-index --skip-worktree data/.gitkeep
@@ -77,16 +78,17 @@ plan = {'cold': [], 'back_extend': [], 'already_deep': []}
 for t in sorted(all_tickers):
     bucket = 'cold' if t not in cache else ('back_extend' if cache[t] < 2000 else 'already_deep')
     plan[bucket].append(t)
-json.dump(plan, open('/mnt/122CEE982CEE765F/cache_data/fetch_plan.json', 'w'), indent=2)
-os.symlink('/mnt/122CEE982CEE765F/cache_data/fetch_plan.json', '/tmp/fetch_plan.json')
+scratch = os.environ['SCRATCH_CACHE']  # per-user memory `scratch-cache-path`
+json.dump(plan, open(f'{scratch}/fetch_plan.json', 'w'), indent=2)
+os.symlink(f'{scratch}/fetch_plan.json', '/tmp/fetch_plan.json')
 ```
-Persistent location (`cache_data/`) survives reboots; `/tmp/` symlink keeps script compat.
+Persistent location (`${SCRATCH_CACHE}/`) survives reboots; `/tmp/` symlink keeps script compat.
 
 **How to apply:**
 
 - When registering a new NSE universe: start with the curl fallback (don't waste time on jugaad/nselib).
 - Filter `DUMMY*` from constituent lists at registration time.
-- Pre-flight `sqlite3 data/processed.db 'PRAGMA quick_check'` before any cache-dependent work. If it fails, set up a scratch dir and reroute the data symlink (use `/mnt/.../cache_data/`, NOT raw `/tmp/`).
+- Pre-flight `sqlite3 data/processed.db 'PRAGMA quick_check'` before any cache-dependent work. If it fails, set up a scratch dir and reroute the data symlink (use `${SCRATCH_CACHE}`, NOT raw `/tmp/`).
 - For bulk universe seeds: sequential with per-ticker 120 s hard timeout.
 - For cached-but-short tickers: `back_extend=True` on the gap-fill pass.
 - For broad fetch: `python -m scripts.data_pipelines.broad_market_fetch` (module form, NOT direct script).
