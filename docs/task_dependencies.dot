@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-09 00:25 IST)\nafter #206 /gbdt-diagnose retry on cell-4 mix captured pairwise interactions (post-#246 merge)", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — pending task dependencies (2026-06-09 10:20 IST)\n#218 closed — obviated by #252 (runner now emits canonical macro R-p@K natively)", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -51,7 +51,7 @@ digraph tasks {
 
     t251 [label=<<B>#251</B> BUG (merged)<BR/>metrics.json::loop<BR/>metadata unset<BR/>(agent_file_protocol)>, fillcolor="#cccccc"];
     t252 [label=<<B>#252</B> METHODOLOGY<BR/>segment_diagnostics<BR/>vs canonical CSV<BR/>(tie-break drift)>, fillcolor="#cccccc"];
-    t218 [label=<<B>#218</B><BR/>cell-5 manual_xgb<BR/>artifact dir materialize>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    t218 [label=<<B>#218</B><BR/>cell-5 manual_xgb<BR/>artifact dir —<BR/>obviated by #252>, fillcolor="#cccccc"];
   }
 
   // Data pipeline
