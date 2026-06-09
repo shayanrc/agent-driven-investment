@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"eta": 0.1, "min_child_weight": 1, "lambda": 5},
+  "should_stop": false,
+  "rationale": "iter_7 (eta=0.05 + mcw=5 + cs=0.4): R-p@1=0.546 — slower LR hurt. Reset to iter_3's BEST config (cs=0.4, mcw=1, eta=0.1, R-p@1=0.667) and add lambda=5 to probe the previously-untouched L2 regularization axis. Playbook rule 9: explore >=2 structurally distinct knob families. Covered so far: depth, eta, colsample, mcw. Adding lambda (L2 leaf weights regularization)."
+}

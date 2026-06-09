@@ -1,0 +1,216 @@
+2026-06-09T13:33:26+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:33:26+00:00 [data] start universe=nasdaq100
+2026-06-09T13:33:30+00:00 [data] complete in 4.2s rows=640499 tickers_kept=92
+2026-06-09T13:33:32+00:00 [features] start (no cache hit — building)
+2026-06-09T13:33:56+00:00 [heartbeat] t=19:03:56 phase=features elapsed_phase=26s elapsed_total=30s rss_mb=940
+2026-06-09T13:34:26+00:00 [heartbeat] t=19:04:26 phase=features elapsed_phase=56s elapsed_total=60s rss_mb=1204
+2026-06-09T13:34:56+00:00 [heartbeat] t=19:04:56 phase=features elapsed_phase=86s elapsed_total=90s rss_mb=1581
+2026-06-09T13:35:26+00:00 [heartbeat] t=19:05:26 phase=features elapsed_phase=116s elapsed_total=120s rss_mb=1794
+2026-06-09T13:35:56+00:00 [heartbeat] t=19:05:56 phase=features elapsed_phase=146s elapsed_total=150s rss_mb=2008
+2026-06-09T13:36:10+00:00 [features] complete in 158.8s shape=(640499, 279)
+2026-06-09T13:36:18+00:00 [features] per-cell cache written (key=f0af3625a5d1…)
+2026-06-09T13:36:26+00:00 [heartbeat] t=19:06:26 phase=features elapsed_phase=176s elapsed_total=180s rss_mb=3783
+2026-06-09T13:36:26+00:00 [features] universe cache written (key=fee6b45b9bfc…) at <external>/gbdt_feature_cache/
+2026-06-09T13:36:27+00:00 [target] start
+2026-06-09T13:36:30+00:00 [target] complete in 3.1s positive_prevalence=0.366
+2026-06-09T13:36:30+00:00 [uniqueness] start
+2026-06-09T13:36:30+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:36:30+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:36:30+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol
+2026-06-09T13:36:41+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.25592257929119905)
+2026-06-09T13:36:41+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_0_request.json
+2026-06-09T13:36:41+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:36:41+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:38:47+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:38:47+00:00 [resume] loaded checkpoint at iter 0 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:38:47+00:00 [resume] RESUMED iter 1 (decision: pruned 89, hp_changes=['early_stopping_rounds', 'eta', 'max_depth', 'n_estimators'], should_stop=False)
+2026-06-09T13:38:47+00:00 [data] start universe=nasdaq100
+2026-06-09T13:38:51+00:00 [data] complete in 4.4s rows=640499 tickers_kept=92
+2026-06-09T13:38:54+00:00 [features] loaded from per-cell cache (key match) in 1.0s shape=(640499, 279)
+2026-06-09T13:38:54+00:00 [target] start
+2026-06-09T13:38:57+00:00 [target] complete in 2.5s positive_prevalence=0.366
+2026-06-09T13:38:57+00:00 [uniqueness] start
+2026-06-09T13:38:57+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:38:57+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:38:57+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 1)
+2026-06-09T13:39:01+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.22675003162724278)
+2026-06-09T13:39:01+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_1_request.json
+2026-06-09T13:39:01+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:39:01+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:39:42+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:39:42+00:00 [resume] loaded checkpoint at iter 1 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:39:42+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=['max_depth'], should_stop=False)
+2026-06-09T13:39:42+00:00 [data] start universe=nasdaq100
+2026-06-09T13:39:46+00:00 [data] complete in 4.3s rows=640499 tickers_kept=92
+2026-06-09T13:39:49+00:00 [features] loaded from per-cell cache (key match) in 0.9s shape=(640499, 279)
+2026-06-09T13:39:49+00:00 [target] start
+2026-06-09T13:39:52+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:39:52+00:00 [uniqueness] start
+2026-06-09T13:39:52+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:39:52+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:39:52+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 2)
+2026-06-09T13:39:56+00:00 [loop] PAUSED iter 2 awaiting decision (best_val_brier=0.22657369295188862)
+2026-06-09T13:39:56+00:00 [loop] paused at iter 2 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_2_request.json
+2026-06-09T13:39:56+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:39:56+00:00 [loop] paused at iter 2 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:40:21+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:40:21+00:00 [resume] loaded checkpoint at iter 2 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:40:21+00:00 [resume] RESUMED iter 3 (decision: pruned 0, hp_changes=['colsample_bytree'], should_stop=False)
+2026-06-09T13:40:21+00:00 [data] start universe=nasdaq100
+2026-06-09T13:40:25+00:00 [data] complete in 4.2s rows=640499 tickers_kept=92
+2026-06-09T13:40:27+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:40:28+00:00 [target] start
+2026-06-09T13:40:30+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:40:30+00:00 [uniqueness] start
+2026-06-09T13:40:31+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:40:31+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:40:31+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 3)
+2026-06-09T13:40:35+00:00 [loop] PAUSED iter 3 awaiting decision (best_val_brier=0.22576699859845195)
+2026-06-09T13:40:35+00:00 [loop] paused at iter 3 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_3_request.json
+2026-06-09T13:40:35+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:40:35+00:00 [loop] paused at iter 3 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:40:58+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:40:58+00:00 [resume] loaded checkpoint at iter 3 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:40:58+00:00 [resume] RESUMED iter 4 (decision: pruned 0, hp_changes=['colsample_bytree'], should_stop=False)
+2026-06-09T13:40:58+00:00 [data] start universe=nasdaq100
+2026-06-09T13:41:03+00:00 [data] complete in 4.2s rows=640499 tickers_kept=92
+2026-06-09T13:41:05+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:41:05+00:00 [target] start
+2026-06-09T13:41:08+00:00 [target] complete in 2.8s positive_prevalence=0.366
+2026-06-09T13:41:08+00:00 [uniqueness] start
+2026-06-09T13:41:09+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:41:09+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:41:09+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 4)
+2026-06-09T13:41:12+00:00 [loop] PAUSED iter 4 awaiting decision (best_val_brier=0.22560030890112506)
+2026-06-09T13:41:12+00:00 [loop] paused at iter 4 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_4_request.json
+2026-06-09T13:41:12+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:41:12+00:00 [loop] paused at iter 4 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:41:44+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:41:44+00:00 [resume] loaded checkpoint at iter 4 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:41:44+00:00 [resume] RESUMED iter 5 (decision: pruned 0, hp_changes=['min_child_weight'], should_stop=False)
+2026-06-09T13:41:44+00:00 [data] start universe=nasdaq100
+2026-06-09T13:41:49+00:00 [data] complete in 4.2s rows=640499 tickers_kept=92
+2026-06-09T13:41:51+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:41:51+00:00 [target] start
+2026-06-09T13:41:54+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:41:54+00:00 [uniqueness] start
+2026-06-09T13:41:55+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:41:55+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:41:55+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 5)
+2026-06-09T13:41:58+00:00 [loop] PAUSED iter 5 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:41:58+00:00 [loop] paused at iter 5 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_5_request.json
+2026-06-09T13:41:58+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:41:58+00:00 [loop] paused at iter 5 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:42:31+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:42:31+00:00 [resume] loaded checkpoint at iter 5 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:42:31+00:00 [resume] RESUMED iter 6 (decision: pruned 0, hp_changes=['colsample_bytree'], should_stop=False)
+2026-06-09T13:42:31+00:00 [data] start universe=nasdaq100
+2026-06-09T13:42:35+00:00 [data] complete in 4.1s rows=640499 tickers_kept=92
+2026-06-09T13:42:38+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:42:38+00:00 [target] start
+2026-06-09T13:42:41+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:42:41+00:00 [uniqueness] start
+2026-06-09T13:42:41+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:42:41+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:42:41+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 6)
+2026-06-09T13:42:45+00:00 [loop] PAUSED iter 6 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:42:45+00:00 [loop] paused at iter 6 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_6_request.json
+2026-06-09T13:42:45+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:42:45+00:00 [loop] paused at iter 6 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:43:24+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:43:24+00:00 [resume] loaded checkpoint at iter 6 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:43:24+00:00 [resume] RESUMED iter 7 (decision: pruned 0, hp_changes=['eta'], should_stop=False)
+2026-06-09T13:43:24+00:00 [data] start universe=nasdaq100
+2026-06-09T13:43:28+00:00 [data] complete in 4.0s rows=640499 tickers_kept=92
+2026-06-09T13:43:30+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:43:30+00:00 [target] start
+2026-06-09T13:43:33+00:00 [target] complete in 2.7s positive_prevalence=0.366
+2026-06-09T13:43:33+00:00 [uniqueness] start
+2026-06-09T13:43:34+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:43:34+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:43:34+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 7)
+2026-06-09T13:43:37+00:00 [loop] PAUSED iter 7 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:43:37+00:00 [loop] paused at iter 7 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_7_request.json
+2026-06-09T13:43:37+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:43:37+00:00 [loop] paused at iter 7 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:44:13+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:44:13+00:00 [resume] loaded checkpoint at iter 7 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:44:13+00:00 [resume] RESUMED iter 8 (decision: pruned 0, hp_changes=['eta', 'lambda', 'min_child_weight'], should_stop=False)
+2026-06-09T13:44:13+00:00 [data] start universe=nasdaq100
+2026-06-09T13:44:17+00:00 [data] complete in 4.1s rows=640499 tickers_kept=92
+2026-06-09T13:44:19+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:44:20+00:00 [target] start
+2026-06-09T13:44:22+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:44:22+00:00 [uniqueness] start
+2026-06-09T13:44:23+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:44:23+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:44:23+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 8)
+2026-06-09T13:44:27+00:00 [loop] PAUSED iter 8 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:44:27+00:00 [loop] paused at iter 8 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_8_request.json
+2026-06-09T13:44:27+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:44:27+00:00 [loop] paused at iter 8 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:44:56+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:44:56+00:00 [resume] loaded checkpoint at iter 8 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:44:56+00:00 [resume] RESUMED iter 9 (decision: pruned 0, hp_changes=['lambda', 'subsample'], should_stop=False)
+2026-06-09T13:44:56+00:00 [data] start universe=nasdaq100
+2026-06-09T13:45:00+00:00 [data] complete in 4.1s rows=640499 tickers_kept=92
+2026-06-09T13:45:03+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:45:03+00:00 [target] start
+2026-06-09T13:45:06+00:00 [target] complete in 2.7s positive_prevalence=0.366
+2026-06-09T13:45:06+00:00 [uniqueness] start
+2026-06-09T13:45:06+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:45:06+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:45:06+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 9)
+2026-06-09T13:45:10+00:00 [loop] PAUSED iter 9 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:45:10+00:00 [loop] paused at iter 9 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_9_request.json
+2026-06-09T13:45:10+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:45:10+00:00 [loop] paused at iter 9 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:45:42+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:45:42+00:00 [resume] loaded checkpoint at iter 9 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:45:42+00:00 [resume] RESUMED iter 10 (decision: pruned 0, hp_changes=['colsample_bytree', 'subsample'], should_stop=False)
+2026-06-09T13:45:42+00:00 [data] start universe=nasdaq100
+2026-06-09T13:45:46+00:00 [data] complete in 4.0s rows=640499 tickers_kept=92
+2026-06-09T13:45:49+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:45:49+00:00 [target] start
+2026-06-09T13:45:51+00:00 [target] complete in 2.4s positive_prevalence=0.366
+2026-06-09T13:45:51+00:00 [uniqueness] start
+2026-06-09T13:45:52+00:00 [uniqueness] complete in 0.5s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:45:52+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:45:52+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 10)
+2026-06-09T13:45:56+00:00 [loop] PAUSED iter 10 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:45:56+00:00 [loop] paused at iter 10 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_10_request.json
+2026-06-09T13:45:56+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:45:56+00:00 [loop] paused at iter 10 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:46:56+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:46:56+00:00 [resume] loaded checkpoint at iter 10 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:46:56+00:00 [resume] RESUMED iter 11 (decision: pruned 0, hp_changes=['colsample_bytree', 'min_child_weight'], should_stop=False)
+2026-06-09T13:46:56+00:00 [data] start universe=nasdaq100
+2026-06-09T13:47:00+00:00 [data] complete in 4.2s rows=640499 tickers_kept=92
+2026-06-09T13:47:03+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:47:03+00:00 [target] start
+2026-06-09T13:47:06+00:00 [target] complete in 2.5s positive_prevalence=0.366
+2026-06-09T13:47:06+00:00 [uniqueness] start
+2026-06-09T13:47:06+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:47:06+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:47:06+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 11)
+2026-06-09T13:47:10+00:00 [loop] PAUSED iter 11 awaiting decision (best_val_brier=0.22559839495393383)
+2026-06-09T13:47:10+00:00 [loop] paused at iter 11 — request written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/iter_11_request.json
+2026-06-09T13:47:10+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/loop/checkpoint.json
+2026-06-09T13:47:10+00:00 [loop] paused at iter 11 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml --resume nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:47:38+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:47:38+00:00 [resume] loaded checkpoint at iter 11 (run_id=nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation)
+2026-06-09T13:47:38+00:00 [resume] RESUMED iter 12 (decision: pruned 0, hp_changes=[], should_stop=True)
+2026-06-09T13:47:38+00:00 [data] start universe=nasdaq100
+2026-06-09T13:47:42+00:00 [data] complete in 4.1s rows=640499 tickers_kept=92
+2026-06-09T13:47:45+00:00 [features] loaded from per-cell cache (key match) in 0.8s shape=(640499, 279)
+2026-06-09T13:47:45+00:00 [target] start
+2026-06-09T13:47:48+00:00 [target] complete in 2.6s positive_prevalence=0.366
+2026-06-09T13:47:48+00:00 [uniqueness] start
+2026-06-09T13:47:48+00:00 [uniqueness] complete in 0.6s horizon=50 rows=640499 ESS=638476 inflation=1.00x
+2026-06-09T13:47:48+00:00 [loop] V1.3 sweep_row matched cell='nasdaq100_up_10pct_50d_dd5pct' (AUC=0.477152, R-p@10=0.523254, base_rate=0.265217)
+2026-06-09T13:47:48+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 12)
+2026-06-09T13:47:53+00:00 [loop] LOOP COMPLETE in 4.9s best_iter=3 val_brier=0.2258 reason=agent_should_stop
+2026-06-09T13:47:53+00:00 [artifact] start
+2026-06-09T13:47:54+00:00 [artifact] complete in 0.9s -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+2026-06-09T13:47:54+00:00 [loop] STOPPED reason=agent_should_stop
+2026-06-09T13:47:54+00:00 [experiment] complete in 16.0s

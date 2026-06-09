@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"eta": 0.05},
+  "should_stop": false,
+  "rationale": "iter_6 (cs=0.4 + mcw=5): R-p@1=0.631 (mcw=5 slightly hurts at cs=0.4 vs iter_3's 0.667 with mcw=1). val_brier=0.2258 baseline-pinned. Try slower eta=0.05 — forces more trees via ES, may capture richer prediction-tail signal. Memo _223 iter_6 saw eta=0.05 yield 11 trees vs 5 (deeper tail signal). Keep mcw=5 to test interaction with slower LR."
+}

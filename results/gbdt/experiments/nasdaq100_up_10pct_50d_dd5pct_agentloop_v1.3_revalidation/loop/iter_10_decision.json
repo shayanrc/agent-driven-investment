@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"colsample_bytree": 1.0, "min_child_weight": 10},
+  "should_stop": false,
+  "rationale": "iter_10 (cs=0.5): R-p@1=0.598. Colsample curve mapped (cs=1.0:0.594, 0.5:0.598, 0.4:0.667, 0.3:0.566) — cs=0.4 is the unique peak; cs=0.5 doesn't add. Final probe: mcw=10 with cs reverted to 1.0 — tests higher leaf-weight cap on a wider-feature tree regime (untried combination)."
+}

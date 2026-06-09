@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"max_depth": 2},
+  "should_stop": false,
+  "rationale": "iter_1 (d=3, eta=0.1, ES=30, FS=190): val_brier=0.2268 ≈ baseline 0.2280, gap=0.010 (overfit closed), degenerate_sink_warning=true (val signal collapsed — EXPECTED on anti-AUC per V1.3 D5), |z|=0.13 (native calibration regime — good). But eval R-p@1=0.406 REGRESSED from iter_0 0.498. Per memo _223 and playbook rule 12 (tiny-model regime on anti-AUC), tighten capacity further: depth=2 (manual winner _211 used depth=2). Keep eta=0.1, ES=30 (tree count auto-picked)."
+}
