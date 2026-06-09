@@ -28,7 +28,7 @@ SWEEP_START_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 SWEEP_START_EPOCH=$(date +%s)
 
 {
-  echo "[SWEEP] start $SWEEP_START_TS repo=$REPO_ROOT"
+  echo "[SWEEP] start $SWEEP_START_TS"
   echo "[SWEEP] python -m gbdt.experiment via uv run"
 } >> "$LOG_FILE"
 

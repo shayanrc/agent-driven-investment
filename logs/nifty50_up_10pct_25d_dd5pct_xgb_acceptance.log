@@ -1,5 +1,5 @@
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=978640896 cache_db_mtime=2026-05-28T19:42:59.103794+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=978640896 cache_db_mtime=2026-05-28T19:42:59.103794+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [data] start universe=nifty50
 stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [data] warning: 1 stale ticker(s) (cache > 20d old): ['NSE:NTPC']
@@ -28,11 +28,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [loop] start max_iter=10 callback_mode=agent_file_protocol
 [heartbeat] t=01:20:22 phase=loop elapsed_phase=29s elapsed_total=390s rss_mb=1160
 [heartbeat] t=01:20:52 phase=loop elapsed_phase=59s elapsed_total=420s rss_mb=1161
-[loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_0_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 0 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_0_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=979472384 cache_db_mtime=2026-05-28T19:51:20.084263+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=979472384 cache_db_mtime=2026-05-28T19:51:20.084263+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 0 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=['max_depth'], should_stop=False
 [data] start universe=nifty50
@@ -67,11 +67,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [heartbeat] t=01:30:14 phase=loop elapsed_phase=69s elapsed_total=480s rss_mb=1162
 [heartbeat] t=01:30:44 phase=loop elapsed_phase=99s elapsed_total=510s rss_mb=1162
 [heartbeat] t=01:31:14 phase=loop elapsed_phase=129s elapsed_total=540s rss_mb=1162
-[loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_1_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 1 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_1_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=980566016 cache_db_mtime=2026-05-28T20:01:04.761952+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=980566016 cache_db_mtime=2026-05-28T20:01:04.761952+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 1 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=['max_depth'], should_stop=False
 [data] start universe=nifty50
@@ -104,11 +104,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [uniqueness] complete in 0.2s horizon=25 rows=129397 ESS=128900 inflation=1.00x
 [loop] start max_iter=10 callback_mode=agent_file_protocol (resume from iter 2)
 [heartbeat] t=01:40:09 phase=loop elapsed_phase=30s elapsed_total=480s rss_mb=1161
-[loop] paused at iter 2 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_2_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 2 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_2_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 2 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=981889024 cache_db_mtime=2026-05-28T20:10:26.874940+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=981889024 cache_db_mtime=2026-05-28T20:10:26.874940+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 2 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=['early_stopping_rounds', 'eta', 'max_depth'], should_stop=False
 [data] start universe=nifty50
@@ -148,11 +148,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [heartbeat] t=01:51:34 phase=loop elapsed_phase=172s elapsed_total=630s rss_mb=1163
 [heartbeat] t=01:52:04 phase=loop elapsed_phase=202s elapsed_total=660s rss_mb=1163
 [heartbeat] t=01:52:34 phase=loop elapsed_phase=232s elapsed_total=690s rss_mb=1163
-[loop] paused at iter 3 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_3_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 3 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_3_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 3 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=982982656 cache_db_mtime=2026-05-28T20:23:01.855913+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=982982656 cache_db_mtime=2026-05-28T20:23:01.855913+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 3 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=['early_stopping_rounds', 'eta', 'lambda', 'min_child_weight'], should_stop=False
 [data] start universe=nifty50
@@ -186,11 +186,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [heartbeat] t=02:01:01 phase=loop elapsed_phase=18s elapsed_total=450s rss_mb=1161
 [heartbeat] t=02:01:31 phase=loop elapsed_phase=48s elapsed_total=480s rss_mb=1161
 [heartbeat] t=02:02:01 phase=loop elapsed_phase=78s elapsed_total=510s rss_mb=1161
-[loop] paused at iter 4 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_4_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 4 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_4_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 4 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=983711744 cache_db_mtime=2026-05-28T20:33:03.781805+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=983711744 cache_db_mtime=2026-05-28T20:33:03.781805+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 4 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=['colsample_bytree', 'lambda', 'min_child_weight'], should_stop=False
 [data] start universe=nifty50
@@ -224,11 +224,11 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [heartbeat] t=02:11:02 phase=loop elapsed_phase=29s elapsed_total=450s rss_mb=1162
 [heartbeat] t=02:11:32 phase=loop elapsed_phase=59s elapsed_total=480s rss_mb=1162
 [heartbeat] t=02:12:02 phase=loop elapsed_phase=89s elapsed_total=510s rss_mb=1163
-[loop] paused at iter 5 — request written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_5_request.json
-[loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
+[loop] paused at iter 5 — request written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/iter_5_request.json
+[loop] checkpoint written: <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance/loop/checkpoint.json
 [loop] paused at iter 5 — resume with: uv run python -m gbdt experiment nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml --resume nifty50_up_10pct_25d_dd5pct_xgb_acceptance
-[preflight] cache_db=/mnt/122CEE982CEE765F/cache_data/processed.db cache_db_size=984387584 cache_db_mtime=2026-05-28T20:42:05.367081+00:00 data_root=/mnt/122CEE982CEE765F/cache_data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
-[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[preflight] cache_db=data/processed.db cache_db_size=984387584 cache_db_mtime=2026-05-28T20:42:05.367081+00:00 data_root=data code_commit=99355fd0a85a5c0bb5df81941ad47713224e74ed code_dirty=True
+[experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_acceptance.yaml -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [resume] loaded checkpoint at iter 5 (run_id=nifty50_up_10pct_25d_dd5pct_xgb_acceptance)
 [resume] decision applied: pruned 0 feature(s), hp_changes=[], should_stop=True
 [data] start universe=nifty50
@@ -264,5 +264,5 @@ stale cache: NSE:NTPC last_date=2025-12-31 age=149d > threshold=20d
 [heartbeat] t=02:21:25 phase=loop elapsed_phase=101s elapsed_total=510s rss_mb=1162
 [loop] complete in 123.0s best_iter=1 val_brier=0.1635 signal=agent_should_stop
 [artifact] start
-[artifact] complete in 0.7s -> /mnt/122CEE982CEE765F/Workspace/wt-inv-b-xgboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
+[artifact] complete in 0.7s -> <repo>/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_acceptance
 [experiment] complete in 533.0s

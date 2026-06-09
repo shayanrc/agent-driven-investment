@@ -27,6 +27,7 @@ from gbdt import features as F
 from gbdt.__main__ import (
     _collect_preflight,
     _format_preflight_line,
+    _sanitize_preflight_for_emission,
 )
 from gbdt.leakage_harness import make_synthetic_panel
 
@@ -146,10 +147,14 @@ def test_B1_preflight_log_format(tmp_path, capsys):
     db.write_bytes(b"\x00" * 4096)
 
     pf = _collect_preflight(tmp_path)
-    line = _format_preflight_line(pf)
+    line = _format_preflight_line(pf, tmp_path)
     print(line)  # exercise the print path
     captured = capsys.readouterr()
     assert line in captured.out
+    # Paths in the emitted line are sanitized to repo-relative (no leak of
+    # the absolute realpath into committed log files).
+    assert "data_root=data" in line
+    assert "cache_db=data/processed.db" in line
 
     # Documented key order (matches the runner's log line).
     expected_keys = list(_PREFLIGHT_FIELDS)
@@ -261,3 +266,58 @@ def test_B6_preflight_with_real_git_repo(tmp_path):
     pf_dirty = _collect_preflight(repo)
     assert pf_dirty["code_commit"] == pf_clean["code_commit"]
     assert pf_dirty["code_dirty"] is True
+
+
+def test_B7_sanitize_preflight_for_emission_relativizes_paths(tmp_path):
+    """B7: ``_sanitize_preflight_for_emission`` rewrites in-repo paths
+    relative to the repo root and collapses external paths to
+    ``<external>/<basename>``. Prevents the host's absolute partition path
+    from leaking into committed ``metrics.json`` files and run logs while
+    leaving the raw preflight dict (consumed by the universe + FS-prefit
+    caches) untouched."""
+    # In-repo case: data/ symlink to a directory inside tmp_path's repo.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    data_dir = repo / "data"
+    data_dir.mkdir()
+    db = data_dir / "processed.db"
+    db.write_bytes(b"\x00" * 256)
+
+    pf = _collect_preflight(repo)
+    # Raw fields untouched — downstream consumers see realpaths.
+    assert pf["cache_db"] == os.path.realpath(db)
+    assert pf["data_root"] == os.path.realpath(data_dir)
+
+    san = _sanitize_preflight_for_emission(pf, repo)
+    # Emitted view is repo-relative.
+    assert san["cache_db"] == "data/processed.db"
+    assert san["data_root"] == "data"
+    # Non-path fields unchanged.
+    assert san["cache_db_size"] == pf["cache_db_size"]
+    assert san["cache_db_mtime"] == pf["cache_db_mtime"]
+    assert san["code_commit"] == pf["code_commit"]
+    assert san["code_dirty"] == pf["code_dirty"]
+
+    # External case: data root realpath outside the repo (mirrors the
+    # production worktree-symlink contract: data/ → /mnt/<uuid>/cache_data).
+    external = tmp_path / "external_cache"
+    external.mkdir()
+    ext_db = external / "processed.db"
+    ext_db.write_bytes(b"\xff" * 128)
+    pf_ext = {
+        "cache_db": str(ext_db),
+        "cache_db_size": 128,
+        "cache_db_mtime": "2026-06-09T00:00:00+00:00",
+        "data_root": str(external),
+        "code_commit": "deadbeef" * 5,
+        "code_dirty": False,
+    }
+    san_ext = _sanitize_preflight_for_emission(pf_ext, repo)
+    assert san_ext["cache_db"] == "<external>/processed.db"
+    assert san_ext["data_root"] == "<external>/external_cache"
+
+    # Empty-string case: missing DB. Sanitizer must not crash.
+    pf_empty = {**pf_ext, "cache_db": "", "cache_db_size": 0,
+                "cache_db_mtime": ""}
+    san_empty = _sanitize_preflight_for_emission(pf_empty, repo)
+    assert san_empty["cache_db"] == ""
