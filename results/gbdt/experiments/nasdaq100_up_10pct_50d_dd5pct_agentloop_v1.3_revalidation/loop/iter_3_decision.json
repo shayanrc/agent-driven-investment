@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"colsample_bytree": 0.3},
+  "should_stop": false,
+  "rationale": "iter_3 (cs=0.4): val_brier=0.2258 stable, |z|=-0.07 native calibration, eval R-p@1=0.667 (sharp jump from iter_2's 0.594). Continue down the colsample curve to find the bottom: cs=0.3. Memo _223 saw the K=1 specialization continue improving at cs=0.3 (0.582→0.623)."
+}

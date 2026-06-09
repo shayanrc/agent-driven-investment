@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"colsample_bytree": 0.4},
+  "should_stop": false,
+  "rationale": "iter_2 (d=2, ES=30): val_brier=0.2266 ≈ baseline 0.2280, gap=0.005, |z|=0.19 (native calibration). eval R-p@1=0.594 — strong jump from iter_1's 0.406. Now try column subsampling (manual track _211 used cs=0.4). Mechanism: per-tree feature variance reduction; orthogonal to FS+depth knobs. Replays memo _223 iter_3."
+}

@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"colsample_bytree": 0.4},
+  "should_stop": false,
+  "rationale": "iter_5 (cs=0.3 + mcw=5): BYTE-IDENTICAL to iter_4 (val_brier 0.22560 unchanged, R-p@1 0.566 unchanged) — mcw=5 non-binding at depth=2 with ES picking few trees (leaves already exceed mcw threshold). Revert cs to 0.4 (our best at iter_3: R-p@1=0.667) while keeping mcw=5 in case it activates on a different cs regime."
+}

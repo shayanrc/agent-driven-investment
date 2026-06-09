@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
+  "iter_idx": 3,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-09T13:47:54+00:00",
+  "last_heartbeat_utc": null,
+  "best_val_brier": 0.22576699859845195,
+  "stop_reason": "agent_should_stop"
+}

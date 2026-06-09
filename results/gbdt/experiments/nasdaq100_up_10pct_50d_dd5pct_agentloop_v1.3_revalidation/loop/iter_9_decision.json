@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"subsample": 1.0, "colsample_bytree": 0.5},
+  "should_stop": false,
+  "rationale": "iter_9 (subsample=0.7): R-p@1=0.598 — also regressed vs iter_3's 0.667. 6 of 6 knob families now explored; iter_3's pure config remains best. Last probe before convergence: revert subsample to 1.0 and try cs=0.5 (untried — bracket cs=0.4 from above). If R-p@1 doesn't beat 0.667, stop and finalize on iter_3."
+}

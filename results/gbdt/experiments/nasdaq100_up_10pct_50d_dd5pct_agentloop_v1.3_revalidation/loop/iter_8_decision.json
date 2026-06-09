@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"lambda": 1, "subsample": 0.7},
+  "should_stop": false,
+  "rationale": "iter_8 (lambda=5): R-p@1=0.610, mild regression vs iter_3's 0.667 baseline. Revert lambda to 1, probe row subsampling=0.7 — last untried structural family (memo _223 also probed subsample). Mechanism: per-tree row sampling adds bagging variance reduction; orthogonal to colsample (per-tree column sampling). Playbook rule 9 coverage: depth, colsample, eta, mcw, lambda, subsample = 6 knob families."
+}

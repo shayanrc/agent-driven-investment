@@ -1,0 +1,69 @@
+{
+  "r_precision_mean_unweighted": 0.38149673839819126,
+  "r_precision_weighted": 0.41232654532348173,
+  "base_rate_mean_unweighted": 0.3168174669533365,
+  "base_rate_weighted": 0.31672374429223743,
+  "lift_mean": 1.2041531108333154,
+  "lift_weighted": 1.3018491753590558,
+  "n_days_total": 192,
+  "n_days_with_positives": 192,
+  "per_day_rprec_quantiles": {
+    "p10": 0.16875,
+    "p25": 0.2857142857142857,
+    "p50": 0.38461538461538464,
+    "p75": 0.5,
+    "p90": 0.5625
+  },
+  "r_distribution": {
+    "min": 4,
+    "mean": 28.901041666666668,
+    "max": 50
+  },
+  "label": "cell5 revalidation memo-window",
+  "r_precision_at_k": {
+    "base_rate": 0.31672374429223743,
+    "n_days_total": 192,
+    "by_k": {
+      "1": {
+        "r_precision_at_k": 0.796875,
+        "p_at_k_micro": 0.796875,
+        "n_hits": 153,
+        "n_denom": 192,
+        "n_days_R_lt_k": 0,
+        "n_days_R_gt_0": 192
+      },
+      "3": {
+        "r_precision_at_k": 0.5711805555555555,
+        "p_at_k_micro": 0.5711805555555556,
+        "n_hits": 329,
+        "n_denom": 576,
+        "n_days_R_lt_k": 0,
+        "n_days_R_gt_0": 192
+      },
+      "5": {
+        "r_precision_at_k": 0.5169270833333334,
+        "p_at_k_micro": 0.5172054223149114,
+        "n_hits": 496,
+        "n_denom": 959,
+        "n_days_R_lt_k": 1,
+        "n_days_R_gt_0": 192
+      },
+      "10": {
+        "r_precision_at_k": 0.4094039351851852,
+        "p_at_k_micro": 0.41016238868517546,
+        "n_hits": 783,
+        "n_denom": 1909,
+        "n_days_R_lt_k": 3,
+        "n_days_R_gt_0": 192
+      },
+      "20": {
+        "r_precision_at_k": 0.42642410036106826,
+        "p_at_k_micro": 0.4328439369222403,
+        "n_hits": 1592,
+        "n_denom": 3678,
+        "n_days_R_lt_k": 27,
+        "n_days_R_gt_0": 192
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "iter_11 (cs=1.0+mcw=10): R-p@1=0.590, below iter_3's 0.667. 6 knob families fully explored (depth, eta, colsample, mcw, lambda, subsample) + 5 colsample positions probed; iter_3 (d=2, eta=0.1, cs=0.4, mcw=1, ES=30, FS=190) is the unique peak at eval R-p@1=0.667 vs all 11 other configurations. STOP — finalize on iter_3 winner. Note: panel data differs from memo _223 (cache evolved post 2026-06-02 even with --snapshot-end pinned, likely back-extend deltas); memo's R-p@1=0.7143 not reproduced. Eval R-p@1=0.667 sits 0.004 below the sweep baseline 0.6714 — finalization will reveal test R-p@1 (eval->test decay on H=50 nasdaq is typically modest)."
+}

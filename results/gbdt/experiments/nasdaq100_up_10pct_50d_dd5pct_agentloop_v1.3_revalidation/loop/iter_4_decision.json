@@ -1,0 +1,6 @@
+{
+  "prune_features": [],
+  "hp_changes": {"min_child_weight": 5},
+  "should_stop": false,
+  "rationale": "iter_4 (cs=0.3): val_brier=0.2256 baseline-pinned, |z|=-0.06 native, eval R-p@1=0.567 REGRESSED from iter_3's 0.667. Colsample curve appears to bottom here on this run. Pivot to memo _223's winning knob: min_child_weight=5 (manual track _211 exact winner combo with cs=0.3). Mechanism: mcw controls per-leaf sample count threshold → shapes prediction-tail; in memo it was the knob that took R-p@1 from ~0.6 to 0.71. Holds cs=0.3 to match memo's exact winner config."
+}
