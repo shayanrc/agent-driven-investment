@@ -1,9 +1,11 @@
 ---
 name: feedback-worktree-symlink-contract
-description: Sub-agents can't `git worktree add` to sibling paths (sandbox blocks). Parent must pre-create worktrees. Symlink for data/ must `rm -rf data && ln -s` because `ln -snf` creates a nested `data/data` when `data/` exists as a real dir (with `.gitkeep`). After symlinking, run `git update-index --skip-worktree data/.gitkeep` so the shadowed tracked file doesn't show as a phantom modification and break `git rebase --autostash` / `git checkout`.
+description: Sub-agents can't `git worktree add` to sibling paths (sandbox blocks). Parent must pre-create worktrees. Symlink for data/ must `rm -rf data && ln -s ${SCRATCH_CACHE} data` because `ln -snf` creates a nested `data/data` when `data/` exists as a real dir (with `.gitkeep`). After symlinking, run `git update-index --skip-worktree data/.gitkeep` so the shadowed tracked file doesn't show as a phantom modification and break `git rebase --autostash` / `git checkout`. `${SCRATCH_CACHE}` is per-machine — substitute via your per-user memory `scratch-cache-path` before running the commands.
 metadata:
   type: feedback
 ---
+
+**`${SCRATCH_CACHE}` placeholder.** Every command below uses `${SCRATCH_CACHE}` as the local scratch path the worktree's `data/` symlink targets. It is **per-machine**: the partition layout, the FS choice, the wedge state of any candidate cache, and the available headroom all differ across machines. The literal value for the current machine lives in the **per-user memory** `scratch-cache-path` (under `~/.claude/projects/<project-hash>/memory/`); substitute it inline or `export SCRATCH_CACHE=<path>` once per shell before running the commands quoted in this memory. New contributors create their own `scratch-cache-path` per-user memory with a local scratch dir of ≥ 10 G headroom on a non-corrupted FS.
 
 Three related foot-guns surfaced during the GBDT v1 pilot experiment launches (2026-05-26):
 
@@ -21,15 +23,15 @@ Then sub-agent prompt says "Worktree pre-created at `<sibling>/wt-<scope>`; cd t
 
 The repo has `data/.gitkeep` tracked. When `git worktree add` checks out, `data/` materializes as a real directory containing `.gitkeep`. Subsequent `ln -snf <main>/data data` does NOT replace the directory — `ln -snf` only replaces an existing symlink or empty path, never a non-empty directory. Instead it creates `data/data` (a symlink INSIDE the dir, named `data`). `ls data/` then shows the inner-symlink AND the original `.gitkeep` — looks vaguely correct to a casual `ls`, but the cache reads fail because the runner expects `data/processed.db` and gets `data/data/processed.db`.
 
-**Fix:** `rm -rf data && ln -s /mnt/122CEE982CEE765F/cache_data data`. The `.gitkeep` loss is irrelevant (it's a tracking-only file; the symlink target has its own `.gitkeep`).
+**Fix:** `rm -rf data && ln -s ${SCRATCH_CACHE} data`. The `.gitkeep` loss is irrelevant (it's a tracking-only file; the symlink target has its own `.gitkeep`).
 
-*`data/` MUST point at the scratch cache `/mnt/122CEE982CEE765F/cache_data`, NOT the main checkout's `data/`. The main checkout's `data/processed.db-wal` is filesystem-corrupted (2026-05-26 disk wedge — see `[[project-nse-data-quirks]]` § 3 for the wedge story and the move to the scratch cache).*
+*`data/` MUST point at the scratch cache `${SCRATCH_CACHE}`, NOT the main checkout's `data/`. The main checkout's `data/processed.db-wal` is filesystem-corrupted (2026-05-26 disk wedge — see `[[project-nse-data-quirks]]` § 3 for the wedge story and the move to the scratch cache).*
 
 *The scratch cache's `raw/` symlinks back to the main checkout, so immutable per-provider downloads still carry over automatically — sub-agents debugging "where are my raw downloads?" will find them at `data/raw/<provider>/...` resolving through that secondary symlink.*
 
 *Also symlink `.env`: `ln -sf <main-checkout-abs>/.env .env` (NOT `ln -snf` — same nested-dir foot-gun as `data/`; if `.env` were ever a directory the snf flag would create `.env/.env`).*
 
-**Validation:** after symlink, `readlink data` should print `/mnt/122CEE982CEE765F/cache_data`, not empty. If empty → wrong (data/ is still a directory). Then run the integrity gate: `sqlite3 "$(readlink -f data)/processed.db" 'PRAGMA quick_check'` MUST return `ok`. If the DB is corrupt, fix it BEFORE running any gbdt experiment against this worktree — a corrupt cache will silently feed wrong/missing rows into the feature build and contaminate the entire run. Sub-agents should pre-flight both checks before any `uv run` step.
+**Validation:** after symlink, `readlink data` should print the `${SCRATCH_CACHE}` literal (from per-user memory `scratch-cache-path`), not empty. If empty → wrong (data/ is still a directory). Then run the integrity gate: `sqlite3 "$(readlink -f data)/processed.db" 'PRAGMA quick_check'` MUST return `ok`. If the DB is corrupt, fix it BEFORE running any gbdt experiment against this worktree — a corrupt cache will silently feed wrong/missing rows into the feature build and contaminate the entire run. Sub-agents should pre-flight both checks before any `uv run` step.
 
 **3. `data/.gitkeep` phantom modification after symlinking.**
 
@@ -46,10 +48,10 @@ This tells git's index to stop comparing the worktree copy of `data/.gitkeep` �
 **How to apply:**
 
 1. Parent agent does worktree creation + symlink setup for every long-running experiment (or any task that needs filesystem isolation).
-2. Symlink command MUST be `rm -rf data && ln -s /mnt/122CEE982CEE765F/cache_data data`, not `ln -snf`. (Scratch cache, NOT main checkout's `data/` — see `[[project-nse-data-quirks]]` § 3.)
+2. Symlink command MUST be `rm -rf data && ln -s ${SCRATCH_CACHE} data`, not `ln -snf`. (Scratch cache, NOT main checkout's `data/` — see `[[project-nse-data-quirks]]` § 3.)
 3. Symlink `.env`: `ln -sf <main-checkout-abs>/.env .env` (not `ln -snf`).
 4. Immediately after the symlinks, run `git update-index --skip-worktree data/.gitkeep` in the worktree (once per new worktree).
-5. Parent verifies with `readlink data` returning `/mnt/122CEE982CEE765F/cache_data` AND `sqlite3 "$(readlink -f data)/processed.db" 'PRAGMA quick_check'` returning `ok` before launching sub-agent.
+5. Parent verifies with `readlink data` returning the `${SCRATCH_CACHE}` literal AND `sqlite3 "$(readlink -f data)/processed.db" 'PRAGMA quick_check'` returning `ok` before launching sub-agent.
 6. Sub-agent prompt explicitly tells the agent: "Worktree pre-created; symlinks verified; skip-worktree applied; do NOT touch the symlinks; if `readlink data` returns empty or `PRAGMA quick_check` returns anything other than `ok`, STOP and report — don't try to fix."
 
 **Don't apply when:** the sub-agent doesn't need a separate worktree (single-file edits, doc updates, etc.). Use the main checkout directly.
