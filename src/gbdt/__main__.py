@@ -424,6 +424,33 @@ def _collect_preflight(repo_root: Path) -> dict:
     }
 
 
+def _sanitize_path_for_emission(p: str | os.PathLike, repo_root: Path) -> str:
+    """Rewrite an absolute path as repo-relative for emission to logs / metrics.
+
+    Paths inside the repo become repo-relative (``"results/gbdt/experiments/..."``,
+    ``"data/processed.db"``). Paths outside the repo — typically the scratch
+    cache under ``/mnt/<UUID>/cache_data`` per the worktree-symlink contract —
+    collapse to ``"<external>/<basename>"``. The basename is preserved so
+    post-hoc audits can still distinguish e.g. ``processed.db`` from a sibling,
+    but the host-specific prefix never reaches committed artifacts.
+
+    Apply at every ``_milestone(...)`` call site that interpolates a path so
+    ``loop/progress.log`` (a committed artifact under
+    ``results/gbdt/experiments/<cell>/loop/``) stays host-agnostic. Empty /
+    ``None`` input returns ``""`` without raising.
+    """
+    if not p:
+        return ""
+    p_str = str(p)
+    try:
+        rel = os.path.relpath(p_str, repo_root)
+    except ValueError:
+        rel = ".."  # different drive on Windows; fall through to external
+    if rel.startswith(".."):
+        return "<external>/" + os.path.basename(p_str)
+    return rel
+
+
 def _sanitize_preflight_for_emission(pf: dict, repo_root: Path) -> dict:
     """Return a copy of ``pf`` with absolute paths rewritten as repo-relative.
 
@@ -434,30 +461,17 @@ def _sanitize_preflight_for_emission(pf: dict, repo_root: Path) -> dict:
     ``/mnt/<UUID>/cache_data``) and would leak the host's partition layout
     into committed ``metrics.json`` files and run logs.
 
-    This helper produces an emission-only view: each path field gets
-    rewritten relative to ``repo_root`` (so ``data_root="data"``,
-    ``cache_db="data/processed.db"`` on a normal checkout). Paths outside
-    the repo collapse to ``"<external>/<basename>"`` — the basename is
-    preserved so post-hoc audits can still tell ``processed.db`` from
-    a sibling, but the host-specific prefix is dropped.
+    This helper produces an emission-only view via
+    :func:`_sanitize_path_for_emission`. The raw ``pf`` continues to carry
+    realpaths for live consumers.
 
     Apply at every serialization site (the ``[preflight]`` log line and
-    the ``metrics.json::preflight`` write). The raw ``pf`` continues to
-    carry realpaths for live consumers.
+    the ``metrics.json::preflight`` write).
     """
     out = dict(pf)
     for key in ("cache_db", "data_root"):
-        p = out.get(key, "")
-        if not p:
-            continue
-        try:
-            rel = os.path.relpath(p, repo_root)
-        except ValueError:
-            rel = ".."  # different drive on Windows; fall through to external
-        if rel.startswith(".."):
-            out[key] = "<external>/" + os.path.basename(p)
-        else:
-            out[key] = rel
+        if out.get(key, ""):
+            out[key] = _sanitize_path_for_emission(out[key], repo_root)
     return out
 
 
@@ -1507,7 +1521,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         print(message, flush=True)
         progress_log.append(message)
 
-    _milestone(f"[experiment] start spec={spec_path.name} -> {out_dir}")
+    _milestone(
+        f"[experiment] start spec={spec_path.name} -> "
+        f"{_sanitize_path_for_emission(out_dir, repo_root)}"
+    )
 
     # V1.3 Option B (P4) — agent_file_protocol scout cycles use
     # ``scout/`` files (not the V1.1 loop checkpoint). When a ``--resume``
@@ -1960,9 +1977,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
                     universe_cache_root, X, universe_key,
                     payload=_universe_payload,
                 )
+                _universe_cache_dir = (
+                    f"{universe_cache_root}/"
+                    f"{gbdt_universe_feature_cache.DEFAULT_CACHE_SUBDIR}"
+                )
                 _milestone(
                     f"[features] universe cache written (key={universe_key[:12]}…) "
-                    f"at {universe_cache_root}/{gbdt_universe_feature_cache.DEFAULT_CACHE_SUBDIR}/"
+                    f"at {_sanitize_path_for_emission(_universe_cache_dir, repo_root)}/"
                 )
             except Exception as exc:
                 print(f"[features] universe cache write failed ({exc!r}); continuing",
@@ -2064,7 +2085,8 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     else:
         _milestone(
             f"[loop] V1.3 no sweep_row for cell='{cell_experiment_name}' "
-            f"(csv={sweep_csv_path}); anti_auc_flag will be 'unknown'"
+            f"(csv={_sanitize_path_for_emission(sweep_csv_path, repo_root)}); "
+            f"anti_auc_flag will be 'unknown'"
         )
     degenerate_sink_threshold = float(
         loop_cfg.get(
@@ -2640,7 +2662,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     emit_figures(out_dir, result.iterations, result.predictions)
     render_report(out_dir)
 
-    _milestone(f"[artifact] complete in {time.time()-t1:.1f}s -> {out_dir}")
+    _milestone(
+        f"[artifact] complete in {time.time()-t1:.1f}s -> "
+        f"{_sanitize_path_for_emission(out_dir, repo_root)}"
+    )
     heartbeat.stop()
     # task #177: terminal status — the loop finished (or the agent stopped it).
     # stop_reason is the inner-stop signal (e.g. ``plateau``, ``agent_should_stop``,

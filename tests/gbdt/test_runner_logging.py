@@ -27,6 +27,7 @@ from gbdt import features as F
 from gbdt.__main__ import (
     _collect_preflight,
     _format_preflight_line,
+    _sanitize_path_for_emission,
     _sanitize_preflight_for_emission,
 )
 from gbdt.leakage_harness import make_synthetic_panel
@@ -321,3 +322,37 @@ def test_B7_sanitize_preflight_for_emission_relativizes_paths(tmp_path):
                 "cache_db_mtime": ""}
     san_empty = _sanitize_preflight_for_emission(pf_empty, repo)
     assert san_empty["cache_db"] == ""
+
+
+def test_B8_sanitize_path_for_emission_covers_progress_log_sites(tmp_path):
+    """B8: ``_sanitize_path_for_emission`` covers the standalone path-emission
+    sites — the four ``_milestone(...)`` calls in ``run_experiment`` that
+    interpolate paths into ``loop/progress.log`` (a committed artifact).
+
+    Verifies the four representative path shapes the runner emits:
+    in-repo ``out_dir``, in-repo ``sweep_csv_path``, external cache root,
+    and empty-string graceful handling.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    # `Path` input — the runner usually passes Path objects to _milestone.
+    out_dir = repo / "results/gbdt/experiments/test_cell"
+    assert _sanitize_path_for_emission(out_dir, repo) == (
+        "results/gbdt/experiments/test_cell"
+    )
+
+    # `str` input — the sweep CSV path is built as a string.
+    sweep_csv = str(repo / "results/gbdt/data/r_precision_at_k.csv")
+    assert _sanitize_path_for_emission(sweep_csv, repo) == (
+        "results/gbdt/data/r_precision_at_k.csv"
+    )
+
+    # External cache path — collapses to <external>/<basename>.
+    external = tmp_path / "external_cache" / "gbdt_feature_cache"
+    assert _sanitize_path_for_emission(external, repo) == (
+        "<external>/gbdt_feature_cache"
+    )
+
+    # Empty/None graceful handling — no crash, returns "".
+    assert _sanitize_path_for_emission("", repo) == ""
+    assert _sanitize_path_for_emission(None, repo) == ""
