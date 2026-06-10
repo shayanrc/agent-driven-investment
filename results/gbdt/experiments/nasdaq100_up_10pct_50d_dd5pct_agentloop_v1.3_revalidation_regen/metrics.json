@@ -1,5 +1,5 @@
 {
-  "experiment_name": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
+  "experiment_name": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen",
   "backend": {
     "library": "xgboost",
     "model_filename": "model.ubj"

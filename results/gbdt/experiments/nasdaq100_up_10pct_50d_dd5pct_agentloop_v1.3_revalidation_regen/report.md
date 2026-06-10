@@ -1,4 +1,4 @@
-# gbdt experiment — nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+# gbdt experiment — nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen
 
 ## Spec
 
