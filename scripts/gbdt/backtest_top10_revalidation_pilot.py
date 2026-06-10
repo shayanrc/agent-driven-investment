@@ -27,7 +27,7 @@ import yaml
 from gbdt import data as gbdt_data, features as gbdt_features, targets as gbdt_targets
 from gbdt.model import XGBoostModel
 
-CELL = "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation"
+CELL = "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen"
 RUN = Path("results/gbdt/experiments") / CELL
 OUT = Path("results/gbdt/backtest") / CELL
 OUT.mkdir(parents=True, exist_ok=True)

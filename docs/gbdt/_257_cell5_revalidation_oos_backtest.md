@@ -5,7 +5,9 @@
 **Validates**: pilot of the top-10 R-p@3 OOS back-test plan (parent task). Uses the regenerated cell-5 V1.3 revalidation artifact (memo [_223](_223_cell5_loop_v1.3_revalidation.md), restored in PR #156) as the first cell. Question: does the canonical-CSV R-p@K hold up on a window the model has never seen?
 **Cell**: nasdaq100 +10% / 50d / dd 5% — the anti-AUC strong-top-1 cell. Same model artifact as [_223](_223_cell5_loop_v1.3_revalidation.md). XGBoost, max_depth=2, n_estimators=500 (≈6 trees retained after ES), eta=0.1, 190 kept features, native calibration.
 **Script**: [scripts/gbdt/backtest_top10_revalidation_pilot.py](../../scripts/gbdt/backtest_top10_revalidation_pilot.py).
-**Outputs**: [results/gbdt/backtest/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/](../../results/gbdt/backtest/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/).
+**Outputs**: [results/gbdt/backtest/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen/](../../results/gbdt/backtest/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen/).
+
+> **Note (post-rename):** The artifact this memo refers to was originally at `results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/` and is now at `..._regen/`. The legacy `_v1.3_revalidation` canonical-CSV row (R-p@1=0.7143, R-p@3=0.5381 — memo _223's historical headline) is preserved; the renamed artifact has its OWN canonical row (`_v1.3_revalidation_regen`: R-p@1=0.800, R-p@3=0.7556). The OOS-vs-canonical comparison in the headline table below was computed against the legacy row at the time of the pilot.
 
 ## Headline
 
