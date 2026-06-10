@@ -26,12 +26,12 @@ This is the master plan for the inaugural back-test under a new cross-module sub
 | [`docs/backtesting/goal.md`](../backtesting/goal.md) | Why the engine is strategy-agnostic — informs our strategy-side responsibilities |
 | [`docs/gbdt/goal.md`](../gbdt/goal.md) | What cell-5 is + why it's not wired into `forecasters` (informs why calibration is separate, not nested under forecasters) |
 | [`src/gbdt/targets.py`](../../src/gbdt/targets.py) (`L107, L116`) | The exact label drawdown + target semantics our strategy mirrors |
-| `results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation/` | Cell-5 artifact: `predictions/{eval,test}.csv`, `spec.yaml`, `hp.yaml`, `model.ubj`. The strategy consumes these. |
-| `docs/gbdt/_223_cell5_loop_v1.3_revalidation.md` | The memo behind the cell-5 artifact — published R-p@3 = 0.7556 we're validating |
+| `results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen/` | Cell-5 artifact: `predictions/{eval,test}.csv`, `spec.yaml`, `hp.yaml`, `model.ubj`. The strategy consumes these. (Originally at `..._v1.3_revalidation/`; renamed when the regen got its own canonical CSV row distinct from memo _223's preserved historical row.) |
+| `docs/gbdt/_223_cell5_loop_v1.3_revalidation.md` | The memo behind the lost ORIGINAL artifact (canonical row `_v1.3_revalidation`: R-p@3 = 0.5381 preserved as historical reference). The REGENERATED artifact this plan validates has its own canonical row `_v1.3_revalidation_regen`: published R-p@3 = 0.7556. |
 
 ## 2. Purpose
 
-Validate gbdt cell `nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation` (published R-Precision@3 = 0.7556 on its test slice) by running an actual back-test that answers two concrete questions:
+Validate gbdt cell `nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen` (canonical CSV R-Precision@3 = 0.7556 on its test slice) by running an actual back-test that answers two concrete questions:
 
 1. **If $100,000 had been invested following this model's top-3 picks per day over the test window, what would the ending equity be at OOS-end?**
 2. **How does that compare to investing the same $100,000 in NASDAQ-100 over the same window?**
@@ -301,7 +301,7 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 
 ## 10. Open questions for reviewer
 
-1. **OOS window: test slice vs memo calendar window.** The published R-p@3 = 0.7556 was computed on the per-ticker trailing test slice `[2025-03-26, 2025-12-26]` (Q=101). The memo `_223` reports on calendar window `[2025-06-05, 2026-03-12]` (Q=192, cross-section). The plan uses the test slice for apples-to-apples with the canonical CSV. Trivial to switch.
+1. **OOS window: test slice vs memo calendar window.** ~~The published R-p@3 = 0.7556 was computed on the per-ticker trailing test slice `[2025-03-26, 2025-12-26]` (Q=101). The memo `_223` reports on calendar window `[2025-06-05, 2026-03-12]` (Q=192, cross-section). The plan uses the test slice for apples-to-apples with the canonical CSV. Trivial to switch.~~ **Resolved (2026-06-10):** The regenerated artifact now has its own canonical CSV row `_v1.3_revalidation_regen` carrying the 0.7556 number (Q=90 days with R_q > 0). The back-test runs on the regen's `predictions/test.csv` window `[2025-03-26, 2025-12-26]` — apples-to-apples with that canonical row. Memo _223's original `_v1.3_revalidation` row (R-p@3 = 0.5381) is preserved as the historical reference for the lost original artifact.
 
 2. **Half-Kelly as the headline `c`.** Half-Kelly retains ~75% of full-Kelly growth at lower variance, but quarter-Kelly is more conservative and was my initial recommendation. Sensitivity sweep covers both. Headline `c` choice affects only the lead number.
 
