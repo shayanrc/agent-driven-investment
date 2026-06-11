@@ -81,7 +81,7 @@ sizer:
   payoffs: {win: 0.10, loss: 0.05}   # if applicable
 
 strategy:
-  class: TopKWithLabelExit
+  class: TopKDailyKellyLabelExit
   K: 3
   target_return: 0.10
   stop_drawdown: 0.05
@@ -139,16 +139,29 @@ pinned), exclusion list with reasons per ticker.
 
 ## Results (mandatory)
 ### Headline
-**This is the first thing under Results. Lead with the dollar table:**
+**This is the first thing under Results. Lead with the dollar table — include `n_trades` per line so the post-cost reality check has its input:**
 
-| Strategy / Benchmark | End $ | Total % | CAGR | Max DD |
-|---|---|---|---|---|
-| Strategy (...) | $X | +X.X% | X.X% | -X.X% |
-| NDX buy-and-hold | $Y | +Y.Y% | Y.Y% | -Y.Y% |
-| 92-ticker equal-weight basket | $Z | +Z.Z% | Z.Z% | -Z.Z% |
-| Equal-weight top-K (no Kelly) | $W | +W.W% | W.W% | -W.W% |
+| Strategy / Benchmark | End $ | Total % | CAGR | Max DD | n_trades |
+|---|---|---|---|---|---|
+| Strategy (...) | $X | +X.X% | X.X% | -X.X% | N₁ |
+| NDX buy-and-hold | $Y | +Y.Y% | Y.Y% | -Y.Y% | 1 |
+| 92-ticker equal-weight basket | $Z | +Z.Z% | Z.Z% | -Z.Z% | N₂ |
+| Equal-weight top-K (no Kelly) | $W | +W.W% | W.W% | -W.W% | N₃ |
 
 Plus equity-curve overlay figure (all lines, same start, same time axis).
+
+### Post-cost reality check (mandatory)
+
+**Apply per-line bps drag at 5 bps/side and 10 bps/side** to convert each gross result to a net result. The strategy's turnover is structurally different from buy-and-hold benchmarks, so a flat cost assumption would mislead. Drag = `n_trades · bps · avg_notional_per_trade`.
+
+| Strategy / Benchmark | Gross End $ | At 5 bps/side | At 10 bps/side |
+|---|---|---|---|
+| Strategy (...) | $X | $X − N₁·5bps·$ | $X − N₁·10bps·$ |
+| NDX buy-and-hold | $Y | $Y − 1·5bps·$ | $Y − 1·10bps·$ |
+| 92-ticker equal-weight basket | $Z | $Z − N₂·5bps·$ | $Z − N₂·10bps·$ |
+| Equal-weight top-K (no Kelly) | $W | $W − N₃·5bps·$ | $W − N₃·10bps·$ |
+
+The robustness verdict comes from "still beats at 10 bps/side?" — gross headline alone is insufficient. (Engine-side cost simulation via `commission_fn` is a future v1.1 milestone; until shipped, every memo MUST emit this post-hoc reality-check table.)
 
 ### Detail
 - Drawdown trajectory figure
@@ -190,12 +203,12 @@ id                              # e.g., 001
 name                            # e.g., cell5_bayesian_kelly
 prediction_source               # e.g., gbdt
 prediction_module               # e.g., gbdt
-cell_or_preset                  # e.g., nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation
+cell_or_preset                  # e.g., nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen
 model_artifact_path             # relative to repo root
 calibrator_class                # e.g., BetaBinomialBucketed
 sizer_class                     # e.g., VinceOptimalF
 sizer_c                         # e.g., 0.5
-strategy_class                  # e.g., TopKWithLabelExit
+strategy_class                  # e.g., TopKDailyKellyLabelExit
 K
 oos_start
 oos_end
