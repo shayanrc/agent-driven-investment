@@ -17,7 +17,7 @@ import yaml
 from gbdt import data as gbdt_data, features as gbdt_features, targets as gbdt_targets
 from gbdt.model import XGBoostModel
 
-RUN = Path("results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation")
+RUN = Path("results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen")
 SNAPSHOT_END = "2026-05-22"
 TEST_START = pd.Timestamp("2025-06-05")
 TEST_END = pd.Timestamp("2026-03-12")

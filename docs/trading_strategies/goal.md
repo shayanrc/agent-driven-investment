@@ -16,7 +16,7 @@ This rule keeps strategies reusable across prediction backends (gbdt today, anal
 
 ## What success looks like
 
-- **One strategy = one decision policy.** `TopKWithLabelExit` is one policy (top-K selection, label-anchored exits). Different exit rules, different selection rules → different strategy classes. No mega-strategy with feature flags.
+- **One strategy = one decision policy.** `TopKDailyKellyLabelExit` is one policy (top-K selection, daily Kelly rebalance with ratchet-down trim, label-anchored exits). Different exit rules, different selection rules → different strategy classes. No mega-strategy with feature flags.
 - **Sizers are first-class, separable, swappable.** A strategy is constructed with a sizer instance. Swapping `VinceOptimalF` for `FixedFraction` for `DiscreteBoundedLossKelly` is a one-line change at the call site, with no strategy-code changes required.
 - **Two sizer protocols, deliberately.** `PortfolioSizer` fits on returns and exposes a single fraction; `PerPredictionSizer` computes a fraction per prediction. Unifying them would force one or the other into an awkward API. The strategy dispatches on `isinstance(sizer, PortfolioSizer)`.
 - **No execution, no PnL, no data fetching.** Strategies emit action dicts conforming to `backtesting.spec.md` § 3.1. The engine executes; the strategy decides.
@@ -42,7 +42,7 @@ This rule keeps strategies reusable across prediction backends (gbdt today, anal
 
 - **Don't import from `gbdt`, `analog_mc`, or `forecasters`.** The probability contract is the only interface.
 - **Don't add transaction costs or PnL computation inside strategy code.** Those concerns belong to the engine and downstream reporting.
-- **Don't put position-sizing math in the strategy class.** Sizers are separable; strategies dispatch to them. If `topk_label_exit.py` contains a Kelly formula, that's a sign sizing should be extracted.
+- **Don't put position-sizing math in the strategy class.** Sizers are separable; strategies dispatch to them. If `topk_daily_kelly_label_exit.py` contains a Kelly formula, that's a sign sizing should be extracted.
 - **Don't add reward functions, observation/action spaces, or RL hooks.** The `backtesting.Strategy` Protocol is a simple `(state, info) → action` callback. RL adapters belong in a separate module.
 - **Don't conflate selection (top-K) with sizing (Kelly fraction).** Two separate concerns: selection filters which tickers to consider; sizing decides how much to allocate. Keep them in separate code paths.
 - **Don't bake universe-specific behavior into a strategy.** A strategy that assumes "NASDAQ-100" is broken; it should work on any universe represented in the predictions DataFrame.
