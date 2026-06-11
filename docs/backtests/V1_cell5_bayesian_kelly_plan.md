@@ -115,14 +115,39 @@ Full charter: [`docs/calibration/goal.md`](../calibration/goal.md). Backend-agno
 - `BetaBinomialBucketed` in `src/calibration/bayesian.py`:
   ```python
   class BetaBinomialBucketed:
-      def __init__(self, n_bins=10, alpha_prior=1.0, beta_prior=1.0): ...
+      def __init__(
+          self,
+          n_bins=10,
+          alpha_prior=1.0,
+          beta_prior=1.0,
+          min_bin_size=20,           # collapse adjacent bins until each has ≥ this many obs
+          min_effective_bins=3,      # raise ValueError if duplicate-drop + min-size collapse leaves fewer bins
+      ): ...
       def fit(self, p_raw, y_true, *, sample_weight=None) -> "BetaBinomialBucketed":
-          # 1. n_bins quantile edges of p_raw → self.edges_
-          # 2. Per bin i: k_i = sum(y), n_i = count → alpha_i = α₀+k_i, beta_i = β₀+n_i-k_i
-          # 3. Store (edges_, alphas_, betas_)
+          # 1. n_bins quantile edges of p_raw via pd.cut(..., duplicates='drop')
+          #    — tiny models (e.g. cell-5: 226 distinct p_raw across 18,400 rows) tie
+          #    at quantile boundaries, producing non-unique edges. Drop duplicates;
+          #    record effective_n_bins = len(unique_edges) - 1 in fit_diagnostics_.
+          # 2. Merge adjacent bins with n < min_bin_size to keep posterior widths
+          #    interpretable in the tail.
+          # 3. If effective_n_bins < min_effective_bins after merging, raise
+          #    ValueError("calibrator: only {N} bins survived dedup+merge; check
+          #    p_raw distribution"). Caller decides whether to widen the fit set or
+          #    fall back to a simpler calibrator.
+          # 4. Per surviving bin i: k_i = sum(y), n_i = count → alpha_i = α₀+k_i,
+          #    beta_i = β₀ + n_i − k_i. Store (edges_, alphas_, betas_,
+          #    fit_diagnostics_).
       def transform(self, p_raw) -> CalibrationOutput:
           # p_mean = α/(α+β); p_low/p_high via scipy.stats.beta.ppf(0.025/0.975, α, β)
   ```
+  **Tie-handling discovered during plan review** (cell-5 regen eval, n=18,400):
+  the XGBoost tiny-model (6 trees, depth 2) emits only 226 distinct `p_raw`
+  values. Naive `np.quantile(p_raw, 10 quantiles)` produces a duplicate edge
+  pair `(0.3852, 0.3852)` because >10% of rows sit at one exact `p_raw`, and
+  `pd.cut` rejects non-unique edges. The `duplicates='drop'` + `min_bin_size`
+  fields above keep the calibrator usable on any tiny-tree gbdt cell — and on
+  analog_mc fan-quantile outputs which also discretize naturally. `R8` in §8
+  tracks the residual risk.
 - `diagnostics.py`: `expected_calibration_error(p_calibrated, y_true, n_bins=10)`; `reliability_diagram(...)` with 95% credible bands
 - `isotonic.py`: **placeholder only**; gbdt's existing internal isotonic NOT migrated
 
@@ -281,6 +306,7 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 | R5 | Universe survivorship — roster as-of `test_start` ≠ as-of-fit | Use 92-ticker roster from cell-5's `metrics.json::data.n_tickers_used`. Don't refresh. Known gbdt v1 limitation, not back-test scope. |
 | R6 | Look-ahead in calibrator fit or Vince fit | Verify both fit sets end strictly before `test_start`. Assert in code. |
 | R7 | Lot-size rounding zeros out small picks | Engine emits `lot_size_audit` in `info`; track rounded-to-zero count; document if non-trivial. |
+| R8 | Tiny-model `p_raw` ties → quantile bins collapse | Surfaced during plan review on cell-5 regen eval: 18,400 rows over 226 distinct `p_raw` values; naive `np.quantile(p_raw, 10)` produces a duplicate edge `(0.3852, 0.3852)` because >10% of rows sit at one exact `p_raw`. Calibrator handles via `pd.cut(duplicates='drop')` + `min_bin_size=20` merge + `min_effective_bins=3` floor (see §5.1). If fewer than 3 bins survive on a future cell, the calibrator raises and the caller falls back to a simpler scheme (e.g. one bin per distinct `p_raw` for very tiny models, or a non-Bayesian calibrator). **Checkpoint output** at §9 step 5 must report `effective_n_bins`. |
 | R-cost | Zero-cost back-test inflates returns vs reality | Memo Caveats section quantifies: "At 5 bps/side and observed turnover of N trades, expected drag ≈ X bps/yr." |
 
 ## 9. Sequencing
