@@ -315,13 +315,17 @@ self._open_positions: dict[str, dict] = {}
 
 ### 6.7 Benchmarks — `scripts/backtests/benchmarks.py`
 
-Three benchmarks, same window, same $100K start:
+Three benchmarks, same window, same $100K start. Trade counts disclosed per line so the post-cost reality check (§7) can apply bps drag proportionally.
 
-1. **NDX cap-weighted buy-and-hold** — fetch NDX or QQQ ETF as proxy; single position. *Risk*: NDX availability in `data_pipelines` — see §10 Q3.
-2. **92-ticker equal-weight basket** — $100K/92 to each strategy-universe ticker at `test_start`; hold.
-3. **Equal-weight top-K (Kelly ablation)** — same selection + exits as strategy, but uniform 1/K sizing.
+| # | Benchmark | Trades | Notes |
+|---|---|---|---|
+| 1 | **NDX cap-weighted buy-and-hold** (QQQ proxy if NDX unavailable, §10 Q3) | 1 | Single entry at `test_start`, no rebalance during window |
+| 2 | **92-ticker equal-weight basket** | ~92 | $100K/92 to each strategy-universe ticker at `test_start`, hold. Lot-rounding may leave some cash unspent (track + disclose). |
+| 3 | **Event-driven top-K (no Kelly, no rebalance)** | ~50-100 | Top-K by p_mean each signal day; uniform 1/K sizing; DD/target/horizon exits only. **No breakeven exit, no daily trim** — this is the V1-pre-Path-A counterfactual structurally. |
 
-Each: `start_$, end_$, total_return_pct, cagr, max_dd`.
+Each emits: `start_$, end_$, total_return_pct, cagr, max_dd, n_trades, gross_exposure_avg`.
+
+The strategy emits the same fields plus the daily-rebalance specifics from §7 (trim events, full-exits, etc.). The post-cost reality check (§7) consumes `n_trades` from each row.
 
 ## 7. Reporting
 
@@ -332,15 +336,28 @@ Full memo template, registry CSV schema, numbering rules, and file-system layout
 ```
 Starting capital: $100,000  |  Window: 2025-03-26 → 2025-12-26 (~9 months)
 
-                                  End $        Total %    CAGR    Max DD
-─────────────────────────────────────────────────────────────────────────
-Strategy (Bayesian + Kelly c=0.5) $X         +X.X%      X.X%     -X.X%
-NDX buy-and-hold (cap-weighted)   $Y         +Y.Y%      Y.Y%     -Y.Y%
-92-ticker equal-weight basket     $Z         +Z.Z%      Z.Z%     -Z.Z%
-Equal-weight top-K (no Kelly)     $W         +W.W%      W.W%     -W.W%  (ablation)
+                                  End $        Total %    CAGR    Max DD    n_trades
+─────────────────────────────────────────────────────────────────────────────────────
+Strategy (Bayesian + Kelly c=0.5) $X         +X.X%      X.X%     -X.X%     N₁
+NDX buy-and-hold (cap-weighted)   $Y         +Y.Y%      Y.Y%     -Y.Y%     1
+92-ticker equal-weight basket     $Z         +Z.Z%      Z.Z%     -Z.Z%     N₂
+Equal-weight top-K (no Kelly)     $W         +W.W%      W.W%     -W.W%     N₃  (ablation)
 ```
 
-Plus equity-curve overlay (4 lines, same $100K start), drawdown trajectory, **gross-exposure trajectory** (Path A: critical — shows the cap rarely binds because daily rebalance releases room continuously), per-pick sample table augmented with **trim events** (date, p_today, cur_f, new_f, sold_delta) per position, **turnover summary** (entries, full-exits, trims; cf. R10), and the §7 sensitivity table:
+**Post-cost reality check** (mandatory subsection beneath the gross headline — Issue #6): all four lines are computed gross of commission/slippage per D18 (engine v1 limitation). The strategy has structurally higher turnover than the benchmarks because of daily rebalance (R10). To make the comparison defensible, the memo emits a second table that subtracts a per-line cost drag using each line's realized `n_trades`:
+
+```
+                                  Gross End $   At 5 bps/side   At 10 bps/side
+─────────────────────────────────────────────────────────────────────────────────
+Strategy (Bayesian + Kelly c=0.5) $X            $X − N₁·5bps·$  $X − N₁·10bps·$
+NDX buy-and-hold (cap-weighted)   $Y            $Y − 1·5bps·$   $Y − 1·10bps·$
+92-ticker equal-weight basket     $Z            $Z − N₂·5bps·$  $Z − N₂·10bps·$
+Equal-weight top-K (no Kelly)     $W            $W − N₃·5bps·$  $W − N₃·10bps·$
+```
+
+Drag computation: `n_trades · bps · avg_notional_per_trade`. The 5 / 10 bps assumptions cover the realistic range for US-large-cap liquid names (5 bps ≈ marketable commission + tight-spread cost; 10 bps ≈ retail-broker + modest spread). If the strategy still beats benchmarks at 10 bps/side, the result is robust to plausible cost models; if it underperforms at 5 bps, the gross headline is misleading.
+
+Plus equity-curve overlay (4 lines, same $100K start, gross), drawdown trajectory, **gross-exposure trajectory** (Path A: critical — shows the cap rarely binds because daily rebalance releases room continuously), per-pick sample table augmented with **trim events** (date, p_today, cur_f, new_f, sold_delta) per position, **turnover summary** (entries, full-exits, trims; cf. R10), and the §7 sensitivity table:
 
 - **Sizer axis** (D6 vs D7): primary `DiscreteBoundedLossKelly` vs ablations `VinceOptimalF`, `FixedFraction(0.20)`
 - **Fractional c**: c ∈ {0.25, 0.5, 1.0}
@@ -368,7 +385,7 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 | R9 | Bayesian recalibrator stacked on gbdt's isotonic-calibrated `p_calibrated` (val-fit) | `p_calibrated` in `predictions/val.csv` is what gbdt's internal `conditional_isotonic` produced from `p_raw` (fit on val itself — leak-prone for the isotonic, but that's the gbdt module's concern, not ours). Our Bayesian recalibrator fits on top of `p_calibrated` (or `p_raw` if isotonic was pass-through per V1.3 anti-AUC handling — check `metrics.json::calibration.fitted` flag and pick the right input column). On cell-5 specifically, V1.3 native pass-through was active so `p_calibrated == p_raw` and there's no stacking. On future cells where isotonic IS active, the Bayesian recalibrator's job is "produce credible bands on already-shrunk probabilities" — the bands will be narrower (less posterior uncertainty after isotonic smoothing), which is correct. **Checkpoint output** at §9 step 5 should report which input column was consumed + the ECE delta val-vs-eval to flag if val→eval generalization is broken. |
 | R10 | Daily rebalance amplifies turnover (Path A) | Each signal day can produce trims (partial sells) + full exits + new entries. Turnover grows roughly with # open positions × # signal days. Memo Caveats quantifies: "Strategy made N entries / M trims / P exits over the 9-month window vs V1-pre-Path-A counterfactual of N′ entries / 0 trims / P′ exits → ~K× turnover ratio → expected cost drag ≈ K · 17 bps/yr = X bps/yr (compared to baseline V1 estimate)." See §7 sensitivity row "Daily rebalance OFF" for direct comparison. |
 | R11 | Sizing oscillation if `p_today` is noisy day-over-day | Daily Kelly trim fires every time `p_today < cur_f_implied_p`. If predictions are noisy (e.g. small p_mean changes from feature-day boundary effects), positions could trim down on day T and have free room re-filled by a new entry on day T+1, generating churn. Surface as a **stability check** in the memo: compute std(p_today) per ticker over its held window — if > some threshold (say 0.03 std), flag oscillation risk. Mitigation, if needed: introduce a `trim_threshold` (only trim if `new_f < (1 − ε)·cur_f` where ε = 0.05) — V1.1 if observed. |
-| R-cost | Zero-cost back-test inflates returns vs reality | Memo Caveats section quantifies: "At 5 bps/side and observed turnover of N trades, expected drag ≈ X bps/yr." Note R10's amplification for Path A. |
+| R-cost | Zero-cost back-test inflates returns vs reality — and **unevenly across the headline lines** (Issue #6) | Engine v1 emits `commission_fn=None` for ALL lines (strategy + 3 benchmarks). Strategy has 200+ events post-Path A; NDX buy-and-hold has 1; basket has ~92; ablation has ~50-100. A casual reader applying mental cost would penalize the strategy MUCH more than the benchmarks → the gross headline misleads. Mitigation has TWO parts: (1) **disclose per-line `n_trades`** in the headline table (§7) and per-benchmark in §6.7; (2) emit the **mandatory post-cost reality check table** in §7 that subtracts `n_trades · bps · avg_notional_per_trade` from each line at 5 bps/side and 10 bps/side. The strategy's robustness verdict comes from "still beats at 10 bps/side?" — gross headline alone is insufficient. Engine-side cost simulation is a v1.1 follow-up (§10 Q6). |
 
 ## 9. Sequencing
 
@@ -397,6 +414,8 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 4. **Fresh-OOS variant in this branch?** Plan covers `[2025-03-26, 2025-12-26]` (test slice). A second back-test on `[2025-12-27, today − 50 BD]` (post-snapshot, fresh-OOS, ~6 months) would answer "does the signal persist." Cleaner as a separate memo per the "one back-test per memo" convention — but bundling is an option.
 
 5. **`_b_acceptance_agent` as a V1.1 follow-up back-test.** The cell `nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent` is the V1.3-Option-B (scout + FS-prefit) counterpart of the `_v1.3_revalidation_regen` cell this V1 plan back-tests. On its own test window `[2025-06-05, 2026-03-12]` (Q=70) it carries canonical R-p@3 = 0.638 + R-p@1 = 0.800 — tied with the regen on top-1, lower on R-p@3 native, but the regen's `rescore_memo_window_summary.json` shows it scores only R-p@3 = 0.571 on this same window. So on apples-to-apples, `_b_acceptance_agent` is the **stronger model in the cell-5 family** under the legacy methodology, and it exercises the V1.3 **Option B** pipeline (scout response curves + FS-prefit cliff-cut) that `_v1.3_revalidation_regen` does not. Out of V1 scope per the "one back-test per memo" convention; V1 validates the end-to-end plumbing on the cell with the richest documentation lineage (memo _223 → restore → pilot _257 → this memo). V1.1 should swap the cell path + rerun once V1 plumbing is in. Memo will live at `_002_cell5_b_acceptance_bayesian_kelly.md` (or similar) per [`CONVENTIONS.md`](CONVENTIONS.md) numbering.
+
+6. **Engine-side cost simulation as a V1.1 follow-up.** V1 emits gross-of-costs equity curves for all four headline lines (D18 + R-cost) and applies a **post-hoc per-line bps drag** in the memo's reality-check table (§7) to make the comparison defensible despite the strategy's ~3-5× turnover under Path A (R10). The proper fix is engine-side commission/slippage simulation wired through `commission_fn` — that's a `src/backtesting/` change, not a back-test plan change. V1.1 should ship it: a configurable `LinearCommissionModel(bps_per_side=5)` slotted into the engine so each Backtest emits net-of-costs equity natively, and the memo's headline collapses from "gross + reality-check table" to just "net headline." Until then, the §7 reality check is the gating verdict for the strategy's robustness ("still beats at 10 bps/side?").
 
 ## 11. Decisions that already had reviewer input
 
