@@ -50,7 +50,7 @@ These were each negotiated explicitly. Sub-decisions had reviewer input where no
 | D2 | Strategy contract | Strategies accept `dict[Timestamp, list[(ticker, p_mean, p_low, p_high)]]`, not model objects | Backend-agnostic — prevents re-coupling when analog_mc-quantile strategies arrive | [trading_strategies/goal.md](../trading_strategies/goal.md) "backend-agnostic probability contract" rule |
 | D3 | gbdt's existing isotonic | NOT migrated in this branch | Avoids the "two-location calibration state" but accepts the cost as a future migration | [calibration/goal.md](../calibration/goal.md) "What this module is *not*" |
 | D4 | Calibrator (v1) | Beta-Binomial bucketed Bayesian calibrator; `Beta(1,1)` prior; M=10 quantile bins | Gives `P(y=1 \| p_raw)` with credible bands; uniform prior is weakly informative | §5.1 + checkpoint in §9 |
-| D5 | Calibrator fit set | Cell-5's `predictions/eval.csv` | Cleanest held-out: val→isotonic+model-pick; test→back-test target | — |
+| D5 | Calibrator fit set | Cell-5's `predictions/val.csv` (revised post-review) | Closes the calibrator-sizer double-use leak: calibrator fits on val, sizer replay fits on eval, test is the back-test. Val has 36,800 rows / 541 days / 92 tickers — 2× eval. Per-ticker val is disjoint from per-ticker eval even when calendar windows overlap, so honest. Our Bayesian recalibrator fits on top of gbdt's already-isotonic-calibrated `p_calibrated`; the value-add is the credible band, not the point recalibration. | §6.2 + R9 |
 | D6 | Sizer (primary) | **Vince Empirical Optimal f** — argmax over `f ∈ (0,1)` of `∏(1 + f·rᵢ/max\|loss\|)` | Handles uneven payoffs; ~2% gap vs closed-form Kelly in practice | §11 (web search references) |
 | D7 | Sizer (ablation) | `DiscreteBoundedLossKelly` (closed-form) + `FixedFraction` baseline | Sanity check on Vince + naive baseline | §5.3 |
 | D8 | Fractional `c` | **0.5 (half-Kelly)** headline; sweep `c ∈ {0.25, 0.5, 1.0}` | Half-Kelly retains ~75% of full-Kelly growth at much lower variance (derived property) | §11 (web search updated my initial 0.25 recommendation) |
@@ -70,18 +70,18 @@ These were each negotiated explicitly. Sub-decisions had reviewer input where no
 ## 4. Pipeline
 
 ```
-cell-5 predictions (predictions/eval.csv, predictions/test.csv)
+cell-5 predictions (predictions/{val,eval,test}.csv)
                                               │
                                               ▼
-calibration.BetaBinomialBucketed.fit(eval)  ──►  artifact (bin edges + (α, β) per bin) + reliability figure
+calibration.BetaBinomialBucketed.fit(val)   ──►  artifact (bin edges + (α, β) per bin) + reliability figure
                                               │
                                               ▼
-                .transform(test) ──► (p_mean, p_low, p_high) per (date, ticker)
+                .transform(eval, test) ──► (p_mean, p_low, p_high) per (date, ticker)
                                               │
                                               ▼
 trading_strategies.TopKWithLabelExit (K=3)
   │── SIZING: fit trading_strategies.sizing.VinceOptimalF on eval-period
-  │           strategy-replay returns
+  │           strategy-replay returns (calibrator from val is honest here)
   │── SELECTION: top-K by p_mean per day; filter to p_mean > breakeven_p
   │── ENTRY SIZE: f_used = c × f*_emp; pro-rate against gross cap
   │── EXIT (each close, priority order):
@@ -183,12 +183,14 @@ See §5.1 for the API skeleton. Key choices:
 
 The Vince sizer needs **realized strategy returns** to fit on. Procedure:
 
-1. Apply fitted calibrator to eval-window predictions
+1. Apply the val-fit calibrator (D5) to eval-window predictions
 2. Replay `TopKWithLabelExit` (selection + exits, K=3) over the EVAL period with **uniform 1/K sizing** (no Kelly yet — we're generating the return distribution Kelly will then size against)
 3. Collect per-pick realized returns `rᵢ`
 4. Fit `VinceOptimalF` on `rᵢ`
 
 This is a separate driver from the test back-test — same strategy code, different window, different sizing.
+
+**Why this is honest** (post-review, closes the calibrator-sizer double-use leak): the calibrator's bucketed posterior is fit on val (D5). When applied to eval predictions, each row gets a `p_mean` derived from val's per-bucket hit rate — eval's labels never touched the calibrator. The strategy's eval picks therefore reflect the calibrator's GENERALIZATION from val to eval, not its overfit to eval. Vince fits on returns that estimate honest out-of-val strategy performance, which is the right reference for sizing the test back-test. Per-ticker val and per-ticker eval are disjoint by construction (each ticker's val ends before its eval starts), so calendar overlap between the global val/eval windows does not introduce leakage.
 
 ### 6.3 `VinceOptimalF`
 
@@ -251,9 +253,9 @@ self._open_positions: dict[str, dict] = {}
 ### 6.6 Runner — `scripts/backtests/run_cell5_bayesian_kelly.py`
 
 ```
-1. Load cell-5 artifact (spec.yaml, predictions/{eval,test}.csv)
-2. Fit BayesianCalibrator on eval; save artifact
-3. Transform test → (p_mean, p_low, p_high) per (date, ticker)
+1. Load cell-5 artifact (spec.yaml, predictions/{val,eval,test}.csv)
+2. Fit BayesianCalibrator on VAL (D5); save artifact + reliability figure
+3. Transform eval + test → (p_mean, p_low, p_high) per (date, ticker)
 4. Replay strategy on EVAL period (uniform 1/K) → realized return series r_i  (§6.2)
 5. Fit VinceOptimalF on r_i
 6. Fetch OHLCV via data_pipelines for 92 tickers, window [test_start - 5 BD, test_end + 50 BD]
@@ -299,14 +301,15 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 
 | # | Risk | Mitigation |
 |---|---|---|
-| R1 | Bayesian calibrator's upper bin (`p_raw > 0.7`) sparse on eval | M=10 → M=5 quantile bins if `n_i < 50` for upper bin. **Checkpoint after first fit** (§9 step 5). |
+| R1 | Bayesian calibrator's upper bin (`p_raw > 0.7`) sparse on val | M=10 → M=5 quantile bins if `n_i < 50` for upper bin. **Checkpoint after first fit** (§9 step 5). |
 | R2 | Cell-5's `p_raw` overconfident → Bayes shrinks `p_mean` toward base rate → fewer picks pass Kelly breakeven | Expected outcome. Surface in memo. If <10 picks total, sensitivity sweep on `c` or breakeven. |
 | R3 | DD exits trigger on close, fill at next open → gap-down realizes loss > 5% (not strictly bounded as label assumes) | Vince's empirical f handles this naturally (uses realized eval losses). Document as a real risk in memo. |
 | R4 | NDX identifier not in `data_pipelines` | Fall back to QQQ ETF as proxy. If neither, document the gap; ship basket + ablation. See §10 Q3. |
 | R5 | Universe survivorship — roster as-of `test_start` ≠ as-of-fit | Use 92-ticker roster from cell-5's `metrics.json::data.n_tickers_used`. Don't refresh. Known gbdt v1 limitation, not back-test scope. |
-| R6 | Look-ahead in calibrator fit or Vince fit | Verify both fit sets end strictly before `test_start`. Assert in code. |
+| R6 | Look-ahead in calibrator fit or Vince fit | Verify per-ticker val_end < per-ticker eval_start < `test_start` (segment hierarchy honored, not just calendar-window check). Assert in code on each ticker. |
 | R7 | Lot-size rounding zeros out small picks | Engine emits `lot_size_audit` in `info`; track rounded-to-zero count; document if non-trivial. |
 | R8 | Tiny-model `p_raw` ties → quantile bins collapse | Surfaced during plan review on cell-5 regen eval: 18,400 rows over 226 distinct `p_raw` values; naive `np.quantile(p_raw, 10)` produces a duplicate edge `(0.3852, 0.3852)` because >10% of rows sit at one exact `p_raw`. Calibrator handles via `pd.cut(duplicates='drop')` + `min_bin_size=20` merge + `min_effective_bins=3` floor (see §5.1). If fewer than 3 bins survive on a future cell, the calibrator raises and the caller falls back to a simpler scheme (e.g. one bin per distinct `p_raw` for very tiny models, or a non-Bayesian calibrator). **Checkpoint output** at §9 step 5 must report `effective_n_bins`. |
+| R9 | Bayesian recalibrator stacked on gbdt's isotonic-calibrated `p_calibrated` (val-fit) | `p_calibrated` in `predictions/val.csv` is what gbdt's internal `conditional_isotonic` produced from `p_raw` (fit on val itself — leak-prone for the isotonic, but that's the gbdt module's concern, not ours). Our Bayesian recalibrator fits on top of `p_calibrated` (or `p_raw` if isotonic was pass-through per V1.3 anti-AUC handling — check `metrics.json::calibration.fitted` flag and pick the right input column). On cell-5 specifically, V1.3 native pass-through was active so `p_calibrated == p_raw` and there's no stacking. On future cells where isotonic IS active, the Bayesian recalibrator's job is "produce credible bands on already-shrunk probabilities" — the bands will be narrower (less posterior uncertainty after isotonic smoothing), which is correct. **Checkpoint output** at §9 step 5 should report which input column was consumed + the ECE delta val-vs-eval to flag if val→eval generalization is broken. |
 | R-cost | Zero-cost back-test inflates returns vs reality | Memo Caveats section quantifies: "At 5 bps/side and observed turnover of N trades, expected drag ≈ X bps/yr." |
 
 ## 9. Sequencing
@@ -317,7 +320,7 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 | 2 | Scaffold `src/calibration/` | Package skeleton + pyproject entry + tests dir + importable | #13 |
 | 3 | Scaffold `src/trading_strategies/` | Same + `sizing/` subpackage | #14 |
 | 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | #15 |
-| 5 | **CHECKPOINT** — fit on cell-5 eval, generate reliability figure | Review credible-band quality before continuing | #16 |
+| 5 | **CHECKPOINT** — fit on cell-5 VAL, generate reliability figure + report `effective_n_bins` (R8) + ECE on val vs eval (R9) | Review credible-band quality + bin-survival count + whether val→eval generalization is honest before continuing | #16 |
 | 6 | Implement sizers (`VinceOptimalF`, `DiscreteBoundedLossKelly`, `FixedFraction`, `caps`) + tests | `src/trading_strategies/sizing/` v1 complete | #17 |
 | 7 | Implement `TopKWithLabelExit` + tests | Strategy class complete | #18 |
 | 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` | Runnable end-to-end | #19 |
