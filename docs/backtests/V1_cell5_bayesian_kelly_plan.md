@@ -1,8 +1,8 @@
 # V1 — Cell-5 Bayesian + Kelly Back-Test
 
-**Status**: Draft for review.
-**Branch**: `backtests-cell5-bayesian-kelly`
-**Date**: 2026-06-09
+**Plan status**: Live (merged 2026-06-11 via PR #158, commit `f644187`). Stage 1 complete; Stages 2-11 TBD per §9 (see Status column).
+**Implementation branches**: per-stage (next: Stage 2 / 3 scaffold, `backtests-v1-scaffold` or similar).
+**Origin**: drafted 2026-06-09.
 
 This is the master plan for the inaugural back-test under a new cross-module subtree. It references the supporting docs listed below — read this plan first, then dig into the supporting docs as needed.
 
@@ -390,19 +390,19 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 
 ## 9. Sequencing
 
-| # | Task | Output | Task-list ID |
+| # | Task | Output | Status |
 |---|---|---|---|
-| 1 | This branch + this plan + supporting docs | The 4 docs already on this branch | #12 (done in plan-only mode) |
-| 2 | Scaffold `src/calibration/` | Package skeleton + pyproject entry + tests dir + importable | #13 |
-| 3 | Scaffold `src/trading_strategies/` | Same + `sizing/` subpackage | #14 |
-| 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | #15 |
-| 5 | **CHECKPOINT** — fit on cell-5 VAL, generate reliability figure + report `effective_n_bins` (R8) + ECE on val vs eval (R9) | Review credible-band quality + bin-survival count + whether val→eval generalization is honest before continuing | #16 |
-| 6 | Implement sizers (`VinceOptimalF`, `DiscreteBoundedLossKelly`, `FixedFraction`, `caps`) + tests | `src/trading_strategies/sizing/` v1 complete | #17 |
-| 7 | Implement `TopKDailyKellyLabelExit` + tests (rebalance + trim + breakeven exit + floor — Path A per Issue #5) | Strategy class complete | #18 |
-| 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` | Runnable end-to-end | #19 |
-| 9 | Implement `scripts/backtests/benchmarks.py` (3 benchmarks) | Headline table + overlay figure | #20 |
-| 10 | Run; write `_001_cell5_bayesian_kelly.md` memo | Memo + figures + registry row | #21 |
-| 11 | Commit + open PR + auto-fire review/merge pipeline | PR merged | #22 |
+| 1 | This branch + this plan + supporting docs | The 4 docs in this subtree | **Done** (PR #158, `f644187`, 2026-06-11) |
+| 2 | Scaffold `src/calibration/` | Package skeleton + pyproject entry + tests dir + importable | TBD |
+| 3 | Scaffold `src/trading_strategies/` | Same + `sizing/` subpackage | TBD |
+| 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | TBD |
+| 5 | **CHECKPOINT** — fit on cell-5 VAL, transform eval. Surface to user before Stage 6 if any of: `effective_n_bins < 3` (R8), `ECE_eval > 0.10`, `\|ECE_val − ECE_eval\| > 0.05` (R9 generalization break), or the reliability diagram's credible bands extend beyond ±0.15 at any quantile bin. Else: proceed. | Saved calibrator artifact + reliability figure + checkpoint JSON `{effective_n_bins, ece_val, ece_eval, max_band_width, input_column}` | TBD |
+| 6 | Implement sizers (`DiscreteBoundedLossKelly` primary, `VinceOptimalF` + `FixedFraction` ablations) + tests | `src/trading_strategies/sizing/` v1 complete | TBD |
+| 7 | Implement `TopKDailyKellyLabelExit` + tests (rebalance + trim + breakeven exit + floor — Path A per §6.5) | Strategy class complete | TBD |
+| 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` (§6.6 runner sequence) | Runnable end-to-end | TBD |
+| 9 | Implement `scripts/backtests/benchmarks.py` (3 benchmarks per §6.7) | Headline table + overlay figure | TBD |
+| 10 | Run; write `_001_cell5_bayesian_kelly.md` memo (CONVENTIONS.md template, §7 expectations) | Memo + figures + registry row | TBD |
+| 11 | Commit + open PR | PR merged | TBD |
 
 ## 10. Open questions for reviewer
 
