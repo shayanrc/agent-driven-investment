@@ -51,15 +51,15 @@ These were each negotiated explicitly. Sub-decisions had reviewer input where no
 | D3 | gbdt's existing isotonic | NOT migrated in this branch | Avoids the "two-location calibration state" but accepts the cost as a future migration | [calibration/goal.md](../calibration/goal.md) "What this module is *not*" |
 | D4 | Calibrator (v1) | Beta-Binomial bucketed Bayesian calibrator; `Beta(1,1)` prior; M=10 quantile bins | Gives `P(y=1 \| p_raw)` with credible bands; uniform prior is weakly informative | §5.1 + checkpoint in §9 |
 | D5 | Calibrator fit set | Cell-5's `predictions/val.csv` (revised post-review) | Closes the calibrator-sizer double-use leak: calibrator fits on val, sizer replay fits on eval, test is the back-test. Val has 36,800 rows / 541 days / 92 tickers — 2× eval. Per-ticker val is disjoint from per-ticker eval even when calendar windows overlap, so honest. Our Bayesian recalibrator fits on top of gbdt's already-isotonic-calibrated `p_calibrated`; the value-add is the credible band, not the point recalibration. | §6.2 + R9 |
-| D6 | Sizer (primary) | **Vince Empirical Optimal f** — argmax over `f ∈ (0,1)` of `∏(1 + f·rᵢ/max\|loss\|)` | Handles uneven payoffs; ~2% gap vs closed-form Kelly in practice | §11 (web search references) |
-| D7 | Sizer (ablation) | `DiscreteBoundedLossKelly` (closed-form) + `FixedFraction` baseline | Sanity check on Vince + naive baseline | §5.3 |
-| D8 | Fractional `c` | **0.5 (half-Kelly)** headline; sweep `c ∈ {0.25, 0.5, 1.0}` | Half-Kelly retains ~75% of full-Kelly growth at much lower variance (derived property) | §11 (web search updated my initial 0.25 recommendation) |
-| D9 | Multi-position cap | Gross exposure cap = 1.0 (no leverage); pro-rate new entries | Stable Σ estimate not feasible on 100-day eval × 92 tickers; multi-asset Kelly w/ covariance is v1.1 | §5.4 |
-| D10 | Strategy class | `TopKWithLabelExit`, K=3 | Mirrors R-p@3 metric being validated | §5.4 |
-| D11 | Exit triggers (priority) | (1) DD floor `close ≤ 0.95·anchor` (mandatory); (2) target `close ≥ 1.10·anchor`; (3) horizon 50 BD | User-specified DD mandatory; mirrors label `src/gbdt/targets.py:107,116` | §5.4 |
-| D12 | Exit anchor | Signal-day close (T's close, NOT T+1 fill open) | Mirrors label exactly — else back-test and R-p@K diverge by one tick | §5.4 |
-| D13 | Re-ranking | None — hold until exit | Matches label semantics; re-ranking conflates stability with realization | §5.4 |
-| D14 | Re-entry | Allowed after exit on a future signal day | — | §5.4 |
+| D6 | Sizer (primary) | **`DiscreteBoundedLossKelly`** (closed-form, per-pick) — `f_risk = max(0, (b·p − q)/b)` with `b = win/loss` | Path A (Issue #5): the strategy reads today's p_mean for both new picks AND open positions to ratchet down sizing. That requires a per-pick sizer (not Vince's single portfolio fraction). | §6.4 |
+| D7 | Sizer (ablation) | `VinceOptimalF` (portfolio TWR fit) + `FixedFraction` baseline | TWR-fit sanity check + naive baseline. Vince still uses the eval-replay return series (§6.2) but isn't the primary sizer under daily rebalance. | §6.3 |
+| D8 | Fractional `c` | **0.5 (half-Kelly)** headline; sweep `c ∈ {0.25, 0.5, 1.0}` | Half-Kelly retains ~75% of full-Kelly growth at much lower variance (derived property) | §11 |
+| D9 | Multi-position cap + capital allocation | Gross exposure cap = 1.0 (no leverage). **No cross-position pro-rate**: daily rebalance (D13-revised) releases room as conviction drifts; new entries take their intended size from remaining room sequentially (highest-p first); floor `max(0.05·equity, 0.10·room)` drops below-floor entries. | Path A (Issue #5) rewrites the original "pro-rate new entries" rule. Pro-rate is obviated because daily Kelly rebalance does the room management continuously; new entries either fit at intended Kelly size or get dropped (no proportional shrink across competing same-day picks). Multi-asset Kelly w/ covariance still v1.1 (Σ not estimable on this data). | §6.5 |
+| D10 | Strategy class | `TopKDailyKellyLabelExit`, K=3 | Mirrors R-p@3 cohort selection; "daily Kelly" because positions are reassessed each signal day against today's p_mean; "label exit" because DD/target/horizon triggers still mirror `src/gbdt/targets.py:107,116`. | §6.5 |
+| D11 | Exit + trim triggers (priority within `__call__`) | Per open position, check in order: (1) DD floor `close ≤ 0.95·anchor` → full exit (mandatory); (2) target `close ≥ 1.10·anchor` → full exit; (3) horizon 50 BD → full exit; (4) `p_today ≤ breakeven_p` → full exit (Issue #5; model no longer believes); (5) `new_kelly_f < cur_f` → **trim** to new_kelly_f (ratchet-down only, no add-up). | DD remains mandatory + the label-mirroring set; breakeven-exit + daily-trim are the Path A additions. | §6.5 |
+| D12 | Exit anchor | Signal-day close (T's close, NOT T+1 fill open). Anchor is set once at entry and does NOT update when a position is trimmed — only fully reset on full exit + re-entry. | Mirrors label exactly — else back-test and R-p@K diverge by one tick. Trim is a partial sell, not a reset event. | §6.5 |
+| D13 | Re-ranking / re-sizing | **Daily Kelly rebalance, ratchet-down only.** Every signal day: read today's p_mean for each open position; compute today's Kelly notional fraction; if smaller than current → trim; if larger → hold (do NOT add to existing positions). Full exit if `p_today ≤ breakeven_p` or any D11 trigger fires. | Path A (Issue #5) replaces the original "no re-ranking — hold until exit." Continuous reassessment captures conviction decay; ratchet-down-only avoids anchor-reset complexity from add-ups. | §6.5 |
+| D14 | Re-entry | Allowed after full exit on a future signal day (new anchor = new signal-day close). Trims do NOT count as exits for re-entry purposes — the position remains open at the smaller size with its original anchor. | — | §6.5 |
 | D15 | Engine fill mode | `next_open` (default MOO) | B1/B2 of [backtesting/spec.md](../backtesting/spec.md) | — |
 | D16 | OOS window | Test slice `[2025-03-26, 2025-12-26]`; positions resolve through ~2026-03-05 | Apples-to-apples with R-p@3 = 0.7556 we're validating | §10 Q1 |
 | D17 | Starting capital | $100,000 | Headline framing the user asked for | §6 |
@@ -79,15 +79,17 @@ calibration.BetaBinomialBucketed.fit(val)   ──►  artifact (bin edges + (α
                 .transform(eval, test) ──► (p_mean, p_low, p_high) per (date, ticker)
                                               │
                                               ▼
-trading_strategies.TopKWithLabelExit (K=3)
-  │── SIZING: fit trading_strategies.sizing.VinceOptimalF on eval-period
-  │           strategy-replay returns (calibrator from val is honest here)
+trading_strategies.TopKDailyKellyLabelExit (K=3)
+  │── SIZER: DiscreteBoundedLossKelly (per-pick); Vince/Fixed are §7 ablations
   │── SELECTION: top-K by p_mean per day; filter to p_mean > breakeven_p
-  │── ENTRY SIZE: f_used = c × f*_emp; pro-rate against gross cap
-  │── EXIT (each close, priority order):
-  │     (1) DD: close ≤ 0.95 × signal-day-close      → sell next open (mandatory)
-  │     (2) Target: close ≥ 1.10 × signal-day-close  → sell next open
-  │     (3) Horizon: 50 BD held                       → sell next open
+  │── DAILY REBALANCE (each signal day, BEFORE new entries, per open position):
+  │     (1) DD: close ≤ 0.95 × signal-day-close      → FULL exit
+  │     (2) Target: close ≥ 1.10 × signal-day-close  → FULL exit
+  │     (3) Horizon: 50 BD held                       → FULL exit
+  │     (4) p_today ≤ breakeven_p                     → FULL exit
+  │     (5) new_kelly_f < cur_f                       → TRIM to new_kelly_f
+  │── ENTRY: highest-p first, take intended_f from remaining room,
+  │           drop entries below floor = max(0.05·equity, 0.10·room)
                                               │
                                               ▼
 backtesting.Backtest(fill_mode="next_open", lookback=5, initial_cash=100_000)
@@ -161,11 +163,10 @@ Full charter: [`docs/trading_strategies/goal.md`](../trading_strategies/goal.md)
 
 - `PortfolioSizer` + `PerPredictionSizer` Protocols in `src/trading_strategies/__init__.py`
 - `src/trading_strategies/sizing/`:
-  - `vince.py` — `VinceOptimalF` (PortfolioSizer; fit on returns; single fraction)
-  - `kelly.py` — `DiscreteBoundedLossKelly` (PerPredictionSizer; closed-form `(b·p − q)/b` in fraction-at-risk framing)
-  - `fixed.py` — `FixedFraction` baseline
-  - `caps.py` — `apply_gross_exposure_cap(current_exposure, new_fractions, cap=1.0)` pro-rate utility
-- `topk_label_exit.py`: `TopKWithLabelExit` class
+  - `kelly.py` — `DiscreteBoundedLossKelly` (PerPredictionSizer; closed-form `(b·p − q)/b` in fraction-at-risk framing) — **primary sizer under daily rebalance (D6)**
+  - `vince.py` — `VinceOptimalF` (PortfolioSizer; fit on returns; single fraction) — §7 ablation only (D7)
+  - `fixed.py` — `FixedFraction` baseline — §7 ablation
+- `topk_daily_kelly_label_exit.py`: `TopKDailyKellyLabelExit` class (D10; renamed from V1-draft `TopKWithLabelExit`)
 
 **V1 does NOT ship**: multi-asset Kelly with covariance; risk-sensitive Kelly (Davis-Lleo); continuous Kelly (μ/σ²); forecast-quantile strategies for analog_mc.
 
@@ -179,18 +180,18 @@ See §5.1 for the API skeleton. Key choices:
 - **Prior `Beta(1, 1)`**: weakly informative (uniform); with eval n ≈ 9K rows / 10 bins ≈ 900 obs/bin, prior contribution is negligible except in sparse upper bins
 - **Credible interval via `scipy.stats.beta.ppf`**: 2.5/97.5 percentiles of the posterior Beta — closed-form, no MCMC
 
-### 6.2 Strategy-side calibration replay for Vince
+### 6.2 Strategy-side calibration replay (for Vince ablation only)
 
-The Vince sizer needs **realized strategy returns** to fit on. Procedure:
+The primary sizer (`DiscreteBoundedLossKelly`, D6) is closed-form — it needs no fit data, just `payoff_win`/`payoff_loss` per cell. The strategy replay below is **only** needed for the Vince ablation row (D7) in the §7 sensitivity table.
 
 1. Apply the val-fit calibrator (D5) to eval-window predictions
-2. Replay `TopKWithLabelExit` (selection + exits, K=3) over the EVAL period with **uniform 1/K sizing** (no Kelly yet — we're generating the return distribution Kelly will then size against)
-3. Collect per-pick realized returns `rᵢ`
-4. Fit `VinceOptimalF` on `rᵢ`
+2. Replay `TopKDailyKellyLabelExit` (selection + daily rebalance + exits, K=3) over the EVAL period with the closed-form Kelly sizer in primary mode (Vince hasn't been fit yet)
+3. Collect per-pick realized returns `rᵢ` from the eval-replay
+4. Fit `VinceOptimalF` on `rᵢ` → produces the ablation sizer for §7
 
-This is a separate driver from the test back-test — same strategy code, different window, different sizing.
+This is a separate driver from the test back-test — same strategy code, different window, different sizer assignment.
 
-**Why this is honest** (post-review, closes the calibrator-sizer double-use leak): the calibrator's bucketed posterior is fit on val (D5). When applied to eval predictions, each row gets a `p_mean` derived from val's per-bucket hit rate — eval's labels never touched the calibrator. The strategy's eval picks therefore reflect the calibrator's GENERALIZATION from val to eval, not its overfit to eval. Vince fits on returns that estimate honest out-of-val strategy performance, which is the right reference for sizing the test back-test. Per-ticker val and per-ticker eval are disjoint by construction (each ticker's val ends before its eval starts), so calendar overlap between the global val/eval windows does not introduce leakage.
+**Why this is honest** (closes the calibrator-sizer double-use leak): the calibrator's bucketed posterior is fit on val (D5). When applied to eval predictions, each row gets a `p_mean` derived from val's per-bucket hit rate — eval's labels never touched the calibrator. The strategy's eval picks therefore reflect the calibrator's GENERALIZATION from val to eval, not its overfit to eval. Under Path A (Issue #5), the **primary** sizer is closed-form Kelly (D6) — no fitting at all, so no leak; the Vince ablation fits on the eval-replay return series, which inherits val-fit calibrator honesty. Per-ticker val and per-ticker eval are disjoint by construction (each ticker's val ends before its eval starts), so calendar overlap between the global val/eval windows does not introduce leakage.
 
 ### 6.3 `VinceOptimalF`
 
@@ -217,38 +218,84 @@ class DiscreteBoundedLossKelly:
         return max(0.0, (b*p - (1-p)) / b)   # clipped at 0
 ```
 
-Interpretation: `f_risk` = fraction-of-bankroll-at-risk per position. Notional implied = `f_risk · equity / payoff_loss` — can exceed equity when `payoff_loss < f_risk`. In cell-5 (loss=0.05), modest `f_risk` implies levered notional; **the gross-exposure cap is what enforces no-leverage in the strategy** (per D9).
+Interpretation: `f_risk` = fraction-of-bankroll-at-risk per position. Notional implied = `f_risk · equity / payoff_loss` — can exceed equity when `payoff_loss < f_risk`. In cell-5 (loss=0.05), modest `f_risk` implies levered notional; under Path A (D9-revised, D13-revised), the **daily Kelly rebalance + per-entry floor** keep total notional ≤ gross_cap without resorting to cross-position pro-rate. The cap is enforced as a hard check: if entries would push total exposure past 1.0, the lowest-ranked entries are dropped (not proportionally shrunk).
 
-### 6.5 `TopKWithLabelExit`
+### 6.5 `TopKDailyKellyLabelExit`
 
 ```python
-class TopKWithLabelExit:
+class TopKDailyKellyLabelExit:
     def __init__(
         self,
         predictions: dict[Timestamp, list[tuple[str, float, float, float]]],
         K: int,
         target_return: float, stop_drawdown: float, horizon_days: int,
-        sizer: PortfolioSizer | PerPredictionSizer,
-        sizer_payoffs: tuple[float, float] | None = None,
-        breakeven_p: float | None = None,
+        sizer: PerPredictionSizer,                # closed-form Kelly (D6)
+        sizer_payoffs: tuple[float, float],       # (win, loss) per cell
+        breakeven_p: float,                       # 1/(1 + win/loss)
         fractional_c: float = 0.5,
         gross_cap: float = 1.0,
+        floor_pct_equity: float = 0.05,           # D9: 5% equity floor
+        floor_pct_room: float = 0.10,             # D9: 10% room floor
     ): ...
 
     def __call__(self, state: dict, info: dict) -> dict | None:
-        # 1. EXIT pass — per open position, check close vs anchor; priority: DD → target → horizon
-        # 2. ENTRY pass — top-K by p_mean filtered by Kelly breakeven; skip already-held; compute f_used; pro-rate cap; snap to lots
-        # 3. Emit combined order action
+        # Path A algorithm (Issue #5). Within each signal day T:
+        #
+        # === REBALANCE PASS (existing positions) — runs first; releases room ===
+        # For each open position p:
+        #   last_close = info["last_close"][p.ticker]
+        #   bd_held    = days since signal_date
+        #
+        #   # D11 priority — FULL EXIT triggers
+        #   if last_close <= 0.95 * p.anchor_close:        FULL exit (DD, mandatory)
+        #   elif last_close >= 1.10 * p.anchor_close:      FULL exit (target)
+        #   elif bd_held >= horizon_days:                   FULL exit (horizon)
+        #   elif p_today(p.ticker) <= breakeven_p:          FULL exit (model dropped conviction)
+        #   else:
+        #     # TRIM pass — ratchet-down only (D13)
+        #     f_risk_today = sizer.fraction_at_risk(p=p_today, win, loss)
+        #     new_f        = fractional_c * f_risk_today / payoff_loss   # notional fraction
+        #     cur_f        = (p.current_shares * last_close) / state.equity   # MTM
+        #     if new_f < cur_f:  TRIM to new_f (sell delta next_open)
+        #     # else: hold; no add-up
+        #
+        # === ENTRY PASS (new picks) — uses freed room ===
+        # updated_exposure = Σ over open positions of (shares × last_close / equity)
+        # room = gross_cap - updated_exposure
+        # if room <= 0: emit current actions; return
+        #
+        # candidates = [(ticker, p_mean) from today's predictions
+        #               where p_mean > breakeven_p
+        #               AND ticker not in open positions]
+        # candidates.sort by p_mean desc
+        # for ticker, p_mean in candidates[:K]:    # highest-p first
+        #     if room < floor: break
+        #     f_risk = sizer.fraction_at_risk(p=p_mean, win, loss)
+        #     intended_f = fractional_c * f_risk / payoff_loss
+        #     actual_f   = min(intended_f, room)
+        #     floor      = max(floor_pct_equity, floor_pct_room * room)
+        #     if actual_f < floor: continue        # drop this entry, try next
+        #     OPEN at actual_f; anchor = last_close (D12); room -= actual_f
+        # Emit combined action
 ```
 
 **Internal state**:
 
 ```python
 self._open_positions: dict[str, dict] = {}
-# ticker -> {"signal_date": Timestamp, "anchor_close": float, "bd_held": int, "entry_fill": float | None}
+# ticker -> {
+#   "signal_date":     Timestamp,    # set once at entry, never updated by trim
+#   "anchor_close":    float,        # signal-day close; D12 — never updated by trim
+#   "current_shares":  int,          # mutated on trim
+#   "bd_held":         int,          # incremented each call
+# }
 ```
 
-`anchor_close` is **signal-day close** (T's close), recorded when the order is submitted — NOT the fill open of T+1. This is the most subtle correctness issue in the strategy; see D12.
+**Key invariants**:
+- `anchor_close` is **signal-day close** (T's close) — set at entry, never updated by trims (D12). Trims are a partial sell, not a reset event.
+- Daily rebalance is **ratchet-down only**: a position whose `p_today` rises ABOVE its entry-day Kelly stays at the smaller `cur_f` until the model lets up. No add-ups to existing positions.
+- Full exit triggers (DD/target/horizon/breakeven) clear `_open_positions[ticker]`, freeing the ticker for re-entry on a future signal day (D14). A re-entered position gets a NEW anchor at the new signal-day close.
+- Entry sequence is **sequential, highest-p first** — no cross-pick pro-rate. Floor `max(0.05·equity, 0.10·room)` (D9) drops sub-floor picks; later picks may still fit.
 
 ### 6.6 Runner — `scripts/backtests/run_cell5_bayesian_kelly.py`
 
@@ -256,8 +303,8 @@ self._open_positions: dict[str, dict] = {}
 1. Load cell-5 artifact (spec.yaml, predictions/{val,eval,test}.csv)
 2. Fit BayesianCalibrator on VAL (D5); save artifact + reliability figure
 3. Transform eval + test → (p_mean, p_low, p_high) per (date, ticker)
-4. Replay strategy on EVAL period (uniform 1/K) → realized return series r_i  (§6.2)
-5. Fit VinceOptimalF on r_i
+4. Instantiate primary sizer `DiscreteBoundedLossKelly(payoff_win=0.10, payoff_loss=0.05)` (D6 — closed-form, no fit)
+5. (Ablation path) Replay strategy on EVAL with primary sizer → realized r_i; fit `VinceOptimalF` on r_i for the §7 ablation row only
 6. Fetch OHLCV via data_pipelines for 92 tickers, window [test_start - 5 BD, test_end + 50 BD]
 7. Build DataHandler-compatible feed dict
 8. Construct Backtest(fill_mode="next_open", lookback=5, initial_cash=100_000)
@@ -293,7 +340,16 @@ NDX buy-and-hold (cap-weighted)   $Y         +Y.Y%      Y.Y%     -Y.Y%
 Equal-weight top-K (no Kelly)     $W         +W.W%      W.W%     -W.W%  (ablation)
 ```
 
-Plus equity-curve overlay (4 lines, same $100K start), drawdown trajectory, gross-exposure trajectory, per-pick sample table, sensitivity sweep over `c ∈ {0.25, 0.5, 1.0}` and `K ∈ {1, 3, 5}`, and **R-Precision@K of REALIZED picks vs the published R-p@3 = 0.7556** (the meta-validation: does the metric translate to a tradeable strategy?).
+Plus equity-curve overlay (4 lines, same $100K start), drawdown trajectory, **gross-exposure trajectory** (Path A: critical — shows the cap rarely binds because daily rebalance releases room continuously), per-pick sample table augmented with **trim events** (date, p_today, cur_f, new_f, sold_delta) per position, **turnover summary** (entries, full-exits, trims; cf. R10), and the §7 sensitivity table:
+
+- **Sizer axis** (D6 vs D7): primary `DiscreteBoundedLossKelly` vs ablations `VinceOptimalF`, `FixedFraction(0.20)`
+- **Fractional c**: c ∈ {0.25, 0.5, 1.0}
+- **K**: K ∈ {1, 3, 5}
+- **Daily rebalance**: ON (headline) vs OFF (rebalance disabled → strategy reverts to hold-until-exit for direct comparison; this is the V1-pre-Path-A counterfactual)
+
+Meta-validations (both still applicable):
+- **R-Precision@K of REALIZED entered picks** vs canonical CSV R-p@3 = 0.7556 (does the metric translate to entered-pick quality?)
+- **R-Precision@K of REALIZED entered picks AFTER full-exits-due-to-trims/breakeven** (does Path A's filtering improve over the published rank?)
 
 Registry row appended to `results/backtests/data/backtest_summary.csv` per the schema in [CONVENTIONS.md](CONVENTIONS.md).
 
@@ -303,14 +359,16 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 |---|---|---|
 | R1 | Bayesian calibrator's upper bin (`p_raw > 0.7`) sparse on val | M=10 → M=5 quantile bins if `n_i < 50` for upper bin. **Checkpoint after first fit** (§9 step 5). |
 | R2 | Cell-5's `p_raw` overconfident → Bayes shrinks `p_mean` toward base rate → fewer picks pass Kelly breakeven | Expected outcome. Surface in memo. If <10 picks total, sensitivity sweep on `c` or breakeven. |
-| R3 | DD exits trigger on close, fill at next open → gap-down realizes loss > 5% (not strictly bounded as label assumes) | Vince's empirical f handles this naturally (uses realized eval losses). Document as a real risk in memo. |
+| R3 | DD exits trigger on close, fill at next open → gap-down realizes loss > 5% (not strictly bounded as label assumes) | Document realized vs label-assumed loss distribution in memo. Daily rebalance trims partially absorb conviction-driven losses BEFORE DD fires (catching them at the trim, not the DD), but gap-down DD exits remain a real tail risk. |
 | R4 | NDX identifier not in `data_pipelines` | Fall back to QQQ ETF as proxy. If neither, document the gap; ship basket + ablation. See §10 Q3. |
 | R5 | Universe survivorship — roster as-of `test_start` ≠ as-of-fit | Use 92-ticker roster from cell-5's `metrics.json::data.n_tickers_used`. Don't refresh. Known gbdt v1 limitation, not back-test scope. |
 | R6 | Look-ahead in calibrator fit or Vince fit | Verify per-ticker val_end < per-ticker eval_start < `test_start` (segment hierarchy honored, not just calendar-window check). Assert in code on each ticker. |
 | R7 | Lot-size rounding zeros out small picks | Engine emits `lot_size_audit` in `info`; track rounded-to-zero count; document if non-trivial. |
 | R8 | Tiny-model `p_raw` ties → quantile bins collapse | Surfaced during plan review on cell-5 regen eval: 18,400 rows over 226 distinct `p_raw` values; naive `np.quantile(p_raw, 10)` produces a duplicate edge `(0.3852, 0.3852)` because >10% of rows sit at one exact `p_raw`. Calibrator handles via `pd.cut(duplicates='drop')` + `min_bin_size=20` merge + `min_effective_bins=3` floor (see §5.1). If fewer than 3 bins survive on a future cell, the calibrator raises and the caller falls back to a simpler scheme (e.g. one bin per distinct `p_raw` for very tiny models, or a non-Bayesian calibrator). **Checkpoint output** at §9 step 5 must report `effective_n_bins`. |
 | R9 | Bayesian recalibrator stacked on gbdt's isotonic-calibrated `p_calibrated` (val-fit) | `p_calibrated` in `predictions/val.csv` is what gbdt's internal `conditional_isotonic` produced from `p_raw` (fit on val itself — leak-prone for the isotonic, but that's the gbdt module's concern, not ours). Our Bayesian recalibrator fits on top of `p_calibrated` (or `p_raw` if isotonic was pass-through per V1.3 anti-AUC handling — check `metrics.json::calibration.fitted` flag and pick the right input column). On cell-5 specifically, V1.3 native pass-through was active so `p_calibrated == p_raw` and there's no stacking. On future cells where isotonic IS active, the Bayesian recalibrator's job is "produce credible bands on already-shrunk probabilities" — the bands will be narrower (less posterior uncertainty after isotonic smoothing), which is correct. **Checkpoint output** at §9 step 5 should report which input column was consumed + the ECE delta val-vs-eval to flag if val→eval generalization is broken. |
-| R-cost | Zero-cost back-test inflates returns vs reality | Memo Caveats section quantifies: "At 5 bps/side and observed turnover of N trades, expected drag ≈ X bps/yr." |
+| R10 | Daily rebalance amplifies turnover (Path A) | Each signal day can produce trims (partial sells) + full exits + new entries. Turnover grows roughly with # open positions × # signal days. Memo Caveats quantifies: "Strategy made N entries / M trims / P exits over the 9-month window vs V1-pre-Path-A counterfactual of N′ entries / 0 trims / P′ exits → ~K× turnover ratio → expected cost drag ≈ K · 17 bps/yr = X bps/yr (compared to baseline V1 estimate)." See §7 sensitivity row "Daily rebalance OFF" for direct comparison. |
+| R11 | Sizing oscillation if `p_today` is noisy day-over-day | Daily Kelly trim fires every time `p_today < cur_f_implied_p`. If predictions are noisy (e.g. small p_mean changes from feature-day boundary effects), positions could trim down on day T and have free room re-filled by a new entry on day T+1, generating churn. Surface as a **stability check** in the memo: compute std(p_today) per ticker over its held window — if > some threshold (say 0.03 std), flag oscillation risk. Mitigation, if needed: introduce a `trim_threshold` (only trim if `new_f < (1 − ε)·cur_f` where ε = 0.05) — V1.1 if observed. |
+| R-cost | Zero-cost back-test inflates returns vs reality | Memo Caveats section quantifies: "At 5 bps/side and observed turnover of N trades, expected drag ≈ X bps/yr." Note R10's amplification for Path A. |
 
 ## 9. Sequencing
 
@@ -322,7 +380,7 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 | 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | #15 |
 | 5 | **CHECKPOINT** — fit on cell-5 VAL, generate reliability figure + report `effective_n_bins` (R8) + ECE on val vs eval (R9) | Review credible-band quality + bin-survival count + whether val→eval generalization is honest before continuing | #16 |
 | 6 | Implement sizers (`VinceOptimalF`, `DiscreteBoundedLossKelly`, `FixedFraction`, `caps`) + tests | `src/trading_strategies/sizing/` v1 complete | #17 |
-| 7 | Implement `TopKWithLabelExit` + tests | Strategy class complete | #18 |
+| 7 | Implement `TopKDailyKellyLabelExit` + tests (rebalance + trim + breakeven exit + floor — Path A per Issue #5) | Strategy class complete | #18 |
 | 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` | Runnable end-to-end | #19 |
 | 9 | Implement `scripts/backtests/benchmarks.py` (3 benchmarks) | Headline table + overlay figure | #20 |
 | 10 | Run; write `_001_cell5_bayesian_kelly.md` memo | Memo + figures + registry row | #21 |
