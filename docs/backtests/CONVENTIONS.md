@@ -87,8 +87,10 @@ strategy:
   stop_drawdown: 0.05
   horizon_days: 50
   anchor: signal_day_close
-  re_rank_policy: none
-  re_entry_policy: allowed_after_exit
+  re_rank_policy: daily_kelly_rebalance_ratchet_down  # Path A; "none" for hold-until-exit
+  re_entry_policy: allowed_after_full_exit            # trims do NOT count as exits
+  tie_break: p_calibrated_desc_ticker_asc_mergesort   # source: src/gbdt/topk_diagnostics.py:85-87
+  missing_p_today_policy: skip_breakeven_and_trim     # DD/target/horizon still fire
 
 engine:
   fill_mode: next_open | current_close
