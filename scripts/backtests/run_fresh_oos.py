@@ -63,6 +63,9 @@ def main() -> None:
     ap.add_argument("--predictions", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", default="cell5b_fresh_oos")
+    ap.add_argument("--c", type=float, default=FRACTIONAL_C, help="fractional Kelly c")
+    ap.add_argument("--selection-bound", default="mean", choices=["mean", "low"],
+                    help="entry filter clears breakeven against p_mean or p_low")
     args = ap.parse_args()
     cell = Path(args.cell)
     out = Path(args.out)
@@ -102,10 +105,11 @@ def main() -> None:
 
     # 4. Run strategy.
     print("[4] running fresh-OOS strategy ...")
+    print(f"    c={args.c} selection_bound={args.selection_bound}")
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
-        breakeven_p=BREAKEVEN_P, fractional_c=FRACTIONAL_C,
+        breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history)
@@ -144,6 +148,8 @@ def main() -> None:
 
     from collections import Counter
     summary = {
+        "config": {"fractional_c": args.c, "selection_bound": args.selection_bound,
+                   "K": K, "target_return": TARGET_RETURN, "stop_drawdown": STOP_DD},
         "window": {"fresh_start": str(fresh_start.date()), "fresh_end": str(fresh_end.date()),
                    "comparison_end": str(comparison_end.date()),
                    "full_resolve_cutoff": str(full_resolve_cutoff.date())},
