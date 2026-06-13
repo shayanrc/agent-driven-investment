@@ -1,0 +1,5 @@
+line,end_$,total_pct,cagr_pct,max_dd_pct,n_trades
+Strategy (Bayesian+Kelly c=0.5),106727.64,6.73,6.78,-11.58,28
+NDX buy-and-hold,123179.15,23.18,24.24,-14.19,1
+92-ticker equal-weight basket,115572.29,15.57,16.27,-14.01,92
+Equal-weight top-K (no Kelly),101365.78,1.37,1.42,-9.7,16

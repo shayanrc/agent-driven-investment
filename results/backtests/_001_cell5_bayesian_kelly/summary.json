@@ -1,0 +1,74 @@
+{
+  "window": {
+    "test_start": "2025-03-26",
+    "test_end": "2025-12-26",
+    "comparison_end": "2026-03-12"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 106727.64,
+    "total_return": 0.0672763999999999,
+    "cagr": 0.06783246759419814,
+    "max_dd": -0.11575335746765436,
+    "n_trades": 28,
+    "gross_exposure_avg": 0.2682227001887752
+  },
+  "benchmarks": {
+    "ndx_bh": {
+      "start": 100000.0,
+      "end": 123179.15402590382,
+      "total_return": 0.23179154025903825,
+      "cagr": 0.24244858103596578,
+      "max_dd": -0.14191852335557953,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.00000000012,
+      "end": 115572.29033835955,
+      "total_return": 0.1557229033835943,
+      "cagr": 0.1626553144441023,
+      "max_dd": -0.14013134402087113,
+      "n_trades": 92,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 101365.77718661485,
+      "total_return": 0.013657771866148583,
+      "cagr": 0.014226138485353257,
+      "max_dd": -0.09699115077514264,
+      "n_trades": 16,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 6,
+    "exits": 6,
+    "trims": 16
+  },
+  "exit_triggers": {
+    "DD": 4,
+    "target": 2
+  },
+  "vince_ablation": {
+    "f_star": 0.04717788665126783,
+    "n_trades": 30.0,
+    "mean_return": 0.0025422394107923315,
+    "max_loss": 0.13156201158407654,
+    "max_gain": 0.19459295261239373,
+    "n_eval_picks": 30
+  },
+  "checkpoint": {
+    "effective_n_bins": 9,
+    "ece_val": 7.162823133369207e-05,
+    "ece_eval": 0.03257759032691977,
+    "ece_delta": 0.03250596209558608,
+    "max_band_width": 0.03496207560924797,
+    "input_column": "p_calibrated",
+    "base_rate_val": 0.35182065217391306,
+    "base_rate_eval": 0.3394021739130435,
+    "gate_triggered": false,
+    "gate_reasons": []
+  }
+}

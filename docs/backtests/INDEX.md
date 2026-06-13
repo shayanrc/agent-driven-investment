@@ -6,6 +6,6 @@ Plans (work-in-progress and historical):
 - [V1 — Cell-5 Bayesian + Kelly Back-Test](V1_cell5_bayesian_kelly_plan.md) — first cross-module back-test plan; new modules `src/calibration/` + `src/trading_strategies/`
 
 Memos:
-- *(none yet — `_001_cell5_bayesian_kelly.md` lands when V1 plan implementation completes)*
+- [_001: cell5_bayesian_kelly](_001_cell5_bayesian_kelly.md) — cell-5 (R-p@3=0.7556) half-Kelly back-test: +6.7% vs NDX +23.2%; underperformance dominated by a 132-day forced-cash signal gap, near-match (+7.6% vs +8.2%) while invested
 
 See [CONVENTIONS.md](CONVENTIONS.md) for the memo template, numbering rules, registry CSV schema, and naming conventions.

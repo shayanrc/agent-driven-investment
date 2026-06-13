@@ -405,16 +405,16 @@ Registry row appended to `results/backtests/data/backtest_summary.csv` per the s
 | # | Task | Output | Status |
 |---|---|---|---|
 | 1 | This branch + this plan + supporting docs | The 4 docs in this subtree | **Done** (PR #158, `f644187`, 2026-06-11) |
-| 2 | Scaffold `src/calibration/` | Package skeleton + pyproject entry + tests dir + importable | TBD |
-| 3 | Scaffold `src/trading_strategies/` | Same + `sizing/` subpackage | TBD |
-| 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | TBD |
-| 5 | **CHECKPOINT** — fit on cell-5 VAL, transform eval. Surface to user before Stage 6 if any of: `effective_n_bins < 3` (R8), `ECE_eval > 0.10`, `\|ECE_val − ECE_eval\| > 0.05` (R9 generalization break), or the reliability diagram's credible bands extend beyond ±0.15 at any quantile bin. Else: proceed. | Saved calibrator artifact + reliability figure + checkpoint JSON `{effective_n_bins, ece_val, ece_eval, max_band_width, input_column}` | TBD |
-| 6 | Implement sizers (`DiscreteBoundedLossKelly` primary, `VinceOptimalF` + `FixedFraction` ablations) + tests | `src/trading_strategies/sizing/` v1 complete | TBD |
-| 7 | Implement `TopKDailyKellyLabelExit` + tests (rebalance + trim + breakeven exit + floor — Path A per §6.5) | Strategy class complete | TBD |
-| 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` (§6.6 runner sequence) | Runnable end-to-end | TBD |
-| 9 | Implement `scripts/backtests/benchmarks.py` (3 benchmarks per §6.7) | Headline table + overlay figure | TBD |
-| 10 | Run; write `_001_cell5_bayesian_kelly.md` memo (CONVENTIONS.md template, §7 expectations) | Memo + figures + registry row | TBD |
-| 11 | Commit + open PR | PR merged | TBD |
+| 2 | Scaffold `src/calibration/` | Package skeleton + pyproject entry + tests dir + importable | **Done** (branch `backtests-v1-scaffold`, `007a8d8`) |
+| 3 | Scaffold `src/trading_strategies/` | Same + `sizing/` subpackage | **Done** (`007a8d8`) |
+| 4 | Implement `BetaBinomialBucketed` + diagnostics + tests | `src/calibration/` v1 complete | **Done** (`007a8d8`; 13 tests) |
+| 5 | **CHECKPOINT** — fit on cell-5 VAL, transform eval. Surface to user before Stage 6 if any of: `effective_n_bins < 3` (R8), `ECE_eval > 0.10`, `\|ECE_val − ECE_eval\| > 0.05` (R9 generalization break), or the reliability diagram's credible bands extend beyond ±0.15 at any quantile bin. Else: proceed. | Saved calibrator artifact + reliability figure + checkpoint JSON `{effective_n_bins, ece_val, ece_eval, max_band_width, input_column}` | **Done** (`007a8d8`) — all 4 gates cleared (`eff_bins=9, ECE_eval=0.033, ΔECE=0.033, band=0.035`). Caught + fixed a `sample_weight` Beta-count bug (constant gbdt weight deflated effective n ~100×; normalized to sum=N). |
+| 6 | Implement sizers (`DiscreteBoundedLossKelly` primary, `VinceOptimalF` + `FixedFraction` ablations) + tests | `src/trading_strategies/sizing/` v1 complete | **Done** (`007a8d8`; 13 tests) |
+| 7 | Implement `TopKDailyKellyLabelExit` + tests (rebalance + trim + breakeven exit + floor — Path A per §6.5) | Strategy class complete | **Done** (`706ba1e`; 14 tests). Deltas: order-actions not weight; close from `state.market_data` (no `info["last_close"]`); `cash_buffer` for next_open overdraw; D14 no-same-day-re-entry. |
+| 8 | Implement `scripts/backtests/run_cell5_bayesian_kelly.py` (§6.6 runner sequence) | Runnable end-to-end | **Done** (`706ba1e`). OHLCV via `gbdt.data._cache_read` (split-adjusted `close`). |
+| 9 | Implement `scripts/backtests/benchmarks.py` (3 benchmarks per §6.7) | Headline table + overlay figure | **Done** (`706ba1e`). Real `INDEX:^NDX`. |
+| 10 | Run; write `_001_cell5_bayesian_kelly.md` memo (CONVENTIONS.md template, §7 expectations) | Memo + figures + registry row | **Done** — Strategy +6.7% vs NDX +23.2%; verdict dominated by a 132-day forced-cash signal gap (C1). |
+| 11 | Commit + open PR | PR merged | In progress |
 
 ## 10. Open questions for reviewer
 
