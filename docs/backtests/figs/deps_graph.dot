@@ -1,0 +1,89 @@
+digraph deps {
+  rankdir=TB;
+  newrank=true;
+  graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
+         labelloc="t", fontsize=15,
+         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-13 18:45 IST)"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
+  edge [fontname="Helvetica", fontsize=8, color="#888888"];
+
+  /* ---------- legend ---------- */
+  legend [shape=plaintext, label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="6" CELLPADDING="6" BGCOLOR="#f6f6f6">
+      <TR><TD COLSPAN="7" BORDER="0"><FONT FACE="Helvetica" POINT-SIZE="11"><B>legend</B></FONT></TD></TR>
+      <TR>
+        <TD BGCOLOR="#ced4da"><FONT FACE="Helvetica" POINT-SIZE="10">done / merged</FONT></TD>
+        <TD BGCOLOR="#a8d8c0"><FONT FACE="Helvetica" POINT-SIZE="10">done this session</FONT></TD>
+        <TD BGCOLOR="#d4edda"><FONT FACE="Helvetica" POINT-SIZE="10">actionable</FONT></TD>
+        <TD BGCOLOR="#d1ecf1"><FONT FACE="Helvetica" POINT-SIZE="10">in flight</FONT></TD>
+        <TD BGCOLOR="#ffffff" STYLE="dashed"><FONT FACE="Helvetica" POINT-SIZE="10">pending / gated</FONT></TD>
+        <TD BGCOLOR="#d1ecf1"><FONT FACE="Helvetica" POINT-SIZE="10">recurring (paused)</FONT></TD>
+        <TD BGCOLOR="#ffe69c"><FONT FACE="Helvetica" POINT-SIZE="10">goal</FONT></TD>
+      </TR>
+    </TABLE>
+  >];
+  spacer_L [shape=point, width=0.01, style=invis];
+  spacer_C [shape=point, width=0.01, style=invis];
+  spacer_R [shape=point, width=0.01, style=invis];
+  {rank=min;  legend;}
+  {rank=same; spacer_L; spacer_C; spacer_R;}
+  legend -> spacer_L [style=invis, weight=1];
+  legend -> spacer_C [style=invis, weight=100];
+  legend -> spacer_R [style=invis, weight=1];
+
+  /* ---------- cluster: V1 (merged) ---------- */
+  subgraph cluster_v1 { label="backtests · V1 (merged)"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
+    PLUMBING [label="V1 plumbing\ncalibration + trading_strategies\n(PR #161)", fillcolor="#ced4da", color="#495057"];
+    M001 [label="_001 cell5 half-Kelly\n+6.7% vs NDX +23%\n(132-day gap confound)", fillcolor="#ced4da", color="#495057"];
+  }
+
+  /* ---------- cluster: V1.1 this session ---------- */
+  subgraph cluster_session { label="backtests · V1.1 — fresh-OOS + sizing (this session)"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
+    REFRESH [label="data refresh → 2026-06-12\n+ fixed circular data/raw symlink", fillcolor="#a8d8c0", color="#495057"];
+    INFER [label="infer_fresh_predictions\n(no retrain; self-check 1.5e-8)", fillcolor="#a8d8c0", color="#495057"];
+    M002 [label="_002 fresh-OOS half-Kelly\n+9.0% vs NDX +21.6%\n(PR #162)", fillcolor="#a8d8c0", color="#495057"];
+    M003 [label="_003 sizing sweep\nc=0.25+mean +25.4% > NDX\np_low HURTS (PR #163)", fillcolor="#a8d8c0", color="#495057"];
+    M004 [label="_004 best-agent-cell survey\n5 cells × {c=.25,.5}\nonly cell-5 trades", fillcolor="#a8d8c0", color="#495057"];
+    M004DOC [label="_004 memo + registry + PR", fillcolor="#d1ecf1", color="#0c5460"];
+  }
+
+  /* ---------- cluster: follow-ups (pending) ---------- */
+  subgraph cluster_follow { label="backtests · follow-ups (pending / gated)"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
+    PROMOTE [label="promote c=0.25+mean\nas headline sizing default", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
+    BREAKEVEN [label="FINDING: base-rate gate\n4/5 best agent cells = 0 trades\n(calibrated p never > 1/3)", fillcolor="#a8d8c0", color="#495057"];
+    RANKSIZE [label="NEW V1.2: rank / base-rate-\nrelative sizing — deploy the\nrare-event high-AUC cells", fillcolor="#d4edda", color="#155724"];
+    ROLLING [label="rolling monthly fresh-OOS\nseries (re-score as cache ages)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
+    GAPEVAL [label="signal-gap-aware eval harness\n(invested-days / cash-adj bench)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
+    IDFIX [label="registry id zero-pad fix\n(fold into next PR)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
+    GOAL [label="GOAL: agent-driven strategy that\nbeats passive OOS across cells", fillcolor="#ffe69c", color="#856404", penwidth=2];
+  }
+
+  /* ---------- cluster: scheduled ---------- */
+  subgraph cluster_sched { label="scheduled tasks / loops"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
+    WAKE [label="hourly heartbeat\n(cron :07 — disk/subagents/PRs)", fillcolor="#d1ecf1", color="#0c5460", style="rounded,filled,dotted"];
+  }
+
+  /* anchors: every cluster top node pulled from a spacer */
+  spacer_L -> PLUMBING [style=invis, weight=100];
+  spacer_C -> REFRESH  [style=invis, weight=100];
+  spacer_R -> PROMOTE  [style=invis, weight=100];
+  spacer_R -> WAKE     [style=invis, weight=20];
+
+  /* ---------- dependency edges ---------- */
+  PLUMBING -> M001;
+  M001 -> REFRESH [style=dashed];
+  REFRESH -> INFER -> M002 -> M003;
+  M003 -> M004;
+  M004 -> M004DOC;
+  M003 -> PROMOTE [color="#5a3e9e"];
+  M004 -> PROMOTE [color="#5a3e9e"];
+  M004 -> BREAKEVEN [color="#d9534f"];
+  BREAKEVEN -> RANKSIZE [color="#d9534f"];
+  RANKSIZE -> GOAL [color="#d9534f"];
+  INFER -> ROLLING [style=dashed];
+  M001 -> GAPEVAL [style=dashed];
+  M004DOC -> IDFIX [style=dashed];
+  PROMOTE -> GOAL [color="#5a3e9e"];
+  ROLLING -> GOAL [style=dashed];
+  BREAKEVEN -> GOAL [style=dashed];
+}

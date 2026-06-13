@@ -1,0 +1,68 @@
+{
+  "cell": "nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
+  "config": {
+    "fractional_c": 0.5,
+    "selection_bound": "mean",
+    "K": 3
+  },
+  "geometry": {
+    "universe": "nasdaq100",
+    "win": 0.4,
+    "loss": 0.2,
+    "horizon": 50,
+    "breakeven_p": 0.3333333333333333,
+    "index": "NDX"
+  },
+  "window": {
+    "test_start": "2025-06-05",
+    "test_end": "2026-03-12",
+    "comparison_end": "2026-05-22",
+    "data_end": "2026-06-12"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 100000.0,
+    "total_return": 0.0,
+    "cagr": 0.0,
+    "max_dd": 0.0,
+    "n_trades": 0,
+    "gross_exposure_avg": 0.0
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 99999.99999999999,
+      "end": 136822.0760089207,
+      "total_return": 0.3682207600892071,
+      "cagr": 0.3842004848767291,
+      "max_dd": -0.12122844493191431,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.00000000012,
+      "end": 136521.91496913746,
+      "total_return": 0.36521914969137304,
+      "cagr": 0.38105147695483765,
+      "max_dd": -0.08907109023088478,
+      "n_trades": 92,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 0,
+    "exits": 0,
+    "trims": 0,
+    "unique_tickers": 0,
+    "open_at_end": 0
+  },
+  "exit_triggers": {}
+}
