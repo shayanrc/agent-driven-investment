@@ -1,0 +1,263 @@
+"""Tests for TopKDailyKellyLabelExit (plan §6.5, D11-D14, D21-D23)."""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from backtesting.backtest import Backtest
+from backtesting.strategy import run_strategy
+from trading_strategies.sizing import DiscreteBoundedLossKelly
+from trading_strategies.topk_daily_kelly_label_exit import (
+    TopKDailyKellyLabelExit,
+)
+
+WIN, LOSS = 0.10, 0.05
+BREAKEVEN = 1.0 / 3.0  # 1/(1 + win/loss), win/loss = 2
+
+
+def _mk_state(step, ts, equity, positions, closes, lookback=5):
+    """Build a minimal engine-shaped state dict. close at OHLCV index 3."""
+    md = {}
+    for tk, c in closes.items():
+        arr = np.zeros((lookback, 5), dtype=float)
+        arr[-1, 3] = c
+        md[tk] = arr
+    return {
+        "market_data": {"equities": md},
+        "portfolio": {
+            "equity": equity,
+            "positions": dict(positions),
+            "cash": equity,
+            "pending_orders": 0,
+        },
+        "step": step,
+        "timestamp": pd.Timestamp(ts),
+    }
+
+
+def _strategy(preds, **kw):
+    defaults = dict(
+        K=3,
+        target_return=WIN,
+        stop_drawdown=LOSS,
+        horizon_days=50,
+        sizer=DiscreteBoundedLossKelly(),
+        sizer_payoffs=(WIN, LOSS),
+        breakeven_p=BREAKEVEN,
+        fractional_c=0.5,
+    )
+    defaults.update(kw)
+    return TopKDailyKellyLabelExit(preds, **defaults)
+
+
+# -- entry + sizing ----------------------------------------------------------
+def test_entry_on_signal_day():
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.40, 0.3, 0.5)]})
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action["type"] == "order"
+    assert len(action["orders"]) == 1
+    o = action["orders"][0]
+    assert o["asset"] == "AAPL"
+    # notional_f = c * f_risk / loss; f_risk(0.40) = (2*0.4-0.6)/2 = 0.10
+    # notional_f = 0.5 * 0.10 / 0.05 = 1.0 → capped at room=1.0. Cash buffer
+    # 2% → spendable 98_000 → shares = 98_000 / 100 = 980.
+    assert o["qty"] == pytest.approx(980.0)
+    assert "AAPL" in s._open
+    assert s._open["AAPL"]["anchor_close"] == 100.0
+
+
+def test_below_breakeven_not_entered():
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.30, 0.2, 0.4)]})  # below breakeven 1/3
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action is None
+    assert not s._open
+
+
+def test_tie_break_alphabetical(monkeypatch):
+    """D21: equal p → alphabetically-lower ticker selected first."""
+    d = pd.Timestamp("2025-01-02")
+    # K=1, two tied candidates; ZZZZ vs AAAA at equal p → AAAA wins.
+    s = _strategy(
+        {d: [("ZZZZ", 0.40, 0.3, 0.5), ("AAAA", 0.40, 0.3, 0.5)]}, K=1
+    )
+    action = s(_mk_state(5, d, 100_000, {}, {"ZZZZ": 100.0, "AAAA": 50.0}), {})
+    assert [o["asset"] for o in action["orders"]] == ["AAAA"]
+
+
+# -- exits -------------------------------------------------------------------
+def _enter(s, d, equity=100_000, close=100.0, p=0.40):
+    s(_mk_state(5, d, equity, {}, {"AAPL": close}), {})
+    return s._open["AAPL"]["anchor_close"]
+
+
+def test_dd_exit():
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.40, 0.3, 0.5)], d1: [("AAPL", 0.40, 0.3, 0.5)]})
+    anchor = _enter(s, d0)  # anchor 100
+    # next day close at 94.9 = below 0.95*100 = 95 → DD exit
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 94.9}), {})
+    assert action["orders"][0]["qty"] == -1000  # sell all
+    assert "AAPL" not in s._open
+    assert s.events[-1].trigger == "DD"
+
+
+def test_target_exit():
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.40, 0.3, 0.5)], d1: [("AAPL", 0.40, 0.3, 0.5)]})
+    _enter(s, d0)  # anchor 100
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 110.1}), {})
+    assert action["orders"][0]["qty"] == -1000
+    assert s.events[-1].trigger == "target"
+
+
+def test_horizon_exit():
+    d0 = pd.Timestamp("2025-01-02")
+    dh = pd.Timestamp("2025-04-01")
+    s = _strategy({d0: [("AAPL", 0.40, 0.3, 0.5)], dh: [("AAPL", 0.40, 0.3, 0.5)]})
+    _enter(s, d0)  # entry_step 5
+    # step 55 = 50 BD held → horizon exit (close flat, no DD/target)
+    action = s(_mk_state(55, dh, 100_000, {"AAPL": 1000}, {"AAPL": 100.0}), {})
+    assert action["orders"][0]["qty"] == -1000
+    assert s.events[-1].trigger == "horizon"
+
+
+def test_breakeven_exit():
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy(
+        {d0: [("AAPL", 0.40, 0.3, 0.5)], d1: [("AAPL", 0.30, 0.2, 0.4)]}
+    )
+    _enter(s, d0)
+    # close flat (no DD/target), but p_today 0.30 <= breakeven → exit
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 100.0}), {})
+    assert action["orders"][0]["qty"] == -1000
+    assert s.events[-1].trigger == "breakeven"
+
+
+def test_missing_p_today_skips_breakeven_and_trim():
+    """D22: ticker absent today → no breakeven exit, no trim; position held."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    # d1 has NO prediction for AAPL.
+    s = _strategy({d0: [("AAPL", 0.40, 0.3, 0.5)], d1: [("OTHER", 0.40, 0.3, 0.5)]})
+    _enter(s, d0)
+    # close flat → no DD/target/horizon; AAPL absent → held, no order for it.
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 100.0, "OTHER": 100.0}), {})
+    assert "AAPL" in s._open  # still held
+    aapl_orders = [o for o in (action["orders"] if action else []) if o["asset"] == "AAPL"]
+    assert aapl_orders == []  # no exit, no trim
+
+
+def test_dd_still_fires_when_p_today_missing():
+    """D22 only skips breakeven/trim — DD/target/horizon still fire."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.40, 0.3, 0.5)], d1: []})
+    _enter(s, d0)
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 94.0}), {})
+    assert action["orders"][0] == {"asset": "AAPL", "qty": -1000}
+    assert s.events[-1].trigger == "DD"
+
+
+# -- trim --------------------------------------------------------------------
+def test_trim_ratchet_down():
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    # Enter at p=0.50 (high f), then p drops to 0.36 (lower f, still > breakeven).
+    s = _strategy(
+        {d0: [("AAPL", 0.50, 0.4, 0.6)], d1: [("AAPL", 0.36, 0.3, 0.45)]}
+    )
+    s(_mk_state(5, d0, 100_000, {}, {"AAPL": 100.0}), {})
+    booked_f = s._open["AAPL"]["f"]
+    shares0 = s.events[-1].shares_after
+    # Day 2: p lower → new_f < cur_f → trim (sell delta). Close flat at 100.
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": shares0}, {"AAPL": 100.0}), {})
+    trim_orders = [o for o in action["orders"] if o["asset"] == "AAPL"]
+    assert len(trim_orders) == 1
+    assert trim_orders[0]["qty"] < 0  # a sell (ratchet down)
+    assert s._open["AAPL"]["f"] < booked_f
+    assert s._open["AAPL"]["anchor_close"] == 100.0  # D12: anchor unchanged
+    assert s.events[-1].kind == "trim"
+
+
+def test_no_add_up_when_p_rises():
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    # Enter at p=0.36 (small f), then p rises to 0.50 → must NOT add up.
+    s = _strategy(
+        {d0: [("AAPL", 0.36, 0.3, 0.45)], d1: [("AAPL", 0.50, 0.4, 0.6)]}, K=1
+    )
+    s(_mk_state(5, d0, 100_000, {}, {"AAPL": 100.0}), {})
+    shares0 = s.events[-1].shares_after
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": shares0}, {"AAPL": 100.0}), {})
+    # AAPL already held → not re-entered; p rose → no trim → no order for AAPL.
+    aapl_orders = [o for o in (action["orders"] if action else []) if o["asset"] == "AAPL"]
+    assert aapl_orders == []
+
+
+def test_rebalance_off_holds_until_label_exit():
+    """§7 counterfactual: enable_rebalance=False → no breakeven/trim."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy(
+        {d0: [("AAPL", 0.40, 0.3, 0.5)], d1: [("AAPL", 0.30, 0.2, 0.4)]},
+        enable_rebalance=False,
+    )
+    _enter(s, d0)
+    # p_today below breakeven would exit if rebalance ON; here it must hold.
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 100.0}), {})
+    assert "AAPL" in s._open
+    aapl = [o for o in (action["orders"] if action else []) if o["asset"] == "AAPL"]
+    assert aapl == []
+
+
+# -- floor + cap -------------------------------------------------------------
+def test_room_cap_drops_later_picks():
+    """Gross cap binds: first high-p pick consumes ~all room, next dropped."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy(
+        {d: [("AAA", 0.40, 0.3, 0.5), ("BBB", 0.40, 0.3, 0.5)]}, K=3
+    )
+    action = s(_mk_state(5, d, 100_000, {}, {"AAA": 100.0, "BBB": 100.0}), {})
+    # AAA notional_f = 1.0 → room exhausted → BBB dropped.
+    assert [o["asset"] for o in action["orders"]] == ["AAA"]
+    assert "BBB" not in s._open
+
+
+# -- integration through the real engine ------------------------------------
+def _ohlcv(dates, path):
+    """Build OHLCV where close follows `path`; open = prior close (flat-ish)."""
+    close = np.asarray(path, dtype=float)
+    return pd.DataFrame(
+        {
+            "open": close,
+            "high": close + 1.0,
+            "low": close - 1.0,
+            "close": close,
+            "volume": np.full(len(close), 1e6),
+        },
+        index=dates,
+    )
+
+
+def test_integration_through_engine_runs_and_trades():
+    dates = pd.date_range("2025-01-01", periods=20, freq="B")
+    # AAPL climbs to +10% then we expect a target exit; MSFT flat.
+    aapl_path = np.linspace(100, 130, 20)
+    msft_path = np.full(20, 200.0)
+    feeds = {"equities": {"AAPL": _ohlcv(dates, aapl_path), "MSFT": _ohlcv(dates, msft_path)}}
+    # Signal on day index 5 (the first decision step at lookback=5).
+    preds = {dates[5]: [("AAPL", 0.45, 0.35, 0.55)]}
+    # also keep AAPL present on later days so rebalance can evaluate it
+    for i in range(6, 20):
+        preds[dates[i]] = [("AAPL", 0.45, 0.35, 0.55)]
+    strat = _strategy(preds, horizon_days=50)
+    bt = Backtest(feeds, lookback=5, initial_cash=100_000.0, fill_mode="next_open")
+    history = run_strategy(bt, strat)
+    assert len(history) > 0
+    # An entry happened and a target exit eventually fired.
+    kinds = [e.kind for e in strat.events]
+    assert "entry" in kinds
+    triggers = [e.trigger for e in strat.events if e.kind == "exit"]
+    assert "target" in triggers
+    # Final equity should have grown (rode AAPL up ~10%).
+    final_equity = history[-1][0]["portfolio"]["equity"]
+    assert final_equity > 100_000.0
