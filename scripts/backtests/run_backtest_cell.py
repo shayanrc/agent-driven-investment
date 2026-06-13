@@ -63,6 +63,11 @@ def main() -> None:
     ap.add_argument("--name", required=True)
     ap.add_argument("--c", type=float, default=0.25)
     ap.add_argument("--selection-bound", default="mean", choices=["mean", "low"])
+    ap.add_argument("--selection-mode", default="breakeven", choices=["breakeven", "rank"],
+                    help="rank = top-K by p-rank, no absolute breakeven gate (V1.2)")
+    ap.add_argument("--sizing-mode", default="kelly", choices=["kelly", "equal", "rank_kelly"])
+    ap.add_argument("--rank-kelly-p", type=float, default=None,
+                    help="eval hit-rate for rank_kelly sizing (default: eval R-p@K from the cell)")
     ap.add_argument("--predictions", default=None,
                     help="default: <cell>/predictions/test.csv")
     args = ap.parse_args()
@@ -83,6 +88,23 @@ def main() -> None:
 
     # Calibrator on VAL; predictions = published test.csv.
     cal, _ = fit_calibrator(cell)
+
+    # rank_kelly sizing needs a per-pick win probability; estimate it leak-free
+    # as the cell's EVAL R-precision@K (fraction of top-K picks that are
+    # label-positives), NOT the test window.
+    rank_kelly_p = args.rank_kelly_p
+    if args.sizing_mode == "rank_kelly" and rank_kelly_p is None:
+        ev = pd.read_csv(cell / "predictions" / "eval.csv", parse_dates=["date"])
+        hits = []
+        for _, g in ev.groupby("date"):
+            R = int(g["y_true"].sum())
+            if R == 0:
+                continue
+            topk = g.nlargest(K, "p_calibrated")
+            hits.append(topk["y_true"].sum() / min(K, R))
+        rank_kelly_p = float(pd.Series(hits).mean())
+        print(f"[rank_kelly] eval R-p@{K} = {rank_kelly_p:.3f} (used as per-pick win prob)")
+
     pred_csv = Path(args.predictions) if args.predictions else cell / "predictions" / "test.csv"
     test = pd.read_csv(pred_csv, parse_dates=["date"])
     preds = _predictions_dict(test, cal)
@@ -114,6 +136,8 @@ def main() -> None:
         predictions=preds, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
+        selection_mode=args.selection_mode, sizing_mode=args.sizing_mode,
+        rank_kelly_p=rank_kelly_p,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history); eq = eq[eq.index <= comparison_end]
@@ -144,7 +168,9 @@ def main() -> None:
     pd.DataFrame([asdict(e) for e in strat.events]).to_csv(out / "picks.csv", index=False)
     summary = {
         "cell": cell.name,
-        "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K},
+        "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K,
+                   "selection_mode": args.selection_mode, "sizing_mode": args.sizing_mode,
+                   "rank_kelly_p": rank_kelly_p},
         "geometry": {"universe": universe, "win": WIN, "loss": LOSS, "horizon": HORIZON,
                      "breakeven_p": BREAKEVEN_P, "index": idx_label},
         "window": {"test_start": str(t_start.date()), "test_end": str(t_end.date()),

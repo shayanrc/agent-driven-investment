@@ -1,0 +1,11 @@
+run,cell,sizing,c,rkp,ret,dd,exp,ent,tk,idx_ret,idx_dd,ewb
+cell5_revalreg_equal,nasdaq100_up_10pct_50d_dd5pct_agentloop_v1,equal,1.0,,0.1235,-0.0523,0.289,9,6,0.2535,-0.1419,0.1815
+cell5_revalreg_rankkelly,nasdaq100_up_10pct_50d_dd5pct_agentloop_v1,rank_kelly,0.5,0.5676037483266398,0.0655,-0.1339,0.438,6,4,0.2535,-0.1419,0.1815
+ndx40pct50d_equal,nasdaq100_up_40pct_50d_dd20pct_agentloop_m,equal,1.0,,0.6149,-0.0757,0.263,6,6,0.3682,-0.1212,0.3652
+ndx40pct50d_rankkelly,nasdaq100_up_40pct_50d_dd20pct_agentloop_m,rank_kelly,0.5,0.3375209380234507,0.0,0.0,0.0,0,0,0.3682,-0.1212,0.3652
+r1k_50pct200d_equal,russell1000_up_50pct_200d_dd25pct_aligned_,equal,1.0,,0.4914,-0.2164,0.544,12,10,0.4024,-0.189,0.2974
+r1k_50pct200d_rankkelly,russell1000_up_50pct_200d_dd25pct_aligned_,rank_kelly,0.5,0.7316666666666667,0.2675,-0.1896,0.392,2,2,0.4024,-0.189,0.2974
+sp500_20pct25d_equal,sp500_up_20pct_25d_dd10pct_agentloop,equal,1.0,,0.5814,-0.0727,0.559,13,8,0.0837,-0.091,0.0736
+sp500_20pct25d_rankkelly,sp500_up_20pct_25d_dd10pct_agentloop,rank_kelly,0.5,0.3500837520938023,0.1798,-0.1012,0.663,35,17,0.0837,-0.091,0.0736
+sp500_50pct50d_equal,sp500_up_50pct_50d_dd25pct_agentloop,equal,1.0,,0.1246,-0.0927,0.445,4,4,0.0837,-0.091,0.0736
+sp500_50pct50d_rankkelly,sp500_up_50pct_50d_dd25pct_agentloop,rank_kelly,0.5,0.20833333333333331,0.0,0.0,0.0,0,0,0.0837,-0.091,0.0736

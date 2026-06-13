@@ -87,6 +87,10 @@ class TopKDailyKellyLabelExit:
         enable_rebalance: bool = True,  # §7 "daily rebalance OFF" counterfactual
         cash_buffer: float = 0.02,
         selection_bound: str = "mean",  # "mean" | "low" (plan §10 Q10a)
+        selection_mode: str = "breakeven",  # "breakeven" | "rank" (V1.2)
+        sizing_mode: str = "kelly",  # "kelly" | "equal" | "rank_kelly" (V1.2)
+        rank_kelly_p: float | None = None,  # eval hit-rate for rank_kelly sizing
+        enable_breakeven_exit: bool | None = None,  # None → auto (off in rank mode)
     ) -> None:
         self._preds = {pd.Timestamp(k): v for k, v in predictions.items()}
         self.K = K
@@ -111,6 +115,34 @@ class TopKDailyKellyLabelExit:
         # credible bound p_low (conservative — rejects picks whose lower band
         # doesn't clear breakeven). Ranking + sizing stay on p_mean either way.
         self.selection_bound = selection_bound
+
+        # --- V1.2 rank-sizing modes (rare-event cells whose calibrated p never
+        # clears the absolute Kelly breakeven; see _004 memo). ---------------
+        if selection_mode not in ("breakeven", "rank"):
+            raise ValueError(
+                f"selection_mode must be 'breakeven' or 'rank'; got {selection_mode!r}"
+            )
+        if sizing_mode not in ("kelly", "equal", "rank_kelly"):
+            raise ValueError(
+                f"sizing_mode must be 'kelly', 'equal' or 'rank_kelly'; got {sizing_mode!r}"
+            )
+        if sizing_mode == "rank_kelly" and rank_kelly_p is None:
+            raise ValueError("sizing_mode='rank_kelly' requires rank_kelly_p (eval hit-rate)")
+        # "rank" selection: take the day's top-K by p_mean WITHOUT the absolute
+        # p > breakeven gate, so a strongly-ranked rare-event cell still trades.
+        self.selection_mode = selection_mode
+        # "equal": each position = fractional_c · gross_cap / K (deploy the rank,
+        # don't size by absolute p). "rank_kelly": Kelly on the rank bucket's
+        # empirical hit-rate rank_kelly_p instead of the per-row calibrated p.
+        self.sizing_mode = sizing_mode
+        self.rank_kelly_p = rank_kelly_p
+        # In rank mode the per-row p is (by construction) below breakeven, so the
+        # breakeven EXIT would fire on every position immediately — disable it
+        # there by default. Caller can override explicitly.
+        self.enable_breakeven_exit = (
+            (selection_mode != "rank") if enable_breakeven_exit is None
+            else enable_breakeven_exit
+        )
         # next_open fills above the signal-day close in an uptrend; an order
         # sized to consume ~all cash at the close price overdraws at the open
         # and the engine rejects the WHOLE order. cash_buffer reserves a slice
@@ -140,7 +172,18 @@ class TopKDailyKellyLabelExit:
         )
 
     def _notional_f(self, p: float) -> float:
-        """fraction-at-risk → notional fraction of equity (plan §6.5)."""
+        """Per-position notional fraction of equity, by sizing_mode.
+
+        - ``kelly`` (default, plan §6.5): ``fractional_c · f_risk(p) / payoff_loss``.
+        - ``equal``: ``fractional_c · gross_cap / K`` — equal slices, p-independent
+          (deploy the rank, not the absolute probability).
+        - ``rank_kelly``: Kelly on the rank bucket's empirical hit-rate
+          ``rank_kelly_p`` instead of the per-row calibrated ``p``.
+        """
+        if self.sizing_mode == "equal":
+            return self.fractional_c * self.gross_cap / self.K
+        if self.sizing_mode == "rank_kelly":
+            return self.fractional_c * self._f_risk(self.rank_kelly_p) / self.payoff_loss
         return self.fractional_c * self._f_risk(p) / self.payoff_loss
 
     # -- helpers -------------------------------------------------------------
@@ -194,7 +237,7 @@ class TopKDailyKellyLabelExit:
                     trigger = "horizon"
                 elif tk not in p_today:
                     trigger = None  # D22: skip breakeven + trim this day
-                elif p_today[tk] <= self.breakeven_p:
+                elif self.enable_breakeven_exit and p_today[tk] <= self.breakeven_p:
                     trigger = "breakeven"
 
                 if trigger is not None:
@@ -239,8 +282,11 @@ class TopKDailyKellyLabelExit:
             [
                 (tk, pm)
                 for (tk, pm, lo, _hi) in rows
-                # Filter on the selected bound (p_mean or p_low); rank by p_mean.
-                if (lo if self.selection_bound == "low" else pm) > self.breakeven_p
+                # "rank" mode: no absolute gate — take the day's top-K by p_mean
+                # regardless of whether p clears breakeven (V1.2). "breakeven"
+                # mode: filter on the selected bound (p_mean or p_low).
+                if (self.selection_mode == "rank"
+                    or (lo if self.selection_bound == "low" else pm) > self.breakeven_p)
                 and tk not in self._open
                 and tk not in exited_today  # D14: not the same day
             ],
