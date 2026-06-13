@@ -36,7 +36,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/analog_mc", "src/backtesting", "src/data_pipelines", "src/forecasters", "src/gbdt"]
+packages = ["src/analog_mc", "src/backtesting", "src/calibration", "src/data_pipelines", "src/forecasters", "src/gbdt", "src/trading_strategies"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
