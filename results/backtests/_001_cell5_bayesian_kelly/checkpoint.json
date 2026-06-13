@@ -1,0 +1,12 @@
+{
+  "effective_n_bins": 9,
+  "ece_val": 7.162823133369207e-05,
+  "ece_eval": 0.03257759032691977,
+  "ece_delta": 0.03250596209558608,
+  "max_band_width": 0.03496207560924797,
+  "input_column": "p_calibrated",
+  "base_rate_val": 0.35182065217391306,
+  "base_rate_eval": 0.3394021739130435,
+  "gate_triggered": false,
+  "gate_reasons": []
+}
