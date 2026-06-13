@@ -109,6 +109,73 @@ def test_invalid_selection_bound_raises():
         _strategy({}, selection_bound="median")
 
 
+# -- V1.2 rank-sizing modes --------------------------------------------------
+def test_rank_mode_trades_below_breakeven():
+    """rank selection: a sub-breakeven pick (p<1/3) IS entered (gate dropped)."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.05, 0.02, 0.10)]},
+                  selection_mode="rank", sizing_mode="equal", fractional_c=1.0)
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action is not None and "AAPL" in s._open
+
+
+def test_breakeven_mode_rejects_below_breakeven():
+    """Contrast: default breakeven mode rejects the same sub-breakeven pick."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.05, 0.02, 0.10)]})
+    assert s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {}) is None
+
+
+def test_equal_sizing_fraction():
+    """equal sizing: per-position notional_f = fractional_c · gross_cap / K."""
+    s = _strategy({}, selection_mode="rank", sizing_mode="equal",
+                  fractional_c=1.0, K=3, gross_cap=1.0)
+    assert s._notional_f(0.05) == pytest.approx(1.0 / 3.0)
+    s2 = _strategy({}, selection_mode="rank", sizing_mode="equal",
+                   fractional_c=0.5, K=4, gross_cap=1.0)
+    assert s2._notional_f(0.99) == pytest.approx(0.5 * 1.0 / 4.0)  # p-independent
+
+
+def test_rank_kelly_sizes_on_bucket_hitrate():
+    """rank_kelly sizing uses rank_kelly_p (eval hit-rate), not the per-row p."""
+    s = _strategy({}, selection_mode="rank", sizing_mode="rank_kelly",
+                  rank_kelly_p=0.60, fractional_c=1.0)
+    assert s._notional_f(0.05) == pytest.approx(s._notional_f(0.99))  # p-independent
+    # Kelly on p_eff=0.60: f_risk=(b·p−q)/b, b=2 → (2·.6−.4)/2=0.4; /loss(.05)=8.0
+    assert s._notional_f(0.05) == pytest.approx(1.0 * 0.4 / 0.05)
+
+
+def test_rank_mode_disables_breakeven_exit():
+    """rank mode: a held position with sub-breakeven p_today is NOT breakeven-exited."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.05, 0.02, 0.10)], d1: [("AAPL", 0.04, 0.01, 0.08)]},
+                  selection_mode="rank", sizing_mode="equal", fractional_c=1.0)
+    s(_mk_state(5, d0, 100_000, {}, {"AAPL": 100.0}), {})
+    assert "AAPL" in s._open
+    s(_mk_state(6, d1, 100_000, {"AAPL": 300.0}, {"AAPL": 100.0}), {})  # flat price
+    assert not [e for e in s.events if e.kind == "exit"]
+    assert "AAPL" in s._open
+
+
+def test_rank_mode_still_honors_dd_exit():
+    """rank mode keeps DD/target/horizon exits."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.05, 0.02, 0.10)], d1: [("AAPL", 0.05, 0.02, 0.10)]},
+                  selection_mode="rank", sizing_mode="equal", fractional_c=1.0)
+    s(_mk_state(5, d0, 100_000, {}, {"AAPL": 100.0}), {})
+    s(_mk_state(6, d1, 100_000, {"AAPL": 300.0}, {"AAPL": 94.0}), {})  # below 95 → DD
+    assert any(e.kind == "exit" and e.trigger == "DD" for e in s.events)
+
+
+def test_invalid_rank_modes_raise():
+    with pytest.raises(ValueError, match="selection_mode"):
+        _strategy({}, selection_mode="topk")
+    with pytest.raises(ValueError, match="sizing_mode"):
+        _strategy({}, sizing_mode="kelly2")
+    with pytest.raises(ValueError, match="rank_kelly_p"):
+        _strategy({}, sizing_mode="rank_kelly")
+
+
 def test_tie_break_alphabetical(monkeypatch):
     """D21: equal p → alphabetically-lower ticker selected first."""
     d = pd.Timestamp("2025-01-02")

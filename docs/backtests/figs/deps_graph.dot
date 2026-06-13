@@ -3,7 +3,7 @@ digraph deps {
   newrank=true;
   graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
          labelloc="t", fontsize=15,
-         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-13 18:45 IST)"];
+         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-14 (V1.2 rank-sizing))"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
   edge [fontname="Helvetica", fontsize=8, color="#888888"];
 
@@ -51,7 +51,8 @@ digraph deps {
   subgraph cluster_follow { label="backtests · follow-ups (pending / gated)"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
     PROMOTE [label="promote c=0.25+mean\nas headline sizing default", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     BREAKEVEN [label="FINDING: base-rate gate\n4/5 best agent cells = 0 trades\n(calibrated p never > 1/3)", fillcolor="#a8d8c0", color="#495057"];
-    RANKSIZE [label="NEW V1.2: rank / base-rate-\nrelative sizing — deploy the\nrare-event high-AUC cells", fillcolor="#d4edda", color="#155724"];
+    RANKSIZE [label="_005 V1.2 rank-sizing — rank/equal\ndeploys the signal: 4/5 cells BEAT\nindex OOS (ndx40 +61.5%, sp500_20 +58%)", fillcolor="#a8d8c0", color="#495057"];
+    ROLLVAL [label="NEXT: rolling multi-window\nvalidation (gate to any\nalpha claim — single windows now)", fillcolor="#d4edda", color="#155724"];
     ROLLING [label="rolling monthly fresh-OOS\nseries (re-score as cache ages)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     GAPEVAL [label="signal-gap-aware eval harness\n(invested-days / cash-adj bench)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     IDFIX [label="registry id zero-pad fix\n(fold into next PR)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
@@ -79,7 +80,8 @@ digraph deps {
   M004 -> PROMOTE [color="#5a3e9e"];
   M004 -> BREAKEVEN [color="#d9534f"];
   BREAKEVEN -> RANKSIZE [color="#d9534f"];
-  RANKSIZE -> GOAL [color="#d9534f"];
+  RANKSIZE -> ROLLVAL [color="#d9534f"];
+  ROLLVAL -> GOAL [color="#d9534f"];
   INFER -> ROLLING [style=dashed];
   M001 -> GAPEVAL [style=dashed];
   M004DOC -> IDFIX [style=dashed];
