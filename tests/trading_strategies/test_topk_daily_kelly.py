@@ -77,6 +77,38 @@ def test_below_breakeven_not_entered():
     assert not s._open
 
 
+def test_plow_selection_rejects_wide_band_pick():
+    """selection_bound='low': p_mean clears breakeven but p_low doesn't → rejected."""
+    d = pd.Timestamp("2025-01-02")
+    # p_mean 0.40 > breakeven, but p_low 0.30 < breakeven (1/3) → wide band.
+    s = _strategy({d: [("AAPL", 0.40, 0.30, 0.55)]}, selection_bound="low")
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action is None
+    assert not s._open
+
+
+def test_plow_selection_accepts_tight_band_pick():
+    """selection_bound='low': p_low above breakeven → accepted."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.40, 0.35, 0.45)]}, selection_bound="low")
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action is not None
+    assert "AAPL" in s._open
+
+
+def test_mean_selection_default_ignores_plow():
+    """Default selection_bound='mean': wide band still entered on p_mean."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy({d: [("AAPL", 0.40, 0.10, 0.55)]})  # very wide band
+    action = s(_mk_state(5, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert "AAPL" in s._open
+
+
+def test_invalid_selection_bound_raises():
+    with pytest.raises(ValueError, match="selection_bound"):
+        _strategy({}, selection_bound="median")
+
+
 def test_tie_break_alphabetical(monkeypatch):
     """D21: equal p → alphabetically-lower ticker selected first."""
     d = pd.Timestamp("2025-01-02")

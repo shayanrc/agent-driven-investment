@@ -1,0 +1,64 @@
+{
+  "config": {
+    "fractional_c": 0.25,
+    "selection_bound": "low",
+    "K": 3,
+    "target_return": 0.1,
+    "stop_drawdown": 0.05
+  },
+  "window": {
+    "fresh_start": "2026-03-13",
+    "fresh_end": "2026-06-12",
+    "comparison_end": "2026-06-12",
+    "full_resolve_cutoff": "2026-04-01"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 113158.24058303834,
+    "total_return": 0.1315824058303834,
+    "cagr": 0.5322430382899364,
+    "max_dd": -0.0518970013836344,
+    "n_trades": 47,
+    "gross_exposure_avg": 0.5153478623434709
+  },
+  "benchmarks": {
+    "ndx_bh": {
+      "start": 100000.00000000001,
+      "end": 121554.80434327379,
+      "total_return": 0.2155480434327377,
+      "cagr": 1.156702572804308,
+      "max_dd": -0.07372914051739587,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.0000000001,
+      "end": 115412.7453550541,
+      "total_return": 0.1541274535505397,
+      "cagr": 0.7584265263944834,
+      "max_dd": -0.06534391340005041,
+      "n_trades": 91,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 107072.79493947265,
+      "total_return": 0.07072794939472637,
+      "cagr": 0.30876481525365596,
+      "max_dd": -0.05228238545114894,
+      "n_trades": 19,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 20,
+    "exits": 18,
+    "trims": 9,
+    "open_at_end_unresolved": 2
+  },
+  "exit_triggers": {
+    "breakeven": 11,
+    "DD": 4,
+    "target": 3
+  }
+}

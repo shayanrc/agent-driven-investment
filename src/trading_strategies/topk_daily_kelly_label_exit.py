@@ -86,6 +86,7 @@ class TopKDailyKellyLabelExit:
         close_col: int = 3,  # OHLCV → close is index 3
         enable_rebalance: bool = True,  # §7 "daily rebalance OFF" counterfactual
         cash_buffer: float = 0.02,
+        selection_bound: str = "mean",  # "mean" | "low" (plan §10 Q10a)
     ) -> None:
         self._preds = {pd.Timestamp(k): v for k, v in predictions.items()}
         self.K = K
@@ -101,6 +102,15 @@ class TopKDailyKellyLabelExit:
         self.floor_pct_room = floor_pct_room
         self.close_col = close_col
         self.enable_rebalance = enable_rebalance
+        if selection_bound not in ("mean", "low"):
+            raise ValueError(
+                f"selection_bound must be 'mean' or 'low'; got {selection_bound!r}"
+            )
+        # Which probability the ENTRY filter clears against breakeven (D2/§10
+        # Q10a). "mean" (default) filters on p_mean; "low" filters on the 2.5%
+        # credible bound p_low (conservative — rejects picks whose lower band
+        # doesn't clear breakeven). Ranking + sizing stay on p_mean either way.
+        self.selection_bound = selection_bound
         # next_open fills above the signal-day close in an uptrend; an order
         # sized to consume ~all cash at the close price overdraws at the open
         # and the engine rejects the WHOLE order. cash_buffer reserves a slice
@@ -228,8 +238,9 @@ class TopKDailyKellyLabelExit:
         candidates = sorted(
             [
                 (tk, pm)
-                for (tk, pm, _lo, _hi) in rows
-                if pm > self.breakeven_p
+                for (tk, pm, lo, _hi) in rows
+                # Filter on the selected bound (p_mean or p_low); rank by p_mean.
+                if (lo if self.selection_bound == "low" else pm) > self.breakeven_p
                 and tk not in self._open
                 and tk not in exited_today  # D14: not the same day
             ],
