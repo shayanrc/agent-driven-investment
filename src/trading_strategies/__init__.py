@@ -53,4 +53,16 @@ class PerPredictionSizer(Protocol):
     ) -> float: ...
 
 
-__all__ = ["PortfolioSizer", "PerPredictionSizer"]
+# Imported at the END so the protocols above are already defined when the
+# strategy module does `from trading_strategies import PerPredictionSizer`.
+from trading_strategies.topk_daily_kelly_label_exit import (  # noqa: E402
+    StrategyEvent,
+    TopKDailyKellyLabelExit,
+)
+
+__all__ = [
+    "PortfolioSizer",
+    "PerPredictionSizer",
+    "TopKDailyKellyLabelExit",
+    "StrategyEvent",
+]
