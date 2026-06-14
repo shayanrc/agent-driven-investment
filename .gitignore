@@ -56,3 +56,5 @@ logs/
 
 # Bash-driven test scratch (task #191 — run_agent_loop_resumable.sh)
 tests/gbdt/tmp/
+# Large regenerable fresh-prediction CSVs (rebuild via infer_fresh_predictions)
+results/backtests/_008_roll/*_fresh.csv
