@@ -28,26 +28,96 @@ import numpy as np
 import pandas as pd
 import yaml
 
+import glob
+import json
+
 from gbdt import features as gbdt_features
 from gbdt.data import load_panel
 from gbdt.model import XGBoostModel
 
-UNIVERSE = "nasdaq100"
 VALIDATION_TOL = 1e-4
+CACHE_DIR = "data/gbdt_feature_cache"
 
 
-def build_scores(cell: Path, end: str) -> pd.DataFrame:
+def _training_panel_index(universe: str, test_keys: set) -> tuple[pd.Index, pd.Timestamp] | None:
+    """Find the cell's training panel row-set from the universe feature cache.
+
+    A provider gap-fill during a cache refresh can ADD historical (date,ticker)
+    rows the model never trained on. For path-dependent features (stateful
+    F16 ``*_outside_band`` running counts, cross-sectional ranks/z-scores), one
+    inserted row perturbs every downstream value → inference diverges from the
+    model's stored predictions (the `_006` ndx40 abort: a single backfilled
+    AZN 2026-02-09 bar shifted p_raw by 3.3e-2).
+
+    The cell's cached universe feature-matrix index IS the training panel row
+    set (``build_feature_matrix`` preserves the panel index). We locate the
+    matching cache parquet (same universe, index ⊇ the cell's test rows) and
+    return its (date,ticker) index + max date, so the caller can drop gap-fill
+    rows and reproduce the training panel exactly. Returns None if not found
+    (caller falls back to the raw panel + the strict self-check as the guard).
+    """
+    cands = []
+    for kf in glob.glob(f"{CACHE_DIR}/*.key.json"):
+        try:
+            pl = json.load(open(kf)).get("payload", {})
+            if pl.get("universe") != universe:
+                continue
+            pf = kf.replace(".key.json", ".parquet")
+            idx = pd.read_parquet(pf, columns=[]).index  # index-only read
+            dates = pd.to_datetime(idx.get_level_values("date"))
+            keys = set(zip(dates, idx.get_level_values("ticker")))
+            if test_keys.issubset(keys):
+                cands.append((dates.max(), idx, keys))
+        except Exception:
+            continue
+    if not cands:
+        return None
+    # Smallest snapshot that still covers the test rows = the training matrix
+    # (not a later regen built on a longer panel).
+    snap, idx, _ = min(cands, key=lambda c: c[0])
+    return idx, snap
+
+
+def build_scores(cell: Path, end: str, *, align_panel: bool = True) -> pd.DataFrame:
     """Return a (date,ticker)-indexed frame with column p_raw over [.., end]."""
     feats = yaml.safe_load((cell / "features.yaml").read_text())["features"]
     hp = yaml.safe_load((cell / "hp.yaml").read_text())["hp"]
+    universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
 
     # Full-history panel so the 200-day rolling features are warm; cache_only
     # (the refresh already populated it).
-    panel_obj = load_panel(UNIVERSE, start="1990-01-01", end=end, cache_only=True)
+    panel_obj = load_panel(universe, start="1990-01-01", end=end, cache_only=True)
+    panel = panel_obj.panel
+
+    # Align the panel to the model's training row-set: drop provider gap-fill
+    # rows added after training (≤ snapshot) that the model never saw. Fresh
+    # rows (> snapshot) are kept — they are the genuine OOS extension.
+    if align_panel:
+        test = pd.read_csv(cell / "predictions" / "test.csv", parse_dates=["date"])
+        test_keys = set(zip(test["date"], test["ticker"]))
+        found = _training_panel_index(universe, test_keys)
+        if found is not None:
+            train_idx, snap = found
+            train_keys = set(zip(pd.to_datetime(train_idx.get_level_values("date")),
+                                 train_idx.get_level_values("ticker")))
+            pdates = panel.index.get_level_values("date")
+            ptk = panel.index.get_level_values("ticker")
+            # gap-fill rows: in the panel, dated ≤ snapshot, absent from training
+            drop = [(d <= snap) and ((d, t) not in train_keys)
+                    for d, t in zip(pdates, ptk)]
+            n_drop = sum(drop)
+            if n_drop:
+                gap = sorted({(str(d.date()), t) for d, t, dr
+                              in zip(pdates, ptk, drop) if dr})
+                print(f"[align] dropping {n_drop} gap-fill row(s) the model never trained on: "
+                      f"{gap[:5]}{'...' if len(gap) > 5 else ''}")
+                panel = panel[[not d for d in drop]]
+        else:
+            print("[align] no training feature-matrix in cache; using raw panel "
+                  "(strict self-check still guards faithfulness)")
+
     X = gbdt_features.build_feature_matrix(
-        panel_obj.panel,
-        panel_obj.index_series,
-        annualization=panel_obj.annualization_factor,
+        panel, panel_obj.index_series, annualization=panel_obj.annualization_factor,
     ).dropna(axis=1, how="all")
 
     missing = [f for f in feats if f not in X.columns]
@@ -85,11 +155,14 @@ def main() -> None:
     ap.add_argument("--fresh-after", default=None,
                     help="emit predictions strictly after this date "
                          "(default: the cell's test.csv max date)")
+    ap.add_argument("--no-align", action="store_true",
+                    help="skip panel-alignment (don't drop post-training gap-fill rows)")
     args = ap.parse_args()
     cell = Path(args.cell)
+    universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
 
-    print(f"[infer] building features + scoring {UNIVERSE} through {args.end} ...")
-    scores = build_scores(cell, args.end)
+    print(f"[infer] building features + scoring {universe} through {args.end} ...")
+    scores = build_scores(cell, args.end, align_panel=not args.no_align)
     scores["date"] = pd.to_datetime(scores["date"])
 
     print("[validate] reproducing predictions/test.csv ...")
