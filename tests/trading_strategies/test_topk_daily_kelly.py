@@ -205,6 +205,39 @@ def test_prob_weight_flat_p_approximates_equal():
         assert fv == pytest.approx(0.25, abs=1e-6)  # flat p → equal 1/K slices
 
 
+def test_prob_weight_alpha_concentrates():
+    """_014: prob_weight_alpha>1 sharpens weights ∝ p**alpha → more on the top pick.
+
+    p = 0.6/0.5/0.4. alpha=1 → 0.6/0.5/0.4 normalized; alpha=4 amplifies the gap so
+    the top pick's share rises and the bottom pick's falls (toward concentration).
+    """
+    d = pd.Timestamp("2025-01-02")
+    picks = [("AAA", 0.60, 0.5, 0.7), ("BBB", 0.50, 0.4, 0.6), ("CCC", 0.40, 0.3, 0.5)]
+    closes = {"AAA": 100.0, "BBB": 100.0, "CCC": 100.0}
+
+    def top_share(alpha):
+        s = _strategy({d: picks}, selection_mode="rank", sizing_mode="prob_weight",
+                      prob_weight_alpha=alpha, fractional_c=1.0, K=3, gross_cap=1.0,
+                      floor_pct_equity=0.0, floor_pct_room=0.0)
+        s(_mk_state(5, d, 100_000, {}, closes), {})
+        return s._open["AAA"]["f"] if "AAA" in s._open else 0.0
+
+    s1, s4 = top_share(1.0), top_share(4.0)
+    assert s4 > s1                      # alpha=4 concentrates more on the top pick
+    assert s1 == pytest.approx(0.6 / 1.5, abs=1e-6)   # alpha=1 → raw-p share
+    assert s4 == pytest.approx(0.6**4 / (0.6**4 + 0.5**4 + 0.4**4), abs=1e-6)
+
+
+def test_prob_weight_alpha_default_is_raw_p():
+    """alpha defaults to 1.0 → identical to _013 raw-p prob_weight."""
+    d = pd.Timestamp("2025-01-02")
+    picks = [("AAA", 0.60, 0.5, 0.7), ("BBB", 0.30, 0.2, 0.4)]
+    s = _strategy({d: picks}, selection_mode="rank", sizing_mode="prob_weight",
+                  fractional_c=1.0, K=2, gross_cap=1.0)
+    s(_mk_state(5, d, 100_000, {}, {"AAA": 100.0, "BBB": 100.0}), {})
+    assert s._open["AAA"]["f"] == pytest.approx(0.60 / 0.90, abs=1e-6)
+
+
 def test_rank_kelly_sizes_on_bucket_hitrate():
     """rank_kelly sizing uses rank_kelly_p (eval hit-rate), not the per-row p."""
     s = _strategy({}, selection_mode="rank", sizing_mode="rank_kelly",

@@ -62,6 +62,9 @@ def main() -> None:
                     choices=["equal", "prob_weight", "kelly", "rank_kelly"],
                     help="position sizing among the top-K (default equal); "
                          "prob_weight sizes each ∝ calibrated p (_013)")
+    ap.add_argument("--prob-weight-alpha", type=float, default=1.0,
+                    help="sharpen prob_weight: weight ∝ p**alpha (α=1 raw p; α>1 "
+                         "concentrates on the highest-p picks) (_014)")
     ap.add_argument("--step", type=int, default=5, help="rolling-origin stride (trading days)")
     args = ap.parse_args()
     cell = Path(args.cell); out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -104,7 +107,7 @@ def main() -> None:
         predictions=preds, K=args.k, target_return=WIN, stop_drawdown=LOSS,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_mode="rank",
-        sizing_mode=args.sizing_mode)
+        sizing_mode=args.sizing_mode, prob_weight_alpha=args.prob_weight_alpha)
     hist = run_strategy(bt, strat)
     eq = _equity_from_history(hist)
     eq = eq[(eq.index >= oos_start) & (eq.index <= comparison_end)]
@@ -138,8 +141,9 @@ def main() -> None:
     summary = {
         "cell": cell.name, "name": args.name,
         "geometry": {"universe": universe, "horizon": HORIZON, "index": idx_label},
-        "config": {"selection_mode": "rank", "sizing_mode": "equal", "c": args.c,
-                   "rolling_window_days": W, "stride": args.step},
+        "config": {"selection_mode": "rank", "sizing_mode": args.sizing_mode,
+                   "K": args.k, "prob_weight_alpha": args.prob_weight_alpha,
+                   "c": args.c, "rolling_window_days": W, "stride": args.step},
         "oos": {"start": str(oos_start.date()), "end": str(comparison_end.date()),
                 "signal_days": int(full.date.nunique())},
         "full_oos": {"strat_total_return": round(full_sm["total_return"], 4),
