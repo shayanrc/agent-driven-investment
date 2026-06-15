@@ -56,6 +56,8 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--c", type=float, default=1.0)
+    ap.add_argument("--k", type=int, default=K,
+                    help="top-K daily picks (default 3); widen to dilute low top-1 precision (_012)")
     ap.add_argument("--step", type=int, default=5, help="rolling-origin stride (trading days)")
     args = ap.parse_args()
     cell = Path(args.cell); out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -95,7 +97,7 @@ def main() -> None:
     bt = Backtest(feeds, lookback=LOOKBACK, initial_cash=INITIAL_CASH,
                   fill_mode="next_open", gap_policy="ffill_zero_volume")
     strat = TopKDailyKellyLabelExit(
-        predictions=preds, K=K, target_return=WIN, stop_drawdown=LOSS,
+        predictions=preds, K=args.k, target_return=WIN, stop_drawdown=LOSS,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_mode="rank", sizing_mode="equal")
     hist = run_strategy(bt, strat)

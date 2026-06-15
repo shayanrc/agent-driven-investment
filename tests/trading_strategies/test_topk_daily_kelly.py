@@ -136,6 +136,41 @@ def test_equal_sizing_fraction():
     assert s2._notional_f(0.99) == pytest.approx(0.5 * 1.0 / 4.0)  # p-independent
 
 
+def test_equal_sizing_wide_k_enters():
+    """_012 regression: equal sizing at wide K must enter.
+
+    The old K-independent dust floor (max(5% equity, 10% room)) rejected every
+    legitimate 1/K slice at K>=20 (5% slice < 10%-of-room floor on the first
+    entry) → 0 entries forever. The equal-mode floor (half the intended slice)
+    must let a full slice through.
+    """
+    d = pd.Timestamp("2025-01-02")
+    picks = [(f"T{i:02d}", 0.05, 0.02, 0.10) for i in range(25)]  # 25 candidates
+    closes = {f"T{i:02d}": 100.0 for i in range(25)}
+    s = _strategy({d: picks}, selection_mode="rank", sizing_mode="equal",
+                  fractional_c=1.0, K=20, gross_cap=1.0)
+    action = s(_mk_state(5, d, 100_000, {}, closes), {})
+    assert action is not None and action["type"] == "order"
+    # All 20 top-K equal slices (5% each) clear the half-slice floor (2.5%).
+    assert len(action["orders"]) == 20
+    assert len(s._open) == 20
+
+
+def test_equal_sizing_floor_still_drops_dust():
+    """The equal-mode floor still drops a slice squeezed below half by tiny room."""
+    d = pd.Timestamp("2025-01-02")
+    # K=3 → intended slice 1/3; floor = 1/6. Pre-fill room so only ~10% remains,
+    # squeezing actual_f (=min(1/3, room)) to 0.10 < floor 1/6 → dropped.
+    s = _strategy({d: [("AAPL", 0.05, 0.02, 0.10)]},
+                  selection_mode="rank", sizing_mode="equal", fractional_c=1.0,
+                  K=3, gross_cap=1.0)
+    s._open = {f"H{i}": {"entry_step": 0, "anchor_close": 100.0, "f": 0.30}
+               for i in range(3)}  # exposure 0.90 → room 0.10
+    action = s(_mk_state(6, d, 100_000, {}, {"AAPL": 100.0}), {})
+    assert action is None or not any(o["asset"] == "AAPL"
+                                     for o in (action or {}).get("orders", []))
+
+
 def test_rank_kelly_sizes_on_bucket_hitrate():
     """rank_kelly sizing uses rank_kelly_p (eval hit-rate), not the per-row p."""
     s = _strategy({}, selection_mode="rank", sizing_mode="rank_kelly",
