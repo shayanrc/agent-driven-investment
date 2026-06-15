@@ -88,8 +88,9 @@ class TopKDailyKellyLabelExit:
         cash_buffer: float = 0.02,
         selection_bound: str = "mean",  # "mean" | "low" (plan §10 Q10a)
         selection_mode: str = "breakeven",  # "breakeven" | "rank" (V1.2)
-        sizing_mode: str = "kelly",  # "kelly" | "equal" | "rank_kelly" (V1.2)
+        sizing_mode: str = "kelly",  # "kelly"|"equal"|"rank_kelly"|"prob_weight"
         rank_kelly_p: float | None = None,  # eval hit-rate for rank_kelly sizing
+        prob_weight_alpha: float = 1.0,  # prob_weight sharpness: weight ∝ p**alpha (_014)
         enable_breakeven_exit: bool | None = None,  # None → auto (off in rank mode)
     ) -> None:
         self._preds = {pd.Timestamp(k): v for k, v in predictions.items()}
@@ -137,6 +138,13 @@ class TopKDailyKellyLabelExit:
         # empirical hit-rate rank_kelly_p instead of the per-row calibrated p.
         self.sizing_mode = sizing_mode
         self.rank_kelly_p = rank_kelly_p
+        # "prob_weight" sharpness (_014): weight ∝ p**alpha among the day's top-K.
+        # alpha=1 → raw p (flat → spreads, the _013 failure); alpha>1 amplifies the
+        # ranking's relative gaps so the book concentrates on the highest-p picks
+        # even when calibrated p is nearly flat across candidates.
+        if prob_weight_alpha <= 0:
+            raise ValueError(f"prob_weight_alpha must be > 0; got {prob_weight_alpha}")
+        self.prob_weight_alpha = prob_weight_alpha
         # In rank mode the per-row p is (by construction) below breakeven, so the
         # breakeven EXIT would fire on every position immediately — disable it
         # there by default. Caller can override explicitly.
@@ -302,9 +310,10 @@ class TopKDailyKellyLabelExit:
         # whole day's selected set, so it's computed here, not in _notional_f.
         prob_w: dict[str, float] = {}
         if self.sizing_mode == "prob_weight":
-            psum = sum(pm for _, pm in selected)
-            if psum > 0.0:
-                prob_w = {tk: self.fractional_c * self.gross_cap * (pm / psum)
+            a = self.prob_weight_alpha
+            wsum = sum(pm ** a for _, pm in selected)
+            if wsum > 0.0:
+                prob_w = {tk: self.fractional_c * self.gross_cap * (pm ** a / wsum)
                           for tk, pm in selected}
         equal_slice = self.fractional_c * self.gross_cap / self.K
         for tk, pm in selected:
