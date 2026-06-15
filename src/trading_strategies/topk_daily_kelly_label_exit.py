@@ -297,7 +297,17 @@ class TopKDailyKellyLabelExit:
                 break
             intended_f = self._notional_f(pm)
             actual_f = min(intended_f, room)
-            floor = max(self.floor_pct_equity, self.floor_pct_room * room)
+            if self.sizing_mode == "equal":
+                # Equal slices are intentionally ~gross_cap/K. The K-independent
+                # dust floor (max(5% equity, 10% room)) wrongly rejects every
+                # legitimate slice at wide K — e.g. K=20 → 5% slices < 10%-of-room
+                # floor on the first entry → nothing enters, room never shrinks,
+                # 0 entries forever. Floor at half the intended slice instead:
+                # a full 1/K slice always clears, while a slice squeezed below
+                # half by remaining room/cash is still dropped as genuine dust.
+                floor = 0.5 * intended_f
+            else:
+                floor = max(self.floor_pct_equity, self.floor_pct_room * room)
             if actual_f < floor:
                 continue  # drop this entry, try the next candidate
             c = self._close(state, tk)
