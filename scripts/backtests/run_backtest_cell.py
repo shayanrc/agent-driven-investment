@@ -53,6 +53,11 @@ INDEX_BY_UNIVERSE = {
     "nasdaq100": ("INDEX:^NDX", "NDX"),
     "sp500": ("INDEX:^SPX", "SPX"),
     "russell1000": ("INDEX:^SPX", "SPX (proxy: ^RUI uncached)"),
+    # NSE universes: indices use the NIFTY: prefix (not INDEX:), routed to the
+    # nse_equities table by gbdt.data._cache_read. NIFTY:500 is the Nifty 500
+    # total-market index — the natural benchmark for the nifty500 universe.
+    "nifty500": ("NIFTY:500", "NIFTY500"),
+    "nifty50": ("NIFTY:50", "NIFTY50"),
 }
 
 
