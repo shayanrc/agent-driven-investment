@@ -1,0 +1,43 @@
+{
+  "cell": "nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
+  "name": "ndx40_eq_c25",
+  "geometry": {
+    "universe": "nasdaq100",
+    "horizon": 50,
+    "index": "NDX"
+  },
+  "config": {
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "K": 3,
+    "prob_weight_alpha": 1.0,
+    "cost_bps": 25.0,
+    "c": 1.0,
+    "rolling_window_days": 50,
+    "stride": 5
+  },
+  "oos": {
+    "start": "2025-06-05",
+    "end": "2026-06-12",
+    "signal_days": 144
+  },
+  "full_oos": {
+    "strat_total_return": 1.1856,
+    "strat_max_dd": -0.0995,
+    "idx_total_return": 0.3754,
+    "n_entries": 11,
+    "avg_gross_exp": 0.3757
+  },
+  "rolling": {
+    "n_windows": 42,
+    "window_days": 50,
+    "stride": 5,
+    "frac_excess_positive": 0.571,
+    "median_excess": 0.0619,
+    "mean_excess": 0.1209,
+    "p25_excess": -0.0442,
+    "p75_excess": 0.2833,
+    "min_excess": -0.0991,
+    "max_excess": 0.4709
+  }
+}
