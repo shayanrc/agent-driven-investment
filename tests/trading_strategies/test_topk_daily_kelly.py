@@ -171,6 +171,40 @@ def test_equal_sizing_floor_still_drops_dust():
                                      for o in (action or {}).get("orders", []))
 
 
+def test_prob_weight_sizes_proportional_to_p():
+    """_013 prob_weight: top-K positions sized ∝ calibrated p, summing to
+    fractional_c·gross_cap; higher-p picks get bigger books (auto-concentration).
+    """
+    d = pd.Timestamp("2025-01-02")
+    # three picks, p = 0.6 / 0.3 / 0.1 → weights 0.6 / 0.3 / 0.1 of gross_cap.
+    picks = [("AAA", 0.60, 0.5, 0.7), ("BBB", 0.30, 0.2, 0.4), ("CCC", 0.10, 0.05, 0.15)]
+    closes = {"AAA": 100.0, "BBB": 100.0, "CCC": 100.0}
+    s = _strategy({d: picks}, selection_mode="rank", sizing_mode="prob_weight",
+                  fractional_c=1.0, K=3, gross_cap=1.0)
+    s(_mk_state(5, d, 100_000, {}, closes), {})
+    f = {tk: st["f"] for tk, st in s._open.items()}
+    # AAA twice BBB, BBB thrice CCC; book sums to ~gross_cap (CCC may hit the
+    # half-equal-slice dust floor at 0.10 < 0.5/3=0.167 → dropped).
+    assert f["AAA"] == pytest.approx(0.60, abs=1e-6)
+    assert f["BBB"] == pytest.approx(0.30, abs=1e-6)
+    assert "CCC" not in f  # 0.10 share < 0.167 dust floor → dropped
+    assert f["AAA"] > f["BBB"]  # higher p → bigger book (precision tilt)
+
+
+def test_prob_weight_flat_p_approximates_equal():
+    """prob_weight with equal p → equal weights (degenerates to equal sizing)."""
+    d = pd.Timestamp("2025-01-02")
+    picks = [(f"T{i}", 0.40, 0.3, 0.5) for i in range(4)]
+    closes = {f"T{i}": 100.0 for i in range(4)}
+    s = _strategy({d: picks}, selection_mode="rank", sizing_mode="prob_weight",
+                  fractional_c=1.0, K=4, gross_cap=1.0)
+    s(_mk_state(5, d, 100_000, {}, closes), {})
+    fs = [st["f"] for st in s._open.values()]
+    assert len(fs) == 4
+    for fv in fs:
+        assert fv == pytest.approx(0.25, abs=1e-6)  # flat p → equal 1/K slices
+
+
 def test_rank_kelly_sizes_on_bucket_hitrate():
     """rank_kelly sizing uses rank_kelly_p (eval hit-rate), not the per-row p."""
     s = _strategy({}, selection_mode="rank", sizing_mode="rank_kelly",

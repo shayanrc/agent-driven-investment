@@ -1,0 +1,40 @@
+{
+  "cell": "nifty500_up_50pct_25d_dd25pct_aligned",
+  "name": "nifty_50_25d_pw_k20",
+  "geometry": {
+    "universe": "nifty500",
+    "horizon": 25,
+    "index": "NIFTY500"
+  },
+  "config": {
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "c": 1.0,
+    "rolling_window_days": 25,
+    "stride": 5
+  },
+  "oos": {
+    "start": "2024-09-04",
+    "end": "2026-05-21",
+    "signal_days": 425
+  },
+  "full_oos": {
+    "strat_total_return": -0.0107,
+    "strat_max_dd": -0.0156,
+    "idx_total_return": -0.0483,
+    "n_entries": 238,
+    "avg_gross_exp": 0.0263
+  },
+  "rolling": {
+    "n_windows": 80,
+    "window_days": 25,
+    "stride": 5,
+    "frac_excess_positive": 0.525,
+    "median_excess": 0.0021,
+    "mean_excess": 0.0015,
+    "p25_excess": -0.0307,
+    "p75_excess": 0.036,
+    "min_excess": -0.1048,
+    "max_excess": 0.1136
+  }
+}
