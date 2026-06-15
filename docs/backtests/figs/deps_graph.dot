@@ -3,7 +3,7 @@ digraph deps {
   newrank=true;
   graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
          labelloc="t", fontsize=15,
-         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-15 (V1.3 nifty500 — AUC→edge does NOT transfer to NSE))"];
+         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-15 (V1.4 regime-conditioning — _009 regime hypothesis REFUTED))"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
   edge [fontname="Helvetica", fontsize=8, color="#888888"];
 
@@ -56,7 +56,8 @@ digraph deps {
     FAITHFUL [label="_007 faithful _mix inference FIXED\n(drop gap-fill AZN row) → ndx40 ROLLS:\n+121.7%, 57% windows beat NDX, med +6.6%", fillcolor="#a8d8c0", color="#495057"];
     UNIREFRESH [label="_008 sp500+r1k refreshed & rolled\nALL beat index: sp500_20 100%, sp500_50 92%,\nr1k_50 90% (3yr). AUC tracks the edge", fillcolor="#a8d8c0", color="#495057"];
     NIFTY [label="_009 nifty500 rolled (5 cells)\nUS AUC→edge does NOT transfer to NSE:\nhigh-AUC +50% cells BLEW UP (DD -37/-60%)\non a -4.8% down tape; regime is the gate", fillcolor="#a8d8c0", color="#495057"];
-    REGIME [label="NEXT: regime-conditioning\n(US bear sub-window + NSE bull sub-window)\n— does the edge flip with the tape?", fillcolor="#d4edda", color="#155724"];
+    REGIME [label="_010 regime-conditioning — HYPOTHESIS REFUTED\nedge is NOT long-beta (US ρ≈0, regime-neutral);\nregime does NOT explain US-NSE gap\n(US-down +10%/98% vs NSE-down +0.2%/53%)", fillcolor="#a8d8c0", color="#495057"];
+    FORENSICS [label="NEXT: NSE signal forensics\n(label-AUC vs permutation null;\nare top picks' +50% moves capturable?)", fillcolor="#d4edda", color="#155724"];
     BOOTSTRAP [label="disjoint windows + block\nbootstrap (honest effective-N);\ncost + sector stress", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     ROLLING [label="rolling monthly fresh-OOS\nseries (re-score as cache ages)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     GAPEVAL [label="signal-gap-aware eval harness\n(invested-days / cash-adj bench)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
@@ -91,7 +92,8 @@ digraph deps {
   FAITHFUL -> UNIREFRESH [color="#d9534f"];
   UNIREFRESH -> NIFTY [color="#d9534f"];
   NIFTY -> REGIME [color="#d9534f"];
-  REGIME -> GOAL [color="#d9534f"];
+  REGIME -> FORENSICS [color="#d9534f"];
+  FORENSICS -> GOAL [color="#d9534f"];
   BOOTSTRAP -> GOAL [style=dashed];
   INFER -> ROLLING [style=dashed];
   M001 -> GAPEVAL [style=dashed];
