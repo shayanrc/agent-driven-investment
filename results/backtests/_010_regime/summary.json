@@ -1,0 +1,20 @@
+{
+  "NSE": {
+    "n_windows": 395,
+    "n_cells": 5,
+    "pooled_spearman_excessZ_vs_idxZ": -0.247,
+    "p": 0.0
+  },
+  "US": {
+    "n_windows": 272,
+    "n_cells": 6,
+    "pooled_spearman_excessZ_vs_idxZ": -0.052,
+    "p": 0.3964
+  },
+  "ALL": {
+    "n_windows": 667,
+    "n_cells": 11,
+    "pooled_spearman_excessZ_vs_idxZ": -0.153,
+    "p": 7e-05
+  }
+}

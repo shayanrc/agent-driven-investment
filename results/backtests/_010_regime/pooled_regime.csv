@@ -1,0 +1,5 @@
+market,regime,n_windows,med_idx_ret,med_strat_ret,med_excess,winrate_excess>0
+NSE,down,215,-0.0352,-0.0349,0.0019,0.526
+NSE,up,180,0.0315,0.0085,-0.0191,0.383
+US,down,47,-0.031,0.0734,0.1001,0.979
+US,up,225,0.1047,0.1583,0.0559,0.636
