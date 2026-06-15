@@ -1,0 +1,43 @@
+{
+  "cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
+  "name": "r1k_50_eq_c10",
+  "geometry": {
+    "universe": "russell1000",
+    "horizon": 200,
+    "index": "SPX (proxy: ^RUI uncached)"
+  },
+  "config": {
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "K": 3,
+    "prob_weight_alpha": 1.0,
+    "cost_bps": 10.0,
+    "c": 1.0,
+    "rolling_window_days": 200,
+    "stride": 5
+  },
+  "oos": {
+    "start": "2023-07-27",
+    "end": "2026-06-12",
+    "signal_days": 723
+  },
+  "full_oos": {
+    "strat_total_return": 1.3315,
+    "strat_max_dd": -0.217,
+    "idx_total_return": 0.6378,
+    "n_entries": 22,
+    "avg_gross_exp": 0.6913
+  },
+  "rolling": {
+    "n_windows": 105,
+    "window_days": 200,
+    "stride": 5,
+    "frac_excess_positive": 0.905,
+    "median_excess": 0.1392,
+    "mean_excess": 0.1705,
+    "p25_excess": 0.0515,
+    "p75_excess": 0.2862,
+    "min_excess": -0.0732,
+    "max_excess": 0.543
+  }
+}

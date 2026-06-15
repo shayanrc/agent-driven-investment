@@ -65,6 +65,9 @@ def main() -> None:
     ap.add_argument("--prob-weight-alpha", type=float, default=1.0,
                     help="sharpen prob_weight: weight ∝ p**alpha (α=1 raw p; α>1 "
                          "concentrates on the highest-p picks) (_014)")
+    ap.add_argument("--cost-bps", type=float, default=0.0,
+                    help="per-side transaction cost in bps of notional (commission+"
+                         "slippage), applied on every fill; round-trip = 2× (_015)")
     ap.add_argument("--step", type=int, default=5, help="rolling-origin stride (trading days)")
     args = ap.parse_args()
     cell = Path(args.cell); out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -101,8 +104,15 @@ def main() -> None:
 
     # ONE full-OOS rank/equal back-test (late positions marked-to-market at end).
     feeds = _build_feeds(roster, oos_start - pd.Timedelta(days=20), comparison_end)
+    # Transaction-cost model (_015): per-side bps of notional on every fill
+    # (commission + slippage lumped). Round-trip cost = 2 × cost_bps.
+    commission_fn = (
+        (lambda asset, qty, price: (args.cost_bps / 1e4) * abs(qty) * price)
+        if args.cost_bps > 0 else None
+    )
     bt = Backtest(feeds, lookback=LOOKBACK, initial_cash=INITIAL_CASH,
-                  fill_mode="next_open", gap_policy="ffill_zero_volume")
+                  fill_mode="next_open", gap_policy="ffill_zero_volume",
+                  commission_fn=commission_fn)
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=args.k, target_return=WIN, stop_drawdown=LOSS,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
@@ -125,6 +135,12 @@ def main() -> None:
     se = eq.reindex(common).ffill(); xe = ix_eq.reindex(common).ffill()
     dates = list(common)
 
+    # Daily equity dump (_015): the strat + index curves on the common calendar,
+    # for the block-bootstrap (honest effective-N) and bear-sub-window analysis.
+    pd.DataFrame({"date": [d.date() for d in common],
+                  "strat_equity": se.to_numpy(), "idx_equity": xe.to_numpy()}
+                 ).to_csv(out / "daily_equity.csv", index=False)
+
     # Rolling H-day excess returns at stride `step`.
     recs = []
     W = HORIZON
@@ -143,6 +159,7 @@ def main() -> None:
         "geometry": {"universe": universe, "horizon": HORIZON, "index": idx_label},
         "config": {"selection_mode": "rank", "sizing_mode": args.sizing_mode,
                    "K": args.k, "prob_weight_alpha": args.prob_weight_alpha,
+                   "cost_bps": args.cost_bps,
                    "c": args.c, "rolling_window_days": W, "stride": args.step},
         "oos": {"start": str(oos_start.date()), "end": str(comparison_end.date()),
                 "signal_days": int(full.date.nunique())},
