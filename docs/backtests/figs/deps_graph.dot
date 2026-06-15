@@ -3,7 +3,7 @@ digraph deps {
   newrank=true;
   graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
          labelloc="t", fontsize=15,
-         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-15 (V1.6 wider-K — match K to precision; high R-p@1 wants concentration))"];
+         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-16 (V1.7 precision-weighted sizing — raw-p too flat to concentrate))"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
   edge [fontname="Helvetica", fontsize=8, color="#888888"];
 
@@ -59,7 +59,8 @@ digraph deps {
     REGIME [label="_010 regime-conditioning — HYPOTHESIS REFUTED\nedge is NOT long-beta (US ρ≈0, regime-neutral);\nregime does NOT explain US-NSE gap\n(US-down +10%/98% vs NSE-down +0.2%/53%)", fillcolor="#a8d8c0", color="#495057"];
     FORENSICS [label="_011 NSE forensics — it's the BASE RATE\nNSE AUC is real (fresh≈test) + capturable;\nbut top-1 wins 6-10% vs US 43-48% (events 5-20x rarer).\nR-p@1 (abs × lift>1), NOT AUC, predicts edge", fillcolor="#a8d8c0", color="#495057"];
     RERANK [label="_012 re-rank + wider-K — MATCH K TO PRECISION\nwider-K = risk-reducer not edge-creator;\nrescued worst NSE blow-up to ~breakeven (K=10)\nbut HURT cells that worked (high R-p@1 wants K=3)", fillcolor="#a8d8c0", color="#495057"];
-    PRECW [label="NEXT: precision-weighted sizing (bet ∝ R-p@1)\n+ re-rank lattice by FRESH R-p@1 × payoff;\nmulti-regime validation of the K-rule", fillcolor="#d4edda", color="#155724"];
+    PRECW [label="_013 precision-weighted sizing (bet ∝ p)\nraw-p too FLAT to concentrate → spreads to whole\nuniverse (r1k 890 entries): best de-risker but\nDESTROYS high-Rp@1 edge (sp500 92→38%, r1k 90→4%)", fillcolor="#a8d8c0", color="#495057"];
+    SHARPW [label="NEXT: sharper precision weights\n(p^α / 1-over-rank / top-quantile) — the version\nthat actually concentrates; cross-cell R-p@1 alloc", fillcolor="#d4edda", color="#155724"];
     BOOTSTRAP [label="disjoint windows + block\nbootstrap (honest effective-N);\ncost + sector stress", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     ROLLING [label="rolling monthly fresh-OOS\nseries (re-score as cache ages)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     GAPEVAL [label="signal-gap-aware eval harness\n(invested-days / cash-adj bench)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
@@ -97,7 +98,8 @@ digraph deps {
   REGIME -> FORENSICS [color="#d9534f"];
   FORENSICS -> RERANK [color="#d9534f"];
   RERANK -> PRECW [color="#d9534f"];
-  PRECW -> GOAL [color="#d9534f"];
+  PRECW -> SHARPW [color="#d9534f"];
+  SHARPW -> GOAL [color="#d9534f"];
   BOOTSTRAP -> GOAL [style=dashed];
   INFER -> ROLLING [style=dashed];
   M001 -> GAPEVAL [style=dashed];

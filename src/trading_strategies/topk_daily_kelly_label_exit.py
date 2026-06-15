@@ -122,9 +122,10 @@ class TopKDailyKellyLabelExit:
             raise ValueError(
                 f"selection_mode must be 'breakeven' or 'rank'; got {selection_mode!r}"
             )
-        if sizing_mode not in ("kelly", "equal", "rank_kelly"):
+        if sizing_mode not in ("kelly", "equal", "rank_kelly", "prob_weight"):
             raise ValueError(
-                f"sizing_mode must be 'kelly', 'equal' or 'rank_kelly'; got {sizing_mode!r}"
+                "sizing_mode must be 'kelly', 'equal', 'rank_kelly' or "
+                f"'prob_weight'; got {sizing_mode!r}"
             )
         if sizing_mode == "rank_kelly" and rank_kelly_p is None:
             raise ValueError("sizing_mode='rank_kelly' requires rank_kelly_p (eval hit-rate)")
@@ -292,22 +293,41 @@ class TopKDailyKellyLabelExit:
             ],
             key=lambda x: (-x[1], x[0]),  # D21: p desc, ticker asc
         )
-        for tk, pm in candidates[: self.K]:
+        selected = candidates[: self.K]
+        # "prob_weight" (_013): size each of the day's top-K ∝ its calibrated p,
+        # normalized so the book targets fractional_c·gross_cap. Unlike Kelly, it
+        # never zeros a sub-breakeven pick (so rare-event cells still deploy), and
+        # it AUTO-adapts concentration to precision: peaked p (high-precision day)
+        # → concentrated weights; flat p → near-equal spread. Normalizer needs the
+        # whole day's selected set, so it's computed here, not in _notional_f.
+        prob_w: dict[str, float] = {}
+        if self.sizing_mode == "prob_weight":
+            psum = sum(pm for _, pm in selected)
+            if psum > 0.0:
+                prob_w = {tk: self.fractional_c * self.gross_cap * (pm / psum)
+                          for tk, pm in selected}
+        equal_slice = self.fractional_c * self.gross_cap / self.K
+        for tk, pm in selected:
             if room <= 0.0:
                 break
-            intended_f = self._notional_f(pm)
-            actual_f = min(intended_f, room)
-            if self.sizing_mode == "equal":
-                # Equal slices are intentionally ~gross_cap/K. The K-independent
-                # dust floor (max(5% equity, 10% room)) wrongly rejects every
-                # legitimate slice at wide K — e.g. K=20 → 5% slices < 10%-of-room
-                # floor on the first entry → nothing enters, room never shrinks,
-                # 0 entries forever. Floor at half the intended slice instead:
-                # a full 1/K slice always clears, while a slice squeezed below
-                # half by remaining room/cash is still dropped as genuine dust.
-                floor = 0.5 * intended_f
+            if self.sizing_mode == "prob_weight":
+                intended_f = prob_w.get(tk, 0.0)
+                # dust cut at half the equal slice: drop a pick whose p-share is
+                # below half the average allocation (genuine tail), keep the tilt.
+                floor = 0.5 * equal_slice
             else:
-                floor = max(self.floor_pct_equity, self.floor_pct_room * room)
+                intended_f = self._notional_f(pm)
+                if self.sizing_mode == "equal":
+                    # Equal slices are intentionally ~gross_cap/K. The K-independent
+                    # dust floor (max(5% equity, 10% room)) wrongly rejects every
+                    # legitimate slice at wide K — e.g. K=20 → 5% slices < 10%-of-room
+                    # floor → nothing enters, room never shrinks, 0 entries forever.
+                    # Floor at half the intended slice instead: a full 1/K slice
+                    # clears, a room/cash-squeezed slice is still dropped as dust.
+                    floor = 0.5 * intended_f
+                else:
+                    floor = max(self.floor_pct_equity, self.floor_pct_room * room)
+            actual_f = min(intended_f, room)
             if actual_f < floor:
                 continue  # drop this entry, try the next candidate
             c = self._close(state, tk)

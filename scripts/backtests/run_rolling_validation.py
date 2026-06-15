@@ -58,6 +58,10 @@ def main() -> None:
     ap.add_argument("--c", type=float, default=1.0)
     ap.add_argument("--k", type=int, default=K,
                     help="top-K daily picks (default 3); widen to dilute low top-1 precision (_012)")
+    ap.add_argument("--sizing-mode", default="equal",
+                    choices=["equal", "prob_weight", "kelly", "rank_kelly"],
+                    help="position sizing among the top-K (default equal); "
+                         "prob_weight sizes each ∝ calibrated p (_013)")
     ap.add_argument("--step", type=int, default=5, help="rolling-origin stride (trading days)")
     args = ap.parse_args()
     cell = Path(args.cell); out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -99,7 +103,8 @@ def main() -> None:
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=args.k, target_return=WIN, stop_drawdown=LOSS,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
-        breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_mode="rank", sizing_mode="equal")
+        breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_mode="rank",
+        sizing_mode=args.sizing_mode)
     hist = run_strategy(bt, strat)
     eq = _equity_from_history(hist)
     eq = eq[(eq.index >= oos_start) & (eq.index <= comparison_end)]
