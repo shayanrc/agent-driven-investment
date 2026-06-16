@@ -168,6 +168,45 @@ def test_cache_read_partial_nan_row_kept(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Regression — end-date inclusivity with a time-suffixed date column.
+# Cached dates carry a 'YYYY-MM-DD 00:00:00' component; a bare 'date <= end'
+# string-compared '…D 00:00:00' as GREATER than 'D' and silently dropped the
+# end day (off-by-one that hid the most recent bar from load_panel / fresh
+# inference). The fix is a half-open interval [start_day, end_day + 1).
+# ---------------------------------------------------------------------------
+
+
+def test_cache_read_end_date_inclusive_with_time_component(tmp_path):
+    rows = [
+        ("2024-01-02 00:00:00", 100.0, 101.0, 99.5, 100.5, 100.5, 1_000_000),
+        ("2024-01-03 00:00:00", 101.0, 102.0, 100.5, 101.5, 101.5, 1_100_000),
+        ("2024-01-04 00:00:00", 102.0, 103.0, 101.5, 102.5, 102.5, 1_200_000),
+    ]
+    _seed_stub_cache(tmp_path, "NSE:STUBEND", rows)
+
+    # end == the LAST day → that day MUST be included (the bug dropped it).
+    df = gbdt_data._cache_read("NSE:STUBEND", "2024-01-01", "2024-01-04", repo_root=tmp_path)
+    assert df["date"].max() == pd.Timestamp("2024-01-04")
+    assert len(df) == 3
+
+    # end == a MIDDLE day → inclusive of that day, excludes later days.
+    df_mid = gbdt_data._cache_read("NSE:STUBEND", "2024-01-01", "2024-01-03", repo_root=tmp_path)
+    assert df_mid["date"].dt.date.tolist() == [date(2024, 1, 2), date(2024, 1, 3)]
+
+    # start == first day → start day included (start-side inclusivity preserved).
+    df_start = gbdt_data._cache_read("NSE:STUBEND", "2024-01-03", "2024-01-04", repo_root=tmp_path)
+    assert df_start["date"].dt.date.tolist() == [date(2024, 1, 3), date(2024, 1, 4)]
+
+    # end == a date object (not str) → same inclusivity.
+    df_obj = gbdt_data._cache_read("NSE:STUBEND", "2024-01-01", date(2024, 1, 4), repo_root=tmp_path)
+    assert len(df_obj) == 3
+
+    # end is None → all rows.
+    df_none = gbdt_data._cache_read("NSE:STUBEND", "2024-01-01", None, repo_root=tmp_path)
+    assert len(df_none) == 3
+
+
+# ---------------------------------------------------------------------------
 # Minor 1 — cache freshness telemetry.
 # ---------------------------------------------------------------------------
 

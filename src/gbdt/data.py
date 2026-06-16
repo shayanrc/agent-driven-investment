@@ -371,17 +371,26 @@ def _cache_read(
     db = Path(_data_root(repo_root)) / "processed.db"
     if not db.exists():
         raise FileNotFoundError(f"cache db missing at {db}")
-    start_s = start if isinstance(start, str) else start.isoformat()
-    end_s = (end if isinstance(end, str)
-             else (end.isoformat() if end is not None else "2099-01-01"))
+    # Cached dates carry a 'YYYY-MM-DD 00:00:00' time component, so a bare
+    # 'date <= end' string-compares the end-day row ('…16 00:00:00') as GREATER
+    # than the bare end string ('…16') and silently drops it — an off-by-one
+    # that hides the most recent day from every caller (load_panel, fresh
+    # inference, …). Use a half-open interval [start_day, end_day + 1) on
+    # normalized day boundaries: 'date >= start_day' includes the start day
+    # (its '…00:00:00' sorts after the bare date), and 'date < (end_day + 1)'
+    # includes the full end day regardless of the stored time component.
+    start_s = pd.Timestamp(start).normalize().strftime("%Y-%m-%d")
+    end_excl = ("2100-01-01" if end is None
+                else (pd.Timestamp(end).normalize()
+                      + pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
     con = sqlite3.connect(str(db))
     try:
         df = pd.read_sql_query(
             f"SELECT date, open, high, low, close, adj_close, volume "
-            f"FROM {table} WHERE ticker = ? AND date >= ? AND date <= ? "
+            f"FROM {table} WHERE ticker = ? AND date >= ? AND date < ? "
             f"ORDER BY date",
             con,
-            params=(ticker, start_s, end_s),
+            params=(ticker, start_s, end_excl),
         )
     finally:
         con.close()

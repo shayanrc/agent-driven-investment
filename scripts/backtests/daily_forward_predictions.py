@@ -94,16 +94,20 @@ _GATE_TICKERS = ("NASDAQ:AAPL", "NASDAQ:MSFT", "NYSE:JPM")
 
 
 def _cache_max_date(universe: str) -> pd.Timestamp | None:
-    """Latest finalized STOCK bar in the cache (max over liquid bellwethers) — a
-    cheap pre-gate so a run with no genuinely-new stock data skips the
-    ~5 min/cell inference entirely."""
+    """Latest COMPLETE stock bar (max over liquid bellwethers, EXCLUDING the
+    current calendar day whose bar may be an in-progress intraday partial). A
+    cheap pre-gate so a run with no genuinely-new complete stock data skips the
+    inference entirely. ``date < today`` (string compare on the 'YYYY-MM-DD
+    00:00:00' column) drops today's bar and keeps prior complete days."""
     import sqlite3
     qs = ",".join("?" * len(_GATE_TICKERS))
+    today = pd.Timestamp.now().normalize().strftime("%Y-%m-%d")
     con = sqlite3.connect(REPO / "data/processed.db")
     try:
         row = con.execute(
-            f"SELECT MAX(date) FROM us_equities_data WHERE ticker IN ({qs})",
-            _GATE_TICKERS,
+            f"SELECT MAX(date) FROM us_equities_data "
+            f"WHERE ticker IN ({qs}) AND date < ?",
+            (*_GATE_TICKERS, today),
         ).fetchone()
     finally:
         con.close()
@@ -167,8 +171,15 @@ def run(end: str, commit: bool) -> int:
 
         fresh = pd.read_csv(fresh_csv, parse_dates=["date"])
         fresh = fresh[fresh["date"] > since]
+        # Never log the current day's bar — it may be an in-progress intraday
+        # partial (low volume, mid-session). Only complete days (strictly before
+        # today) enter the forward log; today's bar is logged on the next run
+        # after it finalizes. Belt-and-suspenders with the _cache_max_date gate.
+        today = pd.Timestamp.now().normalize()
+        fresh = fresh[fresh["date"] < today]
         if fresh.empty:
-            print(f"[{model}] no new trading days since {since.date()} — nothing to log.")
+            print(f"[{model}] no new COMPLETE trading days since {since.date()} "
+                  f"(today's bar, if any, is excluded as in-progress) — nothing to log.")
             continue
 
         spx, regime = _regime_series(universe, fresh["date"].min(), fresh["date"].max())
