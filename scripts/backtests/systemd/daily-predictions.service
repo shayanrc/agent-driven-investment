@@ -1,0 +1,18 @@
+[Unit]
+Description=Daily forward-prediction cadence (sp500 champions) — refresh data, re-score, log
+# Don't run if there's no network (the seed needs the data provider).
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# EDIT these two paths for your machine (the repo root + its venv python).
+WorkingDirectory=/path/to/agent-driven-investment
+ExecStart=/path/to/agent-driven-investment/.venv/bin/python -m scripts.backtests.daily_forward_predictions --commit
+# The pipeline self-gates (no-op on non-trading days) and backfills missed days,
+# so a fixed daily schedule is fine. A generous ceiling guards a wedged run.
+TimeoutStartSec=2400
+Nice=10
+
+[Install]
+WantedBy=default.target
