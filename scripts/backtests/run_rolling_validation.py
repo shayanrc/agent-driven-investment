@@ -35,6 +35,7 @@ from backtesting.backtest import Backtest
 from backtesting.strategy import run_strategy
 from scripts.backtests import benchmarks as bm
 from scripts.backtests.calibration_step import fit_calibrator
+from scripts.backtests.regime_signals import compute_risk_on
 from scripts.backtests.run_backtest_cell import INDEX_BY_UNIVERSE, K
 from scripts.backtests.run_cell5_bayesian_kelly import (
     INITIAL_CASH,
@@ -47,27 +48,6 @@ from scripts.backtests.run_cell5_bayesian_kelly import (
 )
 from trading_strategies.sizing import DiscreteBoundedLossKelly
 from trading_strategies.topk_daily_kelly_label_exit import TopKDailyKellyLabelExit
-
-
-def compute_risk_on(idx_close: pd.Series, ma: int, slope: int = 0) -> pd.Series:
-    """Causal trend-regime mask for the universe index (_017).
-
-    risk-ON at date t  ⇔  close_t > SMA_ma(close)_t   [and, if slope>0,
-    SMA_t > SMA_{t-slope} — i.e. the trend is also RISING].
-
-    Both ``rolling(ma).mean()`` and ``shift(slope)`` are trailing-only, so the
-    value at t depends only on closes ≤ t (zero look-ahead). The first ``ma``
-    rows are NaN (warmup) and propagate NaN through the comparison — callers
-    treat NaN as risk-ON (never gate during warmup).
-    """
-    sma = idx_close.rolling(ma).mean()
-    on = idx_close > sma
-    valid = sma.notna()
-    if slope > 0:
-        sma_prev = sma.shift(slope)
-        on = on & (sma > sma_prev)
-        valid = valid & sma_prev.notna()
-    return on.where(valid)  # warmup (insufficient history) → NaN, not False
 
 
 def main() -> None:
@@ -89,18 +69,30 @@ def main() -> None:
     ap.add_argument("--cost-bps", type=float, default=0.0,
                     help="per-side transaction cost in bps of notional (commission+"
                          "slippage), applied on every fill; round-trip = 2× (_015)")
+    ap.add_argument("--regime-signal", default="sma",
+                    choices=["sma", "vol", "drawdown", "breadth"],
+                    help="regime-gate signal (_017 sma / _018 forward-looking). "
+                         "sma=trend (price>SMA, the _017 baseline); vol=realized-vol "
+                         "gate (off when vol high); drawdown=off when index >thresh "
+                         "below its trailing high; breadth=off when <thresh of the "
+                         "universe is above its own MA (leads the index top).")
     ap.add_argument("--regime-ma", type=int, default=0,
-                    help="regime gate (_017): N-day trend filter on the universe "
-                         "index. When >0, mask predictions on risk-OFF days "
-                         "(index close ≤ its causal N-day SMA) so the strategy makes "
-                         "no new entries in a confirmed downtrend and decays to cash "
-                         "via normal label exits. 0 = off; 200 = classic 200d SMA.")
+                    help="regime gate (_017): trend-SMA window for signal=sma (and "
+                         "the per-name MA window for signal=breadth). When >0 (or any "
+                         "non-sma signal), mask predictions on risk-OFF days so the "
+                         "strategy makes no new entries and decays to cash via normal "
+                         "label exits. 0 = off; 200 = classic 200d SMA.")
     ap.add_argument("--regime-slope", type=int, default=0,
-                    help="regime gate slope condition (_017): also require the SMA to "
-                         "be RISING (SMA_today > SMA_{today-D}) to be risk-ON. D = "
-                         "lookback in trading days (e.g. 20). Kills the bear-rally "
-                         "whipsaw where a falling MA gets crossed at local tops. "
-                         "0 = price>MA only (no slope condition).")
+                    help="regime gate slope condition (_017, signal=sma): also require "
+                         "the SMA RISING (SMA_today > SMA_{today-D}). 0 = price>MA only.")
+    ap.add_argument("--regime-window", type=int, default=0,
+                    help="window (trading days) for vol (default 20) / drawdown "
+                         "(default 60) / breadth per-name MA (default 50) signals. "
+                         "0 = signal default.")
+    ap.add_argument("--regime-thresh", type=float, default=-1.0,
+                    help="threshold for vol (annualized vol, default 0.20) / drawdown "
+                         "(frac below high, default 0.05) / breadth (frac of names "
+                         "above MA, default 0.50). <0 = signal default.")
     ap.add_argument("--step", type=int, default=5, help="rolling-origin stride (trading days)")
     args = ap.parse_args()
     cell = Path(args.cell); out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -126,30 +118,53 @@ def main() -> None:
     print(f"[oos] {universe} [{oos_start.date()}..{oos_end.date()}] "
           f"{full.date.nunique()} signal days, H={HORIZON}, index={idx_label}")
 
-    # Regime gate (_017): drop predictions on risk-OFF days (index close ≤ its causal
-    # N-day SMA) → strategy makes no new entries in a confirmed downtrend and decays
-    # to cash through its normal DD/target/horizon exits. Universe-market logic lives
-    # HERE (harness preprocessing), NOT in the backend-agnostic strategy, per
+    # Regime gate (_017 sma / _018 forward-looking): drop predictions on risk-OFF days
+    # → strategy makes no new entries in a confirmed downtrend and decays to cash via
+    # its normal DD/target/horizon exits. Universe-market logic lives HERE (harness
+    # preprocessing), NOT in the backend-agnostic strategy, per
     # docs/trading_strategies/goal.md ("don't bake universe-specific behavior into a
     # strategy"; "not where universe selection lives").
     n_days_total = full.date.nunique(); n_gated = 0; frac_risk_off = 0.0
-    if args.regime_ma > 0:
-        warm = int(args.regime_ma * 2 + 40)
+    regime_active = args.regime_ma > 0 or args.regime_signal != "sma"
+    if regime_active:
+        sig = args.regime_signal
+        warm = 450  # calendar days — covers SMA200 + vol/breadth lookbacks
         ridx = _load_closes([idx_ticker], oos_start - pd.Timedelta(days=warm),
                             oos_end + pd.Timedelta(days=5))[idx_ticker]
-        risk_on = compute_risk_on(ridx, args.regime_ma, args.regime_slope)
+        kw: dict = {}
+        roster_wide = None
+        if sig == "sma":
+            kw = {"ma": args.regime_ma, "slope": args.regime_slope}
+            tag = f"SMA{args.regime_ma}" + (f"+slope{args.regime_slope}" if args.regime_slope else "")
+        elif sig == "vol":
+            kw = {"window": args.regime_window or 20,
+                  "thresh": args.regime_thresh if args.regime_thresh >= 0 else 0.20}
+            tag = f"vol(w{kw['window']},>{kw['thresh']:.2f}ann)"
+        elif sig == "drawdown":
+            kw = {"window": args.regime_window or 60,
+                  "thresh": args.regime_thresh if args.regime_thresh >= 0 else 0.05}
+            tag = f"dd(w{kw['window']},>{kw['thresh']:.0%}off-high)"
+        elif sig == "breadth":
+            bma = args.regime_window or args.regime_ma or 50
+            kw = {"ma": bma,
+                  "thresh": args.regime_thresh if args.regime_thresh >= 0 else 0.50}
+            tag = f"breadth(ma{bma},<{kw['thresh']:.0%}above)"
+            rc = _load_closes(tickers, oos_start - pd.Timedelta(days=int(bma * 2 + 40)),
+                              oos_end + pd.Timedelta(days=5))
+            roster_wide = pd.DataFrame(rc).sort_index()
+        risk_on = compute_risk_on(sig, ridx, roster_closes=roster_wide, **kw)
         ro_map = (risk_on.reindex(sorted(set(risk_on.index) | {pd.Timestamp(d) for d in preds}))
                   .ffill().to_dict())
         kept = {}
         for d, v in preds.items():
             on = ro_map.get(pd.Timestamp(d), True)
             if pd.isna(on):
-                on = True  # SMA warmup (pre-OOS) → treat as risk-on, never gate
+                on = True  # warmup (pre-OOS / insufficient history) → never gate
             (kept.__setitem__(d, v) if bool(on) else None)
             n_gated += 0 if bool(on) else 1
         preds = kept
         frac_risk_off = n_gated / n_days_total if n_days_total else 0.0
-        print(f"[regime] SMA{args.regime_ma} gate: {n_gated}/{n_days_total} signal "
+        print(f"[regime] {tag} gate: {n_gated}/{n_days_total} signal "
               f"days risk-OFF ({frac_risk_off:.0%}) → masked (no new entries)")
 
     closes = _load_closes(tickers, oos_start - pd.Timedelta(days=20),
@@ -218,8 +233,9 @@ def main() -> None:
         "geometry": {"universe": universe, "horizon": HORIZON, "index": idx_label},
         "config": {"selection_mode": "rank", "sizing_mode": args.sizing_mode,
                    "K": args.k, "prob_weight_alpha": args.prob_weight_alpha,
-                   "cost_bps": args.cost_bps, "regime_ma": args.regime_ma,
-                   "regime_slope": args.regime_slope,
+                   "cost_bps": args.cost_bps, "regime_signal": args.regime_signal,
+                   "regime_ma": args.regime_ma, "regime_slope": args.regime_slope,
+                   "regime_window": args.regime_window, "regime_thresh": args.regime_thresh,
                    "regime_days_off": n_gated, "regime_frac_off": round(frac_risk_off, 4),
                    "c": args.c, "rolling_window_days": W, "stride": args.step},
         "oos": {"start": str(oos_start.date()), "end": str(comparison_end.date()),
