@@ -1,0 +1,47 @@
+{
+  "cell": "sp500_up_50pct_50d_dd25pct_bear2022",
+  "name": "sp500_50_bear_g50",
+  "geometry": {
+    "universe": "sp500",
+    "horizon": 50,
+    "index": "SPX"
+  },
+  "config": {
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "K": 3,
+    "prob_weight_alpha": 1.0,
+    "cost_bps": 0.0,
+    "regime_ma": 50,
+    "regime_slope": 0,
+    "regime_days_off": 143,
+    "regime_frac_off": 0.6842,
+    "c": 1.0,
+    "rolling_window_days": 50,
+    "stride": 5
+  },
+  "oos": {
+    "start": "2021-12-21",
+    "end": "2022-10-19",
+    "signal_days": 209
+  },
+  "full_oos": {
+    "strat_total_return": -0.3016,
+    "strat_max_dd": -0.3392,
+    "idx_total_return": -0.2052,
+    "n_entries": 9,
+    "avg_gross_exp": 0.5829
+  },
+  "rolling": {
+    "n_windows": 32,
+    "window_days": 50,
+    "stride": 5,
+    "frac_excess_positive": 0.312,
+    "median_excess": -0.0347,
+    "mean_excess": -0.0074,
+    "p25_excess": -0.0703,
+    "p75_excess": 0.0851,
+    "min_excess": -0.123,
+    "max_excess": 0.1349
+  }
+}
