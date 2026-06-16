@@ -1,0 +1,47 @@
+{
+  "cell": "sp500_up_20pct_25d_dd10pct_agentloop",
+  "name": "sp500_20_bull_g100",
+  "geometry": {
+    "universe": "sp500",
+    "horizon": 25,
+    "index": "SPX"
+  },
+  "config": {
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "K": 3,
+    "prob_weight_alpha": 1.0,
+    "cost_bps": 0.0,
+    "regime_ma": 100,
+    "regime_slope": 0,
+    "regime_days_off": 25,
+    "regime_frac_off": 0.2193,
+    "c": 1.0,
+    "rolling_window_days": 25,
+    "stride": 5
+  },
+  "oos": {
+    "start": "2025-12-30",
+    "end": "2026-06-12",
+    "signal_days": 114
+  },
+  "full_oos": {
+    "strat_total_return": 0.4921,
+    "strat_max_dd": -0.108,
+    "idx_total_return": 0.0776,
+    "n_entries": 18,
+    "avg_gross_exp": 0.6044
+  },
+  "rolling": {
+    "n_windows": 18,
+    "window_days": 25,
+    "stride": 5,
+    "frac_excess_positive": 0.833,
+    "median_excess": 0.0739,
+    "mean_excess": 0.0679,
+    "p25_excess": 0.0249,
+    "p75_excess": 0.0992,
+    "min_excess": -0.0178,
+    "max_excess": 0.1694
+  }
+}
