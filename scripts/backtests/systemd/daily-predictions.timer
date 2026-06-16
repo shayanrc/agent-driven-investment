@@ -1,0 +1,15 @@
+[Unit]
+Description=Fire the daily forward-prediction cadence on weekday mornings
+
+[Timer]
+# Weekday mornings — the PRIOR trading day's close is reliably finalized by now.
+OnCalendar=Mon..Fri 08:30
+# CRITICAL for a not-always-on machine: run the most recent missed occurrence on
+# the next boot/wake/login. Combined with the pipeline's backfill, a weekend or
+# vacation gap is caught up correctly (every missed trading day gets logged).
+Persistent=true
+# Jitter so it doesn't hammer the provider at exactly the same second daily.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

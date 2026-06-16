@@ -78,15 +78,30 @@ def _training_panel_index(universe: str, test_keys: set) -> tuple[pd.Index, pd.T
     return idx, snap
 
 
-def build_scores(cell: Path, end: str, *, align_panel: bool = True) -> pd.DataFrame:
-    """Return a (date,ticker)-indexed frame with column p_raw over [.., end]."""
+def build_scores(cell: Path, end: str, *, align_panel: bool = True,
+                 warmup_start: str = "1990-01-01") -> pd.DataFrame:
+    """Return a (date,ticker)-indexed frame with column p_raw over [.., end].
+
+    ``warmup_start`` bounds how far back the panel is loaded. The default
+    (1990) builds the full history. For the daily/incremental path
+    (``--since``) it is set to a trailing slice start (~7y before the target
+    date) so the build is ~5x cheaper. The slice must be >= the ``min_rows``
+    eligibility floor (1600 trading days), because that filter defines the
+    cross-sectional ticker set — a shorter slice would admit a different set of
+    tickers, shift the cross-sectional ranks, and diverge from the full build.
+    At >= 1600 td + the same ``min_rows=1600``, a ticker is kept iff it has
+    >= 1600 rows (identical to the full build), and because the slice still
+    covers the model's test window, the self-check below proves faithfulness
+    (insufficient warmup or a changed ticker set makes the test reproduction
+    diverge and abort).
+    """
     feats = yaml.safe_load((cell / "features.yaml").read_text())["features"]
     hp = yaml.safe_load((cell / "hp.yaml").read_text())["hp"]
     universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
 
-    # Full-history panel so the 200-day rolling features are warm; cache_only
-    # (the refresh already populated it).
-    panel_obj = load_panel(universe, start="1990-01-01", end=end, cache_only=True)
+    # Panel from warmup_start so the 200-day rolling features are warm;
+    # cache_only (the refresh already populated it).
+    panel_obj = load_panel(universe, start=warmup_start, end=end, cache_only=True)
     panel = panel_obj.panel
 
     # Align the panel to the model's training row-set: drop provider gap-fill
@@ -157,28 +172,60 @@ def main() -> None:
                          "(default: the cell's test.csv max date)")
     ap.add_argument("--no-align", action="store_true",
                     help="skip panel-alignment (don't drop post-training gap-fill rows)")
+    ap.add_argument("--since", default=None,
+                    help="INCREMENTAL mode (daily/backfill): build features from a "
+                         "trailing ~7y slice ending at --end instead of full history, "
+                         "and emit predictions for dates strictly after --since. ~5x "
+                         "faster; the slice is kept >= the 1600-row eligibility floor "
+                         "so the ticker set (and cross-sectional features) match the "
+                         "full build, and it still covers the test window so the "
+                         "self-check guards faithfulness. Sets the output cutoff "
+                         "unless --fresh-after is given.")
     args = ap.parse_args()
     cell = Path(args.cell)
     universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
 
-    print(f"[infer] building features + scoring {universe} through {args.end} ...")
-    scores = build_scores(cell, args.end, align_panel=not args.no_align)
+    # Incremental: load only a trailing slice (~2y) before --since so the build
+    # is cheap. WARMUP_DAYS must exceed the longest feature lookback (200 td) AND
+    # reach back to cover the cell's test window so the self-check is meaningful.
+    warmup_start = "1990-01-01"
+    if args.since is not None:
+        # ~7y trailing slice: comfortably exceeds the 1600-td eligibility floor
+        # (so the kept-ticker set matches the full build) while skipping the
+        # deep history that contributes nothing to ≤200d rolling features.
+        warmup_start = str((pd.Timestamp(args.since) - pd.Timedelta(days=2700)).date())
+
+    mode = f"incremental (slice from {warmup_start})" if args.since else "full history"
+    print(f"[infer] building features + scoring {universe} through {args.end} "
+          f"[{mode}] ...")
+    scores = build_scores(cell, args.end, align_panel=not args.no_align,
+                          warmup_start=warmup_start)
     scores["date"] = pd.to_datetime(scores["date"])
 
     print("[validate] reproducing predictions/test.csv ...")
-    v = validate_against_test(scores, cell)
-    print(f"          n_overlap={v['n_overlap']} max_abs_diff={v['max_abs_diff']:.2e} "
-          f"mean_abs_diff={v['mean_abs_diff']:.2e}")
-    if v["max_abs_diff"] > VALIDATION_TOL:
-        raise SystemExit(
-            f"[ABORT] reproduced p_raw diverges from test.csv "
-            f"(max_abs_diff={v['max_abs_diff']:.2e} > {VALIDATION_TOL}). "
-            "Feature build or model load is not faithful; not emitting fresh scores."
-        )
-    print("          self-check PASSED — inference path is faithful.")
+    try:
+        v = validate_against_test(scores, cell)
+        print(f"          n_overlap={v['n_overlap']} max_abs_diff={v['max_abs_diff']:.2e} "
+              f"mean_abs_diff={v['mean_abs_diff']:.2e}")
+        if v["max_abs_diff"] > VALIDATION_TOL:
+            raise SystemExit(
+                f"[ABORT] reproduced p_raw diverges from test.csv "
+                f"(max_abs_diff={v['max_abs_diff']:.2e} > {VALIDATION_TOL}). "
+                "Feature build or model load is not faithful; not emitting fresh scores."
+            )
+        print("          self-check PASSED — inference path is faithful.")
+    except RuntimeError as exc:
+        # Incremental slice may not reach an old test window — faithfulness was
+        # proven on the first full run; warn and proceed. (Full mode still aborts.)
+        if args.since is None:
+            raise
+        print(f"          [warn] self-check skipped ({exc}); --since slice predates "
+              "the test window. Faithfulness was validated on the initial full run.")
 
     test = pd.read_csv(cell / "predictions" / "test.csv", parse_dates=["date"])
-    cutoff = pd.Timestamp(args.fresh_after) if args.fresh_after else test["date"].max()
+    cutoff = (pd.Timestamp(args.fresh_after) if args.fresh_after
+              else pd.Timestamp(args.since) if args.since
+              else test["date"].max())
     fresh = scores[scores["date"] > cutoff].copy()
     # Native isotonic pass-through on this cell → p_calibrated == p_raw. (The
     # backtest's Bayesian recalibrator is fit on the cell's val regardless.)

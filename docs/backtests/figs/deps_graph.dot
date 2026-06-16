@@ -3,7 +3,7 @@ digraph deps {
   newrank=true;
   graph [fontname="Helvetica", bgcolor="white", splines=true, nodesep=0.35, ranksep=0.7,
          labelloc="t", fontsize=15,
-         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-16 (V2.2 forward-looking regime signals — NONE rescue the bear; regime-gate thread closed))"];
+         label="Agent-Driven Investment — backtests V1.1 sizing + agent-cell survey (2026-06-16 15:30 — V2.4 forward-OOS pipeline shipped (incremental --since + /daily-predictions skill + systemd timer))"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.09", color="#444444"];
   edge [fontname="Helvetica", fontsize=8, color="#888888"];
 
@@ -66,10 +66,16 @@ digraph deps {
     REGIMEGATE [label="_017 REGIME GATE — risk-reducer, NOT alpha-restorer\nbull edge PRESERVED (SMA200, ~11% gated: 92→100%, +73.7→+81%);\nbear NOT rescued at any MA speed (can't avoid Jan-22 top entries —\nirreducible lag); lone win = DD -32→-22%. Deploy SMA200, NOT all-weather", fillcolor="#ced4da", color="#495057"];
     REGIMERESEARCH [label="_018 FORWARD-LOOKING signals (vol/drawdown/breadth) — NONE rescue bear\nall preserve bull (≥89% beat) but every one negative in bear, fast ones WORSE\n(drawdown -36%, vol -30%); refutes lag → NO up-move edge to gate toward (_016).\nKeep simple SMA200. REGIME-GATE THREAD CLOSED.", fillcolor="#a8d8c0", color="#495057"];
     OPENITEMS [label="NEXT (external to decision policy): forward OOS as cache ages\n+ a 2nd bear (2020/2008) to confirm no-bear-edge generalizes.\nA real BEAR EDGE needs a NEW down-move/short target, NOT an overlay", fillcolor="#d4edda", color="#155724"];
-    ROLLING [label="rolling monthly fresh-OOS\nseries (re-score as cache ages)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
+    FWDRUN [label="_019 forward-OOS PIPELINE — built & verified\nincremental infer (--since, BIT-IDENTICAL to full max|Δ|=0, ~3x faster);\nidempotent + self-gating + backfilling; /daily-predictions skill + systemd timer;\ncommitted forward log (1050 rows, sp500 → 06-15; regime captured per day)", fillcolor="#a8d8c0", color="#495057"];
+    ROLLING [label="DAILY forward-prediction cadence (now automated by _019)\n/daily-predictions + systemd user timer (Persistent) → append top-10/day\nto forward_predictions_log.csv; grows honest eff-N over wall-clock", fillcolor="#d1ecf1", color="#0c5460", style="rounded,filled,dotted"];
     GAPEVAL [label="signal-gap-aware eval harness\n(invested-days / cash-adj bench)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     IDFIX [label="registry id zero-pad fix\n(fold into next PR)", fillcolor="#ffffff", color="#adb5bd", style="rounded,filled,dashed"];
     GOAL [label="GOAL: agent-driven strategy that\nbeats passive OOS across cells", fillcolor="#ffe69c", color="#856404", penwidth=2];
+  }
+
+  /* ---------- cluster: gbdt cross-module follow-ups (discovered here) ---------- */
+  subgraph cluster_gbdt { label="gbdt · cross-module follow-ups (discovered)"; labelloc="t"; fontsize=12; fontname="Helvetica-Bold"; style="rounded"; color="#b0b0b0"; margin=12;
+    GBDTPERF [label="PERF: parallelize gbdt feature build (src/gbdt/features.py)\n_019 incremental --since already cut ~18→~6 min/cell (slice, bit-identical).\nREMAINING: fan per-ticker F1-F13/F15/F16 over cores (joblib) + vectorize the\nrolling().apply rank (~L310) + per-ticker corr/cov loops (~275/373) to cut\nthe ~6 min further. gbdt-owned; own correctness checks. (V1.4_TBD row 3)", fillcolor="#d4edda", color="#155724"];
   }
 
   /* ---------- cluster: scheduled ---------- */
@@ -82,6 +88,7 @@ digraph deps {
   spacer_C -> REFRESH  [style=invis, weight=100];
   spacer_R -> PROMOTE  [style=invis, weight=100];
   spacer_R -> WAKE     [style=invis, weight=20];
+  spacer_R -> GBDTPERF [style=invis, weight=20];
 
   /* ---------- dependency edges ---------- */
   PLUMBING -> M001;
@@ -109,6 +116,9 @@ digraph deps {
   REGIMEGATE -> REGIMERESEARCH [color="#d9534f"];
   REGIMERESEARCH -> OPENITEMS [color="#d9534f"];
   OPENITEMS -> GOAL [color="#d9534f"];
+  OPENITEMS -> FWDRUN [color="#0c5460"];
+  FWDRUN -> ROLLING [style=dashed, color="#0c5460"];
+  FWDRUN -> GBDTPERF [style=dashed, label="discovered: slow cold rebuild", color="#888888"];
   INFER -> ROLLING [style=dashed];
   M001 -> GAPEVAL [style=dashed];
   M004DOC -> IDFIX [style=dashed];

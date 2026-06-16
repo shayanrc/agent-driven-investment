@@ -59,3 +59,4 @@ tests/gbdt/tmp/
 # Large regenerable fresh-prediction CSVs (rebuild via infer_fresh_predictions)
 results/backtests/_008_roll/*_fresh.csv
 results/backtests/_009_nifty/*_fresh.csv
+results/backtests/_019_fwd_oos/*_fresh.csv
