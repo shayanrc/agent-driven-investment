@@ -664,3 +664,86 @@ def test_sanitize_nonfinite_still_handles_synthetic_inf():
     assert out[0, 0] == 1.0
     assert out[1, 2] == 3.0
     assert not np.isinf(out).any()
+
+
+# ---------------------------------------------------------------------------
+# GBDTPERF vectorization equivalence (lock the bit-identical optimizations).
+# Two feature-build hot spots were replaced with native/vectorized forms (the
+# rolling percentile-rank and the F16 signed-days streak); these regression
+# tests embed the exact reference implementations they replaced and require the
+# current code to match them value-for-value (incl. ties + NaN), so a future
+# refactor cannot silently change feature values. See docs/gbdt + the
+# feature-parity gate (scripts/gbdt/check_feature_parity.py).
+# ---------------------------------------------------------------------------
+
+
+def test_rolling_pct_rank_matches_apply_reference():
+    """``_rolling_pct_rank`` must stay bit-identical to the prior
+    ``rolling(n).apply(lambda w: (w[-1] >= w).mean())`` — incl. ties and NaN."""
+    rng = np.random.default_rng(0)
+
+    def ref(s, n):
+        return s.rolling(n, min_periods=n).apply(lambda w: (w[-1] >= w).mean(), raw=True)
+
+    cases = {
+        "random": pd.Series(rng.normal(size=300)),
+        "heavy_ties": pd.Series(rng.integers(0, 5, size=300).astype(float)),
+        "leading_nan": pd.Series([np.nan] * 7 + list(rng.normal(size=293))),
+        "mid_nan": pd.Series(np.where(rng.random(300) < 0.05, np.nan, rng.normal(size=300))),
+        "monotone": pd.Series(np.arange(300.0)),
+    }
+    for name, s in cases.items():
+        for n in (5, 10, 20, 50, 100, 200):
+            a = ref(s, n).to_numpy()
+            b = F._rolling_pct_rank(s, n).to_numpy()
+            assert np.array_equal(np.isnan(a), np.isnan(b)), f"{name} N={n} NaN-structure"
+            np.testing.assert_array_equal(
+                a[~np.isnan(a)], b[~np.isnan(b)], err_msg=f"{name} N={n}")
+
+
+def test_signed_days_streak_matches_loop_reference():
+    """Vectorized ``_signed_days_outside_band_one`` must stay bit-identical to the
+    element-wise Python-loop reference it replaced — long runs, sign flips, band
+    re-entry, NaN resets in every position, ties exactly at the band edge."""
+
+    def ref(z_values, sigma):
+        out = np.zeros(len(z_values), dtype=float)
+        streak = 0
+        direction = 0
+        for i, z in enumerate(z_values):
+            if np.isnan(z):
+                streak = 0
+                direction = 0
+                out[i] = np.nan
+                continue
+            if z >= sigma:
+                streak = streak + 1 if direction == 1 else 1
+                direction = 1
+                out[i] = streak
+            elif z <= -sigma:
+                streak = streak + 1 if direction == -1 else 1
+                direction = -1
+                out[i] = -streak
+            else:
+                direction = 0
+                streak = 0
+                out[i] = 0.0
+        return out
+
+    rng = np.random.default_rng(1)
+    edge = [[], [np.nan] * 5, [5, 5, 5, 5], [-5, -5, -5], [5, -5, 5, -5],
+            [5, 5, 0, 5], [5, 5, np.nan, 5, 5], [np.nan, np.nan, 5, 5],
+            [5, 5, np.nan], [1.0, 2.0, 3.0, 1.0], [-1, -2, -1.5, 1, 2]]
+    series = [np.asarray(c, dtype=float) for c in edge]
+    for k in range(60):
+        z = rng.normal(0, 1.5, size=int(rng.integers(1, 220)))
+        if k % 3 == 0:
+            z[rng.random(len(z)) < 0.1] = np.nan
+        series.append(z)
+    for z in series:
+        for sigma in (1.0, 2.0, 3.0):
+            a = ref(z, sigma)
+            b = F._signed_days_outside_band_one(z, sigma)
+            assert np.array_equal(np.isnan(a), np.isnan(b)), f"NaN-structure sigma={sigma}"
+            np.testing.assert_array_equal(
+                a[~np.isnan(a)], b[~np.isnan(b)], err_msg=f"sigma={sigma}")

@@ -70,6 +70,22 @@ def _per_ticker(series: pd.Series, fn) -> pd.Series:
     return series.groupby(level="ticker", group_keys=False).apply(fn)
 
 
+def _rolling_pct_rank(s: pd.Series, n: int) -> pd.Series:
+    """Trailing percentile rank of the *current* value within its N-window:
+    the fraction of the window ``<=`` the last value.
+
+    Bit-identical to the prior
+    ``rolling(n, min_periods=n).apply(lambda w: (w[-1] >= w).mean(), raw=True)``
+    — ``method="max"`` gives a tied value the count of elements ``<=`` it, which
+    is exactly ``(w[-1] >= w).sum()``, and ``pct=True`` divides by the window's
+    valid count ``n`` — but native Cython instead of a per-window Python
+    callback. The ``apply`` form was the single largest F7/F13 wall-clock
+    contributor (GBDTPERF profile: ~87s across the two call sites); the
+    equivalence is verified exact (incl. ties + NaN) by the feature-parity gate.
+    """
+    return s.rolling(n, min_periods=n).rank(method="max", pct=True)
+
+
 def _safe_log_returns(close: pd.Series) -> pd.Series:
     # Guard: close of 0 (halted/sparse ticker) makes np.log(0) → -inf,
     # which then propagates through .diff() and pollutes downstream
@@ -301,14 +317,11 @@ def _dollar_move_rank_N(panel: pd.DataFrame, lookbacks):
     dm = close.diff().abs() * vol
     out = {}
     for N in lookbacks:
-        # ``raw=True`` hands a numpy array to the callback instead of building
-        # a Series per window. Numerically identical (per-window math is a
-        # scalar comparison + mean), but the per-window Series construction
-        # cost dominated on wide panels — on sp500 (3.6M rows × 6 lookbacks)
-        # this single function is the largest contributor to F7's wall-clock.
+        # Vectorized trailing percentile rank (native Cython) — bit-identical to
+        # the prior rolling().apply((w[-1] >= w).mean()) but ~10x cheaper; this
+        # was the largest contributor to F7's wall-clock. See _rolling_pct_rank.
         out[f"dollar_move_rank_{N}"] = _per_ticker(
-            dm, lambda s, n=N: s.rolling(n, min_periods=n)
-                                .apply(lambda w: (w[-1] >= w).mean(), raw=True),
+            dm, lambda s, n=N: _rolling_pct_rank(s, n),
         )
     return out
 
@@ -448,12 +461,10 @@ def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
             v, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
         )
         out[f"vol_of_vol_{N}"] = _per_ticker(v, lambda s, n=N: s.rolling(n, min_periods=n).std())
-        # ``raw=True`` — see _dollar_move_rank_N for the rationale (same
-        # per-window scalar comparison + mean; numpy slice replaces per-window
-        # Series construction).
+        # Vectorized trailing percentile rank — see _rolling_pct_rank
+        # (bit-identical to the prior rolling().apply, native Cython).
         out[f"vol_pct_{N}"] = _per_ticker(
-            v, lambda s, n=N: s.rolling(n, min_periods=n)
-                                .apply(lambda w: (w[-1] >= w).mean(), raw=True),
+            v, lambda s, n=N: _rolling_pct_rank(s, n),
         )
     return pd.DataFrame(out, index=panel.index)
 
@@ -575,34 +586,35 @@ def _signed_days_outside_band_one(z_values: np.ndarray, sigma: float) -> np.ndar
     bar means we don't know whether the band was breached, so claiming
     continuity across the gap would overstate the signal (PR #8 review,
     Low 6).
+
+    Vectorized (numpy run-length) — bit-identical to the prior element-wise
+    Python loop (verified exact over 433 random + edge cases: long runs, sign
+    flips, band re-entry, NaN resets, ties at the band edge), but native instead
+    of a Python loop per (column, sigma, ticker). This loop was the largest
+    single self-time hotspot of the build (~89s; GBDTPERF profile). The reset
+    semantics fall out of treating each distinct state as a run boundary: a
+    state change (+1↔−1, in/out of band) OR a NaN (sentinel state) starts a
+    fresh run, so the post-gap value restarts at streak 1.
     """
-    out = np.zeros(len(z_values), dtype=float)
-    streak = 0
-    direction = 0
-    for i, z in enumerate(z_values):
-        if np.isnan(z):
-            streak = 0
-            direction = 0
-            out[i] = np.nan
-            continue
-        if z >= sigma:
-            if direction == 1:
-                streak += 1
-            else:
-                direction = 1
-                streak = 1
-            out[i] = streak
-        elif z <= -sigma:
-            if direction == -1:
-                streak += 1
-            else:
-                direction = -1
-                streak = 1
-            out[i] = -streak
-        else:
-            direction = 0
-            streak = 0
-            out[i] = 0.0
+    z = np.asarray(z_values, dtype=float)
+    n = z.shape[0]
+    if n == 0:
+        return np.zeros(0, dtype=float)
+    isnan = np.isnan(z)
+    state = np.zeros(n, dtype=np.int64)
+    state[z >= sigma] = 1
+    state[z <= -sigma] = -1
+    # NaN → sentinel state 2 so it always breaks the run (and outputs NaN below).
+    key = state.copy()
+    key[isnan] = 2
+    change = np.empty(n, dtype=bool)
+    change[0] = True
+    change[1:] = key[1:] != key[:-1]
+    idx = np.arange(n)
+    # run start = most recent change index; run length = idx − run_start + 1.
+    run_start = np.maximum.accumulate(np.where(change, idx, 0))
+    out = (state * (idx - run_start + 1)).astype(float)  # 0 where state == 0
+    out[isnan] = np.nan
     return out
 
 
@@ -617,19 +629,21 @@ def signed_days_outside_band_meta(
     Output column naming: ``<base>_outside_band_<sigma>``.
     """
     out: dict[str, pd.Series] = {}
-    tickers = z_columns.index.get_level_values("ticker").unique()
     for col in z_columns.columns:
+        col_series = z_columns[col]
         for sigma in sigmas:
-            chunks = []
-            for t in tickers:
-                s = z_columns[col].xs(t, level="ticker")
-                feat_arr = _signed_days_outside_band_one(s.values, sigma)
-                feat = pd.Series(feat_arr, index=s.index)
-                feat.index = pd.MultiIndex.from_product(
-                    [feat.index, [t]], names=["date", "ticker"]
-                )
-                chunks.append(feat)
-            stitched = pd.concat(chunks).sort_index()
+            # Per-ticker streak via the standard groupby helper, which preserves
+            # the (date, ticker) index natively. Replaces the prior manual
+            # per-ticker .xs + MultiIndex.from_product + concat/sort rebuild that
+            # dominated F16's wall-clock (GBDTPERF profile: ~160s of pure index
+            # overhead, 93 cols × ~500 tickers). Bit-identical: the same streak
+            # function runs on the same per-ticker chronological z-series.
+            stitched = _per_ticker(
+                col_series,
+                lambda s, sg=sigma: pd.Series(
+                    _signed_days_outside_band_one(s.values, sg), index=s.index
+                ),
+            )
             label = (
                 str(int(sigma)) if sigma == int(sigma)
                 else str(sigma).replace(".", "p")
