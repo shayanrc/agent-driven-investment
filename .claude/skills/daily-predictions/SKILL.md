@@ -33,7 +33,7 @@ uv run python -m scripts.backtests.daily_forward_predictions [--commit] [--end Y
 
 When invoked in a session (not the silent timer), after the run finishes summarize for the user:
 - the **regime gate** state (risk-ON ⇒ strategy deploys; risk-OFF ⇒ hold cash — this is the gating verdict, `_016`–`_018`);
-- the **equal-weight top-3** per model (the champion's actual positions) + cross-model overlap;
+- the **picks as a table** — columns **Ticker | Model/Rank | p**, **top 3 per model** (both champions → 6 rows; `Model/Rank` is one combined column, e.g. `sp500_50 / 1`; raw `p`, not lift). This is the standing convention — see `[[feedback-predictions-table-format]]`. Note cross-model overlap in prose.
 - the honest caveats (modest absolute p / lift-not-certainty; bull-only edge; small effective-N; not investment advice — size as the forward-test it is).
 
 ## Notes
