@@ -59,10 +59,11 @@ p_calibrated, base_rate, regime_on, spx_close, spx_sma200, logged_at`.
 - **Idempotency**: a second immediate run logs nothing (`[done] no new snapshots — no-op`).
 - **Self-gating**: a stock-bellwether (AAPL/MSFT/JPM) pre-gate skips the ~6 min/cell
   inference when the stock panel hasn't advanced past the last log.
-- **Settling discipline**: on the current day (06-16) the bellwethers had a bar but the
-  *broad* sp500 EOD cross-section had not settled, so the inference correctly emitted **0
-  rows** and the log held at the last settled day (06-15) — no partial/incomplete day is
-  ever logged. The next run after settlement appends it.
+- **Settling discipline**: only complete trading days enter the log; today's in-progress bar
+  is never logged. NOTE (2026-06-17): the original "0 rows for today" was *partly* a cache-read
+  off-by-one (a string compare on the `…00:00:00` date column dropped the `end` day), since
+  fixed in **#182** — which also adds an explicit partial-day guard so the cadence logs the
+  latest *complete* day and skips only today's in-progress bar. See the **Update** below.
 - **Self-check**: every incremental run reproduces `test.csv` to <1e-4 (faithful) or aborts.
 
 ## How to run
@@ -82,15 +83,29 @@ uv run python -m scripts.backtests.daily_forward_predictions [--commit]
   again. Acceptable for a daily cadence as-is.
 - Tracks only the **two validated sp500 cells**; adding universes/cells = edit `CELLS` in
   the runner. (r1k stays on the ^SPX proxy — ^RUI remains uncached.)
-- The bellwether pre-gate is a cheap heuristic: running *intraday on the current day* it can
-  trigger a ~6 min/cell build that then emits 0 rows (bellwethers settle before the broad
-  panel). Harmless — the inference is the precise backstop (no bad data is logged) — and the
-  intended weekday-morning timer targets the *prior, fully-settled* day, which never hits it.
+- The bellwether pre-gate now gates on `date < today` (**#182**), so it skips inference when
+  there is no new *complete* day — the earlier intraday over-trigger (build, then emit 0 rows
+  for today's partial bar) is resolved. Per-cell incremental cost is now **~2 min** (V1.5
+  vectorization, **#180**), down from ~6.
 - The log is the **signal record**, not a backtest — joining it against realized
   forward outcomes (to score live hit-rates / rolling excess) is the natural follow-up once
   enough days accrue.
 - This is forward *evidence accrual*, not a new edge: the strategy, sizing, and regime gate
   are settled (`_005`–`_018`). The log grows the honest effective-N over wall-clock time.
+
+## Update (2026-06-17) — off-by-one fix, V1.5 speedup, first complete-day entry
+
+- **Cache end-date off-by-one fixed (#182).** Cached dates carry a `…00:00:00` time
+  component, so `_cache_read`'s `date <= end` *string*-dropped the `end` day — every caller
+  (this cadence included) silently lost the most recent day. Fixed with a half-open interval
+  `[start_day, end_day + 1)`; regression test added (`tests/gbdt/test_data_loader.py`). A
+  **partial-day guard** (only log days `< today`, in both the pre-gate and the append filter)
+  now makes the partial-bar exclusion explicit rather than an accident of the bug.
+- **Feature build vectorized 3.84× (V1.5, #180).** The incremental re-score is now ~2 min/cell
+  (was ~6), bit-identical — so the "~6 min/cell" figures above are superseded.
+- **First real complete-day entry logged (#183):** 2026-06-16 (regime risk-ON; top-3
+  WDC/GLW/COHR + SMCI/CIEN/COHR), log → 1070 rows. Verified end-to-end after the fix:
+  inference emits the latest complete day, the guard skips today's in-progress bar.
 
 ## Reproducibility
 
