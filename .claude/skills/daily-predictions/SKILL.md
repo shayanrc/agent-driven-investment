@@ -14,12 +14,12 @@ One verb: **produce and log today's forward predictions** for the two validated 
 3. **Self-gate + backfill** — reads the last snapshot already in the forward log per model; if the cache hasn't advanced past it, exits as a clean no-op. If the machine was off for several days, it backfills *every* missing trading day, not just today.
 4. **Incremental inference** (`infer_fresh_predictions --since`, ~5× cheaper than a full rebuild — a trailing ~7y slice that still covers the test window, so the faithfulness self-check still guards it) for both cells → fresh CSVs (gitignored scratch under `results/backtests/_019_fwd_oos/`).
 5. **Regime gate** — SMA200 on the universe index per new date (the deployment-critical overlay: `_017`/`_018`).
-6. **Append** the top-10 per (date, model) to `results/backtests/data/forward_predictions_log.csv` — the durable, checked-in record. Idempotent: a `(snapshot_date, model)` already present is never re-appended.
+6. **Append** the top-10 per (date, model) to `results/backtests/data/forward_predictions_log.csv` — the durable, checked-in record. Idempotent: a `(snapshot_date, model)` already present is never re-appended. **Partial-day guard (#182):** only *complete* trading days (strictly before today) are logged — today's in-progress intraday bar is excluded (in both the pre-gate and the append filter) and logs on the next run after it finalizes.
 7. **Optional commit** (`--commit`) — `git add -f` + local commit of the log (no push).
 
 ## Usage
 
-This is a **≤ ~30-minute foreground run** (two cells, incremental ~5–6 min each + seed), so run it in the **foreground with a `timeout`** — do NOT background it (per `.claude/memories/feedback-sub-agent-foreground.md`; the ≥2 h background+Monitor+ScheduleWakeup pattern does not apply here):
+This is a **well-under-30-minute foreground run** (two cells, incremental **~2 min each** since the V1.5 feature-build vectorization (#180), + seed), so run it in the **foreground with a `timeout`** — do NOT background it (per `.claude/memories/feedback-sub-agent-foreground.md`; the ≥2 h background+Monitor+ScheduleWakeup pattern does not apply here):
 
 ```bash
 uv run python -m scripts.backtests.daily_forward_predictions [--commit] [--end YYYY-MM-DD]
