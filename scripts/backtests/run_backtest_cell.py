@@ -68,6 +68,9 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--c", type=float, default=0.25)
+    ap.add_argument("--k", type=int, default=3,
+                    help="top-K positions entered per day (default 3 = champion). In "
+                         "equal sizing the per-name slice is c·gross_cap/K.")
     ap.add_argument("--selection-bound", default="mean", choices=["mean", "low"])
     ap.add_argument("--selection-mode", default="breakeven", choices=["breakeven", "rank"],
                     help="rank = top-K by p-rank, no absolute breakeven gate (V1.2)")
@@ -77,6 +80,7 @@ def main() -> None:
     ap.add_argument("--predictions", default=None,
                     help="default: <cell>/predictions/test.csv")
     args = ap.parse_args()
+    K = args.k  # per-day top-K (default 3 = champion); shadows the module default
     cell = Path(args.cell)
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True); (out / "figs").mkdir(exist_ok=True)
 
