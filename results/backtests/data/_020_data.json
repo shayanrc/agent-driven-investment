@@ -1,0 +1,100 @@
+{
+  "experiment": "_020_capital_metering",
+  "question": "5%/name (15%/day) capital metering vs concentrated 33%/name champion",
+  "window": "OOS 2025-12-30 -> 2026-05-22",
+  "regime_gate": false,
+  "costs_bps": 0,
+  "runs": {
+    "sp500_20_champion": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null
+      },
+      "total_return": 0.5814,
+      "max_dd": -0.0727,
+      "gross_exposure_avg": 0.5542,
+      "entries": 13,
+      "exits": 13,
+      "trims": 33,
+      "unique_tickers": 8,
+      "exit_triggers": {
+        "target": 7,
+        "DD": 2,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_variant": {
+      "config": {
+        "fractional_c": 0.15,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null
+      },
+      "total_return": 0.2231,
+      "max_dd": -0.0805,
+      "gross_exposure_avg": 0.6583,
+      "entries": 92,
+      "exits": 91,
+      "trims": 375,
+      "unique_tickers": 37,
+      "exit_triggers": {
+        "target": 32,
+        "DD": 34,
+        "horizon": 25
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_champion": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null
+      },
+      "total_return": 0.1246,
+      "max_dd": -0.0927,
+      "gross_exposure_avg": 0.4412,
+      "entries": 4,
+      "exits": 4,
+      "trims": 24,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 1,
+        "horizon": 3
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_variant": {
+      "config": {
+        "fractional_c": 0.15,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null
+      },
+      "total_return": -0.0326,
+      "max_dd": -0.1026,
+      "gross_exposure_avg": 0.4714,
+      "entries": 23,
+      "exits": 23,
+      "trims": 126,
+      "unique_tickers": 22,
+      "exit_triggers": {
+        "DD": 3,
+        "target": 1,
+        "horizon": 19
+      },
+      "index_bh_return": 0.0837
+    }
+  }
+}

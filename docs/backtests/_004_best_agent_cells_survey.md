@@ -81,6 +81,7 @@ already cached.
 - Branch `backtests-v11-headline-sizing-survey`.
 - `for cell in <5 cells>; for c in 0.25 0.5: uv run python -m scripts.backtests.run_backtest_cell --cell results/gbdt/experiments/<cell> --out results/backtests/_004_survey/<short>_c<c> --name <short>_c<c> --c <c> --selection-bound mean`
 - Base-rate-gate table: recompute via the calibrator on each cell's VAL + test (`fit_calibrator` + `cal.transform(...).p_mean`).
+- **Action charts** (per run, added retroactively via `scripts/backtests/plot_actions.py`, see `_020`): `results/backtests/_004_survey/<short>_c<c>/figs/actions.png`. Only `cell5_revalreg_*` shows trades; the four rare-event cells render as a **flat $100K cash line** — the 0-trade base-rate-gate finding made visual.
 
 ## Open questions / follow-ups (NEW experiment surfaced)
 
