@@ -191,7 +191,11 @@ def main() -> None:
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=float))
 
     # Action chart (strategy equity + index buy-hold + labeled buy/sell points).
-    plot_actions(out)
+    # Non-fatal: a plotting failure must not fail an otherwise-complete back-test.
+    try:
+        plot_actions(out)
+    except Exception as e:  # noqa: BLE001
+        print(f"[run_backtest_cell] WARN: action chart failed: {type(e).__name__}: {e}")
 
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(eq.index, eq.values, label=f"Strategy c={args.c}", lw=2)

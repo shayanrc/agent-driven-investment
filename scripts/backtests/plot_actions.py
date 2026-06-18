@@ -88,7 +88,8 @@ def _index_equity(summary: dict, t_start: pd.Timestamp, t_end: pd.Timestamp):
             return None, label, bh
         eq, _, _ = bm.buy_and_hold(series, t_start, t_end, INITIAL_CASH)
         return eq, label, bh
-    except Exception:
+    except Exception as e:  # uncached / no date-overlap — degrade, but say so (not silent)
+        print(f"[plot_actions] WARN: index curve unavailable for {ticker}: {type(e).__name__}: {e}")
         return None, label, bh
 
 
@@ -96,6 +97,11 @@ def plot_actions(run_dir: Path | str, out: Path | str | None = None) -> Path:
     """Render ``<run_dir>/figs/actions.png`` (or ``out``) and return its path."""
     run_dir = Path(run_dir)
     summary = json.loads((run_dir / "summary.json").read_text())
+    if "window" not in summary or "strategy" not in summary:
+        raise ValueError(
+            f"{run_dir}: not a single-window back-test run dir "
+            "(summary.json has no 'window'/'strategy' — rolling/regime runs have no per-trade picks)"
+        )
     window, strat = summary["window"], summary["strategy"]
     cfg = summary.get("config", {})
     out = Path(out) if out else run_dir / "figs" / "actions.png"
@@ -125,7 +131,9 @@ def plot_actions(run_dir: Path | str, out: Path | str | None = None) -> Path:
     if not pk.empty:
         pk = pk[pk["kind"].isin(["entry", "exit"])].copy()
     if not pk.empty:
-        eqd = eq.reindex(eq.index.union(pk["date"].unique())).ffill()
+        # ffill maps each pick date to the prevailing equity; bfill rescues a pick
+        # dated before the first equity point (else its marker/label silently vanish).
+        eqd = eq.reindex(eq.index.union(pk["date"].unique())).ffill().bfill()
         pk["y"] = pk["date"].map(eqd)
         ent = pk[pk["kind"] == "entry"]
         ex = pk[pk["kind"] == "exit"]
