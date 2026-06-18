@@ -1,0 +1,365 @@
+{
+  "experiment": "_022_vol_control",
+  "question": "Does an inverse-volatility (risk-parity) sizing control rescue raw ranking \u2014 keep the extra targets it hits without inheriting the extra beta/drawdown (the _021 follow-up)?",
+  "verdict": "No. Inverse-vol sizing does not rescue raw ranking and never beats the equal-weight champion: it softens the sp500_20 bear (-28.8%->-21.3%) but lowers return everywhere and worsens sp500_50 (bull +14.2%->+4.9%, bear -12.8%->-22.3%). On rare-event up-move cells the high-vol names ARE the return drivers, so down-weighting them sacrifices the winners. calib+equal wins return AND risk-adjusted in all 4 cells. Consistent with _012/_013/_014: no sizing scheme beats equal-weight top-3.",
+  "sizing": "equal vs inverse_vol (20d realized vol, risk parity); selection: calibrated vs raw; K=3, c=1.0, rank mode",
+  "equal_baselines_from": "_021 (results/backtests/_021_entry_p_threshold/rank_by/)",
+  "note": "First inverse_vol run hit a trim bug (_notional_f has no inverse_vol branch -> Kelly fall-through -> trimmed positions to ~0 -> churn). Fixed by skipping ratchet-down trim for inverse_vol. prob_weight likely shares the same fall-through (flagged, not fixed).",
+  "runs": {
+    "sp500_20_bull_calib_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": 0.5814,
+      "max_dd": -0.0727,
+      "gross_exposure_avg": 0.5542,
+      "entries": 13,
+      "unique_tickers": 8,
+      "exit_triggers": {
+        "target": 7,
+        "DD": 2,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_bull_calib_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated",
+        "vol_window": 20
+      },
+      "total_return": 0.3545,
+      "max_dd": -0.0907,
+      "gross_exposure_avg": 0.5774,
+      "entries": 22,
+      "unique_tickers": 10,
+      "exit_triggers": {
+        "target": 7,
+        "DD": 6,
+        "horizon": 9
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_bull_raw_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": 0.5662,
+      "max_dd": -0.1382,
+      "gross_exposure_avg": 0.6058,
+      "entries": 18,
+      "unique_tickers": 13,
+      "exit_triggers": {
+        "DD": 5,
+        "target": 9,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_bull_raw_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "raw",
+        "vol_window": 20
+      },
+      "total_return": 0.5019,
+      "max_dd": -0.1262,
+      "gross_exposure_avg": 0.5969,
+      "entries": 23,
+      "unique_tickers": 15,
+      "exit_triggers": {
+        "DD": 6,
+        "target": 13,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_bear_calib_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": -0.0577,
+      "max_dd": -0.323,
+      "gross_exposure_avg": 0.706,
+      "entries": 42,
+      "unique_tickers": 19,
+      "exit_triggers": {
+        "target": 5,
+        "DD": 19,
+        "horizon": 18
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_20_bear_calib_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated",
+        "vol_window": 20
+      },
+      "total_return": -0.1042,
+      "max_dd": -0.3251,
+      "gross_exposure_avg": 0.7223,
+      "entries": 64,
+      "unique_tickers": 29,
+      "exit_triggers": {
+        "target": 11,
+        "DD": 30,
+        "horizon": 23
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_20_bear_raw_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": -0.2884,
+      "max_dd": -0.3144,
+      "gross_exposure_avg": 0.678,
+      "entries": 54,
+      "unique_tickers": 29,
+      "exit_triggers": {
+        "DD": 30,
+        "target": 12,
+        "horizon": 12
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_20_bear_raw_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "raw",
+        "vol_window": 20
+      },
+      "total_return": -0.2134,
+      "max_dd": -0.3111,
+      "gross_exposure_avg": 0.6974,
+      "entries": 80,
+      "unique_tickers": 36,
+      "exit_triggers": {
+        "DD": 43,
+        "target": 14,
+        "horizon": 23
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_bull_calib_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": 0.1246,
+      "max_dd": -0.0927,
+      "gross_exposure_avg": 0.4412,
+      "entries": 4,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 1,
+        "horizon": 3
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_bull_calib_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated",
+        "vol_window": 20
+      },
+      "total_return": 0.0489,
+      "max_dd": -0.0627,
+      "gross_exposure_avg": 0.4304,
+      "entries": 4,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 1,
+        "horizon": 3
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_bull_raw_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": 0.1416,
+      "max_dd": -0.1502,
+      "gross_exposure_avg": 0.5512,
+      "entries": 5,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 2,
+        "DD": 1,
+        "horizon": 2
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_bull_raw_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "raw",
+        "vol_window": 20
+      },
+      "total_return": 0.0487,
+      "max_dd": -0.1281,
+      "gross_exposure_avg": 0.5305,
+      "entries": 6,
+      "unique_tickers": 5,
+      "exit_triggers": {
+        "target": 2,
+        "DD": 1,
+        "horizon": 3
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_bear_calib_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": -0.0925,
+      "max_dd": -0.3283,
+      "gross_exposure_avg": 0.6752,
+      "entries": 15,
+      "unique_tickers": 9,
+      "exit_triggers": {
+        "DD": 3,
+        "horizon": 12
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_bear_calib_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated",
+        "vol_window": 20
+      },
+      "total_return": -0.0477,
+      "max_dd": -0.2474,
+      "gross_exposure_avg": 0.7181,
+      "entries": 22,
+      "unique_tickers": 13,
+      "exit_triggers": {
+        "DD": 4,
+        "horizon": 18
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_bear_raw_equal": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": -0.1283,
+      "max_dd": -0.2963,
+      "gross_exposure_avg": 0.634,
+      "entries": 16,
+      "unique_tickers": 12,
+      "exit_triggers": {
+        "DD": 5,
+        "horizon": 11
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_bear_raw_inverse_vol": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "inverse_vol",
+        "rank_kelly_p": null,
+        "rank_by": "raw",
+        "vol_window": 20
+      },
+      "total_return": -0.2232,
+      "max_dd": -0.3683,
+      "gross_exposure_avg": 0.6751,
+      "entries": 21,
+      "unique_tickers": 15,
+      "exit_triggers": {
+        "DD": 5,
+        "horizon": 15,
+        "target": 1
+      },
+      "index_bh_return": -0.1742
+    }
+  }
+}

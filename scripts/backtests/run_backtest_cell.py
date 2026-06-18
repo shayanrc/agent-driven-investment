@@ -74,7 +74,11 @@ def main() -> None:
     ap.add_argument("--selection-bound", default="mean", choices=["mean", "low"])
     ap.add_argument("--selection-mode", default="breakeven", choices=["breakeven", "rank"],
                     help="rank = top-K by p-rank, no absolute breakeven gate (V1.2)")
-    ap.add_argument("--sizing-mode", default="kelly", choices=["kelly", "equal", "rank_kelly"])
+    ap.add_argument("--sizing-mode", default="kelly",
+                    choices=["kelly", "equal", "rank_kelly", "inverse_vol"])
+    ap.add_argument("--vol-window", type=int, default=20,
+                    help="trailing trading-day window for realized-vol (sizing-mode "
+                         "inverse_vol = risk parity: slice ∝ 1/vol). Default 20.")
     ap.add_argument("--rank-kelly-p", type=float, default=None,
                     help="eval hit-rate for rank_kelly sizing (default: eval R-p@K from the cell)")
     ap.add_argument("--rank-by", default="calibrated", choices=["calibrated", "raw"],
@@ -158,12 +162,34 @@ def main() -> None:
     bt = Backtest(feeds, lookback=LOOKBACK, initial_cash=INITIAL_CASH,
                   fill_mode="next_open", gap_policy="ffill_zero_volume")
 
+    # inverse_vol sizing: trailing realized vol per (signal-date, ticker), causal
+    # (returns through the signal day, matching the signal-day-close anchor). A
+    # wider pre-buffer than the OHLCV load so early signal dates have a full window.
+    vol_scores = None
+    if args.sizing_mode == "inverse_vol":
+        w = args.vol_window
+        vhist = _load_closes(tickers, t_start - pd.Timedelta(days=max(120, w * 3)),
+                             comparison_end)
+        vol_by_tk = {tk: s.sort_index().pct_change().rolling(w).std()
+                     for tk, s in vhist.items()}
+        vol_scores = {}
+        for d in preds:
+            dd = pd.Timestamp(d)
+            day = {}
+            for tk, vs in vol_by_tk.items():
+                if dd in vs.index:
+                    v = vs.loc[dd]
+                    if pd.notna(v) and v > 0:
+                        day[tk] = float(v)
+            vol_scores[dd] = day
+        print(f"[vol] inverse_vol: {w}d realized vol, {len(vol_by_tk)} tickers")
+
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
         selection_mode=args.selection_mode, sizing_mode=args.sizing_mode,
-        rank_kelly_p=rank_kelly_p, rank_scores=rank_scores,
+        rank_kelly_p=rank_kelly_p, rank_scores=rank_scores, vol_scores=vol_scores,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history); eq = eq[eq.index <= comparison_end]
@@ -196,7 +222,8 @@ def main() -> None:
         "cell": cell.name,
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K,
                    "selection_mode": args.selection_mode, "sizing_mode": args.sizing_mode,
-                   "rank_kelly_p": rank_kelly_p, "rank_by": args.rank_by},
+                   "rank_kelly_p": rank_kelly_p, "rank_by": args.rank_by,
+                   "vol_window": args.vol_window if args.sizing_mode == "inverse_vol" else None},
         "geometry": {"universe": universe, "win": WIN, "loss": LOSS, "horizon": HORIZON,
                      "breakeven_p": BREAKEVEN_P, "index": idx_label},
         "window": {"test_start": str(t_start.date()), "test_end": str(t_end.date()),
