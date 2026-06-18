@@ -313,6 +313,41 @@ def test_rank_scores_missing_ticker_falls_back_to_pmean():
     assert [o["asset"] for o in action["orders"]] == ["ZZZZ"]
 
 
+def test_inverse_vol_sizes_smaller_for_higher_vol():
+    """inverse_vol: slice ∝ 1/vol, normalized to fractional_c·gross_cap. A 4×-vol
+    name gets a 4× smaller slice (0.8 vs 0.2 for two equal-p picks)."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy(
+        {d: [("AAAA", 0.40, 0.3, 0.5), ("BBBB", 0.40, 0.3, 0.5)]},
+        K=2, selection_mode="rank", sizing_mode="inverse_vol",
+        fractional_c=1.0, gross_cap=1.0,
+        vol_scores={d: {"AAAA": 0.01, "BBBB": 0.04}},
+    )
+    s(_mk_state(5, d, 100_000, {}, {"AAAA": 100.0, "BBBB": 100.0}), {})
+    assert s._open["AAAA"]["f"] == pytest.approx(0.8, abs=1e-6)
+    assert s._open["BBBB"]["f"] == pytest.approx(0.2, abs=1e-6)
+
+
+def test_inverse_vol_missing_vol_falls_back_to_mean():
+    """A picked ticker absent from the day's vol_scores gets the mean-of-present
+    vol → it lands at ≈ equal weight rather than crashing or zeroing."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy(
+        {d: [("AAAA", 0.40, 0.3, 0.5), ("BBBB", 0.40, 0.3, 0.5)]},
+        K=2, selection_mode="rank", sizing_mode="inverse_vol",
+        fractional_c=1.0, gross_cap=1.0,
+        vol_scores={d: {"AAAA": 0.02}},  # BBBB missing → fallback 0.02 = same as AAAA
+    )
+    s(_mk_state(5, d, 100_000, {}, {"AAAA": 100.0, "BBBB": 100.0}), {})
+    assert s._open["AAAA"]["f"] == pytest.approx(0.5, abs=1e-6)
+    assert s._open["BBBB"]["f"] == pytest.approx(0.5, abs=1e-6)
+
+
+def test_inverse_vol_requires_vol_scores():
+    with pytest.raises(ValueError, match="inverse_vol.*requires vol_scores"):
+        _strategy({}, sizing_mode="inverse_vol")
+
+
 # -- exits -------------------------------------------------------------------
 def _enter(s, d, equity=100_000, close=100.0, p=0.40):
     s(_mk_state(5, d, equity, {}, {"AAPL": close}), {})

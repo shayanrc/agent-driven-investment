@@ -93,6 +93,7 @@ class TopKDailyKellyLabelExit:
         prob_weight_alpha: float = 1.0,  # prob_weight sharpness: weight ∝ p**alpha (_014)
         enable_breakeven_exit: bool | None = None,  # None → auto (off in rank mode)
         rank_scores: dict[pd.Timestamp, dict[str, float]] | None = None,
+        vol_scores: dict[pd.Timestamp, dict[str, float]] | None = None,
     ) -> None:
         self._preds = {pd.Timestamp(k): v for k, v in predictions.items()}
         # Optional per-(date, ticker) ranking score that overrides p_mean for the
@@ -103,6 +104,16 @@ class TopKDailyKellyLabelExit:
         self._rank_scores = (
             {pd.Timestamp(k): dict(v) for k, v in rank_scores.items()}
             if rank_scores is not None else None
+        )
+        # Optional per-(date, ticker) realized-volatility used by sizing_mode=
+        # "inverse_vol": each of the day's selected names gets a slice ∝ 1/vol,
+        # normalized so the book targets fractional_c·gross_cap (risk parity).
+        # Keeps raw SELECTION but damps the high-beta names that rank_by="raw"
+        # surfaces (see docs/backtests/_021). Missing/≤0 vol → mean-of-present
+        # fallback (≈ equal weight for that name).
+        self._vol_scores = (
+            {pd.Timestamp(k): dict(v) for k, v in vol_scores.items()}
+            if vol_scores is not None else None
         )
         self.K = K
         self.target_return = target_return
@@ -133,13 +144,15 @@ class TopKDailyKellyLabelExit:
             raise ValueError(
                 f"selection_mode must be 'breakeven' or 'rank'; got {selection_mode!r}"
             )
-        if sizing_mode not in ("kelly", "equal", "rank_kelly", "prob_weight"):
+        if sizing_mode not in ("kelly", "equal", "rank_kelly", "prob_weight", "inverse_vol"):
             raise ValueError(
-                "sizing_mode must be 'kelly', 'equal', 'rank_kelly' or "
-                f"'prob_weight'; got {sizing_mode!r}"
+                "sizing_mode must be 'kelly', 'equal', 'rank_kelly', "
+                f"'prob_weight' or 'inverse_vol'; got {sizing_mode!r}"
             )
         if sizing_mode == "rank_kelly" and rank_kelly_p is None:
             raise ValueError("sizing_mode='rank_kelly' requires rank_kelly_p (eval hit-rate)")
+        if sizing_mode == "inverse_vol" and vol_scores is None:
+            raise ValueError("sizing_mode='inverse_vol' requires vol_scores (per-date,ticker realized vol)")
         # "rank" selection: take the day's top-K by p_mean WITHOUT the absolute
         # p > breakeven gate, so a strongly-ranked rare-event cell still trades.
         self.selection_mode = selection_mode
@@ -272,7 +285,12 @@ class TopKDailyKellyLabelExit:
                     continue
 
                 # TRIM pass — ratchet-down only (D13). Only if p_today present.
-                if tk in p_today:
+                # Skip for inverse_vol: the per-name weight is set over the daily
+                # selected set at entry and has no per-position _notional_f form, so
+                # _notional_f would fall through to the Kelly target (≈0 on
+                # sub-breakeven cells) and trim every position to ~0 — freeing room
+                # and re-entering 3 names daily (a churn artifact, not a strategy).
+                if tk in p_today and self.sizing_mode != "inverse_vol":
                     new_f = self._notional_f(p_today[tk])
                     cur_f = (shares * c) / equity if equity > 0 else 0.0
                     if new_f < cur_f:
@@ -336,6 +354,24 @@ class TopKDailyKellyLabelExit:
             if wsum > 0.0:
                 prob_w = {tk: self.fractional_c * self.gross_cap * (pm ** a / wsum)
                           for tk, pm in selected}
+        # "inverse_vol" (_022): risk-parity — slice ∝ 1/realized-vol, normalized so
+        # the book targets fractional_c·gross_cap. Selection is unchanged (so
+        # rank_by="raw" still picks the high-hit-rate names) but the high-vol/high-
+        # beta names get smaller slices. Missing/≤0 vol → mean-of-present fallback
+        # (that name lands ≈ equal weight). Normalizer needs the whole selected set.
+        vol_w: dict[str, float] = {}
+        if self.sizing_mode == "inverse_vol":
+            day_vol = self._vol_scores.get(ts, {}) if self._vol_scores is not None else {}
+            present = [day_vol[tk] for tk, _ in selected
+                       if day_vol.get(tk, 0.0) and day_vol[tk] > 0.0]
+            fallback = (sum(present) / len(present)) if present else 1.0
+            inv = {tk: 1.0 / (day_vol[tk] if day_vol.get(tk, 0.0) and day_vol[tk] > 0.0
+                              else fallback)
+                   for tk, _ in selected}
+            isum = sum(inv.values())
+            if isum > 0.0:
+                vol_w = {tk: self.fractional_c * self.gross_cap * (inv[tk] / isum)
+                         for tk, _ in selected}
         equal_slice = self.fractional_c * self.gross_cap / self.K
         for tk, pm in selected:
             if room <= 0.0:
@@ -345,6 +381,11 @@ class TopKDailyKellyLabelExit:
                 # dust cut at half the equal slice: drop a pick whose p-share is
                 # below half the average allocation (genuine tail), keep the tilt.
                 floor = 0.5 * equal_slice
+            elif self.sizing_mode == "inverse_vol":
+                intended_f = vol_w.get(tk, 0.0)
+                # gentle floor (10% of equal) — risk parity intentionally makes the
+                # high-vol names small; a 0.5·equal floor would clip exactly them.
+                floor = 0.1 * equal_slice
             else:
                 intended_f = self._notional_f(pm)
                 if self.sizing_mode == "equal":
