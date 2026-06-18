@@ -1,0 +1,152 @@
+{
+  "experiment": "_023_probweight_trim_fix",
+  "question": "Fix the prob_weight ratchet-down trim bug (it called _notional_f -> Kelly fall-through -> trimmed to ~0 -> daily churn -> spurious whole-universe spreading) and re-check the _013/_014 conclusions.",
+  "verdict": "The _013/_014 'prob_weight spreads across the whole universe / de-risker' mechanism was a BUG ARTIFACT: sp500_50 entries 406->24 (trims 394->0), r1k ~890(published)->84, nifty ->43. Corrected conclusion is MIXED: equal-K=3 still beats prob_weight on sp500_50 (+12.5% vs +1.6%) and nifty (-4.3% vs -14.7%), but prob_weight K=20 BEATS equal-K=3 on r1k (+63.5%/94% vs +17.6%/60%) -- reversing _013's 'r1k 90%->4% destroyed'. So _013/_014's blanket 'no weighting beats equal top-3' does NOT survive the fix. Single-window (aligned cells differ from the _013 originals); needs the full rolling re-run with fresh inference to confirm the r1k reversal.",
+  "sp500_50_bug_on_vs_off": {
+    "bug_on": {
+      "entries": 406,
+      "unique_tickers": 406,
+      "trims": 394,
+      "total_return": -0.027,
+      "max_dd": -0.06,
+      "note": "pre-fix churn (same cell)"
+    },
+    "bug_off": {
+      "entries": 24,
+      "unique_tickers": 23,
+      "trims": 0,
+      "total_return": 0.016,
+      "max_dd": -0.0948,
+      "pct_windows_beat": 33.3,
+      "median_excess_pct": -2.67,
+      "n_windows": 12,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 1.0
+      }
+    }
+  },
+  "runs": {
+    "nifty_50_50d_equal_k3": {
+      "entries": 7,
+      "unique_tickers": 7,
+      "trims": 27,
+      "total_return": -0.0432,
+      "max_dd": -0.1884,
+      "pct_windows_beat": 72.7,
+      "median_excess_pct": 3.06,
+      "n_windows": 22,
+      "config": {
+        "K": 3,
+        "sizing_mode": "equal",
+        "prob_weight_alpha": null
+      }
+    },
+    "nifty_50_50d_pw_k20": {
+      "entries": 43,
+      "unique_tickers": 39,
+      "trims": 0,
+      "total_return": -0.1469,
+      "max_dd": -0.1587,
+      "pct_windows_beat": 54.5,
+      "median_excess_pct": 0.46,
+      "n_windows": 22,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 1.0
+      }
+    },
+    "r1k_50_equal_k3": {
+      "entries": 10,
+      "unique_tickers": 8,
+      "trims": 57,
+      "total_return": 0.1758,
+      "max_dd": -0.251,
+      "pct_windows_beat": 59.7,
+      "median_excess_pct": 1.9,
+      "n_windows": 62,
+      "config": {
+        "K": 3,
+        "sizing_mode": "equal",
+        "prob_weight_alpha": null
+      }
+    },
+    "r1k_50_pw_k20": {
+      "entries": 84,
+      "unique_tickers": 42,
+      "trims": 0,
+      "total_return": 0.6348,
+      "max_dd": -0.2523,
+      "pct_windows_beat": 93.5,
+      "median_excess_pct": 21.46,
+      "n_windows": 62,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 1.0
+      }
+    },
+    "r1k_50_pw_k20_a4": {
+      "entries": 76,
+      "unique_tickers": 42,
+      "trims": 0,
+      "total_return": 0.6717,
+      "max_dd": -0.253,
+      "pct_windows_beat": 98.4,
+      "median_excess_pct": 21.89,
+      "n_windows": 62,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 4.0
+      }
+    },
+    "sp500_50_equal_k3": {
+      "entries": 4,
+      "unique_tickers": 4,
+      "trims": 24,
+      "total_return": 0.1246,
+      "max_dd": -0.0927,
+      "pct_windows_beat": 58.3,
+      "median_excess_pct": 1.81,
+      "n_windows": 12,
+      "config": {
+        "K": 3,
+        "sizing_mode": "equal",
+        "prob_weight_alpha": null
+      }
+    },
+    "sp500_50_pw_k20": {
+      "entries": 24,
+      "unique_tickers": 23,
+      "trims": 0,
+      "total_return": 0.016,
+      "max_dd": -0.0948,
+      "pct_windows_beat": 33.3,
+      "median_excess_pct": -2.67,
+      "n_windows": 12,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 1.0
+      }
+    },
+    "sp500_50_pw_k20_a4": {
+      "entries": 24,
+      "unique_tickers": 23,
+      "trims": 0,
+      "total_return": 0.016,
+      "max_dd": -0.0948,
+      "pct_windows_beat": 33.3,
+      "median_excess_pct": -2.67,
+      "n_windows": 12,
+      "config": {
+        "K": 20,
+        "sizing_mode": "prob_weight",
+        "prob_weight_alpha": 4.0
+      }
+    }
+  }
+}

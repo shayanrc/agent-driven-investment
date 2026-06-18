@@ -75,7 +75,10 @@ def main() -> None:
     ap.add_argument("--selection-mode", default="breakeven", choices=["breakeven", "rank"],
                     help="rank = top-K by p-rank, no absolute breakeven gate (V1.2)")
     ap.add_argument("--sizing-mode", default="kelly",
-                    choices=["kelly", "equal", "rank_kelly", "inverse_vol"])
+                    choices=["kelly", "equal", "rank_kelly", "inverse_vol", "prob_weight"])
+    ap.add_argument("--prob-weight-alpha", type=float, default=1.0,
+                    help="prob_weight sharpness: weight ∝ p**alpha (α=1 raw p; α>1 "
+                         "concentrates on the highest-p picks) (_014)")
     ap.add_argument("--vol-window", type=int, default=20,
                     help="trailing trading-day window for realized-vol (sizing-mode "
                          "inverse_vol = risk parity: slice ∝ 1/vol). Default 20.")
@@ -190,6 +193,7 @@ def main() -> None:
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
         selection_mode=args.selection_mode, sizing_mode=args.sizing_mode,
         rank_kelly_p=rank_kelly_p, rank_scores=rank_scores, vol_scores=vol_scores,
+        prob_weight_alpha=args.prob_weight_alpha,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history); eq = eq[eq.index <= comparison_end]
@@ -223,7 +227,8 @@ def main() -> None:
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K,
                    "selection_mode": args.selection_mode, "sizing_mode": args.sizing_mode,
                    "rank_kelly_p": rank_kelly_p, "rank_by": args.rank_by,
-                   "vol_window": args.vol_window if args.sizing_mode == "inverse_vol" else None},
+                   "vol_window": args.vol_window if args.sizing_mode == "inverse_vol" else None,
+                   "prob_weight_alpha": args.prob_weight_alpha if args.sizing_mode == "prob_weight" else None},
         "geometry": {"universe": universe, "win": WIN, "loss": LOSS, "horizon": HORIZON,
                      "breakeven_p": BREAKEVEN_P, "index": idx_label},
         "window": {"test_start": str(t_start.date()), "test_end": str(t_end.date()),

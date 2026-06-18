@@ -1,5 +1,14 @@
 # _013: precision-weighted sizing — raw-p weighting can't concentrate (it's a de-risker)
 
+> **⚠️ CORRECTION (see [_023](_023_probweight_trim_fix.md)).** The "prob_weight spreads across
+> the whole universe (486/890 entries) → de-risker → destroys the edge (sp500 92%→38%, r1k
+> 90%→**4%**)" result below is **bug-contaminated**. A ratchet-down-trim bug (`_notional_f`
+> Kelly fall-through → trim every position to ~0 → daily churn) spuriously inflated prob_weight
+> to a whole-universe closet-index. Fixed in `_023`: on the same cell prob_weight K=20 collapses
+> **406 → 24 entries (394 → 0 trims)**, and the corrected reading is **mixed** — equal-K=3 still
+> wins sp500_50/nifty, but prob_weight K=20 **beats** equal-K=3 on r1k (+63.5%/94% vs +17.6%/60%),
+> reversing the headline here. Treat this memo's mechanism claims as superseded by `_023`.
+
 ## TL;DR
 
 `_012` ended with: *optimal K tracks R-p@1; high precision wants concentration*. The

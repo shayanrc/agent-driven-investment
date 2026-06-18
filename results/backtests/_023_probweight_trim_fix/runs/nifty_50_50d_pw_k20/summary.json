@@ -1,0 +1,77 @@
+{
+  "cell": "nifty500_up_50pct_50d_dd25pct_aligned",
+  "config": {
+    "fractional_c": 1.0,
+    "selection_bound": "mean",
+    "K": 20,
+    "selection_mode": "rank",
+    "sizing_mode": "prob_weight",
+    "rank_kelly_p": null,
+    "rank_by": "calibrated",
+    "vol_window": null,
+    "prob_weight_alpha": 1.0
+  },
+  "geometry": {
+    "universe": "nifty500",
+    "win": 0.5,
+    "loss": 0.25,
+    "horizon": 50,
+    "breakeven_p": 0.3333333333333333,
+    "index": "NIFTY500"
+  },
+  "window": {
+    "test_start": "2024-09-04",
+    "test_end": "2025-01-27",
+    "comparison_end": "2025-04-09",
+    "data_end": "2025-06-16"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 85307.37000000001,
+    "total_return": -0.14692629999999995,
+    "cagr": -0.22388170672683294,
+    "max_dd": -0.15869579999999983,
+    "n_trades": 82,
+    "gross_exposure_avg": 0.51491091199697
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 100000.0,
+      "end": 85716.60020114419,
+      "total_return": -0.14283399798855811,
+      "cagr": -0.22812123294288567,
+      "max_dd": -0.18843201862352954,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 99999.99999999948,
+      "end": 79779.98585098388,
+      "total_return": -0.20220014149015697,
+      "cagr": -0.3158019307332356,
+      "max_dd": -0.2430383397279826,
+      "n_trades": 376,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 43,
+    "exits": 39,
+    "trims": 0,
+    "unique_tickers": 39,
+    "open_at_end": 4
+  },
+  "exit_triggers": {
+    "DD": 8,
+    "horizon": 31
+  }
+}
