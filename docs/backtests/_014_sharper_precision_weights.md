@@ -1,12 +1,13 @@
 # _014: sharper precision weights — the edge is in SELECTION, not weighting
 
-> **⚠️ CORRECTION (see [_023](_023_probweight_trim_fix.md)).** The "α never concentrates —
-> entries stay full-universe (486/890) for every α" result below is **bug-contaminated** by the
-> same ratchet-down-trim churn as `_013`. Fixed in `_023`, prob_weight holds ~K-scale books
-> (sp500_50 K=20 → 24 names, not 486), and the blanket claim *"no weighting scheme beats
-> equal-weight top-3"* **does not survive** — prob_weight K=20 (α=1 and α=4) **beats** equal-K=3
-> on r1k. The α-insensitivity finding itself is moot once the book is no longer the whole
-> universe. Treat this memo as superseded by `_023` for the prob_weight conclusions.
+> **⚠️ CORRECTION (mechanism only — see [_023](_023_probweight_trim_fix.md)).** The "α never
+> concentrates — entries stay full-universe (486/890) for every α" *mechanism* below is
+> **bug-contaminated** by the same ratchet-down-trim churn as `_013`. Fixed in `_023`, prob_weight
+> holds ~K-scale books (sp500_50 K=20 → 24 names, not 486). **The blanket verdict *"no weighting
+> scheme beats equal-weight top-3"* survives** the fix: the corrected rolling re-run has equal-K=3
+> ≥ prob_weight on every cell incl. r1k (an apparent r1k reversal was retracted once re-run on the
+> model-bearing champions). The α-insensitivity framing is moot once the book is no longer the
+> whole universe; read the mechanism here as superseded by `_023`, the conclusion as intact.
 
 ## TL;DR
 
