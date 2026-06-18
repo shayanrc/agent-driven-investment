@@ -1,0 +1,303 @@
+{
+  "experiment": "_021_entry_p_threshold",
+  "question": "Is there an entry-p threshold separating winners from losers? And does ranking the entry top-K by raw score (vs quantized calibrated p) help?",
+  "verdict": "No within-entry calibrated-p threshold (one wide plateau; selection is alphabetical). Raw score DOES order the label within the plateau (hit-rate), but ranking on it does NOT improve return and worsens drawdown/risk-adjusted return in every cell+regime (bear sp500_20: -5.8% -> -28.8%). Keep calibrated ranking.",
+  "rank_by_runs": {
+    "sp500_20_bear_calibrated": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": -0.0577,
+      "max_dd": -0.323,
+      "gross_exposure_avg": 0.706,
+      "entries": 42,
+      "unique_tickers": 19,
+      "exit_triggers": {
+        "target": 5,
+        "DD": 19,
+        "horizon": 18
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_20_bear_raw": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": -0.2884,
+      "max_dd": -0.3144,
+      "gross_exposure_avg": 0.678,
+      "entries": 54,
+      "unique_tickers": 29,
+      "exit_triggers": {
+        "DD": 30,
+        "target": 12,
+        "horizon": 12
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_20_calibrated": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": 0.5814,
+      "max_dd": -0.0727,
+      "gross_exposure_avg": 0.5542,
+      "entries": 13,
+      "unique_tickers": 8,
+      "exit_triggers": {
+        "target": 7,
+        "DD": 2,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_20_raw": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": 0.5662,
+      "max_dd": -0.1382,
+      "gross_exposure_avg": 0.6058,
+      "entries": 18,
+      "unique_tickers": 13,
+      "exit_triggers": {
+        "DD": 5,
+        "target": 9,
+        "horizon": 4
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_bear_calibrated": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": -0.0925,
+      "max_dd": -0.3283,
+      "gross_exposure_avg": 0.6752,
+      "entries": 15,
+      "unique_tickers": 9,
+      "exit_triggers": {
+        "DD": 3,
+        "horizon": 12
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_bear_raw": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": -0.1283,
+      "max_dd": -0.2963,
+      "gross_exposure_avg": 0.634,
+      "entries": 16,
+      "unique_tickers": 12,
+      "exit_triggers": {
+        "DD": 5,
+        "horizon": 11
+      },
+      "index_bh_return": -0.1742
+    },
+    "sp500_50_calibrated": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "calibrated"
+      },
+      "total_return": 0.1246,
+      "max_dd": -0.0927,
+      "gross_exposure_avg": 0.4412,
+      "entries": 4,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 1,
+        "horizon": 3
+      },
+      "index_bh_return": 0.0837
+    },
+    "sp500_50_raw": {
+      "config": {
+        "fractional_c": 1.0,
+        "selection_bound": "mean",
+        "K": 3,
+        "selection_mode": "rank",
+        "sizing_mode": "equal",
+        "rank_kelly_p": null,
+        "rank_by": "raw"
+      },
+      "total_return": 0.1416,
+      "max_dd": -0.1502,
+      "gross_exposure_avg": 0.5512,
+      "entries": 5,
+      "unique_tickers": 4,
+      "exit_triggers": {
+        "target": 2,
+        "DD": 1,
+        "horizon": 2
+      },
+      "index_bh_return": 0.0837
+    }
+  },
+  "diagnostics": {
+    "sp500_20": {
+      "base_rate": 0.0886,
+      "top_plateau_width": {
+        "median": 102,
+        "min": 18,
+        "max": 174
+      },
+      "plateau_calibration": [
+        {
+          "cal_p": 0.1304,
+          "n": 7168,
+          "realized_hit": 0.2263
+        },
+        {
+          "cal_p": 0.0698,
+          "n": 5017,
+          "realized_hit": 0.121
+        },
+        {
+          "cal_p": 0.0516,
+          "n": 4409,
+          "realized_hit": 0.0796
+        },
+        {
+          "cal_p": 0.0407,
+          "n": 3176,
+          "realized_hit": 0.0548
+        },
+        {
+          "cal_p": 0.0338,
+          "n": 4087,
+          "realized_hit": 0.046
+        },
+        {
+          "cal_p": 0.0223,
+          "n": 4555,
+          "realized_hit": 0.0307
+        },
+        {
+          "cal_p": 0.0147,
+          "n": 3729,
+          "realized_hit": 0.0239
+        },
+        {
+          "cal_p": 0.01,
+          "n": 1451,
+          "realized_hit": 0.0172
+        },
+        {
+          "cal_p": 0.0042,
+          "n": 2741,
+          "realized_hit": 0.012
+        },
+        {
+          "cal_p": 0.0014,
+          "n": 117,
+          "realized_hit": 0.0
+        }
+      ],
+      "within_top_plateau_raw_quintile_hit": [
+        0.1646,
+        0.1807,
+        0.2169,
+        0.2477,
+        0.3215
+      ],
+      "corr_praw_label_within_plateau": 0.1246
+    },
+    "sp500_50": {
+      "base_rate": 0.0257,
+      "top_plateau_width": {
+        "median": 109,
+        "min": 80,
+        "max": 154
+      },
+      "plateau_calibration": [
+        {
+          "cal_p": 0.0471,
+          "n": 5543,
+          "realized_hit": 0.0999
+        },
+        {
+          "cal_p": 0.006,
+          "n": 5215,
+          "realized_hit": 0.0054
+        },
+        {
+          "cal_p": 0.0045,
+          "n": 1358,
+          "realized_hit": 0.0066
+        },
+        {
+          "cal_p": 0.0036,
+          "n": 2866,
+          "realized_hit": 0.0052
+        },
+        {
+          "cal_p": 0.0027,
+          "n": 3791,
+          "realized_hit": 0.0042
+        },
+        {
+          "cal_p": 0.0018,
+          "n": 3195,
+          "realized_hit": 0.0006
+        },
+        {
+          "cal_p": 0.0009,
+          "n": 2332,
+          "realized_hit": 0.0
+        }
+      ],
+      "within_top_plateau_raw_quintile_hit": [
+        0.0054,
+        0.0443,
+        0.0965,
+        0.111,
+        0.2426
+      ],
+      "corr_praw_label_within_plateau": 0.2724
+    }
+  }
+}

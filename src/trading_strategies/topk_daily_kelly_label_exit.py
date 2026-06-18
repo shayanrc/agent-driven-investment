@@ -92,8 +92,18 @@ class TopKDailyKellyLabelExit:
         rank_kelly_p: float | None = None,  # eval hit-rate for rank_kelly sizing
         prob_weight_alpha: float = 1.0,  # prob_weight sharpness: weight ∝ p**alpha (_014)
         enable_breakeven_exit: bool | None = None,  # None → auto (off in rank mode)
+        rank_scores: dict[pd.Timestamp, dict[str, float]] | None = None,
     ) -> None:
         self._preds = {pd.Timestamp(k): v for k, v in predictions.items()}
+        # Optional per-(date, ticker) ranking score that overrides p_mean for the
+        # entry top-K sort ONLY (sizing + breakeven gate stay on p_mean). Used to
+        # rank by the finest-resolution raw model score instead of the quantized
+        # calibrated p (rank_by="raw"); see docs/backtests/_020. A missing ticker
+        # for a day falls back to that row's p_mean.
+        self._rank_scores = (
+            {pd.Timestamp(k): dict(v) for k, v in rank_scores.items()}
+            if rank_scores is not None else None
+        )
         self.K = K
         self.target_return = target_return
         self.stop_drawdown = stop_drawdown
@@ -287,6 +297,17 @@ class TopKDailyKellyLabelExit:
             1.0 - self.cash_buffer
         )
 
+        # D21 ordering. The RANK key defaults to p_mean, but can be overridden by
+        # an external per-(date,ticker) score (rank_by="raw" → the finest-resolution
+        # raw model score). Conditional-isotonic calibration quantizes p_mean into
+        # wide tied plateaus, so ranking on it degenerates to the alphabetical
+        # tie-break; ranking on the raw score recovers the within-plateau ordering
+        # (see docs/backtests/_020). Sizing + the breakeven gate stay on p_mean.
+        day_scores = self._rank_scores.get(ts) if self._rank_scores is not None else None
+
+        def _rank_key(tk: str, pm: float) -> float:
+            return day_scores.get(tk, pm) if day_scores is not None else pm
+
         candidates = sorted(
             [
                 (tk, pm)
@@ -299,7 +320,7 @@ class TopKDailyKellyLabelExit:
                 and tk not in self._open
                 and tk not in exited_today  # D14: not the same day
             ],
-            key=lambda x: (-x[1], x[0]),  # D21: p desc, ticker asc
+            key=lambda x: (-_rank_key(x[0], x[1]), x[0]),  # rank desc, ticker asc
         )
         selected = candidates[: self.K]
         # "prob_weight" (_013): size each of the day's top-K ∝ its calibrated p,

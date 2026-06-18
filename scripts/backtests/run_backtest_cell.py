@@ -77,6 +77,11 @@ def main() -> None:
     ap.add_argument("--sizing-mode", default="kelly", choices=["kelly", "equal", "rank_kelly"])
     ap.add_argument("--rank-kelly-p", type=float, default=None,
                     help="eval hit-rate for rank_kelly sizing (default: eval R-p@K from the cell)")
+    ap.add_argument("--rank-by", default="calibrated", choices=["calibrated", "raw"],
+                    help="entry-ranking key: 'calibrated' (default = p_mean, the recalibrated "
+                         "p) or 'raw' (the model's p_raw — finer resolution, recovers the "
+                         "within-plateau ordering the quantized calibrated p loses; see _020). "
+                         "Sizing + breakeven gate stay on the calibrated p either way.")
     ap.add_argument("--predictions", default=None,
                     help="default: <cell>/predictions/test.csv")
     args = ap.parse_args()
@@ -118,6 +123,17 @@ def main() -> None:
     pred_csv = Path(args.predictions) if args.predictions else cell / "predictions" / "test.csv"
     test = pd.read_csv(pred_csv, parse_dates=["date"])
     preds = _predictions_dict(test, cal)
+    # rank_by="raw": rank the entry top-K on the model's finest-resolution raw
+    # score instead of the quantized calibrated p (which ties wide plateaus and
+    # degenerates to the alphabetical tie-break). Sizing/breakeven stay calibrated.
+    rank_scores = None
+    if args.rank_by == "raw":
+        if "p_raw" not in test.columns:
+            raise ValueError("--rank-by raw needs a 'p_raw' column in the predictions CSV")
+        rank_scores = {
+            pd.Timestamp(d): dict(zip(sub.ticker, sub.p_raw))
+            for d, sub in test.groupby("date")
+        }
     tickers = sorted(test.ticker.unique())
     t_start, t_end = test.date.min(), test.date.max()
     print(f"[preds] {pred_csv.name}: [{t_start.date()}..{t_end.date()}] "
@@ -147,7 +163,7 @@ def main() -> None:
         horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
         selection_mode=args.selection_mode, sizing_mode=args.sizing_mode,
-        rank_kelly_p=rank_kelly_p,
+        rank_kelly_p=rank_kelly_p, rank_scores=rank_scores,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history); eq = eq[eq.index <= comparison_end]
@@ -180,7 +196,7 @@ def main() -> None:
         "cell": cell.name,
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K,
                    "selection_mode": args.selection_mode, "sizing_mode": args.sizing_mode,
-                   "rank_kelly_p": rank_kelly_p},
+                   "rank_kelly_p": rank_kelly_p, "rank_by": args.rank_by},
         "geometry": {"universe": universe, "win": WIN, "loss": LOSS, "horizon": HORIZON,
                      "breakeven_p": BREAKEVEN_P, "index": idx_label},
         "window": {"test_start": str(t_start.date()), "test_end": str(t_end.date()),
