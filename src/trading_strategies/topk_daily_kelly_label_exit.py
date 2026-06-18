@@ -285,12 +285,14 @@ class TopKDailyKellyLabelExit:
                     continue
 
                 # TRIM pass — ratchet-down only (D13). Only if p_today present.
-                # Skip for inverse_vol: the per-name weight is set over the daily
-                # selected set at entry and has no per-position _notional_f form, so
-                # _notional_f would fall through to the Kelly target (≈0 on
-                # sub-breakeven cells) and trim every position to ~0 — freeing room
-                # and re-entering 3 names daily (a churn artifact, not a strategy).
-                if tk in p_today and self.sizing_mode != "inverse_vol":
+                # Skip for the daily-normalized weight modes (prob_weight, inverse_vol):
+                # their per-name weight is set over the day's selected set at entry and
+                # has no per-position _notional_f form, so _notional_f would fall through
+                # to the Kelly target (≈0 on sub-breakeven cells) and trim every position
+                # to ~0 — freeing room and re-entering K names daily (a churn artifact,
+                # not a strategy: it spuriously spread prob_weight across the whole
+                # universe in _013/_014; corrected per docs/backtests/_023).
+                if tk in p_today and self.sizing_mode not in ("inverse_vol", "prob_weight"):
                     new_f = self._notional_f(p_today[tk])
                     cur_f = (shares * c) / equity if equity > 0 else 0.0
                     if new_f < cur_f:

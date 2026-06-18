@@ -374,6 +374,40 @@ def test_target_exit():
     assert s.events[-1].trigger == "target"
 
 
+def test_prob_weight_not_ratchet_trimmed_to_zero():
+    """_023 regression: a held prob_weight position must NOT be ratchet-down trimmed on a
+    later day. The trim called _notional_f (Kelly fall-through ≈0 on sub-breakeven p), which
+    zeroed the position → freed room → re-entered K names daily → spurious whole-universe
+    spreading (the _013/_014 artifact). The fix skips the trim for prob_weight/inverse_vol.
+    """
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.05, 0.02, 0.10)], d1: [("AAPL", 0.05, 0.02, 0.10)]},
+                  selection_mode="rank", sizing_mode="prob_weight", fractional_c=1.0)
+    _enter(s, d0, close=100.0)            # sub-breakeven pick entered (rank mode)
+    assert "AAPL" in s._open
+    # day 1: position held, price flat (no DD/target/horizon), p_today present.
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 100.0}), {})
+    assert "AAPL" in s._open                                   # not zeroed
+    assert not any(e.kind == "trim" for e in s.events)         # the fix: no ratchet trim
+    if action is not None:                                     # and no sell order
+        assert all(o["qty"] >= 0 for o in action["orders"])
+
+
+def test_inverse_vol_not_ratchet_trimmed_to_zero():
+    """_022/_023: same guarantee for inverse_vol (set-at-entry weight, no _notional_f form)."""
+    d0, d1 = pd.Timestamp("2025-01-02"), pd.Timestamp("2025-01-03")
+    s = _strategy({d0: [("AAPL", 0.05, 0.02, 0.10)], d1: [("AAPL", 0.05, 0.02, 0.10)]},
+                  selection_mode="rank", sizing_mode="inverse_vol", fractional_c=1.0,
+                  vol_scores={d0: {"AAPL": 0.02}, d1: {"AAPL": 0.02}})
+    _enter(s, d0, close=100.0)
+    assert "AAPL" in s._open
+    action = s(_mk_state(6, d1, 100_000, {"AAPL": 1000}, {"AAPL": 100.0}), {})
+    assert "AAPL" in s._open
+    assert not any(e.kind == "trim" for e in s.events)
+    if action is not None:
+        assert all(o["qty"] >= 0 for o in action["orders"])
+
+
 def test_horizon_exit():
     d0 = pd.Timestamp("2025-01-02")
     dh = pd.Timestamp("2025-04-01")
