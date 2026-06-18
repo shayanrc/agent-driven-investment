@@ -1,0 +1,51 @@
+{
+  "question": "Confirm the _023 r1k reversal with the canonical rolling runner across r1k cells.",
+  "verdict": "NOT confirmed -- reversal was a non-canonical-cell artifact. On both model-bearing agent cells equal-K=3 beats prob_weight (the _013/_014 direction); only the predictions-only _aligned cell (used by _023's single-window) showed prob_weight winning. Fresh-extended rolling blocked by the inference faithfulness self-check (training feature-matrix not cached; _007 alignment issue).",
+  "rolling_window_days": 200,
+  "stride": 5,
+  "oos": "test-only 2023-07..2024-10 (~20 windows)",
+  "runs": {
+    "_aligned\n(no model)": {
+      "equal_k3": {
+        "ret%": 16.3,
+        "pct_beat": 55.00000000000001,
+        "nwin": 20,
+        "entries": 10
+      },
+      "pw_k20": {
+        "ret%": 57.5,
+        "pct_beat": 100.0,
+        "nwin": 20,
+        "entries": 84
+      }
+    },
+    "_aligned_agent\n(model)": {
+      "equal_k3": {
+        "ret%": 61.8,
+        "pct_beat": 100.0,
+        "nwin": 20,
+        "entries": 12
+      },
+      "pw_k20": {
+        "ret%": 37.0,
+        "pct_beat": 100.0,
+        "nwin": 20,
+        "entries": 64
+      }
+    },
+    "_aligned_agent_v14p1\n(model)": {
+      "equal_k3": {
+        "ret%": 58.2,
+        "pct_beat": 100.0,
+        "nwin": 20,
+        "entries": 12
+      },
+      "pw_k20": {
+        "ret%": 31.2,
+        "pct_beat": 75.0,
+        "nwin": 20,
+        "entries": 72
+      }
+    }
+  }
+}

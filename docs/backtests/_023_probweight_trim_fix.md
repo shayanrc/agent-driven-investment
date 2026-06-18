@@ -1,5 +1,15 @@
 # _023: the prob_weight trim bug — _013/_014's "whole-universe spreading" was an artifact
 
+> **⚠️ UPDATE — the r1k "reversal" below is RETRACTED (see the Confirmation section).** The
+> bug fix and the whole-universe-spreading correction **stand**. But the "prob_weight K=20 BEATS
+> equal-K=3 on r1k" claim was an artifact of the single **predictions-only `_aligned` cell** (no
+> `model.ubj`). Re-run with the canonical rolling runner across all three r1k cells: both
+> **model-bearing agent cells** (`_aligned_agent`, `_aligned_agent_v14p1`) have **equal-K=3
+> beating prob_weight** (+58–62% / 100% windows vs +31–37% / 75–100%) — only the non-canonical
+> `_aligned` cell favored prob_weight. **So `_013`/`_014`'s *direction* (equal-K=3 > prob_weight)
+> holds; only their *mechanism* (whole-universe spreading) was the bug.** Net: the blanket "no
+> weighting beats equal top-3" survives after all.
+
 ## TL;DR
 
 `_022` flagged a latent bug: the ratchet-down **trim** (rebalance pass) calls `_notional_f()`,
@@ -80,13 +90,39 @@ rolling H-day windows (stride 5) beating the index off the OOS equity curve; `n`
   concentration > K=20 dilution on the 50-day cells). `_013`/`_014`'s *direction* survives here,
   but the *mechanism* ("spreads to the whole universe") was wrong; it's ordinary K=20 dilution
   over ~23–39 names.
-- **r1k_50:** prob_weight K=20 (and α=4) **beats** equal-K=3 by a wide margin — the opposite of
-  `_013`'s "4% of windows, edge destroyed." On a 200-day horizon a wider book (~42 names) catches
-  far more of the +50% winners than a 3-name book; the bug had hidden this by churning r1k into a
-  whole-universe closet-index.
+- **r1k_50 (this single-window result is RETRACTED — see Confirmation below):** on the
+  predictions-only `_aligned` cell prob_weight K=20 *appeared* to beat equal-K=3 — but this did
+  **not** survive re-running across the canonical model-bearing r1k cells.
 
-So **prob_weight is not a universal loser** — `_013`/`_014` overstated. On the long-horizon r1k
-cell it is the better deployment; on the 50-day cells equal-K=3 remains best.
+## Confirmation (r1k rolling re-run) — the reversal does NOT hold
+
+Re-ran r1k through the canonical `run_rolling_validation` (200-day rolling, stride 5) across all
+three r1k cells — the `_aligned` cell `_023` originally used (predictions export, **no
+`model.ubj`**) plus the two **agent-tuned champions** that carry the model:
+
+| r1k cell | equal K=3 (ret / %beat) | prob_weight K=20 (ret / %beat) | winner |
+|---|---|---|---|
+| `_aligned` (no model) | +16.3% / 55% | **+57.5% / 100%** | prob_weight |
+| **`_aligned_agent`** (model) | **+61.8% / 100%** | +37.0% / 100% | **equal-K=3** |
+| **`_aligned_agent_v14p1`** (model) | **+58.2% / 100%** | +31.2% / 75% | **equal-K=3** |
+
+(20 rolling windows each, OOS 2023-07 → 2024-10, vs SPX +25.6%.) **Only the non-canonical
+predictions-only cell favors prob_weight.** Both model-bearing agent cells — the proper r1k
+champions — have equal-K=3 winning by a wide margin on both return and median excess. The
+"reversal" was an artifact of which r1k export `_023` happened to grab.
+
+**So `_013`/`_014`'s direction is right after all:** equal-K=3 ≥ prob_weight on r1k too; only
+their *mechanism* (whole-universe spreading / 890 entries) was the trim bug. The blanket *"no
+weighting scheme beats equal-weight top-3"* **survives** — corrected mechanism, same verdict.
+
+The **fresh-extended** rolling (test + post-test inference, for more windows) **could not be
+run**: `infer_fresh_predictions` aborts on its faithfulness self-check (`max_abs_diff = 0.344 ≫
+1e-4`) because the aligned cells' training feature-matrix isn't cached, so it falls back to the
+raw panel and the reproduction diverges (the `_007`/`_008` alignment issue). The 20-window
+test-only rolling across three cells is the confirmation; a fresh-extended re-run needs the
+`_007`-style training-panel alignment first. Figure:
+`results/backtests/_023_probweight_trim_fix/figs/r1k_rolling_confirm.png`; data:
+`results/backtests/data/_023_confirmation_data.json`.
 
 ## Caveats
 

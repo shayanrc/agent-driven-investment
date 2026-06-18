@@ -227,7 +227,24 @@ def main() -> None:
     r = pd.DataFrame(recs)
     r.to_csv(out / "rolling_windows.csv", index=False)
 
-    exc = r.excess.to_numpy()
+    # Guard the degenerate case: an OOS shorter than one rolling H-day window
+    # yields no rows (recs == []), so r has no 'excess' column. Emit a clear
+    # rolling block instead of crashing on r.excess (needs test+fresh to extend
+    # the OOS past H for short cells).
+    exc = r["excess"].to_numpy() if len(r) else np.empty(0)
+    if len(exc):
+        rolling_block = {
+            "n_windows": len(r), "window_days": W, "stride": args.step,
+            "frac_excess_positive": round(float((exc > 0).mean()), 3),
+            "median_excess": round(float(np.median(exc)), 4),
+            "mean_excess": round(float(exc.mean()), 4),
+            "p25_excess": round(float(np.percentile(exc, 25)), 4),
+            "p75_excess": round(float(np.percentile(exc, 75)), 4),
+            "min_excess": round(float(exc.min()), 4),
+            "max_excess": round(float(exc.max()), 4)}
+    else:
+        rolling_block = {"n_windows": 0, "window_days": W, "stride": args.step,
+                         "note": "OOS shorter than one H-day window — pass --fresh to extend"}
     summary = {
         "cell": cell.name, "name": args.name,
         "geometry": {"universe": universe, "horizon": HORIZON, "index": idx_label},
@@ -244,16 +261,15 @@ def main() -> None:
                      "strat_max_dd": round(full_sm["max_dd"], 4),
                      "idx_total_return": round(float(xe.iloc[-1] / xe.iloc[0] - 1), 4),
                      "n_entries": n_entry, "avg_gross_exp": round(avg_exp, 4)},
-        "rolling": {"n_windows": len(r), "window_days": W, "stride": args.step,
-                    "frac_excess_positive": round(float((exc > 0).mean()), 3),
-                    "median_excess": round(float(np.median(exc)), 4),
-                    "mean_excess": round(float(exc.mean()), 4),
-                    "p25_excess": round(float(np.percentile(exc, 25)), 4),
-                    "p75_excess": round(float(np.percentile(exc, 75)), 4),
-                    "min_excess": round(float(exc.min()), 4),
-                    "max_excess": round(float(exc.max()), 4)},
+        "rolling": rolling_block,
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=float))
+
+    print(f"[full-OOS] strat {full_sm['total_return']*100:+.1f}% (DD {full_sm['max_dd']*100:.1f}%) "
+          f"vs {idx_label} {summary['full_oos']['idx_total_return']*100:+.1f}% | {n_entry} entries")
+    if not len(r):
+        print(f"[rolling {W}d] 0 windows — OOS shorter than one H-day window; pass --fresh to extend.")
+        return
 
     fig, ax = plt.subplots(figsize=(9, 4))
     x = pd.to_datetime(r["origin"])
@@ -266,8 +282,6 @@ def main() -> None:
                  f"median {summary['rolling']['median_excess']*100:+.1f}%)")
     fig.tight_layout(); fig.savefig(out / "figs" / "rolling_excess.png", dpi=130); plt.close(fig)
 
-    print(f"[full-OOS] strat {full_sm['total_return']*100:+.1f}% (DD {full_sm['max_dd']*100:.1f}%) "
-          f"vs {idx_label} {summary['full_oos']['idx_total_return']*100:+.1f}% | {n_entry} entries")
     print(f"[rolling {W}d] {summary['rolling']['n_windows']} windows | "
           f"{summary['rolling']['frac_excess_positive']:.0%} beat index | "
           f"median excess {summary['rolling']['median_excess']*100:+.1f}% "
