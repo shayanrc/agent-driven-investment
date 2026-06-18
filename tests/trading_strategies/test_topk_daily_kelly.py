@@ -289,6 +289,30 @@ def test_tie_break_alphabetical(monkeypatch):
     assert [o["asset"] for o in action["orders"]] == ["AAAA"]
 
 
+def test_rank_scores_override_calibrated_tiebreak():
+    """rank_by='raw': two candidates tied on p_mean (alphabetical would pick AAAA),
+    but a higher external rank-score for ZZZZ flips the selection to ZZZZ."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy(
+        {d: [("ZZZZ", 0.40, 0.3, 0.5), ("AAAA", 0.40, 0.3, 0.5)]}, K=1,
+        rank_scores={d: {"ZZZZ": 0.90, "AAAA": 0.10}},
+    )
+    action = s(_mk_state(5, d, 100_000, {}, {"ZZZZ": 100.0, "AAAA": 50.0}), {})
+    assert [o["asset"] for o in action["orders"]] == ["ZZZZ"]
+
+
+def test_rank_scores_missing_ticker_falls_back_to_pmean():
+    """A ticker absent from the day's rank_scores falls back to its p_mean (no
+    KeyError): ZZZZ (missing → p_mean 0.45) beats AAAA (scored 0.20)."""
+    d = pd.Timestamp("2025-01-02")
+    s = _strategy(
+        {d: [("AAAA", 0.40, 0.3, 0.5), ("ZZZZ", 0.45, 0.3, 0.5)]}, K=1,
+        rank_scores={d: {"AAAA": 0.20}},
+    )
+    action = s(_mk_state(5, d, 100_000, {}, {"AAAA": 100.0, "ZZZZ": 50.0}), {})
+    assert [o["asset"] for o in action["orders"]] == ["ZZZZ"]
+
+
 # -- exits -------------------------------------------------------------------
 def _enter(s, d, equity=100_000, close=100.0, p=0.40):
     s(_mk_state(5, d, equity, {}, {"AAPL": close}), {})
