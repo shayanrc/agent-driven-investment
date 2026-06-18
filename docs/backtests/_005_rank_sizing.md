@@ -89,6 +89,7 @@ mode are DD/target/horizon only. Each cell on its published `predictions/test.cs
 
 - Branch `backtests-v12-rank-sizing`. Full grid: `results/backtests/_005_rank/grid.csv`.
 - `uv run python -m scripts.backtests.run_backtest_cell --cell <cell> --out <dir> --name <n> --selection-mode rank --sizing-mode equal --c 1.0` (or `--sizing-mode rank_kelly --c 0.5`).
+- **Action charts** (per run, added retroactively via `scripts/backtests/plot_actions.py`, see `_020`): `results/backtests/_005_rank/<short>_{equal,rankkelly}/figs/actions.png` — the `equal` arms show the deployed ranking's buy/sell points; the two −EV `rank_kelly` arms (ndx40, sp500_50) render as a flat cash line (correctly 0 trades).
 
 ## Open questions / follow-ups
 

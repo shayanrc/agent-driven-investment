@@ -261,6 +261,7 @@ ratchet-down machinery is doing real downside work here, validating its design i
 - Branch `backtests-v1-scaffold`, commit `706ba1e` (run-time); plan merged via PR #160.
 - Command: `uv run python -m scripts.backtests.run_cell5_bayesian_kelly`
 - Runtime ≈ 1–2 min (cache-only OHLCV reads). Outputs under `results/backtests/_001_cell5_bayesian_kelly/`.
+- **Action chart** (strategy equity + NDX buy-hold + labeled buy/sell points; added retroactively via `scripts/backtests/plot_actions.py`, see `_020`): `results/backtests/_001_cell5_bayesian_kelly/figs/actions.png`.
 - Deterministic — no RNG in the strategy/sizer/engine path (calibrator is closed-form).
 - Cache state: `data/processed.db` `us_equities` table covering the 92-ticker roster + `INDEX:^NDX`
   through ≥ 2026-03-12.

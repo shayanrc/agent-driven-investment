@@ -79,6 +79,7 @@ set to `"low"` (ranking and Kelly sizing stay on `p_mean`). Default `"mean"` pre
 - Headline: `uv run python -m scripts.backtests.run_fresh_oos --cell <b_acceptance_agent> --predictions results/backtests/_002_fresh/fresh_predictions.csv --out results/backtests/_003_cell5b_qkelly_mean --name cell5b_qkelly_mean --c 0.25 --selection-bound mean`
 - Requested variant: same with `--out …_qkelly_plow --c 0.25 --selection-bound low`.
 - Artifacts: `results/backtests/_003_cell5b_qkelly_mean/` (headline), `…_qkelly_plow/` (requested).
+- **Action charts** (strategy equity + NDX buy-hold + labeled buy/sell points; added retroactively via `scripts/backtests/plot_actions.py`, see `_020`): `results/backtests/_003_cell5b_qkelly_mean/figs/actions.png` (headline) + `…_qkelly_plow/figs/actions.png`.
 
 ## Open questions / follow-ups
 

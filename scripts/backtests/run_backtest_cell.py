@@ -34,6 +34,7 @@ from backtesting.backtest import Backtest
 from backtesting.strategy import run_strategy
 from scripts.backtests import benchmarks as bm
 from scripts.backtests.calibration_step import fit_calibrator
+from scripts.backtests.plot_actions import plot_actions
 from scripts.backtests.run_cell5_bayesian_kelly import (
     INITIAL_CASH,
     LOOKBACK,
@@ -188,6 +189,9 @@ def main() -> None:
         "exit_triggers": dict(Counter(e.trigger for e in strat.events if e.kind == "exit")),
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=float))
+
+    # Action chart (strategy equity + index buy-hold + labeled buy/sell points).
+    plot_actions(out)
 
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.plot(eq.index, eq.values, label=f"Strategy c={args.c}", lw=2)

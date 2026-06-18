@@ -146,6 +146,7 @@ no-Kelly) is cost-insensitive.
 - Commands:
   - `uv run python -m scripts.backtests.infer_fresh_predictions --cell <b_acceptance_agent dir> --out results/backtests/_002_fresh/fresh_predictions.csv`
   - `uv run python -m scripts.backtests.run_fresh_oos --cell <…> --predictions results/backtests/_002_fresh/fresh_predictions.csv --out results/backtests/_002_cell5b_fresh_oos --name cell5b_fresh_oos`
+- **Action chart** (strategy equity + NDX buy-hold + labeled buy/sell points; added retroactively via `scripts/backtests/plot_actions.py`, see `_020`): `results/backtests/_002_cell5b_fresh_oos/figs/actions.png`.
 - Deterministic; no RNG in the inference/strategy/engine path.
 
 ## Open questions / follow-ups
