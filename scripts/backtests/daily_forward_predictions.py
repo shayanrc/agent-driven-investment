@@ -35,6 +35,7 @@ import yaml
 from scripts.backtests.run_backtest_cell import INDEX_BY_UNIVERSE
 from scripts.backtests.run_cell5_bayesian_kelly import _load_closes
 from scripts.backtests.regime_signals import risk_on_sma
+from scripts.backtests.infer_fresh_predictions import build_scores_multi, self_check
 
 REPO = Path(__file__).resolve().parents[2]
 LOG = REPO / "results/backtests/data/forward_predictions_log.csv"
@@ -122,22 +123,12 @@ def _cell_meta(cell_dir: Path) -> tuple[str, int, int, float]:
             base_rate)
 
 
-def _infer(model: str, cell_dir: Path, since: pd.Timestamp | None, end: str) -> Path:
-    """Run incremental inference; return the fresh-CSV path."""
-    out = SCRATCH / f"{model}_fresh.csv"
-    SCRATCH.mkdir(parents=True, exist_ok=True)
-    cmd = [sys.executable, "-m", "scripts.backtests.infer_fresh_predictions",
-           "--cell", str(cell_dir), "--out", str(out), "--end", end]
-    if since is not None:
-        cmd += ["--since", str(since.date())]
-    print(f"[infer:{model}] {'incremental since ' + str(since.date()) if since is not None else 'full'} ...")
-    r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
-    if r.returncode != 0:
-        sys.exit(f"[ABORT] inference failed for {model}:\n{r.stdout[-800:]}\n{r.stderr[-800:]}")
-    for line in r.stdout.splitlines():
-        if "self-check" in line or "[out]" in line or "[warn]" in line:
-            print(f"[infer:{model}] {line.strip()}")
-    return out
+def _warmup_start(since: pd.Timestamp) -> str:
+    """~7y trailing slice start before `since` (mirrors infer_fresh_predictions's
+    --since): comfortably exceeds the 1600-td eligibility floor so the kept-ticker
+    set + cross-sectional features match the full build, while skipping deep
+    history that contributes nothing to ≤200d rolling features."""
+    return str((since - pd.Timedelta(days=2700)).date())
 
 
 def _regime_series(universe: str, lo: pd.Timestamp, hi: pd.Timestamp) -> pd.Series:
@@ -151,8 +142,9 @@ def run(end: str, commit: bool) -> int:
     _preflight_disk()
     _seed(end)
 
-    new_rows: list[dict] = []
-    logged_at = str(pd.Timestamp.now())
+    # Pass 1 — cheap pre-gate: decide which cells actually advanced past their last
+    # logged snapshot, so the shared build below covers exactly those cells.
+    todo: list[dict] = []
     for model, cell_rel in CELLS.items():
         cell_dir = REPO / cell_rel
         universe, thr, hor, base_rate = _cell_meta(cell_dir)
@@ -160,22 +152,52 @@ def run(end: str, commit: bool) -> int:
         if since is None:  # first ever run for this model → start after its test window
             test = pd.read_csv(cell_dir / "predictions" / "test.csv", parse_dates=["date"])
             since = test["date"].max()
-        # Cheap pre-gate: skip the expensive inference if the cache hasn't advanced
-        # past the last logged snapshot (weekend / holiday / already-current).
         cache_max = _cache_max_date(universe)
         if cache_max is not None and cache_max <= since:
             print(f"[{model}] cache latest {cache_max.date()} not past last log "
                   f"{since.date()} — no-op (skipping inference).")
             continue
-        fresh_csv = _infer(model, cell_dir, since, end)
+        todo.append(dict(model=model, cell_dir=cell_dir, since=since, universe=universe,
+                         thr=thr, hor=hor, base_rate=base_rate,
+                         warmup=_warmup_start(since)))
 
-        fresh = pd.read_csv(fresh_csv, parse_dates=["date"])
-        fresh = fresh[fresh["date"] > since]
+    if not todo:
+        print("[done] no new snapshots — log unchanged (no-op).")
+        return 0
+
+    # Shared inference: ONE load_panel + build_feature_matrix per
+    # (universe, slice, alignment). The two sp500 champions share a universe and
+    # (logged together) a `since`, so they collapse to ONE feature build instead
+    # of two — ~halves inference wall-time. Each cell's per-cell self-check below
+    # still guards faithfulness independently, so the sharing can only abort
+    # loudly on a mismatch, never emit bad scores.
+    print(f"[infer] shared feature build for {len(todo)} cell(s): "
+          f"{', '.join(t['model'] for t in todo)} (incremental from {todo[0]['warmup']}) ...")
+    specs = [(t["cell_dir"], t["warmup"]) for t in todo]
+    scores_by_cell = build_scores_multi(specs, end, align_panel=True)
+
+    new_rows: list[dict] = []
+    logged_at = str(pd.Timestamp.now())
+    today = pd.Timestamp.now().normalize()
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    # Pass 2 — per-cell: self-check, write the regenerable scratch CSV, regime-gate,
+    # and build the top-K log rows for complete days only.
+    for t in todo:
+        model, cell_dir, since = t["model"], t["cell_dir"], t["since"]
+        universe, thr, hor, base_rate = t["universe"], t["thr"], t["hor"], t["base_rate"]
+        scores = scores_by_cell[str(cell_dir)].copy()
+        scores["date"] = pd.to_datetime(scores["date"])
+        self_check(scores, cell_dir, incremental=True, label=model)
+
+        fresh = scores[scores["date"] > since].copy()
+        fresh["p_calibrated"] = fresh["p_raw"]  # native isotonic pass-through on this cell
+        fresh = fresh.sort_values(["date", "ticker"]).reset_index(drop=True)
+        fresh.to_csv(SCRATCH / f"{model}_fresh.csv", index=False)  # gitignored, regenerable
+
         # Never log the current day's bar — it may be an in-progress intraday
         # partial (low volume, mid-session). Only complete days (strictly before
         # today) enter the forward log; today's bar is logged on the next run
         # after it finalizes. Belt-and-suspenders with the _cache_max_date gate.
-        today = pd.Timestamp.now().normalize()
         fresh = fresh[fresh["date"] < today]
         if fresh.empty:
             print(f"[{model}] no new COMPLETE trading days since {since.date()} "
