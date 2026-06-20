@@ -409,3 +409,38 @@ class TestReadWriteRoundTrip:
         b, _ = read_processed(root, fake_domain, "FAKE:B")
         assert list(a["value"]) == [100]
         assert list(b["value"]) == [200]
+
+
+class TestNullableRoundTrip:
+    """NaN in a value column survives the write→read round-trip as NaN.
+
+    Regression guard for the iterrows() dtype-coercion bug: a NaN float in a
+    row that also carries a datetime column was binding as NaT and crashing
+    the SQLite write. Equity domains never store NaN; fred_macro's nullable
+    `value` is the first to hit this, so the fix lives in cache.py and is
+    pinned here at the framework level.
+    """
+
+    def test_nan_value_survives_as_null(self, root, fake_domain):
+        df_in = make_df(
+            [date(2026, 1, 5), date(2026, 1, 6), date(2026, 1, 7)],
+            [1.0, float("nan"), 3.0],
+        )
+        write_processed_atomic(root, fake_domain, "FAKE:X", df_in, {})
+        df_out, _ = read_processed(root, fake_domain, "FAKE:X")
+        assert str(df_out["value"].dtype) == "float64"
+        assert df_out["value"].isna().tolist() == [False, True, False]
+        assert df_out.loc[df_out["value"].notna(), "value"].tolist() == [1.0, 3.0]
+
+    def test_stored_as_sql_null(self, root, fake_domain):
+        # The middle row's value must be a genuine SQL NULL, not a NaN-real.
+        df_in = make_df([date(2026, 1, 5), date(2026, 1, 6)], [1.0, float("nan")])
+        write_processed_atomic(root, fake_domain, "FAKE:X", df_in, {})
+        conn = sqlite3.connect(str(processed_db_path(root)))
+        try:
+            n_null = conn.execute(
+                "SELECT COUNT(*) FROM fake_data WHERE value IS NULL"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        assert n_null == 1

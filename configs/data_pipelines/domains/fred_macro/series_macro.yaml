@@ -1,0 +1,52 @@
+# FRED macro series panel for the fred_macro domain.
+#
+# NOTE the filename is series_*.yaml, NOT universe_*.yaml — this is a different
+# shape from the equity universe files (it carries per-series `frequency`, which
+# drives cadence-calendar selection) and is intentionally outside the
+# universe_yaml lint's glob. Loader: src/data_pipelines/domains/fred_macro/universe.py.
+#
+# Soft seed set: `fetch("FRED:<anything>")` works for series not listed here;
+# this list is what `seed --domain fred_macro --universe macro` pulls, and the
+# `frequency` field is what the domain uses to pick the right calendar.
+#
+# frequency ∈ {daily, monthly, quarterly}. All FRED series are dated at the
+# start of their period (daily=business day, monthly=1st, quarterly=Jan/Apr/Jul/Oct 1).
+
+universe: macro
+series:
+  # --- daily: Treasury yields & curve ---
+  - {id: DGS3MO, frequency: daily, category: rates, description: 3-Month Treasury constant-maturity yield}
+  - {id: DGS2,   frequency: daily, category: rates, description: 2-Year Treasury constant-maturity yield}
+  - {id: DGS5,   frequency: daily, category: rates, description: 5-Year Treasury constant-maturity yield}
+  - {id: DGS10,  frequency: daily, category: rates, description: 10-Year Treasury constant-maturity yield}
+  - {id: DGS30,  frequency: daily, category: rates, description: 30-Year Treasury constant-maturity yield}
+  - {id: T10Y2Y, frequency: daily, category: curve, description: 10-Year minus 2-Year Treasury spread}
+  - {id: T10Y3M, frequency: daily, category: curve, description: 10-Year minus 3-Month Treasury spread}
+
+  # --- daily: policy & funding ---
+  - {id: DFF,  frequency: daily, category: policy,  description: Effective Federal Funds Rate}
+  - {id: SOFR, frequency: daily, category: funding, description: Secured Overnight Financing Rate}
+
+  # --- daily: credit & inflation-linked ---
+  - {id: BAMLH0A0HYM2, frequency: daily, category: credit,    description: ICE BofA US High Yield index OAS}
+  - {id: BAMLC0A0CM,   frequency: daily, category: credit,    description: ICE BofA US Corporate (IG) index OAS}
+  - {id: T10YIE,       frequency: daily, category: inflation, description: 10-Year breakeven inflation rate}
+  - {id: DFII10,       frequency: daily, category: rates,     description: 10-Year TIPS real yield}
+
+  # --- daily: risk & macro proxies ---
+  - {id: VIXCLS,     frequency: daily, category: vol,       description: CBOE Volatility Index (VIX)}
+  - {id: DTWEXBGS,   frequency: daily, category: fx,        description: Nominal broad trade-weighted USD index}
+  - {id: DCOILWTICO, frequency: daily, category: commodity, description: WTI crude oil spot price}
+
+  # --- monthly: inflation / labor / activity ---
+  - {id: CPIAUCSL, frequency: monthly, category: inflation, description: CPI for all urban consumers}
+  - {id: CPILFESL, frequency: monthly, category: inflation, description: Core CPI (ex food & energy)}
+  - {id: PCEPILFE, frequency: monthly, category: inflation, description: Core PCE price index}
+  - {id: UNRATE,   frequency: monthly, category: labor,     description: Unemployment rate}
+  - {id: PAYEMS,   frequency: monthly, category: labor,     description: Total nonfarm payrolls}
+  - {id: INDPRO,   frequency: monthly, category: activity,  description: Industrial production index}
+  - {id: UMCSENT,  frequency: monthly, category: sentiment, description: U. Michigan consumer sentiment}
+  - {id: M2SL,     frequency: monthly, category: money,     description: M2 money stock}
+
+  # --- quarterly: growth ---
+  - {id: GDPC1, frequency: quarterly, category: growth, description: Real Gross Domestic Product}

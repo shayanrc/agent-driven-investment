@@ -123,6 +123,11 @@ def fetch_with_meta(
     data_root_p = Path(data_root)
 
     domain = DomainRegistry.resolve(identifier)
+    # Resolve the calendar once per call. Most domains return their single
+    # trading calendar; per-series-cadence domains (fred_macro: daily vs
+    # monthly vs quarterly) return the calendar matching this identifier so
+    # gap detection enumerates the dates the series actually publishes.
+    cal = domain.calendar_for(identifier)
     cached_df, cached_meta = read_processed(data_root_p, domain, identifier)
     cache_was_cold = cached_df is None
 
@@ -144,14 +149,14 @@ def fetch_with_meta(
         if effective_start < cache_first and not back_extend:
             effective_start = cache_first
     gaps = detect_gaps(
-        cached_df, effective_start, end_d, domain.calendar, domain.time_column
+        cached_df, effective_start, end_d, cal, domain.time_column
     )
 
     gaps_filled: list[dict[str, Any]] = []
     providers_failed: list[dict[str, str]] = []
 
     for gap_start, gap_end in gaps:
-        gap_days = len(domain.calendar.trading_days(gap_start, gap_end))
+        gap_days = len(cal.trading_days(gap_start, gap_end))
         has_cache = cached_df is not None and len(cached_df) > 0
         chain = domain.chain_for_gap(identifier, gap_days, has_cache)
 
@@ -175,7 +180,7 @@ def fetch_with_meta(
         for adapter in chain:
             sub_gaps = detect_gaps(
                 cached_df, gap_start, gap_end,
-                domain.calendar, domain.time_column,
+                cal, domain.time_column,
             )
             if not sub_gaps:
                 # Cache now covers the entire top-level gap; chain done.
@@ -236,7 +241,7 @@ def fetch_with_meta(
         # gap is still missing.
         leftover = detect_gaps(
             cached_df, gap_start, gap_end,
-            domain.calendar, domain.time_column,
+            cal, domain.time_column,
         )
         if leftover:
             any_empty = any(isinstance(f, EmptyPayload) for f in gap_failures)
