@@ -94,7 +94,7 @@ v1 = framework + exactly one domain.
 
 **Explicitly deferred to later domains / versions:**
 - NSE (India) — shipped in v1.7; LSE (UK), TSE (Japan), and other non-US equity domains still deferred.
-- FRED macroeconomic series, US Treasury rates, BEA series.
+- FRED macroeconomic series — **shipped in v2** (`fred_macro` domain: daily/monthly/quarterly series — rates, curve, credit spreads, breakevens, inflation, labor, growth; see `V2_FRED_MACRO_PLAN.md`). Still deferred: US Treasury auction schedules, BEA series, and weekly-cadence FRED series (need a 4th calendar).
 - Commodity prices, FX rates, crypto.
 - Intraday bars (any domain).
 - Corporate actions as separate tables (splits, dividends, mergers — adj_close captures what consumers need for v1).

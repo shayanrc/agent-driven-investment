@@ -448,19 +448,30 @@ def _replace_data(
         f"INSERT INTO {_data_table_name(domain)} ({col_names}) "
         f"VALUES ({placeholders})"
     )
-    rows = []
-    for _, row in df.iterrows():
-        values: list = [identifier]
-        for c in cols:
-            v = row[c]
-            # Convert pd.Timestamp/datetime → ISO string for SQLite storage.
-            if isinstance(v, pd.Timestamp):
-                values.append(v.isoformat(sep=" "))
+    # Extract column-wise, NOT via df.iterrows(): iterrows coerces every cell in
+    # a row to one common dtype, so a NaN in a float column of a row that also
+    # carries a datetime column comes back as NaT and fails to bind ("type
+    # 'NaTType' is not supported"). Iterating each column independently keeps
+    # the cell's own dtype and lets us map any missing value (NaN/NaT/None) to
+    # SQL NULL. Equity domains have no nullable columns; fred_macro's nullable
+    # `value` is the first to exercise this path.
+    col_values: dict[str, list] = {}
+    for c in cols:
+        out: list = []
+        for v in df[c]:
+            if pd.isna(v):
+                out.append(None)
+            elif isinstance(v, pd.Timestamp):
+                out.append(v.isoformat(sep=" "))  # datetime → ISO TEXT
             elif hasattr(v, "item"):
-                values.append(v.item())
+                out.append(v.item())               # numpy scalar → python scalar
             else:
-                values.append(v)
-        rows.append(tuple(values))
+                out.append(v)
+        col_values[c] = out
+    rows = [
+        (identifier, *(col_values[c][i] for c in cols))
+        for i in range(len(df))
+    ]
     conn.executemany(sql, rows)
 
 

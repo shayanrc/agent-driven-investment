@@ -185,3 +185,82 @@ Domain #2 (`nse_equities`) is now landed. This section records what actually plu
 ### Open-question 6 verdict
 
 Two of the five candidate refactors from v1 lit up with concrete evidence during the v1.7 NIFTY 50 work and were lifted (per-identifier chain ordering + dispatcher partial-fill continuation). The other three (currency/units, row-level provenance, shared OHLCV schema) still wait. Hold the line on those until a real consumer produces pressure.
+
+---
+
+## v2 follow-up — evidence from the FRED build (2026-06-20)
+
+Domain #3 (`fred_macro`) is now landed — the first **non-equity, non-OHLCV**
+domain: single `(date, value)` macro series, three publication cadences (daily /
+monthly / quarterly), one logical source with auto keyless/keyed transport.
+Plan: `docs/data_pipelines/V2_FRED_MACRO_PLAN.md`.
+
+### What plugged in unchanged
+
+- `Adapter` ABC + `source_column_map` + `extra_meta` — no signature change. One
+  `FredAdapter` with two transports (CSV / JSON) dispatched in `parse()` on raw
+  file extension; `.csv` and `.json` flowed through `raw_store` / D8 with zero
+  framework change (as predicted by the v1.7 multi-extension evidence).
+- `cache.py` table auto-derivation — a `(date, value)` schema auto-created
+  `fred_macro_data` / `fred_macro_meta` on first write. Zero DDL code change.
+- `Schema` / `Schema.normalize` / `Schema.validate` — the nullable `value`
+  column (`ColumnSpec(..., nullable=True)`) worked as designed; validate accepts
+  NaN there and rejects it in `date`.
+- `dispatch.py` cache-clip + partial-fill + soft-fail — reused unchanged.
+- `DomainRegistry` — added the `FRED` prefix; no collision, no API change.
+- CLI — the same 4-line patch shape as NSE (import the module + a
+  `_load_universe_for_domain` branch).
+- `retry.py` `call_with_retry` — adopted directly for the FRED GET.
+
+### Prediction #1 (Calendar API) — **lit up**, and was lifted
+
+The v1 doc predicted "Calendar API may need to grow" and suggested
+`calendar_for(symbol)` over generalizing the `Calendar` protocol. FRED's three
+cadences forced it: a monthly series checked against a daily grid shows ~250
+phantom gaps/year. Minimal lift, exactly as predicted:
+
+- **`Domain.calendar_for(identifier) -> Calendar`** added to the ABC with a
+  default returning `self.calendar`. Equity domains inherit it → **zero
+  behavioural change** (the single-calendar case is the default).
+- `dispatch.py` now resolves `cal = domain.calendar_for(identifier)` once per
+  fetch and uses it for every `detect_gaps` / `trading_days` call (4 sites).
+- `FREDMacroDomain.calendar_for` returns a business-day / monthly / quarterly
+  calendar keyed on the series' declared frequency.
+
+The `Calendar` **protocol itself did not change** — `trading_days(start, end)`
+still suffices; we just needed per-identifier *selection*, not a richer method.
+That validates the v1 instinct to extend selection on the Domain rather than
+fatten the Calendar protocol.
+
+### New friction surfaced (not in v1's predictions)
+
+1. **Universe-YAML shape is OHLCV-specific.** `test_universe_yaml_lint.py`
+   enforces `{universe, listed_at, indices, tickers}` with domain-prefixed
+   tickers — no slot for per-series `frequency`, and `indices`/`listed_at` are
+   meaningless for macro series. Rather than fork the lint + its spec doc, the
+   FRED config uses a distinct filename (`series_<name>.yaml`, outside the
+   lint's `universe_*.yaml` glob) with a fit-for-purpose shape carrying
+   `frequency`/`category`/`description`. **Open question for domain #4:** if a
+   third config shape appears, consider generalizing the lint to dispatch on a
+   declared `kind:` field instead of accreting filename conventions.
+
+2. **`cache.py` `iterrows()` could not store NaN.** `_replace_data` built insert
+   rows via `df.iterrows()`, which coerces a row's cells to one dtype — a NaN
+   float in a row that also has a datetime column became `NaT` and crashed the
+   SQLite bind. Latent since v1.5 (no equity column is nullable); FRED's
+   nullable `value` is the first to exercise it. Fixed by extracting
+   column-wise and mapping missing → SQL `NULL`. **Lesson:** the first nullable
+   column in any new domain should ship with an explicit cache NaN round-trip
+   test (`test_cache.py::TestNullableRoundTrip`).
+
+3. **Per-call provenance vs static `extra_meta`.** The transport (keyless CSV vs
+   keyed JSON) varies per fetch, but `extra_meta` is a static class attribute.
+   We left transport provenance to the raw file extension (`.csv`/`.json`)
+   rather than fight the static-meta shape. If a future domain needs per-call
+   provenance flags, that's the seam to revisit.
+
+### Single-source, no-fallback chain
+
+`chain_for_gap` returning one adapter for every identifier worked cleanly — the
+dispatcher's chain machinery handles a length-1 chain with no special-casing.
+Confirms the chain abstraction degrades gracefully to the single-provider case.

@@ -129,6 +129,23 @@ class Domain(ABC):
         """
         return "date"
 
+    def calendar_for(self, identifier: str) -> Calendar:
+        """Calendar this identifier's gap detection should use.
+
+        Default: the domain's single ``calendar``. Domains whose series do
+        not share one cadence override this to return a per-identifier
+        calendar — the fred_macro domain returns a business-day, monthly, or
+        quarterly calendar depending on the series' published frequency, so
+        a monthly series (CPI) isn't perpetually re-fetched against a daily
+        expected-date grid. Equity domains (one trading calendar for every
+        symbol) inherit the default and are unaffected.
+
+        Predicted as the first likely framework extension in
+        ``docs/data_pipelines/adding_a_domain.md`` ("Calendar API may need to
+        grow"); it lit up when the FRED domain landed.
+        """
+        return self.calendar
+
     def merge_overlap(
         self,
         existing: pd.DataFrame,
