@@ -532,6 +532,50 @@ def load_macro_panel(
     return pd.DataFrame(cols).sort_index()
 
 
+def macro_panel_signature(
+    series: Iterable[str],
+    *,
+    repo_root: Path | None = None,
+) -> dict:
+    """Cheap content signature of the cached macro panel for the cache key.
+
+    For each requested series that is cached, returns
+    ``{series_id: [row_count, range_start, range_end]}`` from ``fred_macro_meta``
+    (a metadata lookup — no data load). Folded into the feature-cache key so a
+    4-series vs 8-series macro panel — or any re-seed that changes a series'
+    coverage — produces a distinct key (the collision the macroproxy/macroreal
+    runs hit: same ``"all_macro"`` token + same features.py source → same key,
+    different data). Returns ``{}`` when the FRED cache is absent.
+    """
+    import sqlite3
+    db = Path(_data_root(repo_root)) / "processed.db"
+    if not db.exists():
+        return {}
+    con = sqlite3.connect(str(db))
+    sig: dict = {}
+    try:
+        has = con.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name='fred_macro_meta'"
+        ).fetchone()
+        if not has:
+            return {}
+        for sid in series:
+            row = con.execute(
+                "SELECT row_count, range_start, range_end "
+                "FROM fred_macro_meta WHERE ticker = ?",
+                (f"FRED:{sid}",),
+            ).fetchone()
+            if row:
+                sig[sid] = [
+                    int(row[0]) if row[0] is not None else None,
+                    str(row[1]), str(row[2]),
+                ]
+    finally:
+        con.close()
+    return sig
+
+
 # ---------------------------------------------------------------------------
 # Panel build
 # ---------------------------------------------------------------------------

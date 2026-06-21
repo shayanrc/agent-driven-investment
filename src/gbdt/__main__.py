@@ -1823,6 +1823,15 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         families == "all_macro"
         or (not isinstance(families, str) and "F17" in set(families))
     )
+    # Macro-data content signature for the cache key (which FRED series are
+    # cached + their coverage) — None for non-macro runs so their keys are
+    # byte-identical. Cheap metadata lookup; the macro panel itself loads later.
+    _macro_sig = (
+        gbdt_data.macro_panel_signature(
+            gbdt_features.MACRO_SERIES, repo_root=repo_root,
+        )
+        if _macro_selected else None
+    )
 
     panel_sig = gbdt_feature_cache.panel_signature(
         panel_obj.panel, panel_obj.index_series,
@@ -1843,6 +1852,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         exclude=exclude,
         random_seed=spec.get("random_seed", 42),
         panel_sig=panel_sig,
+        macro_sig=_macro_sig,
     )
     universe_key = gbdt_universe_feature_cache.compute_key(
         universe=target["universe"],
@@ -1852,6 +1862,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         exclude=exclude,
         random_seed=spec.get("random_seed", 42),
         panel_sig=panel_sig,
+        macro_sig=_macro_sig,
     )
     universe_cache_root = preflight.get("data_root") or str(Path("data").resolve())
 

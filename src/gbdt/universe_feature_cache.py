@@ -139,6 +139,7 @@ def compute_key(
     exclude: Any,
     random_seed: int,
     panel_sig: dict,
+    macro_sig: Any = None,
 ) -> str:
     """Compute the deterministic universe-level cache key (SHA-256 hex).
 
@@ -186,6 +187,11 @@ def compute_key(
         "random_seed": int(random_seed),
         "panel_signature": panel_sig,
     }
+    # See gbdt.feature_cache.compute_key: fold the macro-data signature in only
+    # when present, so 4-series vs 8-series (or any re-seed) get distinct keys
+    # while non-macro keys stay byte-identical.
+    if macro_sig:
+        payload["features"]["macro_signature"] = macro_sig
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
