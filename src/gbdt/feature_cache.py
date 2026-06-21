@@ -178,6 +178,7 @@ def compute_key(
     exclude: Any,
     random_seed: int,
     panel_sig: dict,
+    macro_sig: Any = None,
 ) -> str:
     """Compute the deterministic cache key (a SHA-256 hex digest).
 
@@ -223,6 +224,13 @@ def compute_key(
         "random_seed": int(random_seed),
         "panel_signature": panel_sig,
     }
+    # Macro feature content (which FRED series are cached + their coverage) is
+    # NOT captured by `families` ("all_macro") or the features.py source hash;
+    # fold it in here, but ONLY when present, so non-macro keys stay
+    # byte-identical (existing models' caches keep hitting). Without this a
+    # 4-series proxy matrix and an 8-series real matrix collide on one key.
+    if macro_sig:
+        payload["features"]["macro_signature"] = macro_sig
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
