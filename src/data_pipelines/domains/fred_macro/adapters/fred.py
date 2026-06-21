@@ -162,8 +162,17 @@ class FredAdapter(Adapter):
 
         def _do() -> bytes:
             try:
+                # Accept + Connection:close matter in practice — some egress
+                # paths / CDN front-ends hang a keep-alive HTTP/1.1 request that
+                # omits an explicit Accept, so the read never returns. Sending
+                # both makes the GET behave like curl. (No secret material here.)
                 req = urllib.request.Request(
-                    url, headers={"User-Agent": "data_pipelines/0.1"}
+                    url,
+                    headers={
+                        "User-Agent": "data_pipelines/0.1",
+                        "Accept": "*/*",
+                        "Connection": "close",
+                    },
                 )
                 with urllib.request.urlopen(
                     req, timeout=self._config.timeout_sec
