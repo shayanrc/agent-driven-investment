@@ -1,0 +1,39 @@
+{
+  "id": "_259",
+  "title": "Macro-augmented sp500 cells — REAL macro panel (8/9 series, primary sources)",
+  "branch": "gbdt-macro-real-fred",
+  "memo": "docs/gbdt/_259_macro_real_fred.md",
+  "summary": "Rebuilt the macro panel from FRED's upstream primary sources (Treasury nominal+TIPS curves, NY Fed EFFR, Yahoo VIX/USD) = 8 of 9 real daily series (BAMLH0A0HYM2 HY-OAS absent, no free source). Clean A/B (identical date_aligned windows, max_iter 1): the 8-series real panel beats both baseline and the 4-series proxy on the +20%/25d cell at EVERY K, and beats the baseline on +50%/50d. Real-only series (real yield, breakeven, curve slope, fed funds) are materially used. Found+fixed a feature-cache key collision (macro data content was not keyed). NOT yet a deployed-champion head-to-head.",
+  "macro_data": {
+    "real_values_from_primary_sources": true,
+    "series": {
+      "DGS10": "treasury", "DGS3MO": "treasury", "T10Y2Y": "treasury(10Y-2Y)",
+      "DFII10": "treasury_tips", "T10YIE": "treasury(nom10-real10)",
+      "DFF": "nyfed_effr", "VIXCLS": "yahoo:^VIX", "DTWEXBGS": "yahoo:DX-Y.NYB"
+    },
+    "series_absent": ["BAMLH0A0HYM2"],
+    "f17_columns": 40,
+    "coverage": "2018-01-02..2026-06-18 (daily)"
+  },
+  "cache_key_fix_commit": "3b7ba45",
+  "windows": {"train": ["2019-01-02","2022-03-04"], "val": ["2022-03-07","2023-10-06"], "eval": ["2023-10-09","2024-07-25"], "test": ["2024-07-26","2024-12-16"], "identical_across_all_arms": true},
+  "cells": [
+    {
+      "name": "sp500_up_20pct_25d_dd10pct",
+      "base_rate_test": 0.040226, "Q_days": 100,
+      "base_v2":     {"R_precision_at_K_test": {"1":0.1000,"3":0.136667,"5":0.166000,"10":0.187877,"20":0.257027}, "test_auc":0.772501},
+      "macroproxy":  {"R_precision_at_K_test": {"1":0.1000,"3":0.163333,"5":0.198000,"10":0.215651,"20":0.235763}, "test_auc":0.768927},
+      "macroreal":   {"R_precision_at_K_test": {"1":0.120000,"3":0.206667,"5":0.220000,"10":0.233960,"20":0.280895}, "eval_brier":0.04585, "eval_auc":0.8049, "test_auc":0.793400, "f17_importance_frac":0.182, "top_macro_feature":["macro_DGS3MO_chg_60",3]},
+      "verdict": "macroreal beats baseline AND proxy at every K — clean win"
+    },
+    {
+      "name": "sp500_up_50pct_50d_dd25pct",
+      "base_rate_test": 0.009733, "Q_days": 91,
+      "base_v2":     {"R_precision_at_K_test": {"1":0.109890,"3":0.106227,"5":0.145421,"10":0.218175,"20":0.391165}, "test_auc":0.906571},
+      "macroproxy":  {"R_precision_at_K_test": {"1":0.131868,"3":0.091575,"5":0.117582,"10":0.273618,"20":0.423435}, "test_auc":0.901299},
+      "macroreal":   {"R_precision_at_K_test": {"1":0.120879,"3":0.128205,"5":0.167949,"10":0.249891,"20":0.345735}, "eval_brier":0.00942, "eval_auc":0.8563, "test_auc":0.912758, "f17_importance_frac":0.110, "top_macro_feature":["macro_DFII10_chg_20",10]},
+      "verdict": "macroreal beats baseline (@1/@3/@5/@10), wins @3/@5 over both, but proxy edges it @1/@10; no clean win on rare-event cell"
+    }
+  ],
+  "objective_status": "macro additive on REAL data (YES, decisive on +20% cell); beat-the-deployed-champion still OPEN (needs Phase 3 champion-config head-to-head)"
+}
