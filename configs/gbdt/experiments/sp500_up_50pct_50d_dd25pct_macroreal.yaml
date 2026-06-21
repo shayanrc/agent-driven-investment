@@ -1,0 +1,37 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_macroreal
+#
+# Macro-augmented variant (F1–F16 + F17) on the +50%/50d cell — A/B partner of
+# ..._base_v2, comparable to ..._macroproxy. IDENTICAL config except candidates.
+#
+# REAL macro data (8 of 9 daily series) from PRIMARY sources (FRED egress down):
+#   DGS10, DGS3MO, T10Y2Y      ← U.S. Treasury daily par yield curve (10Y-2Y slope)
+#   DFII10, T10YIE             ← U.S. Treasury TIPS real curve (breakeven = nom-real)
+#   DFF                        ← NY Fed effective fed funds (EFFR)
+#   VIXCLS, DTWEXBGS           ← Yahoo (^VIX, DX-Y.NYB)
+# Only BAMLH0A0HYM2 (ICE HY credit OAS) is absent — no free non-FRED source.
+# These are the same underlying series FRED redistributes, so they're real values,
+# not proxies. 40 F17 columns (vs 20 for the proxy). Memo _259.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_macro
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
