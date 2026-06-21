@@ -42,6 +42,7 @@ DEFAULT_STALENESS_DAYS = 20
 # ticker in a spec fails downstream with a clean error instead of UnknownDomain.
 import data_pipelines.domains.nse_equities  # noqa: F401
 import data_pipelines.domains.us_equities  # noqa: F401
+import data_pipelines.domains.fred_macro  # noqa: F401  (registers FRED: for macro features)
 from data_pipelines import fetch as _dp_fetch
 
 
@@ -456,6 +457,79 @@ def _cache_last_date(ticker: str, *, repo_root: Path | None = None) -> str | Non
 def _data_root(repo_root: Path | None) -> str:
     base = Path(repo_root) if repo_root is not None else Path.cwd()
     return str(base / "data")
+
+
+# ---------------------------------------------------------------------------
+# FRED macro panel (cache-only) — feeds the F17 macro feature family
+# ---------------------------------------------------------------------------
+
+
+def _cache_read_fred(
+    series_id: str,
+    start: str | date,
+    end: str | date | None,
+    *,
+    repo_root: Path | None = None,
+) -> pd.DataFrame:
+    """Read one FRED series (the ``fred_macro`` domain) from the SQLite cache,
+    **cache-only** — never hits the network (experiments run sandboxed). Returns
+    a ``(date, value)`` DataFrame. Uses the same half-open ``[start, end+1)``
+    interval as :func:`_cache_read` so the end day's bar is never dropped.
+    """
+    import sqlite3
+    db = Path(_data_root(repo_root)) / "processed.db"
+    if not db.exists():
+        raise FileNotFoundError(f"cache db missing at {db}")
+    start_s = pd.Timestamp(start).normalize().strftime("%Y-%m-%d")
+    end_excl = ("2100-01-01" if end is None
+                else (pd.Timestamp(end).normalize()
+                      + pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+    con = sqlite3.connect(str(db))
+    try:
+        df = pd.read_sql_query(
+            "SELECT date, value FROM fred_macro_data "
+            "WHERE ticker = ? AND date >= ? AND date < ? ORDER BY date",
+            con, params=(f"FRED:{series_id}", start_s, end_excl),
+        )
+    finally:
+        con.close()
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
+def load_macro_panel(
+    series: Iterable[str],
+    start: str | date | None,
+    end: str | date | None,
+    *,
+    repo_root: Path | None = None,
+) -> pd.DataFrame:
+    """Date-indexed DataFrame, one column per FRED series id (cache-only).
+
+    Series with no cached rows are skipped with a warning (the F17 builder
+    degrades gracefully on an absent series). Raises only if NONE of the
+    requested series are cached — that means the FRED panel was never seeded.
+    """
+    cols: dict[str, pd.Series] = {}
+    missing: list[str] = []
+    for sid in series:
+        df = _cache_read_fred(sid, start or "1990-01-01", end, repo_root=repo_root)
+        if len(df) == 0:
+            missing.append(sid)
+            continue
+        cols[sid] = df.set_index("date")["value"]
+    if missing:
+        logger.warning(
+            "load_macro_panel: %d FRED series not cached (skipped): %s",
+            len(missing), missing,
+        )
+    if not cols:
+        raise RuntimeError(
+            "load_macro_panel: none of the requested FRED series are cached — "
+            "seed them first, e.g. `uv run python -m data_pipelines seed "
+            "--domain fred_macro --universe macro --start 2003-01-01 --end <today>`"
+        )
+    return pd.DataFrame(cols).sort_index()
 
 
 # ---------------------------------------------------------------------------

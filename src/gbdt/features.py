@@ -694,10 +694,81 @@ def f16_meta_underlying_columns(
 
 
 # ---------------------------------------------------------------------------
+# F17 — FRED macro-regime context (date-broadcast; opt-in, NOT in "all")
+# ---------------------------------------------------------------------------
+
+# Daily market-observed FRED series only. Each is an end-of-day value used with
+# a 1-trading-day lag (strictly causal, C1). Monthly/quarterly FRED series
+# (CPI/GDP/payrolls) are deliberately EXCLUDED — their publication lag (release
+# date >> observation date) is a look-ahead trap the (date,value) cache can't
+# yet express. Date-broadcast values are constant across tickers on a date:
+# allowed cross-sectional regime context, NOT a forbidden per-asset constant.
+MACRO_SERIES: tuple[str, ...] = (
+    "DGS10",        # 10Y Treasury yield
+    "T10Y2Y",       # 10Y-2Y curve slope
+    "DGS3MO",       # 3M Treasury yield
+    "DFF",          # effective fed funds
+    "BAMLH0A0HYM2", # HY credit OAS
+    "T10YIE",       # 10Y breakeven inflation
+    "DFII10",       # 10Y TIPS real yield
+    "VIXCLS",       # VIX
+    "DTWEXBGS",     # broad trade-weighted USD
+)
+_MACRO_CHG_LOOKBACKS: tuple[int, ...] = (20, 60)
+_MACRO_Z_LOOKBACKS: tuple[int, ...] = (60, 120)
+
+
+def fred_macro_features(
+    macro_df: pd.DataFrame,
+    panel: pd.DataFrame,
+    *,
+    series: Iterable[str] = MACRO_SERIES,
+    chg_lookbacks: Iterable[int] = _MACRO_CHG_LOOKBACKS,
+    z_lookbacks: Iterable[int] = _MACRO_Z_LOOKBACKS,
+) -> pd.DataFrame:
+    """F17 — macro-regime context from daily FRED series, broadcast to panel.
+
+    ``macro_df`` is date-indexed with one column per FRED series id. For each
+    requested series we align it to the panel's trading-day calendar
+    (forward-filled — causal, carries the last known value onto trading days the
+    macro series lacks, e.g. a bond-market holiday), lag it **1 trading day** so
+    origin ``t`` sees only the value as of ``t-1``, then emit per series:
+      - ``macro_<id>_level``    the lagged level
+      - ``macro_<id>_chg_<N>``  absolute change over N trading days
+      - ``macro_<id>_z_<N>``    trailing rolling z-score (regime position)
+
+    Every transform is strictly trailing (zero look-ahead, C1) — verified by the
+    macro-perturbation leakage test. Series absent from ``macro_df`` are skipped
+    (a missing/unseeded series degrades gracefully rather than crashing).
+    """
+    panel_dates = panel.index.get_level_values("date").unique().sort_values()
+    cols: dict[str, pd.Series] = {}
+    for sid in series:
+        if sid not in macro_df.columns:
+            continue
+        # Align to the trading-day calendar, ffill macro gaps (causal), lag 1d.
+        s = macro_df[sid].reindex(panel_dates).ffill().shift(1)
+        cols[f"macro_{sid}_level"] = s
+        for N in chg_lookbacks:
+            cols[f"macro_{sid}_chg_{N}"] = s - s.shift(N)
+        for N in z_lookbacks:
+            mean = s.rolling(N, min_periods=N).mean()
+            # Zero-denom guard (#182): a flat window (std==0, e.g. DFF held
+            # constant) would emit ±inf; route to NaN like every other family.
+            std = s.rolling(N, min_periods=N).std().replace(0.0, np.nan)
+            cols[f"macro_{sid}_z_{N}"] = (s - mean) / std
+    feat = pd.DataFrame(cols, index=panel_dates)
+    return _broadcast_index_to_panel(feat, panel)
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
 
+# F1–F16 only. F17 (macro) is intentionally OMITTED so the "all" token — and
+# every existing spec / committed model that relies on it — stays byte-identical.
+# Macro is opt-in via the "all_macro" token or an explicit families list.
 _ALL_FAMILIES = ("F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8",
                   "F10", "F11", "F12", "F13", "F14", "F15", "F16")
 
@@ -710,6 +781,7 @@ def build_feature_matrix(
     annualization: int = 250,
     families: str | list[str] = "all",
     exclude: list[str] | None = None,
+    macro_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Build the candidate feature matrix.
 
@@ -729,6 +801,10 @@ def build_feature_matrix(
     """
     if families == "all" or families is None:
         sel = set(_ALL_FAMILIES)
+    elif families == "all_macro":
+        # All baseline families PLUS the opt-in macro family. "all" is left
+        # untouched above so existing specs/models are unaffected.
+        sel = set(_ALL_FAMILIES) | {"F17"}
     else:
         sel = set(families)
 
@@ -805,6 +881,14 @@ def build_feature_matrix(
             )
             return pd.concat([f16_nat, meta], axis=1)
         plan.append(("F16", _build_f16))
+    if "F17" in sel:
+        if macro_df is None:
+            raise ValueError(
+                "F17 (macro) selected but macro_df is None — the runner must "
+                "fetch the FRED macro panel and pass macro_df when "
+                "families='all_macro' or 'F17' is in the families list."
+            )
+        plan.append(("F17", lambda: fred_macro_features(macro_df, panel)))
 
     total = len(plan)
     t_start = time.time()

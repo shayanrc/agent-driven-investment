@@ -1,0 +1,30 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_macro
+#
+# Macro-augmented variant (F1–F16 + F17 FRED macro) — A/B partner of
+# ..._base_v2. IDENTICAL config except features.candidates: all_macro. The only
+# difference vs the baseline is the ~45 date-broadcast macro-regime columns, so
+# any test R-Precision@K delta isolates the macro contribution. Memo _258.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_macro    # F1–F16 + F17 (macro); 'all' itself is untouched
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

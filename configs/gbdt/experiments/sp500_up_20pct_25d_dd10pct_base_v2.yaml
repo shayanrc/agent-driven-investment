@@ -1,0 +1,29 @@
+# Experiment: sp500_up_20pct_25d_dd10pct_base_v2
+#
+# Clean date-aligned BASELINE (F1–F16 only) — matched control for the macro A/B
+# (memo _258). Pairs with ..._macro. NOT the deployed champion; isolates the
+# marginal contribution of the F17 macro family on the +20%/25d cell.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 25
+  max_drawdown: 0.10
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

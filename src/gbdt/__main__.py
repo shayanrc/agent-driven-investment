@@ -1816,6 +1816,13 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     lookbacks = tuple(fcfg.get("lookback_windows", gbdt_features.DEFAULT_LOOKBACKS))
     families = fcfg.get("candidates", "all")
     exclude = fcfg.get("exclude") or []
+    # F17 macro is opt-in: only the "all_macro" token or an explicit "F17" in a
+    # families list triggers the (cache-only) FRED read below. Every existing
+    # spec uses "all" → no FRED read, no behaviour change.
+    _macro_selected = (
+        families == "all_macro"
+        or (not isinstance(families, str) and "F17" in set(families))
+    )
 
     panel_sig = gbdt_feature_cache.panel_signature(
         panel_obj.panel, panel_obj.index_series,
@@ -1952,11 +1959,25 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
                       flush=True)
         else:
             _milestone("[features] start (no cache hit — building)")
+            # Fetch the FRED macro panel (cache-only) only on a real build and
+            # only when the spec opted into macro features.
+            macro_df = None
+            if _macro_selected:
+                _pdates = panel_obj.panel.index.get_level_values("date")
+                macro_df = gbdt_data.load_macro_panel(
+                    gbdt_features.MACRO_SERIES,
+                    _pdates.min(), _pdates.max(), repo_root=repo_root,
+                )
+                _milestone(
+                    f"[features] macro panel: {macro_df.shape[1]} FRED series × "
+                    f"{len(macro_df)} dates"
+                )
             X = gbdt_features.build_feature_matrix(
                 panel_obj.panel, panel_obj.index_series,
                 lookbacks=lookbacks,
                 annualization=panel_obj.annualization_factor,
                 families=families, exclude=exclude,
+                macro_df=macro_df,
             )
             # Drop all-NaN columns (some features may produce no values on a
             # short-history ticker). This is part of what the loop consumes,
