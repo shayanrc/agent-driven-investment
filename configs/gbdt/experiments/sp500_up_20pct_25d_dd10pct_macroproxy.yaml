@@ -1,0 +1,35 @@
+# Experiment: sp500_up_20pct_25d_dd10pct_macroproxy
+#
+# Macro-augmented variant (F1–F16 + F17) on the +20%/25d cell — A/B partner of
+# ..._base_v2. IDENTICAL except features.candidates: all_macro.
+#
+# ⚠️ PROXY DATA: FRED egress was unavailable, so the macro panel is sourced from
+# Yahoo proxies (4 of 9 daily series): DGS10←^TNX, DGS3MO←^IRX, VIXCLS←^VIX,
+# DTWEXBGS←DX-Y.NYB (cached under the FRED ids with provider=yahoo_proxy). The
+# FRED-only series (T10Y2Y, DFF, BAMLH0A0HYM2, T10YIE, DFII10) are absent and
+# skipped. This is a feasibility A/B; re-run ..._macro with real FRED for the
+# definitive result. Memo _258.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 25
+  max_drawdown: 0.10
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_macro
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
