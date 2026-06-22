@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — task dependencies (2026-06-22 22:49 IST)\nMacro program (F17) CONCLUDED — failed second-window validation (_264), not deployed; opt-in only", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 00:32 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -20,106 +20,68 @@ digraph tasks {
           <TD BGCOLOR="#cccccc">done / merged</TD>
           <TD BGCOLOR="#a3c8e8">recurring (dotted)</TD>
         </TR>
-        <TR><TD COLSPAN="6" BGCOLOR="#f8f8f8">solid edge = hard dep · dashed = soft / "surfaced by" · red = critical path · green = clean-memo path · purple = data correctness</TD></TR>
+        <TR><TD COLSPAN="6" BGCOLOR="#f8f8f8">solid edge = hard dep · dashed = soft / context · green = critical path</TD></TR>
       </TABLE>
     >];
   }
 
-  // Macro program — concluded (done cluster)
-  subgraph cluster_macro {
-    label = "Macro program (F17) — concluded, all merged";
-    style = "filled";
-    fillcolor = "#fafafa";
-    color = "#cccccc";
-    fontname = "Helvetica-Bold";
-    fontsize = 11;
-
-    m_infra [label=<<B>F17 infra</B><BR/>opt-in all_macro token<BR/>+ fred_macro domain<BR/>(#196/#197)>, fillcolor="#cccccc"];
-    m_258 [label="_258–_261\nmacro-augmented /\nreal-FRED / h2h /\nHY-OAS rerun", fillcolor="#cccccc"];
-    m_262 [label=<<B>_262</B> re-baseline<BR/>matched HP — macro<BR/>beats champion<BR/>(1 window)>, fillcolor="#cccccc"];
-    m_263 [label=<<B>_263</B> trailing lattice<BR/>broad top-of-book help<BR/>(1 window)>, fillcolor="#cccccc"];
-    m_264 [label=<<B>_264</B> date-aligned lattice<BR/>2nd-window validation<BR/><B>FAILED</B> — 8/12 flip @1<BR/>+ closed long-horizon Q=0>, fillcolor="#cccccc"];
-    m_docs [label="docs/memory refresh\nCLAUDE.md + memories +\nEXPERIMENT_SPEC + README\n(#206/#207/#208)", fillcolor="#cccccc"];
+  // Recently merged (context)
+  subgraph cluster_done {
+    label = "Recently merged (context)";
+    style = "filled"; fillcolor = "#fafafa"; color = "#cccccc";
+    fontname = "Helvetica-Bold"; fontsize = 11;
+    macro [label="macro program (F17)\nconcluded — not deployed\n(_258–_264)", fillcolor="#cccccc"];
+    paths [label="path cleanup + venv fix\n(#209) — relative-from-root", fillcolor="#cccccc"];
   }
 
-  // Macro follow-ups — parked / optional
-  subgraph cluster_followups {
-    label = "Macro follow-ups (parked — gated on a decision to revisit macro)";
-    style = "rounded";
-    color = "#888888";
-    fontname = "Helvetica-Bold";
-    fontsize = 11;
-
-    f_hyoas [label="real-FRED HY-OAS\n(vs the HYG/IEF proxy)", fillcolor="#ffffff", style="rounded,filled,dashed"];
-    f_windows [label="more validation windows\n(beyond the 2 tested)", fillcolor="#ffffff", style="rounded,filled,dashed"];
-    f_india [label="India / commodity\ncovariates (USD-INR,\nBrent, IN-10Y)", fillcolor="#ffffff", style="rounded,filled,dashed"];
+  // Phase A — date-aligned matched refits
+  subgraph cluster_A {
+    label = "Phase A — date-aligned matched refits (5 trailing champions)";
+    style = "rounded"; color = "#3366aa"; fontname = "Helvetica-Bold"; fontsize = 11;
+    A1 [label=<<B>A1</B> generate 5 specs<BR/>pin HP+features, single fit<BR/>gen_aligned_champion_specs.py>, fillcolor="#cccccc"];
+    A2 [label=<<B>A2</B> run 5 refits<BR/>date_aligned single fit<BR/>--snapshot-end 2026-06-20>, fillcolor="#a3c8e8"];
+    A3 [label=<<B>A3</B> R-p@K &rarr; registry<BR/>append 5 rows to<BR/>r_precision_at_k.csv>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    A4 [label=<<B>A4</B> memo _265 + commit<BR/>Phase A>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
-  // Cleanup / hygiene
-  subgraph cluster_cleanup {
-    label = "Cleanup / hygiene";
-    style = "rounded";
-    color = "#888888";
-    fontname = "Helvetica-Bold";
-    fontsize = 11;
-
-    c_corrupt [label="prune data.corrupted/\n(stale scratch dir)", fillcolor="#a4e9a4"];
-    c_spec [label="stray nifty500_up_30pct_50d\n_dd15pct_agent.yaml —\nrun or remove (untracked)", fillcolor="#a4e9a4"];
-    c_tests [label="investigate 50 pytest\ncollection errors\n(possibly env-specific)", fillcolor="#a4e9a4"];
+  // Phase B — top-10 true-OOS rerun
+  subgraph cluster_B {
+    label = "Phase B — top-10 &rarr; true post-test-set OOS rerun";
+    style = "rounded"; color = "#aa6633"; fontname = "Helvetica-Bold"; fontsize = 11;
+    B1 [label=<<B>B1</B> select top-10<BR/>from updated registry>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    B2 [label=<<B>B2</B> true-OOS inference<BR/>each model: dates &gt; its test_end<BR/>(complete labels)>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    B3 [label=<<B>B3</B> realized R-p@K<BR/>on the OOS window<BR/>+ assemble table>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    B4 [label=<<B>B4</B> memo + commit<BR/>Phase B>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
-  // Scheduled / recurring
-  subgraph cluster_recurring {
-    label = "Scheduled tasks / loops";
-    style = "rounded";
-    color = "#888888";
-    fontname = "Helvetica-Bold";
-    fontsize = 11;
-
-    r_daily [label=<<B>/daily-predictions</B><BR/>forward-OOS cadence (_019)<BR/>systemd user timer —<BR/>tracks the validated champions<BR/>(NOT macro)>, fillcolor="#a3c8e8", style="rounded,filled,dotted"];
+  // Goal
+  subgraph cluster_goal {
+    label = "Goal"; style = "filled"; fillcolor = "#fffcec"; color = "#cc9933";
+    fontname = "Helvetica-Bold"; fontsize = 11;
+    G [label="date-aligned + true-OOS\nmetrics for the backtested\nchampions", fillcolor="#ffd966", shape=octagon];
   }
 
-  // Goals
-  subgraph cluster_goals {
-    label = "Goals";
-    style = "filled";
-    fillcolor = "#fffcec";
-    color = "#cc9933";
-    fontname = "Helvetica-Bold";
-    fontsize = 11;
+  // Legend centering anchors
+  legend -> macro [style="invis", weight=100];
+  legend -> A1 [style="invis", weight=100];
+  legend -> B1 [style="invis", weight=100];
+  legend -> G  [style="invis", weight=100];
 
-    g_macro [label="G1: macro model that\nROBUSTLY outperforms\n→ RESOLVED: NOT met\n(window-specific)", fillcolor="#ffd966", shape=octagon];
-    g_hygiene [label="G2: codebase + docs\nhygiene", fillcolor="#ffd966", shape=octagon];
-  }
+  // context -> start (soft)
+  paths -> A1 [style="dashed", color="#999999", label="branch off main"];
 
-  // Invisible anchor edges (legend → cluster tops) — center the legend
-  legend -> m_infra [style="invis", weight=100];
-  legend -> f_hyoas [style="invis", weight=100];
-  legend -> c_corrupt [style="invis", weight=100];
-  legend -> r_daily [style="invis", weight=100];
-  legend -> g_macro [style="invis", weight=100];
+  // Phase A critical path
+  A1 -> A2 [color="#2e8b57", penwidth=2];
+  A2 -> A3 [color="#2e8b57", penwidth=2];
+  A3 -> A4 [color="#2e8b57", penwidth=2];
 
-  // Macro program flow (clean-memo path, green)
-  m_infra -> m_258 [color="#338866"];
-  m_258 -> m_262 [color="#338866"];
-  m_262 -> m_263 [color="#338866"];
-  m_263 -> m_264 [color="#338866", penwidth=2, label="re-run\non 2nd window"];
-  m_264 -> m_docs [color="#338866", label="captured by"];
+  // A3 gates Phase B (registry must be updated before top-10 select)
+  A3 -> B1 [color="#cc3333", penwidth=2, label="registry updated"];
+  B1 -> B2 [color="#2e8b57", penwidth=2];
+  B2 -> B3 [color="#2e8b57", penwidth=2];
+  B3 -> B4 [color="#2e8b57", penwidth=2];
 
-  // Conclusion → goal (resolved)
-  m_264 -> g_macro [color="#cc3333", penwidth=2, label="answers\n(no-deploy)"];
-  m_docs -> g_macro [style="dashed", color="#338866"];
-
-  // Concluded program gates the parked follow-ups (only if macro is revisited)
-  m_264 -> f_hyoas [style="dashed", color="#999999", label="gates\n(if revisited)"];
-  m_264 -> f_windows [style="dashed", color="#999999"];
-  m_264 -> f_india [style="dashed", color="#999999"];
-
-  // Cleanup → hygiene goal
-  c_corrupt -> g_hygiene [color="#a040a0"];
-  c_spec -> g_hygiene [color="#a040a0"];
-  c_tests -> g_hygiene [color="#a040a0", penwidth=2];
-
-  // Recurring supervises the deployed pipeline (dotted)
-  r_daily -> g_hygiene [style="dotted", color="#aaaaaa"];
+  // -> goal
+  A4 -> G [style="dashed", color="#338866"];
+  B4 -> G [color="#cc3333", penwidth=2];
 }
