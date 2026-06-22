@@ -1,0 +1,29 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_macrochamp
+#
+# Phase 3 head-to-head MACRO arm (memo _260). Champion regime: TRAILING split +
+# default auto FS+HP loop (5 iter), F1-F16 + F17 (8-series real macro panel).
+# Matched partner of ..._champbase (identical except features.candidates).
+# Does macro beat the baseline AND the committed champion under the champion's
+# own regime? Reference: sp500_up_50pct_50d_dd25pct_agentloop (R-p@1 0.640).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+# trailing split (default) — intentionally no `split:` block.
+
+features:
+  candidates: all_macro
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 5
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
