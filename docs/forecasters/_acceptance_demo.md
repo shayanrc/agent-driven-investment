@@ -9,7 +9,7 @@
 - Tune end (held-in range upper bound): `2026-02-19`
 - Forecast origin: `2026-02-19` (the day after — first horizon step — is the first realized day)
 - Horizon: 60 trading days
-- Produced preset: `/mnt/122CEE982CEE765F/Workspace/wt-v1-skills/results/forecasters/presets/nifty500-v1.yaml`
+- Produced preset: `results/forecasters/presets/nifty500-v1.yaml`
 - Preset content hash: `sha256:703bab446b6882ec38993a9ff8656491b1cf47d88db3be3e149ff5030de0ed4b`
 - Paths sampled: 1000
 
@@ -40,7 +40,7 @@
 ## Tune details
 
 - Tune subprocess runtime: 855.0s
-- Tune command: `/mnt/122CEE982CEE765F/Workspace/wt-v1-skills/.venv/bin/python3 -m scripts.forecasters.run tune --backend analog_mc --identifier NIFTY:NIFTY500 --start 2020-01-01 --end 2026-02-19 --output-preset nifty500-v1 --search-config runs/forecasters/acceptance_demo/search_config.yaml --seed 42`
+- Tune command: `uv run python -m scripts.forecasters.run tune --backend analog_mc --identifier NIFTY:NIFTY500 --start 2020-01-01 --end 2026-02-19 --output-preset nifty500-v1 --search-config runs/forecasters/acceptance_demo/search_config.yaml --seed 42`
 
 ## Notes
 

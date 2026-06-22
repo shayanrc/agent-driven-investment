@@ -44,7 +44,7 @@ The cell is `nifty50 UP +10% / 25d / dd5%`, `callback_mode: agent_file_protocol`
 Each iteration is one launch that trains, writes the bundle, and exits 0:
 
 ```bash
-cd /mnt/122CEE982CEE765F/Workspace/wt-gbdt-v11-phase6   # or the main checkout
+cd <project root>   # the main checkout or a worktree
 
 # iter 0 — first launch:
 timeout 2400 uv run python -m gbdt experiment \

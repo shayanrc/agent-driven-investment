@@ -167,7 +167,7 @@ Source artifact: `results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentl
 
 ## Artifacts (per-cell)
 
-All artifact dirs under `/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/`:
+All artifact dirs under `results/gbdt/experiments/`:
 
 | Cell  | Artifact dirs                                                                   |
 |-------|---------------------------------------------------------------------------------|
