@@ -9,7 +9,7 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 503.97)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-503.97 1345,-503.97 1345,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 00:53 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 01:02 IST)</text>
 <text xml:space="preserve" text-anchor="middle" x="670.5" y="-467.12" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">branch gbdt&#45;trailing&#45;champions&#45;date&#45;aligned · refit 5 trailing champions on date_aligned, then top&#45;10 true&#45;OOS rerun</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
@@ -82,7 +82,7 @@
 <!-- B1 -->
 <g id="node8" class="node">
 <title>B1</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M886.05,-302.13C886.05,-302.13 781.95,-302.13 781.95,-302.13 775.95,-302.13 769.95,-296.13 769.95,-290.13 769.95,-290.13 769.95,-278.13 769.95,-278.13 769.95,-272.13 775.95,-266.13 781.95,-266.13 781.95,-266.13 886.05,-266.13 886.05,-266.13 892.05,-266.13 898.05,-272.13 898.05,-278.13 898.05,-278.13 898.05,-290.13 898.05,-290.13 898.05,-296.13 892.05,-302.13 886.05,-302.13"/>
+<path fill="#a3c8e8" stroke="black" d="M886.05,-302.13C886.05,-302.13 781.95,-302.13 781.95,-302.13 775.95,-302.13 769.95,-296.13 769.95,-290.13 769.95,-290.13 769.95,-278.13 769.95,-278.13 769.95,-272.13 775.95,-266.13 781.95,-266.13 781.95,-266.13 886.05,-266.13 886.05,-266.13 892.05,-266.13 898.05,-272.13 898.05,-278.13 898.05,-278.13 898.05,-290.13 898.05,-290.13 898.05,-296.13 892.05,-302.13 886.05,-302.13"/>
 <text xml:space="preserve" text-anchor="start" x="793.5" y="-285.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">B1</text>
 <text xml:space="preserve" text-anchor="start" x="807.75" y="-285.63" font-family="Helvetica,sans-Serif" font-size="10.00"> select top&#45;10</text>
 <text xml:space="preserve" text-anchor="start" x="780.75" y="-275.63" font-family="Helvetica,sans-Serif" font-size="10.00">from updated registry</text>
@@ -144,7 +144,7 @@
 <!-- A4 -->
 <g id="node7" class="node">
 <title>A4</title>
-<path fill="#a3c8e8" stroke="black" d="M725.17,-52C725.17,-52 600.83,-52 600.83,-52 594.83,-52 588.83,-46 588.83,-40 588.83,-40 588.83,-28 588.83,-28 588.83,-22 594.83,-16 600.83,-16 600.83,-16 725.17,-16 725.17,-16 731.17,-16 737.17,-22 737.17,-28 737.17,-28 737.17,-40 737.17,-40 737.17,-46 731.17,-52 725.17,-52"/>
+<path fill="#cccccc" stroke="black" d="M725.17,-52C725.17,-52 600.83,-52 600.83,-52 594.83,-52 588.83,-46 588.83,-40 588.83,-40 588.83,-28 588.83,-28 588.83,-22 594.83,-16 600.83,-16 600.83,-16 725.17,-16 725.17,-16 731.17,-16 737.17,-22 737.17,-28 737.17,-28 737.17,-40 737.17,-40 737.17,-46 731.17,-52 725.17,-52"/>
 <text xml:space="preserve" text-anchor="start" x="599.62" y="-35.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">A4</text>
 <text xml:space="preserve" text-anchor="start" x="613.88" y="-35.5" font-family="Helvetica,sans-Serif" font-size="10.00"> memo _265 + commit</text>
 <text xml:space="preserve" text-anchor="start" x="643.5" y="-25.5" font-family="Helvetica,sans-Serif" font-size="10.00">Phase A</text>
