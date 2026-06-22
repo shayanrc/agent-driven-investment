@@ -1,0 +1,22 @@
+{
+  "id": "_261",
+  "title": "HY-OAS gap closed via credit proxy + +50% re-run — credit axis doesn't help",
+  "branch": "gbdt-macro-hyoas-credit",
+  "memo": "docs/gbdt/_261_macro_hyoas_credit_rerun.md",
+  "summary": "No free source for real BAMLH0A0HYM2 (ICE HY OAS) — DBnomics 0 results, Nasdaq ML/HYOAS key-gated, ICE paywalled, FRED down. Approximated with -log(HYG/IEF) credit proxy (HY corp ETF vs duration-matched Treasuries, tracks OAS direction). Re-ran +50%/50d under the champion regime with the full 9-series panel, identical window to _260. Adding the credit axis slightly REGRESSED the cell (R-p@1 0.360->0.320, every K down). Credit-proxy features used but low-rank (~1.7% gain, #33); breakeven+nominal-yield dominate. Credit spread is NOT the missing piece; _260 verdict stands (macro does not beat the champion). Keep F17 opt-in, do not promote.",
+  "hy_oas_proxy": {"id": "BAMLH0A0HYM2", "provider": "yahoo_credit_proxy", "formula": "-log(HYG_adjclose/IEF_adjclose)", "real_source_available_free": false, "checked": ["FRED (down)", "DBnomics (0 results)", "Nasdaq ML/HYOAS (403 key-gated)", "ICE (paywalled)"]},
+  "regime": {"split": "trailing", "callback_mode": "default", "max_iterations": 5, "n_iterations_run": 3, "snapshot_end": "2026-06-20"},
+  "cell": "sp500_up_50pct_50d_dd25pct",
+  "trailing_test_window": ["2026-01-22", "2026-04-02"], "base_rate": 0.038395, "Q_days": 50,
+  "comparison_R_precision_at_K_test": {
+    "champbase_no_macro":      {"1":0.1200,"3":0.1600,"5":0.2040,"10":0.2165,"20":0.3132},
+    "macrochamp_8series_260":  {"1":0.3600,"3":0.3133,"5":0.3360,"10":0.3050,"20":0.4153},
+    "macrochamp9_9series_261": {"1":0.3200,"3":0.2733,"5":0.2600,"10":0.2908,"20":0.4017},
+    "committed_champion_ref":  {"1":0.6400,"10":0.3460, "note":"different window/tuning — confounded"}
+  },
+  "macrochamp9_test_auc": 0.8525,
+  "macro_gain_frac": 0.222,
+  "credit_proxy_feature_ranks": {"macro_BAMLH0A0HYM2_chg_60": [33, 0.0058], "macro_BAMLH0A0HYM2_z_120": [63, 0.004], "macro_BAMLH0A0HYM2_chg_20": [95, 0.0031], "macro_BAMLH0A0HYM2_z_60": [131, 0.0022], "macro_BAMLH0A0HYM2_level": [143, 0.0019]},
+  "top_macro_features": [["macro_T10YIE_chg_60",4,0.0354],["macro_T10YIE_level",5,0.0258],["macro_DGS10_chg_60",6,0.0251],["macro_VIXCLS_z_120",7,0.0144]],
+  "verdict": "credit axis does NOT close the gap — slight regression (R-p@1 -0.04); macro (9 axes) still far below the champion; recommendation unchanged (keep F17 opt-in, do not promote)"
+}
