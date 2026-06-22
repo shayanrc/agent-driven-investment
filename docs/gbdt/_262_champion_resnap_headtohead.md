@@ -1,5 +1,12 @@
 # _262 — Champion re-baseline at matched snapshot: macro BEATS the champion (both cells)
 
+> **Update (2026-06-22) — superseded by `_264`.** This win held on a single (trailing
+> 2026-Q1) window. The matched lattice was re-run on an independent **date-aligned**
+> window (2024-H2) in `_264` and the macro edge did **NOT replicate** (8/12 cells flip
+> sign at R-p@1; `+50%/50d` +0.14 → 0.00, `+20%/25d` +0.09 → −0.04). Net verdict: F17 is
+> contextually additive but **not a robust edge — not deployed.** Read `_264` alongside
+> this memo.
+
 **Headline:** Re-baselining the committed champions at the current snapshot —
 removing **both** the window and the tuning-mode confounds that muddied `_260` —
 flips the verdict: **with the champion's exact config held fixed, the

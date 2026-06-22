@@ -1,5 +1,13 @@
 # _263 — Macro-lattice sweep (sp500): does F17 macro help across the grid?
 
+> **Update (2026-06-22) — superseded by `_264`.** These results are on a single
+> (trailing 2026-Q1) window. `_264` re-ran this exact matched lattice on an independent
+> **date-aligned** window (2024-H2): the broad top-of-book help did **NOT replicate**
+> (8/12 cells flip sign at R-p@1; the headline `+20%/50d` +0.30 → −0.11), and `_264`
+> also closed the 5 long-horizon cells that were Q=0 here. Net verdict: F17 is
+> contextually additive but **not a robust edge — not deployed.** The "still gated on
+> multi-window validation" caveat below is now resolved (validation failed). Read `_264`.
+
 **Headline:** Sweeping the matched base-vs-`+macro` A/B across the sp500 cell lattice
 generalizes the `_262` two-cell win: **macro (F17) is broadly additive at the TOP of
 the ranking.** Across the 12 testable cells it helps **R-Precision@1 in 10/12**
