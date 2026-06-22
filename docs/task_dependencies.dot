@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 00:32 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 00:53 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -39,9 +39,9 @@ digraph tasks {
     label = "Phase A — date-aligned matched refits (5 trailing champions)";
     style = "rounded"; color = "#3366aa"; fontname = "Helvetica-Bold"; fontsize = 11;
     A1 [label=<<B>A1</B> generate 5 specs<BR/>pin HP+features, single fit<BR/>gen_aligned_champion_specs.py>, fillcolor="#cccccc"];
-    A2 [label=<<B>A2</B> run 5 refits<BR/>date_aligned single fit<BR/>--snapshot-end 2026-06-20>, fillcolor="#a3c8e8"];
-    A3 [label=<<B>A3</B> R-p@K &rarr; registry<BR/>append 5 rows to<BR/>r_precision_at_k.csv>, fillcolor="#ffffff", style="rounded,filled,dashed"];
-    A4 [label=<<B>A4</B> memo _265 + commit<BR/>Phase A>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    A2 [label=<<B>A2</B> run 5 refits<BR/>date_aligned single fit<BR/>(5/5 done; nasdaq via exclude)>, fillcolor="#cccccc"];
+    A3 [label=<<B>A3</B> R-p@K &rarr; registry<BR/>+5 rows (164 total)<BR/>r_precision_at_k.csv>, fillcolor="#cccccc"];
+    A4 [label=<<B>A4</B> memo _265 + commit<BR/>Phase A>, fillcolor="#a3c8e8"];
   }
 
   // Phase B — top-10 true-OOS rerun
