@@ -1,4 +1,4 @@
-2026-06-04T18:28:45+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned
+2026-06-04T18:28:45+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned
 2026-06-04T18:28:46+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-04T18:28:48+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-04T18:28:48+00:00 [data] start universe=russell1000
@@ -14,7 +14,7 @@
 2026-06-04T18:31:45+00:00 [uniqueness] start
 2026-06-04T18:31:45+00:00 [heartbeat] t=00:01:45 phase=uniqueness elapsed_phase=0s elapsed_total=180s rss_mb=27660
 2026-06-04T18:31:55+00:00 [uniqueness] complete in 9.6s horizon=200 rows=6004616 ESS=5933719 inflation=1.01x
-2026-06-04T18:31:55+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T18:31:55+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-04T18:31:55+00:00 [loop] start max_iter=3 callback_mode=default
 2026-06-04T18:32:16+00:00 [heartbeat] t=00:02:16 phase=loop elapsed_phase=21s elapsed_total=211s rss_mb=27660
 2026-06-04T18:32:46+00:00 [heartbeat] t=00:02:46 phase=loop elapsed_phase=51s elapsed_total=241s rss_mb=27660
@@ -32,6 +32,6 @@
 2026-06-04T18:38:46+00:00 [heartbeat] t=00:08:46 phase=loop elapsed_phase=411s elapsed_total=601s rss_mb=27660
 2026-06-04T18:39:03+00:00 [loop] LOOP COMPLETE in 428.6s best_iter=0 val_brier=0.0811 reason=degradation
 2026-06-04T18:39:03+00:00 [artifact] start
-2026-06-04T18:39:14+00:00 [artifact] complete in 10.8s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned
+2026-06-04T18:39:14+00:00 [artifact] complete in 10.8s -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned
 2026-06-04T18:39:14+00:00 [loop] STOPPED reason=degradation
 2026-06-04T18:39:14+00:00 [experiment] complete in 628.7s

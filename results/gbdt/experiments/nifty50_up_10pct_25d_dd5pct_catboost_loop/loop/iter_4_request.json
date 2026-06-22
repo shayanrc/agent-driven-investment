@@ -150,7 +150,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/wt-inv-a-catboost/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_loop",
+    "artifact_dir": "results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_catboost_loop",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",

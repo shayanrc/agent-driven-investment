@@ -1,4 +1,4 @@
-2026-06-05T08:03:31+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+2026-06-05T08:03:31+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
 2026-06-05T08:03:31+00:00 [data] start universe=nasdaq100
 2026-06-05T08:03:36+00:00 [data] complete in 4.5s rows=645189 tickers_kept=92
 2026-06-05T08:03:38+00:00 [features] loaded from universe cache (key match) in 0.9s shape=(645189, 279)
@@ -16,8 +16,8 @@
 2026-06-05T08:06:01+00:00 [heartbeat] t=13:36:01 phase=scout elapsed_phase=131s elapsed_total=150s rss_mb=3991
 2026-06-05T08:06:31+00:00 [heartbeat] t=13:36:31 phase=scout elapsed_phase=161s elapsed_total=180s rss_mb=3991
 2026-06-05T08:06:39+00:00 [scout] cycle 1 complete; 35/35 configs ok in 168.7s
-2026-06-05T08:06:39+00:00 [scout] cycle 1 paused — wrote /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/combine_request.json. Agent writes combine_decision.json and reruns: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml --resume nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent --snapshot-end <DATE>
-2026-06-05T08:15:19+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+2026-06-05T08:06:39+00:00 [scout] cycle 1 paused — wrote results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/combine_request.json. Agent writes combine_decision.json and reruns: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml --resume nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent --snapshot-end <DATE>
+2026-06-05T08:15:19+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
 2026-06-05T08:15:19+00:00 [data] start universe=nasdaq100
 2026-06-05T08:15:23+00:00 [data] complete in 4.2s rows=645189 tickers_kept=92
 2026-06-05T08:15:25+00:00 [features] loaded from per-cell cache (key match) in 0.9s shape=(645189, 279)
@@ -30,8 +30,8 @@
 2026-06-05T08:15:49+00:00 [heartbeat] t=13:45:49 phase=uniqueness elapsed_phase=20s elapsed_total=30s rss_mb=3485
 2026-06-05T08:16:19+00:00 [heartbeat] t=13:46:19 phase=uniqueness elapsed_phase=50s elapsed_total=60s rss_mb=3485
 2026-06-05T08:16:49+00:00 [heartbeat] t=13:46:49 phase=uniqueness elapsed_phase=80s elapsed_total=90s rss_mb=3485
-2026-06-05T08:16:50+00:00 [scout] cycle 2 complete; wrote /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/combine_results.json. Agent writes iter_0_decision.json + reruns --resume --snapshot-end <DATE>.
-2026-06-05T08:18:05+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+2026-06-05T08:16:50+00:00 [scout] cycle 2 complete; wrote results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/scout/combine_results.json. Agent writes iter_0_decision.json + reruns --resume --snapshot-end <DATE>.
+2026-06-05T08:18:05+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
 2026-06-05T08:18:05+00:00 [data] start universe=nasdaq100
 2026-06-05T08:18:10+00:00 [data] complete in 4.6s rows=645189 tickers_kept=92
 2026-06-05T08:18:13+00:00 [features] loaded from per-cell cache (key match) in 0.9s shape=(645189, 279)
@@ -43,10 +43,10 @@
 2026-06-05T08:18:17+00:00 [scout] cycle 3 — iter_0_decision applied (features=190, hp_overlay_keys=['alpha', 'colsample_bytree', 'early_stopping_rounds', 'eta', 'gamma', 'max_depth', 'min_child_weight', 'n_estimators', 'scale_pos_weight', 'subsample'])
 2026-06-05T08:18:17+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol
 2026-06-05T08:18:21+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.2241384759537062)
-2026-06-05T08:18:21+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/loop/iter_0_request.json
-2026-06-05T08:18:21+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/loop/checkpoint.json
+2026-06-05T08:18:21+00:00 [loop] paused at iter 0 — request written: results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/loop/iter_0_request.json
+2026-06-05T08:18:21+00:00 [loop] checkpoint written: results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent/loop/checkpoint.json
 2026-06-05T08:18:21+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml --resume nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
-2026-06-05T08:29:37+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+2026-06-05T08:29:37+00:00 [experiment] start spec=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
 2026-06-05T08:29:37+00:00 [resume] loaded checkpoint at iter 0 (run_id=nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent)
 2026-06-05T08:29:37+00:00 [resume] RESUMED iter 1 (decision: pruned 0, hp_changes=[], should_stop=True)
 2026-06-05T08:29:37+00:00 [data] start universe=nasdaq100
@@ -61,6 +61,6 @@
 2026-06-05T08:29:48+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 1)
 2026-06-05T08:29:52+00:00 [loop] LOOP COMPLETE in 4.8s best_iter=0 val_brier=0.2241 reason=agent_should_stop
 2026-06-05T08:29:52+00:00 [artifact] start
-2026-06-05T08:29:53+00:00 [artifact] complete in 0.9s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
+2026-06-05T08:29:53+00:00 [artifact] complete in 0.9s -> results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent
 2026-06-05T08:29:53+00:00 [loop] STOPPED reason=agent_should_stop
 2026-06-05T08:29:53+00:00 [experiment] complete in 16.1s

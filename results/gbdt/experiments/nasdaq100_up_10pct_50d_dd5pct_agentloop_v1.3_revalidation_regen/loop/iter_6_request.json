@@ -199,7 +199,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
+    "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",

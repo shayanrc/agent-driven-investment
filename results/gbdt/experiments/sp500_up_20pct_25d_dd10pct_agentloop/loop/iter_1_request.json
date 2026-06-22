@@ -288,7 +288,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
+    "artifact_dir": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",

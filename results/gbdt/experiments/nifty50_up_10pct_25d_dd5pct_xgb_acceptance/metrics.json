@@ -7,10 +7,10 @@
   "spec_hash": "sha256:bc421d2d624256533eaed554093d35b1331e2ec815141af005ae360b03c29502",
   "data_hash": "sha256:88900a7a27cbff7e16a68b06010aa364a948376ee308b9c3d200cbcb60750f9b",
   "preflight": {
-    "cache_db": "/mnt/122CEE982CEE765F/cache_data/processed.db",
+    "cache_db": "${SCRATCH_CACHE}/processed.db",
     "cache_db_size": 984387584,
     "cache_db_mtime": "2026-05-28T20:42:05.367081+00:00",
-    "data_root": "/mnt/122CEE982CEE765F/cache_data",
+    "data_root": "${SCRATCH_CACHE}",
     "code_commit": "99355fd0a85a5c0bb5df81941ad47713224e74ed",
     "code_dirty": true
   },

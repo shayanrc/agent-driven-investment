@@ -1,4 +1,4 @@
-2026-06-04T19:45:12+00:00 [experiment] start spec=nasdaq100_up_10pct_200d_dd5pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/nasdaq100_up_10pct_200d_dd5pct_aligned
+2026-06-04T19:45:12+00:00 [experiment] start spec=nasdaq100_up_10pct_200d_dd5pct_aligned.yaml -> results/gbdt/experiments/nasdaq100_up_10pct_200d_dd5pct_aligned
 2026-06-04T19:45:12+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-04T19:45:12+00:00 [preflight] cache currency OK: 100 ticker(s) covered through 2025-07-24
 2026-06-04T19:45:12+00:00 [data] start universe=nasdaq100
@@ -12,16 +12,16 @@
 2026-06-04T19:48:00+00:00 [features] complete in 161.0s shape=(639797, 279)
 2026-06-04T19:48:08+00:00 [features] per-cell cache written (key=87f6442f686c…)
 2026-06-04T19:48:12+00:00 [heartbeat] t=01:18:12 phase=features elapsed_phase=175s elapsed_total=180s rss_mb=3741
-2026-06-04T19:48:15+00:00 [features] universe cache written (key=45968de39f0c…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-04T19:48:15+00:00 [features] universe cache written (key=45968de39f0c…) at ${SCRATCH_CACHE}/gbdt_feature_cache/
 2026-06-04T19:48:16+00:00 [target] start
 2026-06-04T19:48:19+00:00 [target] complete in 3.4s positive_prevalence=0.442
 2026-06-04T19:48:19+00:00 [uniqueness] start
 2026-06-04T19:48:20+00:00 [uniqueness] complete in 0.5s horizon=200 rows=639797 ESS=632425 inflation=1.01x
-2026-06-04T19:48:20+00:00 [loop] V1.3 no sweep_row for cell='nasdaq100_up_10pct_200d_dd5pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T19:48:20+00:00 [loop] V1.3 no sweep_row for cell='nasdaq100_up_10pct_200d_dd5pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-04T19:48:20+00:00 [loop] start max_iter=3 callback_mode=default
 2026-06-04T19:48:42+00:00 [heartbeat] t=01:18:42 phase=loop elapsed_phase=22s elapsed_total=210s rss_mb=3819
 2026-06-04T19:48:50+00:00 [loop] LOOP COMPLETE in 30.0s best_iter=0 val_brier=0.2512 reason=plateau
 2026-06-04T19:48:50+00:00 [artifact] start
-2026-06-04T19:48:52+00:00 [artifact] complete in 1.9s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/nasdaq100_up_10pct_200d_dd5pct_aligned
+2026-06-04T19:48:52+00:00 [artifact] complete in 1.9s -> results/gbdt/experiments/nasdaq100_up_10pct_200d_dd5pct_aligned
 2026-06-04T19:48:52+00:00 [loop] STOPPED reason=plateau
 2026-06-04T19:48:52+00:00 [experiment] complete in 219.8s

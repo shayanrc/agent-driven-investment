@@ -1,4 +1,4 @@
-2026-06-05T07:21:45+00:00 [experiment] start spec=sp500_up_10pct_25d_dd5pct_b_acceptance.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:21:45+00:00 [experiment] start spec=sp500_up_10pct_25d_dd5pct_b_acceptance.yaml -> results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
 2026-06-05T07:21:45+00:00 [data] start universe=sp500
 2026-06-05T07:22:08+00:00 [data] complete in 23.4s rows=3638785 tickers_kept=486
 2026-06-05T07:22:15+00:00 [heartbeat] t=12:52:15 phase=features elapsed_phase=6s elapsed_total=30s rss_mb=1126
@@ -9,7 +9,7 @@
 2026-06-05T07:23:24+00:00 [target] complete in 15.0s positive_prevalence=0.210
 2026-06-05T07:23:24+00:00 [uniqueness] start
 2026-06-05T07:23:28+00:00 [uniqueness] complete in 4.2s horizon=25 rows=3638785 ESS=3633434 inflation=1.00x
-2026-06-05T07:23:28+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_10pct_25d_dd5pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-05T07:23:28+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_10pct_25d_dd5pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-05T07:23:28+00:00 [loop] start max_iter=8 callback_mode=default
 2026-06-05T07:23:45+00:00 [heartbeat] t=12:53:45 phase=loop elapsed_phase=17s elapsed_total=120s rss_mb=18552
 2026-06-05T07:24:15+00:00 [heartbeat] t=12:54:15 phase=loop elapsed_phase=47s elapsed_total=150s rss_mb=18552
@@ -36,6 +36,6 @@
 2026-06-05T07:34:45+00:00 [heartbeat] t=13:04:45 phase=loop elapsed_phase=677s elapsed_total=780s rss_mb=18552
 2026-06-05T07:34:52+00:00 [loop] LOOP COMPLETE in 683.6s best_iter=1 val_brier=0.2026 reason=plateau
 2026-06-05T07:34:52+00:00 [artifact] start
-2026-06-05T07:34:57+00:00 [artifact] complete in 5.6s -> /mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
+2026-06-05T07:34:57+00:00 [artifact] complete in 5.6s -> results/gbdt/experiments/sp500_up_10pct_25d_dd5pct_b_acceptance
 2026-06-05T07:34:57+00:00 [loop] STOPPED reason=plateau
 2026-06-05T07:34:57+00:00 [experiment] complete in 792.2s

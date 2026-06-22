@@ -199,7 +199,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/wt-v1.3-option-b-p9/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent",
+    "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",
