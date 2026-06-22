@@ -76,6 +76,7 @@ df = fetch("NIFTY:RELIANCE", start="2010-01-01", end="2026-05-15")
 **Shipped domains:**
 - **US equities** — NYSE + NASDAQ, S&P 500 / NASDAQ 100 / Russell 1000 universes. Adapter chain: Stooq (bulk seed) → Tiingo (incremental) → yfinance (fallback).
 - **NSE equities** — Indian markets, NIFTY 50 through NIFTY Total Market universes (30+ pre-registered). Adapter chain: jugaad-data → nselib → yfinance.
+- **FRED macro** — daily FRED-style macro series (Treasury yields, 2s10s curve, credit OAS, breakevens, real yield, VIX, broad USD), date-broadcast to the equity panel. Consumed by the opt-in gbdt F17 feature family.
 
 Two-layer cache: immutable raw downloads at `data/raw/<provider>/` + canonical-schema SQLite at `data/processed.db`. Repeated calls hit the cache; gaps are detected and backfilled automatically.
 
@@ -105,7 +106,7 @@ target:
 
 The agent is the ML iteration loop: it reads a per-iteration diagnostic bundle (train-vs-val gap, feature importance, calibration curve), decides which features to prune and how to adjust hyperparameters, and writes a human-readable report with its reasoning. Calibration is the headline metric — a well-calibrated model with modest AUC is a v1 success; high AUC without calibration is a failure.
 
-279-column feature pool across 16 families, including cross-sectional rank/z-score features. Walk-forward validation with conditional isotonic calibration gated by Spiegelhalter Z-test.
+279-column feature pool across 16 families, including cross-sectional rank/z-score features (plus an opt-in 17th family, F17 macro covariates, off by default — see `docs/gbdt/EXPERIMENT_SPEC.md`). Walk-forward validation with conditional isotonic calibration gated by Spiegelhalter Z-test.
 
 ### backtesting
 
@@ -205,11 +206,11 @@ Each module is config-driven via YAML files in `configs/<module>/`:
 
 ## Project stats
 
-- **~15,300 lines** of source code across 5 modules
-- **866 tests** covering correctness constraints, schema invariants, look-ahead detection, and integration
-- **82 commits** of iterative, diagnostic-driven development
+- **~28,000 lines** of source code across 5 modules
+- **1,500+ tests** (123 files) covering correctness constraints, schema invariants, look-ahead detection, and integration
+- **360+ commits** of iterative, diagnostic-driven development
 - **30+ pre-registered universes** across US and Indian equity markets
-- **100+ experiment configs** spanning multiple universes, thresholds, and horizons
+- **230+ experiment configs** spanning multiple universes, thresholds, and horizons
 
 ---
 
