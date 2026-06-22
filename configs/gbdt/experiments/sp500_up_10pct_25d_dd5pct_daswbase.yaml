@@ -1,0 +1,32 @@
+# Experiment: sp500_up_10pct_25d_dd5pct_daswbase
+# Macro-lattice sweep (base arm, date_aligned split (train_start 2019-01-01)), memo _263/_264.
+# Matched fixed config (xgboost, min_child_weight=10, single fit): the base and
+# +macro arms differ ONLY in features.candidates, so each cell's macro-minus-base
+# R-Precision delta is a clean read of the macro contribution (avoids the _260
+# default-auto per-arm HP confound). --snapshot-end set at runtime.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    min_child_weight: 10
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

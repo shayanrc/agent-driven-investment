@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 UNI = sys.argv[1] if len(sys.argv) > 1 else "sp500"
+ARM = sys.argv[2] if len(sys.argv) > 2 else "sw"  # "sw" (trailing) | "dasw" (date_aligned)
+TAG = sys.argv[3] if len(sys.argv) > 3 else "_263"  # output id ("_263" trailing | "_264" date_aligned)
 KS = ["1", "3", "5", "10", "20"]
 
 
@@ -35,20 +37,20 @@ def rp(cell):
 
 
 cells = sorted(set(
-    re.match(rf"({UNI}_up_\d+pct_\d+d_dd\d+pct)_sw", f.split("/")[-3]).group(1)
-    for f in glob.glob(f"results/gbdt/experiments/{UNI}_up_*pct_*d_dd*pct_sw*/predictions/test.csv")
+    re.match(rf"({UNI}_up_\d+pct_\d+d_dd\d+pct)_{ARM}base", f.split("/")[-3]).group(1)
+    for f in glob.glob(f"results/gbdt/experiments/{UNI}_up_*pct_*d_dd*pct_{ARM}base/predictions/test.csv")
 ))
 rows = []
 for c in cells:
     m = re.match(rf"{UNI}_up_(\d+)pct_(\d+)d_dd(\d+)pct", c)
     thr, hor, dd = int(m[1]), int(m[2]), int(m[3])
-    br, Q, b = rp(c + "_swbase")
-    _, _, mac = rp(c + "_swmacro")
+    br, Q, b = rp(c + f"_{ARM}base")
+    _, _, mac = rp(c + f"_{ARM}macro")
     rows.append(dict(cell=c, thr=thr, hor=hor, dd=dd, base_rate=br, Q=Q, base=b, macro=mac))
     print(f"{c:34s} br={br:.4f} Q={Q:>3} "
           + "  ".join(f"@{k} {b[k]:.3f}->{mac[k]:.3f} ({mac[k]-b[k]:+.3f})" for k in ("1", "5", "10")))
 
-json.dump(rows, open(f"results/gbdt/data/_263_macro_lattice_raw.json", "w"), indent=1)
+json.dump(rows, open(f"results/gbdt/data/{TAG}_macro_lattice_raw.json", "w"), indent=1)
 
 # ---- heatmap: threshold (rows) x horizon (cols), one panel per K, colored by macro-base delta
 THR = sorted({r["thr"] for r in rows})
@@ -76,9 +78,10 @@ for ax, K in zip(axes, panels):
             else:
                 ax.text(j, i, "·", ha="center", va="center", fontsize=10, color="0.6")
 fig.colorbar(im, ax=axes, shrink=0.8, label="Δ R-Precision (green = macro better)")
-fig.suptitle(f"{UNI} macro-lattice sweep — does F17 macro help? (matched mcw=10 single-fit, snapshot 2026-06-20)",
+split_lbl = "date_aligned split" if ARM == "dasw" else "trailing split"
+fig.suptitle(f"{UNI} macro-lattice sweep — does F17 macro help? (matched mcw=10 single-fit, {split_lbl}, snapshot 2026-06-20)",
              fontsize=12, fontweight="bold")
-out = f"results/gbdt/data/_263_macro_lattice_heatmap.png"
+out = f"results/gbdt/data/{TAG}_macro_lattice_heatmap.png"
 fig.savefig(out, dpi=150)
 fig.savefig(out.replace(".png", ".svg"))
 print(f"\nheatmap -> {out}")
