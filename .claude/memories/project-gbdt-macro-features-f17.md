@@ -58,10 +58,17 @@ CLAUDE.md "What not to do — gbdt" foot-gun. Related single-cell rules: `[[proj
   module form used by the older `run_<uni>_sweep.sh`) does **NOT** accept
   `--snapshot-end` and exits 2 with *"expected one positional spec path"*.
 
-## Status (as of 2026-06-22)
+## Status (as of 2026-06-22) — VALIDATION FAILED; NOT a robust edge
 
-Opt-in, merged, **promising but NOT deployed**. Matched re-baseline `_262` beats both
-sp500 champions on one window; lattice sweep `_263` (sp500 17-cell base-vs-macro) +
-multi-window validation are the deployment gate. Caveats: one window, HP-sensitive,
-HY-OAS proxy. Do **not** wire macro into `/daily-predictions` until validation confirms.
-Experiment trail: `docs/gbdt/_258`–`_263`.
+Opt-in, merged, **NOT deployed and NOT promoted**. The arc: `_262` matched re-baseline
+beat both sp500 champions and `_263` (trailing lattice) showed broad top-of-book help —
+but both were on a **single window** (trailing, test ≈ 2026-Q1). `_264` re-ran the same
+matched lattice on an **independent date-aligned window** (test 2024-H2) and the edge
+**did NOT replicate**: 8/12 cells testable in both windows flip sign at R-p@1 (strict
+sign-only: 7 flip), the headline winners flip hardest (`+20%/50d` +0.30 → −0.11;
+`+50%/50d` +0.14 → 0.00), net macro effect ~zero. So the `_262`/`_263` win was
+**window-specific**; this **reaffirms `_258`–`_261`** ("contextually additive but not a
+robust edge"). **Do NOT wire macro into `/daily-predictions`.** Only the low-threshold
++10% cells help in both windows. F17 stays a merged, opt-in feature. (`date_aligned`
+also mechanically closed the long-horizon 100d/200d cells that were Q=0 under trailing.)
+Experiment trail: `docs/gbdt/_258`–`_264`.
