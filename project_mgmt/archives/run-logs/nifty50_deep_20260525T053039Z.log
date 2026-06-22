@@ -5125,13 +5125,13 @@ rows: 2823
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -5141,22 +5141,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -5164,13 +5164,13 @@ IndexError: single positional indexer is out-of-bounds
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -5180,22 +5180,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -5203,13 +5203,13 @@ IndexError: single positional indexer is out-of-bounds
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -5219,22 +5219,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -6280,13 +6280,13 @@ rows: 2823
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -6296,22 +6296,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -6319,13 +6319,13 @@ IndexError: single positional indexer is out-of-bounds
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -6335,22 +6335,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -6358,13 +6358,13 @@ IndexError: single positional indexer is out-of-bounds
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -6374,22 +6374,22 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 200, in fetch_with_meta
     success_source = _build_source_meta(
         adapter=adapter,
     ...<2 lines>...
         time_column=domain.time_column,
     )
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 302, in _build_source_meta
+  File "src/data_pipelines/dispatch.py", line 302, in _build_source_meta
     "start": _as_date(df[time_column].iloc[0]).isoformat(),
                       ~~~~~~~~~~~~~~~~~~~~^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1207, in __getitem__
     return self._getitem_axis(maybe_callable, axis=axis)
            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1773, in _getitem_axis
     self._validate_integer(key, axis)
     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/.venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
+  File ".venv/lib/python3.13/site-packages/pandas/core/indexing.py", line 1706, in _validate_integer
     raise IndexError("single positional indexer is out-of-bounds")
 IndexError: single positional indexer is out-of-bounds
   rc=1, sleeping 5s before retry
@@ -6608,13 +6608,13 @@ nselib/NSE:NTPC: exhausted retries (3/3): [nselib] NSE:NTPC: nselib error: eithe
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -6624,17 +6624,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
@@ -6653,13 +6653,13 @@ nselib/NSE:NTPC: exhausted retries (3/3): [nselib] NSE:NTPC: nselib error: eithe
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -6669,17 +6669,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
@@ -7523,13 +7523,13 @@ rows: 2142
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -7539,17 +7539,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
@@ -7910,13 +7910,13 @@ rows: 2822
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -7926,17 +7926,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
@@ -7945,13 +7945,13 @@ sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -7961,17 +7961,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
@@ -7980,13 +7980,13 @@ sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 351, in <module>
+  File "src/data_pipelines/__main__.py", line 351, in <module>
     raise SystemExit(main())
                      ~~~~^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 347, in main
+  File "src/data_pipelines/__main__.py", line 347, in main
     return args.func(args)
            ~~~~~~~~~^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/__main__.py", line 66, in _cmd_fetch
+  File "src/data_pipelines/__main__.py", line 66, in _cmd_fetch
     df, meta = fetch_with_meta(
                ~~~~~~~~~~~~~~~^
         identifier=args.identifier,
@@ -7996,17 +7996,17 @@ Traceback (most recent call last):
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
+  File "src/data_pipelines/dispatch.py", line 209, in fetch_with_meta
     write_processed_atomic(
     ~~~~~~~~~~~~~~~~~~~~~~^
         data_root_p, domain, identifier, cached_df, cached_meta
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 203, in write_processed_atomic
+  File "src/data_pipelines/cache.py", line 203, in write_processed_atomic
     _replace_data(conn, domain, identifier, df)
     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/122CEE982CEE765F/Workspace/wt-nifty50-deep/src/data_pipelines/cache.py", line 407, in _replace_data
+  File "src/data_pipelines/cache.py", line 407, in _replace_data
     conn.executemany(sql, rows)
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^
 sqlite3.IntegrityError: UNIQUE constraint failed: nse_equities_data.ticker, nse_equities_data.date
