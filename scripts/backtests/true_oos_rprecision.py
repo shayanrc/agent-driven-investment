@@ -59,7 +59,14 @@ def score_cell(cell_name: str, end: str) -> dict:
     spec = yaml.safe_load((cell / "spec.yaml").read_text())
     tgt = spec["target"]
     metrics = json.load(open(cell / "metrics.json"))
-    test_end = metrics["segment_dates"]["test"]["end"]
+    # test_end: prefer metrics.segment_dates (V1.4+); else the registry (has it for
+    # every cell); legacy cells lack segment_dates.
+    test_end = (metrics.get("segment_dates") or {}).get("test", {}).get("end")
+    if not test_end:
+        reg = pd.read_csv(REG).set_index("experiment")
+        test_end = str(reg.loc[cell_name, "test_end"]) if cell_name in reg.index else None
+    if not test_end:
+        return {**rec, "status": "no test_end in metrics or registry"}
     rec.update(universe=tgt["universe"], test_end=test_end,
                horizon=tgt["horizon_days"], threshold_pct=tgt["threshold_pct"])
 
@@ -123,7 +130,10 @@ def main() -> int:
     rows = []
     for i, c in enumerate(cells, 1):
         print(f"[{i}/{len(cells)}] {c} ...", flush=True)
-        r = score_cell(c, args.end)
+        try:
+            r = score_cell(c, args.end)
+        except Exception as e:  # one cell's failure must not lose the rest
+            r = {"cell": c, "status": f"error: {type(e).__name__}: {e}"}
         print(f"    -> {r.get('status')}  "
               + (f"oos {r.get('oos_start')}→{r.get('oos_end')} ndays={r.get('n_oos_days')} "
                  f"@1={r.get('R_precision_at_1')} @3={r.get('R_precision_at_3')}"
