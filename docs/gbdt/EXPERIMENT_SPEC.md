@@ -161,7 +161,7 @@ Feature pool overrides. **By default the experiment starts with all 279 candidat
 
 | Field | Type | Default |
 |---|---|---|
-| `candidates` | list[str] or `"all"` | `"all"` (the full 279-col pool) |
+| `candidates` | list[str], `"all"`, or `"all_macro"` | `"all"` (the full 279-col pool) |
 | `exclude` | list[str] | `[]` |
 | `lookback_windows` | list[int] | from `default.yaml`: `[5, 10, 20, 50, 100, 200]` |
 
@@ -192,6 +192,42 @@ features:
     - rel_strength_20
     - sma_distance_50
 ```
+
+#### The `all_macro` token (F17 macro features — opt-in)
+
+```yaml
+features:
+  candidates: all_macro      # = the default "all" (F1–F16) PLUS the F17 macro family
+```
+
+`all_macro` resolves to `all` (the F1–F16 price/volume families, 279 cols) **plus the
+F17 macro feature family** (~45 cols). It is the **only** way to pull F17 in — F17 is
+deliberately **excluded from the `"all"` token**, so every existing spec and committed
+model stays **byte-identical**. (Implementation: `"all"` → `_ALL_FAMILIES` (F1–F16);
+`"all_macro"` → `_ALL_FAMILIES + ("F17",)`.)
+
+**F17** broadcasts daily FRED-style macro series to every `(date, ticker)` row,
+**1-trading-day-lagged** (C1 causal — proven by an F17 case in the leakage harness).
+Per series it emits `<id>_level`, `<id>_chg_{20,60}`, and `<id>_z_{60,120}` (trailing
+rolling z-score). Series (~9): 10Y yield, 2s10s curve, 3M bill, fed funds, HY credit
+OAS, 10Y breakeven, 10Y real yield, VIX, broad USD. Read **cache-only** from the
+`fred_macro` domain (never hits the network during an experiment); the series-set +
+transforms are part of the feature-cache key so it invalidates correctly. Monthly
+series (CPI/GDP/payrolls) are **excluded** — their publication lag is a look-ahead trap
+the `(date, value)` schema can't yet express.
+
+Caveat: the `fred_macro` cache on this host holds the 9 series under FRED ids but with
+**NON-FRED provenance** (Treasury / NY-Fed / Yahoo proxies; HY-OAS = `-log(HYG/IEF)`
+proxy), because FRED egress was unreachable when seeding.
+
+**Status: opt-in, NOT promoted — F17 failed second-window validation.** `_262`/`_263`
+had macro beating the sp500 champions + broadly helping top-of-book on a single
+(trailing 2026-Q1) window, but `_264` re-ran the matched lattice on an independent
+date-aligned window (2024-H2) and the edge did **not** replicate (8/12 cells flip sign
+at R-p@1). Contextually additive, not a robust edge — **do not wire macro into
+`/daily-predictions`.** Full trail: memos `_258`–`_264`; project memory
+`[[project-gbdt-macro-features-f17]]`; the matched-HP A/B method is the load-bearing
+lesson (pin `hp_starting` + `max_iterations: 1` so only `candidates` differs).
 
 ### `backend` (optional)
 
