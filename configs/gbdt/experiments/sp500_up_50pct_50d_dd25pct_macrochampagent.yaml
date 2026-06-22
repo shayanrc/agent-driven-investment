@@ -1,0 +1,31 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_macrochampagent
+#
+# Macro arm of the champion re-baseline head-to-head (memo _262): the champion's
+# exact config (min_child_weight=10, single fit, trailing split) PLUS the macro
+# family (candidates all_macro = F1-F16 + F17, the 9-series panel incl. the HY-OAS
+# credit proxy). IDENTICAL to ..._champ_resnap except features.candidates.
+# Matched window + matched HP -> the ONLY difference is the macro features, so this
+# is the clean "does macro beat the champion?" head-to-head with BOTH the window
+# and the tuning-mode confounds removed.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+features:
+  candidates: all_macro
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    min_child_weight: 10
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42

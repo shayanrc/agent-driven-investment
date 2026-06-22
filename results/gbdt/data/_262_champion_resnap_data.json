@@ -1,0 +1,29 @@
+{
+  "id": "_262",
+  "title": "Champion re-baseline at matched snapshot — macro beats the champion (both cells)",
+  "branch": "gbdt-macro-champion-resnap",
+  "memo": "docs/gbdt/_262_champion_resnap_headtohead.md",
+  "summary": "Re-baselined both committed champions at snapshot 2026-06-20 by reproducing their exact winning config (min_child_weight=10 on all 279 features, single fit — no agent loop needed) and ran a matched macro arm (same HP + 9-series macro panel). Removes BOTH the window and tuning-mode confounds from the _260 head-to-head. Result REVERSES _260: with HP held fixed, macro beats the champion's config on BOTH cells at nearly every K (+50% R-p@1 0.540->0.680, beating even the champion's all-time 0.640; +20% R-p@1 0.280->0.373). The _260 'sign-flip' was a default-auto-loop artifact (per-arm HP divergence), not a macro property. Promising but one-window + HP-sensitive + HY-OAS still a proxy -> recommend multi-window validation before deploy.",
+  "method": "hp_starting {min_child_weight:10} + max_iterations 1 (single fit) reproduces the champions' exact config; macro arm identical except candidates: all_macro (9-series, 45 macro cols). trailing split, snapshot 2026-06-20.",
+  "cells": [
+    {
+      "name": "sp500_up_50pct_50d_dd25pct",
+      "trailing_test_window": ["2026-01-22","2026-04-02"], "base_rate": 0.0384, "Q_days": 50,
+      "champ_resnap":     {"R_precision_at_K_test": {"1":0.5400,"3":0.4600,"5":0.3800,"10":0.4572,"20":0.4776}, "test_auc":0.8415, "n_feats":279},
+      "macrochampagent":  {"R_precision_at_K_test": {"1":0.6800,"3":0.4667,"5":0.4840,"10":0.5018,"20":0.4734}, "test_auc":0.8265, "n_feats":324},
+      "macro_vs_champion": "BEATS @1/@3/@5/@10 (R-p@1 +26%), ~tie @20; macro 0.680 > committed champion all-time 0.640",
+      "committed_champion_ref": {"R_p@1":0.6400,"R_p@10":0.3460,"base_rate":0.0257,"test":["2025-12-30","2026-03-12"]}
+    },
+    {
+      "name": "sp500_up_20pct_25d_dd10pct",
+      "trailing_test_window": ["2026-01-22","2026-05-08"], "base_rate": 0.0878, "Q_days": 75,
+      "champ_resnap":     {"R_precision_at_K_test": {"1":0.2800,"3":0.3378,"5":0.3253,"10":0.3120,"20":0.2965}, "test_auc":0.7278, "n_feats":279},
+      "macrochampagent":  {"R_precision_at_K_test": {"1":0.3733,"3":0.4356,"5":0.4187,"10":0.3933,"20":0.3545}, "test_auc":0.7376, "n_feats":324},
+      "macro_vs_champion": "BEATS at every K (R-p@1 +33%, @10 +26%); below committed 0.413 but on a different/harder window",
+      "committed_champion_ref": {"R_p@1":0.4133,"R_p@10":0.4027,"base_rate":0.0886,"test":["2025-12-30","2026-04-17"]}
+    }
+  ],
+  "reconciliation": "_259 (date-aligned) macro helped +20%; _260 (default-auto) sign-flipped = per-arm HP divergence artifact; _262 (matched HP) macro helps BOTH. Coherent: macro is additive+champion-beating under matched tuning on this window.",
+  "objective_status": "OVERTURNS _260 for the matched comparison — macro BEATS the champion's config on both cells. Promising; needs multi-window validation before deploy (one window, HP-sensitive, HY-OAS proxy).",
+  "recommendation": "upgrade macro from 'opt-in, do not deploy' to 'validate for deployment' — run matched champ_resnap vs macrochampagent across several quarterly snapshots; if the edge holds, wire macro champion into /daily-predictions"
+}
