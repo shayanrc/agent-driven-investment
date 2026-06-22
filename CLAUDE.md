@@ -81,6 +81,8 @@ For top-K classifier metrics, the per-day denominator MUST be `min(R(d), K)` whe
 
 Standard cross-cell comparison metric for gbdt experiments: **R-Precision@K** at K ∈ {1, 3, 5, 10, 20}, defined as `(1/Q) · Σ_q r_q / min(K, R_q)` — per-day fixed K, macro-averaged across days where R_q > 0 (see `[[project-r-precision-methodology]]`). Renamed from the prior "weighted R-precision" (per-day variable K = R(d), micro-aggregated) on 2026-06-01; the legacy metric and the current one are **different metrics**, not just different aggregations of the same thing — pre-2026-06-01 memos quote the legacy form. Canonical cell-by-cell registry: `results/gbdt/data/r_precision_at_k.csv`.
 
+**Show times to the user in IST** (UTC+5:30) unless they specify another timezone — the project owner is in India. Internal artifacts (logs, commit metadata) may stay UTC; convert cron next-fire times from machine-local before display. See `[[feedback-report-time-in-ist]]`.
+
 ## Source of truth for analog_mc
 
 `docs/analog_mc/IMPLEMENTATION_PLAN.md` is the spec for the analog_mc pipeline and was the output of a long design conversation. Every decision in it was made for a reason. **Do not silently change architectural decisions.** If implementation reveals a problem with a decision, surface it explicitly and ask before deviating.
