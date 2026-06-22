@@ -41,7 +41,7 @@ When PR #3 merges to `main`, two of the four `goal.md` links will be 404s until 
 ## CLAUDE.md authority
 
 - **"Claude Code skills" section (lines 38-45)** is crisp and unambiguous. The "one skill = one verb" / runner-script-owns-implementation / no-backend-flags rules are testable when reviewing future skill additions. Good.
-- **"Worktree workflow" bullet (line 85)** is reasonable but hardcodes the user's machine path (`/mnt/122CEE982CEE765F/Workspace/wt-<scope>`). Fine for now (single-user repo) but if the repo ever gains a second contributor that path becomes wrong. Low priority.
+- **"Worktree workflow" bullet (line 85)** is reasonable but hardcodes the user's machine path (`/mnt/<UUID>/Workspace/wt-<scope>`). Fine for now (single-user repo) but if the repo ever gains a second contributor that path becomes wrong. Low priority.
 - **"What not to do (analog_mc)" section (lines 93-99)** was kept at the bottom of CLAUDE.md. With 4 modules now, this analog_mc-specific block is a bit out of place at root level. `docs/analog_mc/goal.md` would be the natural home. Not blocking but worth a tidy. See Finding 2.
 - **"Data and configs" generalization (lines 49-51)** correctly reflects the cache: `data/processed.db` + `data/raw/<provider>/...` is confirmed by `ls data/raw` → `jugaad nselib tiingo yfinance`. The single-writer / WAL contract claim matches the data_pipelines module's known behavior. Accurate.
 
@@ -73,7 +73,7 @@ CLAUDE.md is supposed to be the summary; the detail belongs in `.claude/memories
 
 ### [Low] Worktree workflow bullet hardcodes user-specific path
 **File:** `CLAUDE.md:85`
-**Observation:** `"create a worktree under /mnt/122CEE982CEE765F/Workspace/wt-<scope>"` — that path only exists on this user's machine. If the repo ever onboards a second contributor (or runs in CI), the convention should be path-shape, not a literal path.
+**Observation:** `"create a worktree under /mnt/<UUID>/Workspace/wt-<scope>"` — that path only exists on this user's machine. If the repo ever onboards a second contributor (or runs in CI), the convention should be path-shape, not a literal path.
 **Suggested action:** Change to something like `"create a sibling worktree (we use `wt-<scope>/` next to the main checkout)"`. Minor.
 
 ## Recommendation
