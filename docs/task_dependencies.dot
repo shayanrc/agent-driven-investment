@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 01:08 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 01:57 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -49,9 +49,9 @@ digraph tasks {
     label = "Phase B — top-10 &rarr; true post-test-set OOS rerun";
     style = "rounded"; color = "#aa6633"; fontname = "Helvetica-Bold"; fontsize = 11;
     B1 [label=<<B>B1</B> select top-10 (by R-p@3)<BR/>5 aligned-200d + 5 trailing-nasdaq>, fillcolor="#cccccc"];
-    B2 [label=<<B>B2</B> true-OOS inference<BR/>each model: dates &gt; its test_end<BR/>(complete labels)>, fillcolor="#a3c8e8"];
-    B3 [label=<<B>B3</B> realized R-p@K<BR/>on the OOS window<BR/>+ assemble table>, fillcolor="#ffffff", style="rounded,filled,dashed"];
-    B4 [label=<<B>B4</B> memo + commit<BR/>Phase B>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    B2 [label=<<B>B2</B> true-OOS inference<BR/>+CatBoost dispatch; 4/10 scored,<BR/>5 self-check abort, 1 absent>, fillcolor="#cccccc"];
+    B3 [label=<<B>B3</B> realized R-p@K<BR/>OOS &lt; in-test; @10 &asymp; base<BR/>(no wide-K edge OOS)>, fillcolor="#cccccc"];
+    B4 [label=<<B>B4</B> memo _266 + commit<BR/>Phase B>, fillcolor="#cccccc"];
   }
 
   // Goal
