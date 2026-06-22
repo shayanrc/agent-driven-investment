@@ -19,8 +19,16 @@ constant across the lattice so the *delta* is matched (it is NOT each cell's tun
 optimum — the sweep answers "does macro add signal at a fixed model", not "macro at
 each cell's best tuning").
 
+Split modes (2nd arg):
+  trailing      (default) -> arm prefix "sw"   (<cell>_swbase / <cell>_swmacro)
+  date_aligned            -> arm prefix "dasw" (<cell>_daswbase / <cell>_daswmacro)
+                             + a split block (train_start 2019-01-01). date_aligned
+                             anchors the test window in fixed history, so long-horizon
+                             (100d/200d) cells stay testable where the trailing snapshot
+                             gave Q=0 (see _263). Memo _264.
+
 Usage:
-    uv run python -m scripts.gbdt.gen_macro_sweep_specs [universe]   # default: sp500
+    uv run python -m scripts.gbdt.gen_macro_sweep_specs [universe] [trailing|date_aligned]
 """
 import glob
 import os
@@ -30,27 +38,36 @@ import sys
 import yaml
 
 UNIVERSE = sys.argv[1] if len(sys.argv) > 1 else "sp500"
+SPLIT = sys.argv[2] if len(sys.argv) > 2 else "trailing"
+if SPLIT not in ("trailing", "date_aligned"):
+    raise SystemExit(f"split must be trailing|date_aligned, got {SPLIT!r}")
+PREFIX = "dasw" if SPLIT == "date_aligned" else "sw"
 # Skip champion/macro/variant specs and any previously-generated sweep arms.
-EXCLUDE = re.compile(r"agentloop|base_v2|macro|champ|resnap|bear2022|smoketest|_sw(base|macro)")
+EXCLUDE = re.compile(r"agentloop|base_v2|macro|champ|resnap|bear2022|smoketest|_(da)?sw(base|macro)")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EXP_DIR = os.path.join(ROOT, "configs", "gbdt", "experiments")
 
 
 def render(cell: str, tgt: dict, candidates: str) -> str:
     arm = "+macro" if candidates == "all_macro" else "base"
+    split_block = ""
+    split_note = "trailing split"
+    if SPLIT == "date_aligned":
+        split_block = "\nsplit:\n  mode: date_aligned\n  train_start: 2019-01-01\n"
+        split_note = "date_aligned split (train_start 2019-01-01)"
     return f"""# Experiment: {cell}
-# Macro-lattice sweep ({arm} arm), memo _263.
+# Macro-lattice sweep ({arm} arm, {split_note}), memo _263/_264.
 # Matched fixed config (xgboost, min_child_weight=10, single fit): the base and
 # +macro arms differ ONLY in features.candidates, so each cell's macro-minus-base
 # R-Precision delta is a clean read of the macro contribution (avoids the _260
-# default-auto per-arm HP confound). trailing split; --snapshot-end set at runtime.
+# default-auto per-arm HP confound). --snapshot-end set at runtime.
 target:
   universe: {tgt['universe']}
   direction: {tgt['direction']}
   threshold_pct: {tgt['threshold_pct']}
   horizon_days: {tgt['horizon_days']}
   max_drawdown: {tgt['max_drawdown']}
-
+{split_block}
 features:
   candidates: {candidates}
 
@@ -81,12 +98,12 @@ def main() -> None:
     for f in canon:
         tgt = yaml.safe_load(open(f))["target"]
         base = os.path.basename(f)[:-5]  # strip .yaml
-        for suffix, candidates in (("swbase", "all"), ("swmacro", "all_macro")):
+        for suffix, candidates in ((f"{PREFIX}base", "all"), (f"{PREFIX}macro", "all_macro")):
             cell = f"{base}_{suffix}"
             with open(os.path.join(EXP_DIR, f"{cell}.yaml"), "w") as fh:
                 fh.write(render(cell, tgt, candidates))
             n += 1
-    print(f"generated {n} specs across {len(canon)} {UNIVERSE} cells")
+    print(f"generated {n} specs ({SPLIT}, prefix {PREFIX!r}) across {len(canon)} {UNIVERSE} cells")
 
 
 if __name__ == "__main__":

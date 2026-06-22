@@ -1,0 +1,115 @@
+{
+ "id": "_264",
+ "title": "Date-aligned macro-lattice sweep (sp500) \u2014 second-window validation of F17",
+ "snapshot": "2026-06-20",
+ "split": "date_aligned (train_start 2019-01-01)",
+ "test_window": "2024-07-26 -> 2024-12-16",
+ "recipe": "matched xgb mcw=10 single-fit; base(all) vs macro(all_macro); only candidates differ \u2014 identical to _263 except the split",
+ "n_cells": 17,
+ "all_testable": true,
+ "long_horizon_now_testable": [
+  "sp500_up_20pct_100d_dd10pct",
+  "sp500_up_40pct_100d_dd20pct",
+  "sp500_up_40pct_200d_dd20pct",
+  "sp500_up_50pct_100d_dd25pct",
+  "sp500_up_50pct_200d_dd25pct"
+ ],
+ "headline": "VALIDATION FAILS. On the independent date-aligned window the _263 trailing top-of-book macro edge does NOT replicate: of 12 cells testable in both windows, only 4/12 agree in sign at R-p@1, 8/12 FLIP. The biggest trailing winners flip hardest (+20%/50d +0.30->-0.11; +50%/50d +0.14->0.00; +20%/25d +0.09->-0.04). Net macro effect on date_aligned is ~neutral (@1 mean +0.004, 5 help / 8 hurt). Only the low-threshold +10% cells help consistently.",
+ "r_p1_sign_agreement": "4/12 agree, 8 flip",
+ "cross_window_d1": [
+  {
+   "cell": "sp500_up_10pct_5d_dd5pct",
+   "trailing_d1": 0.0211,
+   "date_aligned_d1": 0.0505,
+   "agree": true
+  },
+  {
+   "cell": "sp500_up_10pct_10d_dd5pct",
+   "trailing_d1": 0.1222,
+   "date_aligned_d1": 0.07,
+   "agree": true
+  },
+  {
+   "cell": "sp500_up_10pct_25d_dd5pct",
+   "trailing_d1": 0.08,
+   "date_aligned_d1": 0.05,
+   "agree": true
+  },
+  {
+   "cell": "sp500_up_10pct_50d_dd5pct",
+   "trailing_d1": -0.1,
+   "date_aligned_d1": 0.09,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_20pct_5d_dd10pct",
+   "trailing_d1": 0.0602,
+   "date_aligned_d1": -0.0164,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_20pct_10d_dd10pct",
+   "trailing_d1": 0.1461,
+   "date_aligned_d1": -0.0333,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_20pct_25d_dd10pct",
+   "trailing_d1": 0.0933,
+   "date_aligned_d1": -0.04,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_20pct_50d_dd10pct",
+   "trailing_d1": 0.3,
+   "date_aligned_d1": -0.11,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_40pct_25d_dd20pct",
+   "trailing_d1": -0.16,
+   "date_aligned_d1": -0.069,
+   "agree": true
+  },
+  {
+   "cell": "sp500_up_40pct_50d_dd20pct",
+   "trailing_d1": 0.04,
+   "date_aligned_d1": 0.01,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_50pct_25d_dd25pct",
+   "trailing_d1": 0.1129,
+   "date_aligned_d1": 0.0,
+   "agree": false
+  },
+  {
+   "cell": "sp500_up_50pct_50d_dd25pct",
+   "trailing_d1": 0.14,
+   "date_aligned_d1": 0.0,
+   "agree": false
+  }
+ ],
+ "date_aligned_summary_by_K": {
+  "1": {
+   "mean": 0.0036,
+   "helps": 5,
+   "hurts": 8,
+   "neutral": 4
+  },
+  "5": {
+   "mean": 0.0058,
+   "helps": 7,
+   "hurts": 5,
+   "neutral": 5
+  },
+  "10": {
+   "mean": 0.0093,
+   "helps": 8,
+   "hurts": 5,
+   "neutral": 4
+  }
+ },
+ "verdict": "Macro is NOT a robust, deployable edge. The _262/_263 win was window-specific. Reaffirms the _258-_261 'contextually additive but not robust' conclusion with a clean two-window view. DO NOT wire macro into /daily-predictions. date_aligned succeeded at its mechanical goal (all long-horizon cells now testable, Q=100).",
+ "heatmap": "results/gbdt/data/_264_macro_lattice_heatmap.png"
+}
