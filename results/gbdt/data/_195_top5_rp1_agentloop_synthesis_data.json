@@ -60,8 +60,8 @@
         }
       },
       "artifact_paths": [
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop_mix/"
+        "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop/",
+        "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop_mix/"
       ],
       "wall_time_sec_total": 1282.8
     },
@@ -99,7 +99,7 @@
         }
       },
       "artifact_paths": [
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_50d_dd10pct_agentloop/"
+        "results/gbdt/experiments/sp500_up_20pct_50d_dd10pct_agentloop/"
       ],
       "wall_time_sec_total": 3047.1,
       "notes": "Common-event cell (base 0.137). Subsample stacked with mcw produced catastrophic top-1 collapse (R-p@1 0.640 -> 0.080). Not retried with mix recipe."
@@ -148,8 +148,8 @@
         }
       },
       "artifact_paths": [
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/"
+        "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/",
+        "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop_mix/"
       ],
       "wall_time_sec_total": 314.8
     },
@@ -231,11 +231,11 @@
         }
       },
       "artifact_paths": [
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_colsample/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_gamma/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/",
-        "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix_mcw3/"
+        "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop/",
+        "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_colsample/",
+        "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_gamma/",
+        "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/",
+        "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix_mcw3/"
       ],
       "wall_time_sec_total": 130.7
     },

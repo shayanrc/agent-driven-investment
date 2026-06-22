@@ -36,7 +36,7 @@
         "horizon_days": 10,
         "max_drawdown_pct": 20
       },
-      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-40-10/results/gbdt/experiments/russell1000_up_40pct_10d_dd20pct_agentloop/",
+      "out_dir": "results/gbdt/experiments/russell1000_up_40pct_10d_dd20pct_agentloop/",
       "rows_test": 80010,
       "rows_eval": 177800,
       "Q_days_test": 69,
@@ -99,7 +99,7 @@
         "horizon_days": 25,
         "max_drawdown_pct": 25
       },
-      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-50-25/results/gbdt/experiments/russell1000_up_50pct_25d_dd25pct_agentloop/",
+      "out_dir": "results/gbdt/experiments/russell1000_up_50pct_25d_dd25pct_agentloop/",
       "rows_test": 66675,
       "rows_eval": 177800,
       "Q_days_test": 74,
@@ -162,7 +162,7 @@
         "horizon_days": 5,
         "max_drawdown_pct": 10
       },
-      "out_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-loop-20-5/results/gbdt/experiments/russell1000_up_20pct_5d_dd10pct_agentloop/",
+      "out_dir": "results/gbdt/experiments/russell1000_up_20pct_5d_dd10pct_agentloop/",
       "rows_test": 84455,
       "rows_eval": 177800,
       "Q_days_test": 93,
