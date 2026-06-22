@@ -1,4 +1,4 @@
-2026-06-04T16:55:19+00:00 [experiment] start spec=russell1000_up_10pct_200d_dd5pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_10pct_200d_dd5pct_aligned
+2026-06-04T16:55:19+00:00 [experiment] start spec=russell1000_up_10pct_200d_dd5pct_aligned.yaml -> results/gbdt/experiments/russell1000_up_10pct_200d_dd5pct_aligned
 2026-06-04T16:55:20+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-04T16:55:21+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-04T16:55:21+00:00 [data] start universe=russell1000
@@ -80,14 +80,14 @@
 2026-06-04T17:31:31+00:00 [features] per-cell cache written (key=54ec8ac1a13a…)
 2026-06-04T17:31:51+00:00 [heartbeat] t=23:01:51 phase=features elapsed_phase=2144s elapsed_total=2191s rss_mb=28897
 2026-06-04T17:32:21+00:00 [heartbeat] t=23:02:21 phase=features elapsed_phase=2174s elapsed_total=2221s rss_mb=28897
-2026-06-04T17:32:43+00:00 [features] universe cache written (key=e2bcf68ea932…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-04T17:32:43+00:00 [features] universe cache written (key=e2bcf68ea932…) at ${SCRATCH_CACHE}/gbdt_feature_cache/
 2026-06-04T17:32:51+00:00 [target] start
 2026-06-04T17:32:51+00:00 [heartbeat] t=23:02:51 phase=target elapsed_phase=0s elapsed_total=2252s rss_mb=28938
 2026-06-04T17:33:21+00:00 [heartbeat] t=23:03:21 phase=target elapsed_phase=31s elapsed_total=2282s rss_mb=28938
 2026-06-04T17:33:23+00:00 [target] complete in 32.5s positive_prevalence=0.431
 2026-06-04T17:33:23+00:00 [uniqueness] start
 2026-06-04T17:33:32+00:00 [uniqueness] complete in 9.2s horizon=200 rows=6004616 ESS=5933719 inflation=1.01x
-2026-06-04T17:33:32+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_10pct_200d_dd5pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T17:33:32+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_10pct_200d_dd5pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-04T17:33:32+00:00 [loop] start max_iter=3 callback_mode=default
 2026-06-04T17:33:51+00:00 [heartbeat] t=23:03:51 phase=loop elapsed_phase=19s elapsed_total=2312s rss_mb=28938
 2026-06-04T17:34:21+00:00 [heartbeat] t=23:04:21 phase=loop elapsed_phase=49s elapsed_total=2342s rss_mb=28938
@@ -100,6 +100,6 @@
 2026-06-04T17:37:51+00:00 [heartbeat] t=23:07:51 phase=loop elapsed_phase=259s elapsed_total=2552s rss_mb=28938
 2026-06-04T17:38:10+00:00 [loop] LOOP COMPLETE in 277.3s best_iter=0 val_brier=0.2511 reason=plateau
 2026-06-04T17:38:10+00:00 [artifact] start
-2026-06-04T17:38:20+00:00 [artifact] complete in 10.0s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/russell1000_up_10pct_200d_dd5pct_aligned
+2026-06-04T17:38:20+00:00 [artifact] complete in 10.0s -> results/gbdt/experiments/russell1000_up_10pct_200d_dd5pct_aligned
 2026-06-04T17:38:20+00:00 [loop] STOPPED reason=plateau
 2026-06-04T17:38:20+00:00 [experiment] complete in 2580.6s

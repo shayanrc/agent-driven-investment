@@ -1,4 +1,4 @@
-2026-06-02T06:02:56+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
+2026-06-02T06:02:56+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
 2026-06-02T06:02:56+00:00 [data] start universe=sp500
 2026-06-02T06:03:26+00:00 [heartbeat] t=11:33:26 phase=data elapsed_phase=30s elapsed_total=30s rss_mb=278
 2026-06-02T06:03:56+00:00 [heartbeat] t=11:33:56 phase=data elapsed_phase=60s elapsed_total=60s rss_mb=339
@@ -107,10 +107,10 @@
 2026-06-02T06:51:56+00:00 [heartbeat] t=12:21:56 phase=loop elapsed_phase=2536s elapsed_total=2940s rss_mb=18616
 2026-06-02T06:52:26+00:00 [heartbeat] t=12:22:26 phase=loop elapsed_phase=2566s elapsed_total=2970s rss_mb=18616
 2026-06-02T06:52:52+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.0382010908902953)
-2026-06-02T06:52:52+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/iter_0_request.json
-2026-06-02T06:52:52+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/checkpoint.json
+2026-06-02T06:52:52+00:00 [loop] paused at iter 0 — request written: results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/iter_0_request.json
+2026-06-02T06:52:52+00:00 [loop] checkpoint written: results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/checkpoint.json
 2026-06-02T06:52:52+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment sp500_up_20pct_25d_dd10pct_agentloop.yaml --resume sp500_up_20pct_25d_dd10pct_agentloop
-2026-06-02T06:59:50+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
+2026-06-02T06:59:50+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
 2026-06-02T06:59:50+00:00 [resume] loaded checkpoint at iter 0 (run_id=sp500_up_20pct_25d_dd10pct_agentloop)
 2026-06-02T06:59:50+00:00 [resume] RESUMED iter 1 (decision: pruned 0, hp_changes=['min_child_weight'], should_stop=False)
 2026-06-02T06:59:50+00:00 [data] start universe=sp500
@@ -127,10 +127,10 @@
 2026-06-02T07:01:50+00:00 [heartbeat] t=12:31:50 phase=loop elapsed_phase=53s elapsed_total=120s rss_mb=19648
 2026-06-02T07:02:20+00:00 [heartbeat] t=12:32:20 phase=loop elapsed_phase=83s elapsed_total=150s rss_mb=19648
 2026-06-02T07:02:31+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.037518626291492614)
-2026-06-02T07:02:31+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/iter_1_request.json
-2026-06-02T07:02:31+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/checkpoint.json
+2026-06-02T07:02:31+00:00 [loop] paused at iter 1 — request written: results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/iter_1_request.json
+2026-06-02T07:02:31+00:00 [loop] checkpoint written: results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop/loop/checkpoint.json
 2026-06-02T07:02:31+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment sp500_up_20pct_25d_dd10pct_agentloop.yaml --resume sp500_up_20pct_25d_dd10pct_agentloop
-2026-06-02T07:04:17+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
+2026-06-02T07:04:17+00:00 [experiment] start spec=sp500_up_20pct_25d_dd10pct_agentloop.yaml -> results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
 2026-06-02T07:04:17+00:00 [resume] loaded checkpoint at iter 1 (run_id=sp500_up_20pct_25d_dd10pct_agentloop)
 2026-06-02T07:04:17+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=['min_child_weight'], should_stop=False)
 2026-06-02T07:04:17+00:00 [data] start universe=sp500
@@ -149,6 +149,6 @@
 2026-06-02T07:07:17+00:00 [heartbeat] t=12:37:17 phase=loop elapsed_phase=112s elapsed_total=180s rss_mb=19264
 2026-06-02T07:07:18+00:00 [loop] LOOP COMPLETE in 112.9s best_iter=2 val_brier=0.0376 reason=plateau
 2026-06-02T07:07:18+00:00 [artifact] start
-2026-06-02T07:07:23+00:00 [artifact] complete in 5.1s -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
+2026-06-02T07:07:23+00:00 [artifact] complete in 5.1s -> results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop
 2026-06-02T07:07:23+00:00 [loop] STOPPED reason=plateau
 2026-06-02T07:07:23+00:00 [experiment] complete in 185.9s

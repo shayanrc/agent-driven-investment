@@ -1,4 +1,4 @@
-2026-06-06T18:49:38+00:00 [experiment] start spec=nifty500_up_30pct_50d_dd15pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
+2026-06-06T18:49:38+00:00 [experiment] start spec=nifty500_up_30pct_50d_dd15pct_aligned.yaml -> results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
 2026-06-06T18:49:38+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NSE (2332 trading days available from 2018-01-01)
 2026-06-06T18:49:39+00:00 [preflight] cache currency OK: 500 ticker(s) covered through 2025-04-11
 2026-06-06T18:49:39+00:00 [data] start universe=nifty500
@@ -16,6 +16,6 @@
 2026-06-06T18:51:38+00:00 [heartbeat] t=00:21:38 phase=loop elapsed_phase=87s elapsed_total=120s rss_mb=8814
 2026-06-06T18:51:55+00:00 [loop] LOOP COMPLETE in 103.8s best_iter=1 val_brier=0.1231 reason=plateau
 2026-06-06T18:51:55+00:00 [artifact] start
-2026-06-06T18:51:59+00:00 [artifact] complete in 4.3s -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
+2026-06-06T18:51:59+00:00 [artifact] complete in 4.3s -> results/gbdt/experiments/nifty500_up_30pct_50d_dd15pct_aligned
 2026-06-06T18:51:59+00:00 [loop] STOPPED reason=plateau
 2026-06-06T18:51:59+00:00 [experiment] complete in 141.2s

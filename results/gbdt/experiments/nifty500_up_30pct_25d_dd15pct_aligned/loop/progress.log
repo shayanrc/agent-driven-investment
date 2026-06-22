@@ -1,4 +1,4 @@
-2026-06-06T18:47:07+00:00 [experiment] start spec=nifty500_up_30pct_25d_dd15pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_25d_dd15pct_aligned
+2026-06-06T18:47:07+00:00 [experiment] start spec=nifty500_up_30pct_25d_dd15pct_aligned.yaml -> results/gbdt/experiments/nifty500_up_30pct_25d_dd15pct_aligned
 2026-06-06T18:47:07+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NSE (2332 trading days available from 2018-01-01)
 2026-06-06T18:47:08+00:00 [preflight] cache currency OK: 500 ticker(s) covered through 2025-03-04
 2026-06-06T18:47:08+00:00 [data] start universe=nifty500
@@ -9,13 +9,13 @@
 2026-06-06T18:47:37+00:00 [target] complete in 4.0s positive_prevalence=0.049
 2026-06-06T18:47:37+00:00 [uniqueness] start
 2026-06-06T18:47:38+00:00 [uniqueness] complete in 1.4s horizon=25 rows=1024677 ESS=1020615 inflation=1.00x
-2026-06-06T18:47:38+00:00 [loop] V1.3 no sweep_row for cell='nifty500_up_30pct_25d_dd15pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T18:47:38+00:00 [loop] V1.3 no sweep_row for cell='nifty500_up_30pct_25d_dd15pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T18:47:38+00:00 [loop] start max_iter=3 callback_mode=default
 2026-06-06T18:48:07+00:00 [heartbeat] t=00:18:07 phase=loop elapsed_phase=29s elapsed_total=60s rss_mb=8333
 2026-06-06T18:48:37+00:00 [heartbeat] t=00:18:37 phase=loop elapsed_phase=59s elapsed_total=90s rss_mb=9119
 2026-06-06T18:49:07+00:00 [heartbeat] t=00:19:07 phase=loop elapsed_phase=89s elapsed_total=120s rss_mb=9119
 2026-06-06T18:49:31+00:00 [loop] LOOP COMPLETE in 112.3s best_iter=0 val_brier=0.0409 reason=plateau
 2026-06-06T18:49:31+00:00 [artifact] start
-2026-06-06T18:49:34+00:00 [artifact] complete in 3.9s -> /mnt/122CEE982CEE765F/Workspace/wt-nifty500-sweep/results/gbdt/experiments/nifty500_up_30pct_25d_dd15pct_aligned
+2026-06-06T18:49:34+00:00 [artifact] complete in 3.9s -> results/gbdt/experiments/nifty500_up_30pct_25d_dd15pct_aligned
 2026-06-06T18:49:34+00:00 [loop] STOPPED reason=plateau
 2026-06-06T18:49:34+00:00 [experiment] complete in 147.6s

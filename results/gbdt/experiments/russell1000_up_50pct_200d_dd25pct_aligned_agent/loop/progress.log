@@ -1,4 +1,4 @@
-2026-06-06T06:57:24+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T06:57:24+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T06:57:25+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-06T06:57:26+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-06T06:57:26+00:00 [data] start universe=russell1000
@@ -78,14 +78,14 @@
 2026-06-06T07:32:32+00:00 [features] per-cell cache written (key=88e7ad891804…)
 2026-06-06T07:32:55+00:00 [heartbeat] t=13:02:55 phase=features elapsed_phase=2086s elapsed_total=2131s rss_mb=28815
 2026-06-06T07:33:25+00:00 [heartbeat] t=13:03:25 phase=features elapsed_phase=2116s elapsed_total=2161s rss_mb=28815
-2026-06-06T07:33:43+00:00 [features] universe cache written (key=9e37c2e00e71…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-06T07:33:43+00:00 [features] universe cache written (key=9e37c2e00e71…) at ${SCRATCH_CACHE}/gbdt_feature_cache/
 2026-06-06T07:33:51+00:00 [target] start
 2026-06-06T07:33:55+00:00 [heartbeat] t=13:03:55 phase=target elapsed_phase=4s elapsed_total=2191s rss_mb=28946
 2026-06-06T07:34:17+00:00 [target] complete in 26.0s positive_prevalence=0.150
 2026-06-06T07:34:17+00:00 [uniqueness] start
 2026-06-06T07:34:25+00:00 [heartbeat] t=13:04:25 phase=uniqueness elapsed_phase=8s elapsed_total=2221s rss_mb=28946
 2026-06-06T07:34:26+00:00 [uniqueness] complete in 9.3s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T07:34:26+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T07:34:26+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T07:34:55+00:00 [heartbeat] t=13:04:55 phase=uniqueness elapsed_phase=38s elapsed_total=2251s rss_mb=28946
 2026-06-06T07:34:56+00:00 [scout] cycle 1 — starting FS-prefit + scout response curves
 2026-06-06T07:34:56+00:00 [scout] FS-prefit cache HIT (key=a9378f90415a…) — skipping fit; kept=143
@@ -137,8 +137,8 @@
 2026-06-06T07:57:55+00:00 [heartbeat] t=13:27:55 phase=scout elapsed_phase=1378s elapsed_total=3631s rss_mb=28946
 2026-06-06T07:58:25+00:00 [heartbeat] t=13:28:25 phase=scout elapsed_phase=1408s elapsed_total=3661s rss_mb=28946
 2026-06-06T07:58:35+00:00 [scout] cycle 1 complete; 35/35 configs ok in 1417.7s
-2026-06-06T07:58:35+00:00 [scout] cycle 1 paused — wrote /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/combine_request.json. Agent writes combine_decision.json and reruns: uv run python -m gbdt experiment russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml --resume russell1000_up_50pct_200d_dd25pct_aligned_agent --snapshot-end <DATE>
-2026-06-06T09:15:59+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T07:58:35+00:00 [scout] cycle 1 paused — wrote results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/combine_request.json. Agent writes combine_decision.json and reruns: uv run python -m gbdt experiment russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml --resume russell1000_up_50pct_200d_dd25pct_aligned_agent --snapshot-end <DATE>
+2026-06-06T09:15:59+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T09:15:59+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-06T09:16:01+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-06T09:16:01+00:00 [data] start universe=russell1000
@@ -151,9 +151,9 @@
 2026-06-06T09:17:37+00:00 [target] complete in 26.2s positive_prevalence=0.150
 2026-06-06T09:17:37+00:00 [uniqueness] start
 2026-06-06T09:17:46+00:00 [uniqueness] complete in 9.1s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T09:17:46+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T09:17:46+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T09:17:59+00:00 [heartbeat] t=14:47:59 phase=uniqueness elapsed_phase=22s elapsed_total=120s rss_mb=29102
-2026-06-06T10:15:34+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:15:34+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:15:34+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-06T10:15:36+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-06T10:15:36+00:00 [data] start universe=russell1000
@@ -166,7 +166,7 @@
 2026-06-06T10:17:05+00:00 [target] complete in 24.0s positive_prevalence=0.150
 2026-06-06T10:17:05+00:00 [uniqueness] start
 2026-06-06T10:17:14+00:00 [uniqueness] complete in 8.7s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T10:17:14+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T10:17:14+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T10:17:34+00:00 [heartbeat] t=15:47:34 phase=uniqueness elapsed_phase=29s elapsed_total=120s rss_mb=29100
 2026-06-06T10:17:42+00:00 [scout] cycle 2 — fitting 30 combine config(s) (D3b.A cap = 50)
 2026-06-06T10:18:04+00:00 [heartbeat] t=15:48:04 phase=uniqueness elapsed_phase=59s elapsed_total=150s rss_mb=29100
@@ -207,8 +207,8 @@
 2026-06-06T10:35:34+00:00 [heartbeat] t=16:05:34 phase=uniqueness elapsed_phase=1109s elapsed_total=1200s rss_mb=29100
 2026-06-06T10:36:04+00:00 [heartbeat] t=16:06:04 phase=uniqueness elapsed_phase=1139s elapsed_total=1230s rss_mb=29100
 2026-06-06T10:36:34+00:00 [heartbeat] t=16:06:34 phase=uniqueness elapsed_phase=1169s elapsed_total=1260s rss_mb=29100
-2026-06-06T10:36:55+00:00 [scout] cycle 2 complete; wrote /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/combine_results.json. Agent writes iter_0_decision.json + reruns --resume --snapshot-end <DATE>.
-2026-06-06T10:41:14+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:36:55+00:00 [scout] cycle 2 complete; wrote results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/scout/combine_results.json. Agent writes iter_0_decision.json + reruns --resume --snapshot-end <DATE>.
+2026-06-06T10:41:14+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:41:14+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
 2026-06-06T10:41:16+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
 2026-06-06T10:41:16+00:00 [data] start universe=russell1000
@@ -221,16 +221,16 @@
 2026-06-06T10:42:51+00:00 [target] complete in 26.0s positive_prevalence=0.150
 2026-06-06T10:42:51+00:00 [uniqueness] start
 2026-06-06T10:43:01+00:00 [uniqueness] complete in 9.6s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T10:43:01+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T10:43:01+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T10:43:01+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['gamma'])
 2026-06-06T10:43:01+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol
 2026-06-06T10:43:14+00:00 [heartbeat] t=16:13:14 phase=loop elapsed_phase=13s elapsed_total=121s rss_mb=29085
 2026-06-06T10:43:44+00:00 [heartbeat] t=16:13:44 phase=loop elapsed_phase=43s elapsed_total=151s rss_mb=29085
 2026-06-06T10:44:09+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.08702864877741971)
-2026-06-06T10:44:09+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_0_request.json
-2026-06-06T10:44:09+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
+2026-06-06T10:44:09+00:00 [loop] paused at iter 0 — request written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_0_request.json
+2026-06-06T10:44:09+00:00 [loop] checkpoint written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
 2026-06-06T10:44:09+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml --resume russell1000_up_50pct_200d_dd25pct_aligned_agent
-2026-06-06T10:46:27+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:46:27+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:46:27+00:00 [resume] loaded checkpoint at iter 0 (run_id=russell1000_up_50pct_200d_dd25pct_aligned_agent)
 2026-06-06T10:46:27+00:00 [resume] RESUMED iter 1 (decision: pruned 0, hp_changes=['gamma'], should_stop=False)
 2026-06-06T10:46:27+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
@@ -245,16 +245,16 @@
 2026-06-06T10:48:01+00:00 [target] complete in 25.2s positive_prevalence=0.150
 2026-06-06T10:48:01+00:00 [uniqueness] start
 2026-06-06T10:48:10+00:00 [uniqueness] complete in 8.9s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T10:48:10+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T10:48:10+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T10:48:10+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['gamma'])
 2026-06-06T10:48:10+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 1)
 2026-06-06T10:48:27+00:00 [heartbeat] t=16:18:27 phase=loop elapsed_phase=17s elapsed_total=120s rss_mb=29087
 2026-06-06T10:48:57+00:00 [heartbeat] t=16:18:57 phase=loop elapsed_phase=47s elapsed_total=150s rss_mb=29087
 2026-06-06T10:49:18+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.08702864877741971)
-2026-06-06T10:49:18+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_1_request.json
-2026-06-06T10:49:18+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
+2026-06-06T10:49:18+00:00 [loop] paused at iter 1 — request written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_1_request.json
+2026-06-06T10:49:18+00:00 [loop] checkpoint written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
 2026-06-06T10:49:18+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml --resume russell1000_up_50pct_200d_dd25pct_aligned_agent
-2026-06-06T10:50:18+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:50:18+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:50:18+00:00 [resume] loaded checkpoint at iter 1 (run_id=russell1000_up_50pct_200d_dd25pct_aligned_agent)
 2026-06-06T10:50:18+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=['gamma'], should_stop=False)
 2026-06-06T10:50:18+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
@@ -269,16 +269,16 @@
 2026-06-06T10:51:52+00:00 [target] complete in 26.3s positive_prevalence=0.150
 2026-06-06T10:51:52+00:00 [uniqueness] start
 2026-06-06T10:52:01+00:00 [uniqueness] complete in 9.1s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T10:52:01+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T10:52:01+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T10:52:01+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['gamma'])
 2026-06-06T10:52:01+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 2)
 2026-06-06T10:52:18+00:00 [heartbeat] t=16:22:18 phase=loop elapsed_phase=17s elapsed_total=120s rss_mb=29063
 2026-06-06T10:52:48+00:00 [heartbeat] t=16:22:48 phase=loop elapsed_phase=47s elapsed_total=150s rss_mb=29063
 2026-06-06T10:53:09+00:00 [loop] PAUSED iter 2 awaiting decision (best_val_brier=0.08474534098895042)
-2026-06-06T10:53:09+00:00 [loop] paused at iter 2 — request written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_2_request.json
-2026-06-06T10:53:09+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
+2026-06-06T10:53:09+00:00 [loop] paused at iter 2 — request written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/iter_2_request.json
+2026-06-06T10:53:09+00:00 [loop] checkpoint written: results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent/loop/checkpoint.json
 2026-06-06T10:53:09+00:00 [loop] paused at iter 2 — resume with: uv run python -m gbdt experiment russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml --resume russell1000_up_50pct_200d_dd25pct_aligned_agent
-2026-06-06T10:54:52+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:54:52+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_agent.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:54:52+00:00 [resume] loaded checkpoint at iter 2 (run_id=russell1000_up_50pct_200d_dd25pct_aligned_agent)
 2026-06-06T10:54:52+00:00 [resume] RESUMED iter 3 (decision: pruned 0, hp_changes=[], should_stop=True)
 2026-06-06T10:54:52+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2619 trading days available from 2017-01-01)
@@ -293,7 +293,7 @@
 2026-06-06T10:56:26+00:00 [target] complete in 24.6s positive_prevalence=0.150
 2026-06-06T10:56:26+00:00 [uniqueness] start
 2026-06-06T10:56:35+00:00 [uniqueness] complete in 9.0s horizon=200 rows=6003758 ESS=5932862 inflation=1.01x
-2026-06-06T10:56:35+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-06T10:56:35+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-06T10:56:35+00:00 [scout] cycle 3 — iter_0_decision applied (features=143, hp_overlay_keys=['gamma'])
 2026-06-06T10:56:35+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 3)
 2026-06-06T10:56:52+00:00 [heartbeat] t=16:26:52 phase=loop elapsed_phase=17s elapsed_total=120s rss_mb=29087
@@ -301,6 +301,6 @@
 2026-06-06T10:57:52+00:00 [heartbeat] t=16:27:52 phase=loop elapsed_phase=77s elapsed_total=180s rss_mb=29087
 2026-06-06T10:58:11+00:00 [loop] LOOP COMPLETE in 96.3s best_iter=2 val_brier=0.0847 reason=agent_should_stop
 2026-06-06T10:58:11+00:00 [artifact] start
-2026-06-06T10:58:19+00:00 [artifact] complete in 8.1s -> /mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
+2026-06-06T10:58:19+00:00 [artifact] complete in 8.1s -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent
 2026-06-06T10:58:19+00:00 [loop] STOPPED reason=agent_should_stop
 2026-06-06T10:58:19+00:00 [experiment] complete in 207.0s

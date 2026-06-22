@@ -152,7 +152,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/wt-r1k-up50-200d-agent/results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent",
+    "artifact_dir": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",

@@ -1,4 +1,4 @@
-2026-06-04T18:39:19+00:00 [experiment] start spec=sp500_up_20pct_100d_dd10pct_aligned.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/sp500_up_20pct_100d_dd10pct_aligned
+2026-06-04T18:39:19+00:00 [experiment] start spec=sp500_up_20pct_100d_dd10pct_aligned.yaml -> results/gbdt/experiments/sp500_up_20pct_100d_dd10pct_aligned
 2026-06-04T18:39:20+00:00 [split] date_aligned: train_start=2019-01-01 calendar=NYSE (2368 trading days available from 2018-01-01)
 2026-06-04T18:39:21+00:00 [preflight] cache currency OK: 503 ticker(s) covered through 2025-10-06
 2026-06-04T18:39:21+00:00 [data] start universe=sp500
@@ -47,13 +47,13 @@
 2026-06-04T18:59:04+00:00 [features] per-cell cache written (key=2bdc1f2db5fb…)
 2026-06-04T18:59:20+00:00 [heartbeat] t=00:29:20 phase=features elapsed_phase=1172s elapsed_total=1201s rss_mb=17755
 2026-06-04T18:59:50+00:00 [heartbeat] t=00:29:50 phase=features elapsed_phase=1202s elapsed_total=1231s rss_mb=17755
-2026-06-04T18:59:55+00:00 [features] universe cache written (key=808f570fbbe1…) at /mnt/122CEE982CEE765F/cache_data/gbdt_feature_cache/
+2026-06-04T18:59:55+00:00 [features] universe cache written (key=808f570fbbe1…) at ${SCRATCH_CACHE}/gbdt_feature_cache/
 2026-06-04T19:00:00+00:00 [target] start
 2026-06-04T19:00:16+00:00 [target] complete in 15.9s positive_prevalence=0.266
 2026-06-04T19:00:16+00:00 [uniqueness] start
 2026-06-04T19:00:20+00:00 [heartbeat] t=00:30:20 phase=uniqueness elapsed_phase=4s elapsed_total=1261s rss_mb=17818
 2026-06-04T19:00:20+00:00 [uniqueness] complete in 4.5s horizon=100 rows=3638785 ESS=3617736 inflation=1.01x
-2026-06-04T19:00:20+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_20pct_100d_dd10pct' (csv=/mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-04T19:00:20+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_20pct_100d_dd10pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
 2026-06-04T19:00:20+00:00 [loop] start max_iter=3 callback_mode=default
 2026-06-04T19:00:50+00:00 [heartbeat] t=00:30:50 phase=loop elapsed_phase=30s elapsed_total=1291s rss_mb=17818
 2026-06-04T19:01:20+00:00 [heartbeat] t=00:31:20 phase=loop elapsed_phase=60s elapsed_total=1321s rss_mb=17818
@@ -65,6 +65,6 @@
 2026-06-04T19:04:20+00:00 [heartbeat] t=00:34:20 phase=loop elapsed_phase=240s elapsed_total=1501s rss_mb=17818
 2026-06-04T19:04:28+00:00 [loop] LOOP COMPLETE in 247.7s best_iter=1 val_brier=0.2016 reason=degradation
 2026-06-04T19:04:28+00:00 [artifact] start
-2026-06-04T19:04:35+00:00 [artifact] complete in 6.8s -> /mnt/122CEE982CEE765F/Workspace/wt-228-h100-rerun/results/gbdt/experiments/sp500_up_20pct_100d_dd10pct_aligned
+2026-06-04T19:04:35+00:00 [artifact] complete in 6.8s -> results/gbdt/experiments/sp500_up_20pct_100d_dd10pct_aligned
 2026-06-04T19:04:35+00:00 [loop] STOPPED reason=degradation
 2026-06-04T19:04:35+00:00 [experiment] complete in 1515.5s

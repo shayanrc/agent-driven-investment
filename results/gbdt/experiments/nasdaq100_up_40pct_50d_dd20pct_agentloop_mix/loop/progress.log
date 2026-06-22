@@ -1,4 +1,4 @@
-2026-06-02T08:18:21+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
+2026-06-02T08:18:21+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
 2026-06-02T08:18:21+00:00 [data] start universe=nasdaq100
 2026-06-02T08:18:27+00:00 [data] complete in 5.6s rows=645189 tickers_kept=92
 2026-06-02T08:18:30+00:00 [features] loaded from universe cache (key match) in 1.0s shape=(645189, 279)
@@ -9,10 +9,10 @@
 2026-06-02T08:18:44+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol
 2026-06-02T08:18:51+00:00 [heartbeat] t=13:48:51 phase=loop elapsed_phase=8s elapsed_total=30s rss_mb=3793
 2026-06-02T08:19:16+00:00 [loop] PAUSED iter 0 awaiting decision (best_val_brier=0.024909145504686394)
-2026-06-02T08:19:16+00:00 [loop] paused at iter 0 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/iter_0_request.json
-2026-06-02T08:19:16+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/checkpoint.json
+2026-06-02T08:19:16+00:00 [loop] paused at iter 0 — request written: results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/iter_0_request.json
+2026-06-02T08:19:16+00:00 [loop] checkpoint written: results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/checkpoint.json
 2026-06-02T08:19:16+00:00 [loop] paused at iter 0 — resume with: uv run python -m gbdt experiment nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml --resume nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
-2026-06-02T08:19:42+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
+2026-06-02T08:19:42+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
 2026-06-02T08:19:42+00:00 [resume] loaded checkpoint at iter 0 (run_id=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix)
 2026-06-02T08:19:42+00:00 [resume] RESUMED iter 1 (decision: pruned 249, hp_changes=['colsample_bytree', 'gamma', 'min_child_weight'], should_stop=False)
 2026-06-02T08:19:42+00:00 [data] start universe=nasdaq100
@@ -24,10 +24,10 @@
 2026-06-02T08:19:55+00:00 [uniqueness] complete in 0.8s horizon=50 rows=645189 ESS=643166 inflation=1.00x
 2026-06-02T08:19:55+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 1)
 2026-06-02T08:20:06+00:00 [loop] PAUSED iter 1 awaiting decision (best_val_brier=0.023441228425847588)
-2026-06-02T08:20:06+00:00 [loop] paused at iter 1 — request written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/iter_1_request.json
-2026-06-02T08:20:06+00:00 [loop] checkpoint written: /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/checkpoint.json
+2026-06-02T08:20:06+00:00 [loop] paused at iter 1 — request written: results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/iter_1_request.json
+2026-06-02T08:20:06+00:00 [loop] checkpoint written: results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix/loop/checkpoint.json
 2026-06-02T08:20:06+00:00 [loop] paused at iter 1 — resume with: uv run python -m gbdt experiment nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml --resume nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
-2026-06-02T08:20:52+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
+2026-06-02T08:20:52+00:00 [experiment] start spec=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix.yaml -> results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
 2026-06-02T08:20:52+00:00 [resume] loaded checkpoint at iter 1 (run_id=nasdaq100_up_40pct_50d_dd20pct_agentloop_mix)
 2026-06-02T08:20:52+00:00 [resume] RESUMED iter 2 (decision: pruned 0, hp_changes=[], should_stop=True)
 2026-06-02T08:20:52+00:00 [data] start universe=nasdaq100
@@ -40,6 +40,6 @@
 2026-06-02T08:21:04+00:00 [loop] start max_iter=16 callback_mode=agent_file_protocol (resume from iter 2)
 2026-06-02T08:21:16+00:00 [loop] LOOP COMPLETE in 11.5s best_iter=1 val_brier=0.0234 reason=agent_should_stop
 2026-06-02T08:21:16+00:00 [artifact] start
-2026-06-02T08:21:17+00:00 [artifact] complete in 1.1s -> /mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
+2026-06-02T08:21:17+00:00 [artifact] complete in 1.1s -> results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix
 2026-06-02T08:21:17+00:00 [loop] STOPPED reason=agent_should_stop
 2026-06-02T08:21:17+00:00 [experiment] complete in 25.1s

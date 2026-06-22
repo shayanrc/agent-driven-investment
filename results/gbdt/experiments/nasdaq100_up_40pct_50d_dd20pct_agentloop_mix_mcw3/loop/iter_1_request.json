@@ -39,7 +39,7 @@
     "payload_version": "v1",
     "source": "in_memory_iteration",
     "full_diagnose_available": false,
-    "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/wt-top5-rp1-agentloop/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix_mcw3",
+    "artifact_dir": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix_mcw3",
     "deferred_to_full_diagnose": [
       "marginal_monotonicity",
       "model_pdp_monotonicity",

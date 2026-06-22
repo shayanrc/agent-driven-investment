@@ -1,4 +1,4 @@
-2026-05-29T03:10:11+00:00 [experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_phase8.yaml -> /mnt/122CEE982CEE765F/Workspace/wt-gbdt-v12-phase8/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8
+2026-05-29T03:10:11+00:00 [experiment] start spec=nifty50_up_10pct_25d_dd5pct_xgb_phase8.yaml -> results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8
 2026-05-29T03:10:11+00:00 [data] start universe=nifty50
 2026-05-29T03:10:12+00:00 [data] complete in 1.4s rows=129401 tickers_kept=46
 2026-05-29T03:10:12+00:00 [features] start
@@ -26,6 +26,6 @@
 2026-05-29T03:18:11+00:00 [heartbeat] t=08:48:11 phase=loop elapsed_phase=91s elapsed_total=480s rss_mb=1162
 2026-05-29T03:18:33+00:00 [loop] LOOP COMPLETE in 112.8s best_iter=0 val_brier=0.1637 reason=cap
 2026-05-29T03:18:33+00:00 [artifact] start
-2026-05-29T03:18:35+00:00 [artifact] complete in 1.2s -> /mnt/122CEE982CEE765F/Workspace/wt-gbdt-v12-phase8/results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8
+2026-05-29T03:18:35+00:00 [artifact] complete in 1.2s -> results/gbdt/experiments/nifty50_up_10pct_25d_dd5pct_xgb_phase8
 2026-05-29T03:18:35+00:00 [loop] STOPPED reason=cap
 2026-05-29T03:18:35+00:00 [experiment] complete in 503.9s
