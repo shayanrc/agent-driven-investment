@@ -9,7 +9,7 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 503.97)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-503.97 1345,-503.97 1345,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 01:02 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 01:08 IST)</text>
 <text xml:space="preserve" text-anchor="middle" x="670.5" y="-467.12" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">branch gbdt&#45;trailing&#45;champions&#45;date&#45;aligned · refit 5 trailing champions on date_aligned, then top&#45;10 true&#45;OOS rerun</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
@@ -34,31 +34,31 @@
 <!-- legend -->
 <g id="node1" class="node">
 <title>legend</title>
-<path fill="lightgrey" stroke="none" d="M928.5,-458.97C928.5,-458.97 481.5,-458.97 481.5,-458.97 475.5,-458.97 469.5,-452.97 469.5,-446.97 469.5,-446.97 469.5,-390.72 469.5,-390.72 469.5,-384.72 475.5,-378.72 481.5,-378.72 481.5,-378.72 928.5,-378.72 928.5,-378.72 934.5,-378.72 940.5,-384.72 940.5,-390.72 940.5,-390.72 940.5,-446.97 940.5,-446.97 940.5,-452.97 934.5,-458.97 928.5,-458.97"/>
-<polygon fill="#f0f0f0" stroke="none" points="469.5,-432.22 469.5,-458.97 940.5,-458.97 940.5,-432.22 469.5,-432.22"/>
-<polygon fill="none" stroke="black" points="469.5,-432.22 469.5,-458.97 940.5,-458.97 940.5,-432.22 469.5,-432.22"/>
-<text xml:space="preserve" text-anchor="start" x="684.38" y="-443.47" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">Legend</text>
-<polygon fill="#a4e9a4" stroke="none" points="469.5,-405.47 469.5,-432.22 534.5,-432.22 534.5,-405.47 469.5,-405.47"/>
-<polygon fill="none" stroke="black" points="469.5,-405.47 469.5,-432.22 534.5,-432.22 534.5,-405.47 469.5,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="476.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">actionable</text>
-<polygon fill="#a3c8e8" stroke="none" points="534.5,-405.47 534.5,-432.22 586,-432.22 586,-405.47 534.5,-405.47"/>
-<polygon fill="none" stroke="black" points="534.5,-405.47 534.5,-432.22 586,-432.22 586,-405.47 534.5,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="541.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">in&#45;flight</text>
-<polygon fill="#ffd966" stroke="none" points="586,-405.47 586,-432.22 621,-432.22 621,-405.47 586,-405.47"/>
-<polygon fill="none" stroke="black" points="586,-405.47 586,-432.22 621,-432.22 621,-405.47 586,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="593" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">goal</text>
-<polygon fill="#ffffff" stroke="none" points="621,-405.47 621,-432.22 756.5,-432.22 756.5,-405.47 621,-405.47"/>
-<polygon fill="none" stroke="black" points="621,-405.47 621,-432.22 756.5,-432.22 756.5,-405.47 621,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="628" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">pending / gated (dashed)</text>
-<polygon fill="#cccccc" stroke="none" points="756.5,-405.47 756.5,-432.22 841,-432.22 841,-405.47 756.5,-405.47"/>
-<polygon fill="none" stroke="black" points="756.5,-405.47 756.5,-432.22 841,-432.22 841,-405.47 756.5,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="763.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">done / merged</text>
-<polygon fill="#a3c8e8" stroke="none" points="841,-405.47 841,-432.22 940.5,-432.22 940.5,-405.47 841,-405.47"/>
-<polygon fill="none" stroke="black" points="841,-405.47 841,-432.22 940.5,-432.22 940.5,-405.47 841,-405.47"/>
-<text xml:space="preserve" text-anchor="start" x="848" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">recurring (dotted)</text>
-<polygon fill="#f8f8f8" stroke="none" points="469.5,-378.72 469.5,-405.47 940.5,-405.47 940.5,-378.72 469.5,-378.72"/>
-<polygon fill="none" stroke="black" points="469.5,-378.72 469.5,-405.47 940.5,-405.47 940.5,-378.72 469.5,-378.72"/>
-<text xml:space="preserve" text-anchor="start" x="535.88" y="-388.72" font-family="Helvetica,sans-Serif" font-size="10.00">solid edge = hard dep · dashed = soft / context · green = critical path</text>
+<path fill="lightgrey" stroke="none" d="M936.5,-458.97C936.5,-458.97 489.5,-458.97 489.5,-458.97 483.5,-458.97 477.5,-452.97 477.5,-446.97 477.5,-446.97 477.5,-390.72 477.5,-390.72 477.5,-384.72 483.5,-378.72 489.5,-378.72 489.5,-378.72 936.5,-378.72 936.5,-378.72 942.5,-378.72 948.5,-384.72 948.5,-390.72 948.5,-390.72 948.5,-446.97 948.5,-446.97 948.5,-452.97 942.5,-458.97 936.5,-458.97"/>
+<polygon fill="#f0f0f0" stroke="none" points="477.5,-432.22 477.5,-458.97 948.5,-458.97 948.5,-432.22 477.5,-432.22"/>
+<polygon fill="none" stroke="black" points="477.5,-432.22 477.5,-458.97 948.5,-458.97 948.5,-432.22 477.5,-432.22"/>
+<text xml:space="preserve" text-anchor="start" x="692.38" y="-443.47" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">Legend</text>
+<polygon fill="#a4e9a4" stroke="none" points="477.5,-405.47 477.5,-432.22 542.5,-432.22 542.5,-405.47 477.5,-405.47"/>
+<polygon fill="none" stroke="black" points="477.5,-405.47 477.5,-432.22 542.5,-432.22 542.5,-405.47 477.5,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="484.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">actionable</text>
+<polygon fill="#a3c8e8" stroke="none" points="542.5,-405.47 542.5,-432.22 594,-432.22 594,-405.47 542.5,-405.47"/>
+<polygon fill="none" stroke="black" points="542.5,-405.47 542.5,-432.22 594,-432.22 594,-405.47 542.5,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="549.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">in&#45;flight</text>
+<polygon fill="#ffd966" stroke="none" points="594,-405.47 594,-432.22 629,-432.22 629,-405.47 594,-405.47"/>
+<polygon fill="none" stroke="black" points="594,-405.47 594,-432.22 629,-432.22 629,-405.47 594,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="601" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">goal</text>
+<polygon fill="#ffffff" stroke="none" points="629,-405.47 629,-432.22 764.5,-432.22 764.5,-405.47 629,-405.47"/>
+<polygon fill="none" stroke="black" points="629,-405.47 629,-432.22 764.5,-432.22 764.5,-405.47 629,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="636" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">pending / gated (dashed)</text>
+<polygon fill="#cccccc" stroke="none" points="764.5,-405.47 764.5,-432.22 849,-432.22 849,-405.47 764.5,-405.47"/>
+<polygon fill="none" stroke="black" points="764.5,-405.47 764.5,-432.22 849,-432.22 849,-405.47 764.5,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="771.5" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">done / merged</text>
+<polygon fill="#a3c8e8" stroke="none" points="849,-405.47 849,-432.22 948.5,-432.22 948.5,-405.47 849,-405.47"/>
+<polygon fill="none" stroke="black" points="849,-405.47 849,-432.22 948.5,-432.22 948.5,-405.47 849,-405.47"/>
+<text xml:space="preserve" text-anchor="start" x="856" y="-415.47" font-family="Helvetica,sans-Serif" font-size="10.00">recurring (dotted)</text>
+<polygon fill="#f8f8f8" stroke="none" points="477.5,-378.72 477.5,-405.47 948.5,-405.47 948.5,-378.72 477.5,-378.72"/>
+<polygon fill="none" stroke="black" points="477.5,-378.72 477.5,-405.47 948.5,-405.47 948.5,-378.72 477.5,-378.72"/>
+<text xml:space="preserve" text-anchor="start" x="543.88" y="-388.72" font-family="Helvetica,sans-Serif" font-size="10.00">solid edge = hard dep · dashed = soft / context · green = critical path</text>
 </g>
 <!-- macro -->
 <g id="node2" class="node">
@@ -82,10 +82,10 @@
 <!-- B1 -->
 <g id="node8" class="node">
 <title>B1</title>
-<path fill="#a3c8e8" stroke="black" d="M886.05,-302.13C886.05,-302.13 781.95,-302.13 781.95,-302.13 775.95,-302.13 769.95,-296.13 769.95,-290.13 769.95,-290.13 769.95,-278.13 769.95,-278.13 769.95,-272.13 775.95,-266.13 781.95,-266.13 781.95,-266.13 886.05,-266.13 886.05,-266.13 892.05,-266.13 898.05,-272.13 898.05,-278.13 898.05,-278.13 898.05,-290.13 898.05,-290.13 898.05,-296.13 892.05,-302.13 886.05,-302.13"/>
-<text xml:space="preserve" text-anchor="start" x="793.5" y="-285.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">B1</text>
-<text xml:space="preserve" text-anchor="start" x="807.75" y="-285.63" font-family="Helvetica,sans-Serif" font-size="10.00"> select top&#45;10</text>
-<text xml:space="preserve" text-anchor="start" x="780.75" y="-275.63" font-family="Helvetica,sans-Serif" font-size="10.00">from updated registry</text>
+<path fill="#cccccc" stroke="black" d="M949.55,-302.13C949.55,-302.13 782.45,-302.13 782.45,-302.13 776.45,-302.13 770.45,-296.13 770.45,-290.13 770.45,-290.13 770.45,-278.13 770.45,-278.13 770.45,-272.13 776.45,-266.13 782.45,-266.13 782.45,-266.13 949.55,-266.13 949.55,-266.13 955.55,-266.13 961.55,-272.13 961.55,-278.13 961.55,-278.13 961.55,-290.13 961.55,-290.13 961.55,-296.13 955.55,-302.13 949.55,-302.13"/>
+<text xml:space="preserve" text-anchor="start" x="796.62" y="-285.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">B1</text>
+<text xml:space="preserve" text-anchor="start" x="810.88" y="-285.63" font-family="Helvetica,sans-Serif" font-size="10.00"> select top&#45;10 (by R&#45;p@3)</text>
+<text xml:space="preserve" text-anchor="start" x="781.25" y="-275.63" font-family="Helvetica,sans-Serif" font-size="10.00">5 aligned&#45;200d + 5 trailing&#45;nasdaq</text>
 </g>
 <!-- legend&#45;&gt;B1 -->
 <!-- G -->
@@ -158,9 +158,9 @@
 <!-- A3&#45;&gt;B1 -->
 <g id="edge9" class="edge">
 <title>A3&#45;&gt;B1</title>
-<path fill="none" stroke="#cc3333" stroke-width="2" d="M675.06,-130.93C707.74,-162.23 770.66,-222.47 806.76,-257.04"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="803.92,-259.17 813.56,-263.56 808.76,-254.12 803.92,-259.17"/>
-<text xml:space="preserve" text-anchor="middle" x="793.84" y="-185.35" font-family="Helvetica,sans-Serif" font-size="9.00">registry updated</text>
+<path fill="none" stroke="#cc3333" stroke-width="2" d="M675.66,-130.93C697.72,-151.23 733.16,-183.15 765.25,-209.04 786.4,-226.1 810.94,-244.18 830.51,-258.22"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="828.47,-261.06 838.64,-264.01 832.53,-255.36 828.47,-261.06"/>
+<text xml:space="preserve" text-anchor="middle" x="803.12" y="-185.35" font-family="Helvetica,sans-Serif" font-size="9.00">registry updated</text>
 </g>
 <!-- A4&#45;&gt;G -->
 <g id="edge13" class="edge">
@@ -171,7 +171,7 @@
 <!-- B2 -->
 <g id="node9" class="node">
 <title>B2</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M1020.42,-209.04C1020.42,-209.04 861.58,-209.04 861.58,-209.04 855.58,-209.04 849.58,-203.04 849.58,-197.04 849.58,-197.04 849.58,-179.52 849.58,-179.52 849.58,-173.52 855.58,-167.52 861.58,-167.52 861.58,-167.52 1020.42,-167.52 1020.42,-167.52 1026.42,-167.52 1032.42,-173.52 1032.42,-179.52 1032.42,-179.52 1032.42,-197.04 1032.42,-197.04 1032.42,-203.04 1026.42,-209.04 1020.42,-209.04"/>
+<path fill="#a3c8e8" stroke="black" d="M1020.42,-209.04C1020.42,-209.04 861.58,-209.04 861.58,-209.04 855.58,-209.04 849.58,-203.04 849.58,-197.04 849.58,-197.04 849.58,-179.52 849.58,-179.52 849.58,-173.52 855.58,-167.52 861.58,-167.52 861.58,-167.52 1020.42,-167.52 1020.42,-167.52 1026.42,-167.52 1032.42,-173.52 1032.42,-179.52 1032.42,-179.52 1032.42,-197.04 1032.42,-197.04 1032.42,-203.04 1026.42,-209.04 1020.42,-209.04"/>
 <text xml:space="preserve" text-anchor="start" x="885.88" y="-194.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">B2</text>
 <text xml:space="preserve" text-anchor="start" x="900.12" y="-194.78" font-family="Helvetica,sans-Serif" font-size="10.00"> true&#45;OOS inference</text>
 <text xml:space="preserve" text-anchor="start" x="860.38" y="-184.78" font-family="Helvetica,sans-Serif" font-size="10.00">each model: dates &gt; its test_end</text>
@@ -180,8 +180,8 @@
 <!-- B1&#45;&gt;B2 -->
 <g id="edge10" class="edge">
 <title>B1&#45;&gt;B2</title>
-<path fill="none" stroke="#2e8b57" stroke-width="2" d="M853.88,-265.7C869.28,-252.19 890.93,-233.2 908.79,-217.53"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="910.78,-220.44 915.99,-211.22 906.16,-215.18 910.78,-220.44"/>
+<path fill="none" stroke="#2e8b57" stroke-width="2" d="M879.76,-265.92C890.13,-252.93 904.63,-234.79 916.91,-219.42"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="919.59,-221.68 923.1,-211.68 914.12,-217.31 919.59,-221.68"/>
 </g>
 <!-- B3 -->
 <g id="node10" class="node">
