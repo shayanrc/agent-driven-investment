@@ -226,7 +226,7 @@ Two new bullets in "What not to do — gbdt":
 
 ## Artifacts
 
-All raw batch JSONs under `/mnt/122CEE982CEE765F/Workspace/wt-cell5-agentloop/results/gbdt/experiments/`:
+All raw batch JSONs under `results/gbdt/experiments/`:
 
 | Stage | Script | JSON |
 |---|---|---|
