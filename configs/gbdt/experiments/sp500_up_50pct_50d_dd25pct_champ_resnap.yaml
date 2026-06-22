@@ -1,0 +1,34 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_champ_resnap
+#
+# Re-baseline of the committed champion sp500_up_50pct_50d_dd25pct_agentloop at
+# snapshot 2026-06-20 (memo _262). The champion's agent loop converged to a single
+# winning config — min_child_weight=10 on all 279 features (n_iter=1, no FS) — so
+# it is reproduced exactly via hp_starting + a single fit (max_iter 1) under the
+# champion's trailing-split regime. Purpose: put the champion on the SAME trailing
+# window as ..._macrochampagent (this snapshot's window), removing the window
+# confound from the head-to-head. Committed champion ref: R-p@1 0.640 / R-p@10
+# 0.346 (on its earlier 2025-12..2026-03 window).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+# trailing split (default) — no split block, matches the champion.
+
+features:
+  candidates: all
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    min_child_weight: 10
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
