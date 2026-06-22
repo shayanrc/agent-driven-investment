@@ -1,0 +1,122 @@
+{
+  "rank_by": "R_precision_at_3",
+  "end": "2026-06-20",
+  "cells": [
+    {
+      "cell": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen",
+      "universe": "nasdaq100",
+      "test_end": "2025-12-26",
+      "horizon": 50,
+      "threshold_pct": 10,
+      "status": "ok",
+      "oos_start": "2025-12-29",
+      "oos_end": "2026-04-02",
+      "n_oos_days": 66,
+      "n_rows": 5876,
+      "base_rate": 0.2835262083049694,
+      "R_precision_at_1": 0.6060606060606061,
+      "R_precision_at_3": 0.4949494949494949,
+      "R_precision_at_5": 0.3916666666666667,
+      "R_precision_at_10": 0.2849326599326599,
+      "R_precision_at_20": 0.29079997900536886
+    },
+    {
+      "cell": "russell1000_up_50pct_200d_dd25pct_aligned",
+      "universe": "russell1000",
+      "test_end": "2024-10-03",
+      "horizon": 200,
+      "threshold_pct": 50,
+      "status": "infer failed: =20d\n[features] family=F7 step=7/15 elapsed=71.4s\n[features] family=F11 step=10/15 elapsed=107.3s\n[features] family=F16 step=15/15 elapsed=187.8s\n[ABORT] reproduced p_raw diverges from test.csv (max_abs_diff=1.65e-01 > 0.0001). Feature build or model load is not faithful; not emitting fresh scores.\n"
+    },
+    {
+      "cell": "nasdaq100_up_10pct_50d_dd5pct_b_acceptance_agent",
+      "universe": "nasdaq100",
+      "test_end": "2026-03-12",
+      "horizon": 50,
+      "threshold_pct": 10,
+      "status": "ok",
+      "oos_start": "2026-03-13",
+      "oos_end": "2026-04-02",
+      "n_oos_days": 15,
+      "n_rows": 1215,
+      "base_rate": 0.3563786008230453,
+      "R_precision_at_1": 0.6666666666666666,
+      "R_precision_at_3": 0.4222222222222222,
+      "R_precision_at_5": 0.4666666666666667,
+      "R_precision_at_10": 0.3,
+      "R_precision_at_20": 0.3014619883040936
+    },
+    {
+      "cell": "russell1000_up_40pct_200d_dd20pct_aligned",
+      "universe": "russell1000",
+      "test_end": "2024-10-03",
+      "horizon": 200,
+      "threshold_pct": 40,
+      "status": "infer failed: =20d\n[features] family=F7 step=7/15 elapsed=72.0s\n[features] family=F11 step=10/15 elapsed=108.0s\n[features] family=F16 step=15/15 elapsed=189.4s\n[ABORT] reproduced p_raw diverges from test.csv (max_abs_diff=9.24e-02 > 0.0001). Feature build or model load is not faithful; not emitting fresh scores.\n"
+    },
+    {
+      "cell": "sp500_up_50pct_200d_dd25pct_aligned",
+      "universe": "sp500",
+      "test_end": "2024-10-03",
+      "horizon": 200,
+      "threshold_pct": 50,
+      "status": "infer failed: [features] family=F7 step=7/15 elapsed=32.8s\n[features] family=F16 step=15/15 elapsed=89.4s\n[ABORT] reproduced p_raw diverges from test.csv (max_abs_diff=3.66e-02 > 0.0001). Feature build or model load is not faithful; not emitting fresh scores.\n"
+    },
+    {
+      "cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
+      "universe": "russell1000",
+      "test_end": "2024-10-03",
+      "horizon": 200,
+      "threshold_pct": 50,
+      "status": "infer failed: =20d\n[features] family=F7 step=7/15 elapsed=72.3s\n[features] family=F11 step=10/15 elapsed=108.5s\n[features] family=F16 step=15/15 elapsed=189.4s\n[ABORT] reproduced p_raw diverges from test.csv (max_abs_diff=2.90e-01 > 0.0001). Feature build or model load is not faithful; not emitting fresh scores.\n"
+    },
+    {
+      "cell": "sp500_up_40pct_200d_dd20pct_aligned",
+      "universe": "sp500",
+      "test_end": "2024-10-03",
+      "horizon": 200,
+      "threshold_pct": 40,
+      "status": "infer failed: [features] family=F7 step=7/15 elapsed=32.6s\n[features] family=F16 step=15/15 elapsed=88.9s\n[ABORT] reproduced p_raw diverges from test.csv (max_abs_diff=7.12e-02 > 0.0001). Feature build or model load is not faithful; not emitting fresh scores.\n"
+    },
+    {
+      "cell": "nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation",
+      "status": "no artifact dir / test.csv on disk"
+    },
+    {
+      "cell": "nasdaq100_up_10pct_25d_dd5pct_b_acceptance",
+      "universe": "nasdaq100",
+      "test_end": "2026-04-17",
+      "horizon": 25,
+      "threshold_pct": 10,
+      "status": "ok",
+      "oos_start": "2026-04-20",
+      "oos_end": "2026-05-08",
+      "n_oos_days": 15,
+      "n_rows": 1215,
+      "base_rate": 0.32839506172839505,
+      "R_precision_at_1": 0.9333333333333333,
+      "R_precision_at_3": 0.8444444444444444,
+      "R_precision_at_5": 0.7066666666666666,
+      "R_precision_at_10": 0.6199999999999998,
+      "R_precision_at_20": 0.5123809523809524
+    },
+    {
+      "cell": "nasdaq100_up_10pct_25d_dd5pct",
+      "universe": "nasdaq100",
+      "test_end": "2026-04-17",
+      "horizon": 25,
+      "threshold_pct": 10,
+      "status": "ok",
+      "oos_start": "2026-04-20",
+      "oos_end": "2026-05-08",
+      "n_oos_days": 15,
+      "n_rows": 1215,
+      "base_rate": 0.32839506172839505,
+      "R_precision_at_1": 0.9333333333333333,
+      "R_precision_at_3": 0.8666666666666666,
+      "R_precision_at_5": 0.6933333333333334,
+      "R_precision_at_10": 0.6799999999999999,
+      "R_precision_at_20": 0.5457142857142858
+    }
+  ]
+}
