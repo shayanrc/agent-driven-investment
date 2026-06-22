@@ -83,6 +83,8 @@ Standard cross-cell comparison metric for gbdt experiments: **R-Precision@K** at
 
 **Show times to the user in IST** (UTC+5:30) unless they specify another timezone — the project owner is in India. Internal artifacts (logs, commit metadata) may stay UTC; convert cron next-fire times from machine-local before display. See `[[feedback-report-time-in-ist]]`.
 
+**When the user asks to be shown something** (a table, ranking, metric, diff, file contents), re-render the result as properly-formatted markdown **in the reply itself** — compute it in the shell if needed, then paste the formatted output. Don't reply with "see the table above" pointing at raw tool output, which isn't always rendered in chat as intended. Same table rules apply (raw metric + base_rate, no lift columns). See `[[feedback-replicate-output-in-dialog]]`.
+
 ## Source of truth for analog_mc
 
 `docs/analog_mc/IMPLEMENTATION_PLAN.md` is the spec for the analog_mc pipeline and was the output of a long design conversation. Every decision in it was made for a reason. **Do not silently change architectural decisions.** If implementation reveals a problem with a decision, surface it explicitly and ask before deviating.
