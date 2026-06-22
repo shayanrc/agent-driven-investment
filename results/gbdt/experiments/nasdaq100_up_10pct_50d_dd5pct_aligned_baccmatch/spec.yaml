@@ -1,8 +1,4 @@
-# nasdaq100_up_10pct_50d_dd5pct_aligned_revalmatch
-# Date-aligned MATCHED refit of trailing champion `nasdaq100_up_10pct_50d_dd5pct_agentloop_v1.3_revalidation_regen`.
-# Pins its backend + HP overrides + 190-feature set (build all, exclude the 89 dropped cols); split -> date_aligned
-# (train_start 2019-01-01), single fit. Isolates the split effect. --snapshot-end at runtime.
-experiment_name: nasdaq100_up_10pct_50d_dd5pct_aligned_revalmatch
+experiment_name: nasdaq100_up_10pct_50d_dd5pct_aligned_baccmatch
 target:
   universe: nasdaq100
   direction: up
@@ -18,18 +14,16 @@ features:
   - budget_week
   - diwali_week
   - dollar_move_rank_10
-  - dollar_move_rank_20
   - dollar_move_rank_5
   - dollar_move_rank_50
-  - dollar_move_xs_zscore_outside_band_2
   - dollar_move_xs_zscore_outside_band_3
+  - dollar_move_zscore_10
   - dollar_move_zscore_100_outside_band_1
   - dollar_move_zscore_100_outside_band_2
   - dollar_move_zscore_100_outside_band_3
   - dollar_move_zscore_10_outside_band_1
   - dollar_move_zscore_10_outside_band_2
   - dollar_move_zscore_10_outside_band_3
-  - dollar_move_zscore_20
   - dollar_move_zscore_200_outside_band_1
   - dollar_move_zscore_200_outside_band_2
   - dollar_move_zscore_200_outside_band_3
@@ -61,26 +55,27 @@ features:
   - realized_vol_zscore_5_outside_band_3
   - return_xs_rank_20
   - return_xs_rank_5
-  - return_xs_zscore_100_outside_band_1
   - return_xs_zscore_100_outside_band_3
   - return_xs_zscore_10_outside_band_1
   - return_xs_zscore_10_outside_band_2
   - return_xs_zscore_10_outside_band_3
+  - return_xs_zscore_200_outside_band_2
   - return_xs_zscore_200_outside_band_3
+  - return_xs_zscore_20_outside_band_1
   - return_xs_zscore_20_outside_band_2
   - return_xs_zscore_20_outside_band_3
+  - return_xs_zscore_5
   - return_xs_zscore_50_outside_band_2
   - return_xs_zscore_50_outside_band_3
   - return_xs_zscore_5_outside_band_1
   - return_xs_zscore_5_outside_band_2
   - return_xs_zscore_5_outside_band_3
   - returns_kurt_5
-  - stock_return_10
-  - stock_return_zscore_100_outside_band_2
   - stock_return_zscore_100_outside_band_3
   - stock_return_zscore_10_outside_band_1
   - stock_return_zscore_10_outside_band_2
   - stock_return_zscore_10_outside_band_3
+  - stock_return_zscore_200_outside_band_2
   - stock_return_zscore_200_outside_band_3
   - stock_return_zscore_20_outside_band_2
   - stock_return_zscore_20_outside_band_3
@@ -90,32 +85,40 @@ features:
   - stock_return_zscore_5_outside_band_1
   - stock_return_zscore_5_outside_band_2
   - stock_return_zscore_5_outside_band_3
+  - vol_change_5
+  - vol_pct_10
   - vol_pct_5
+  - vol_xs_rank_5
+  - vol_xs_zscore_100_outside_band_2
   - vol_xs_zscore_100_outside_band_3
   - vol_xs_zscore_10_outside_band_1
   - vol_xs_zscore_10_outside_band_2
   - vol_xs_zscore_200_outside_band_2
-  - vol_xs_zscore_20_outside_band_1
   - vol_xs_zscore_20_outside_band_3
-  - vol_xs_zscore_50_outside_band_2
   - vol_xs_zscore_50_outside_band_3
   - vol_xs_zscore_5_outside_band_1
   - vol_xs_zscore_5_outside_band_2
   - vol_xs_zscore_5_outside_band_3
-  - volume_ratio_100
-  - volume_ratio_50
+  - volume_ratio_5
 backend:
   library: xgboost
   calibration_method: conditional_isotonic
   hp_starting:
     max_depth: 2
     eta: 0.1
-    n_estimators: 500
+    colsample_bytree: 0.3
+    min_child_weight: 5
+    gamma: 0
+    alpha: 0
+    subsample: 1
+    scale_pos_weight: 1
     early_stopping_rounds: 30
-    colsample_bytree: 0.4
+    n_estimators: 200
   fs_hp_loop:
     callback_mode: default
     max_iterations: 1
     plateau_threshold: 0.005
     degradation_gate: 0.01
 random_seed: 42
+date_range:
+  end: 2026-06-20

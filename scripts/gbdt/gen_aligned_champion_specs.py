@@ -35,7 +35,22 @@ def build(src_dir, new_name):
     tgt = spec["target"]
     be = spec.get("backend", {})
     # all 16 families = 279 cols; only pin an explicit list when the champion pruned
-    candidates = "all" if len(feats) >= 279 else list(feats)
+    # The feature builder takes family tokens / "all", NOT individual column names,
+    # and `exclude` is a post-build glob drop. So to pin a PRUNED set we build "all"
+    # (hits the universe cache) and exclude the complement (the columns the champion
+    # dropped). The full 279-col pool = an all-features champion's feature list.
+    full_pool = yaml.safe_load(open(os.path.join(
+        EXP, "sp500_up_20pct_25d_dd10pct_agentloop", "features.yaml")))["features"]
+    pruned = len(feats) < len(full_pool)
+    if pruned:
+        missing = set(feats) - set(full_pool)
+        assert not missing, f"{new_name}: selected features not in full pool: {sorted(missing)[:5]}"
+        exclude = sorted(set(full_pool) - set(feats))
+    else:
+        exclude = None
+    features_block = {"candidates": "all"}
+    if exclude:
+        features_block["exclude"] = exclude
     # cast numpy-ish HP scalars to plain python for clean YAML
     hp_clean = {k: (int(v) if isinstance(v, float) and v.is_integer() else float(v) if isinstance(v, float) else v)
                 for k, v in hp.items()}
@@ -49,7 +64,7 @@ def build(src_dir, new_name):
             "max_drawdown": tgt["max_drawdown"],
         },
         "split": {"mode": "date_aligned", "train_start": "2019-01-01"},
-        "features": {"candidates": candidates},
+        "features": features_block,
         "backend": {
             "library": be.get("library", "xgboost"),
             "calibration_method": be.get("calibration_method", "conditional_isotonic"),
@@ -66,7 +81,9 @@ def build(src_dir, new_name):
     header = (
         f"# {new_name}\n"
         f"# Date-aligned MATCHED refit of trailing champion `{src_dir}`.\n"
-        f"# Pins its backend + HP overrides + {len(feats)}-feature set; split -> date_aligned\n"
+        f"# Pins its backend + HP overrides + {len(feats)}-feature set"
+        + (f" (build all, exclude the {len(exclude)} dropped cols)" if exclude else "")
+        + f"; split -> date_aligned\n"
         f"# (train_start 2019-01-01), single fit. Isolates the split effect. --snapshot-end at runtime.\n"
     )
     path = os.path.join(OUT, f"{new_name}.yaml")

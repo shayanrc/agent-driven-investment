@@ -1,0 +1,4 @@
+hp:
+  min_child_weight: 5
+  colsample_bytree: 0.5
+  gamma: 0.5
