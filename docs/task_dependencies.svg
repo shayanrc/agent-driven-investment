@@ -9,7 +9,7 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 503.97)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-503.97 1345,-503.97 1345,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 00:32 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="670.5" y="-483.62" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — date&#45;aligned refit + true&#45;OOS pipeline (2026&#45;06&#45;23 00:53 IST)</text>
 <text xml:space="preserve" text-anchor="middle" x="670.5" y="-467.12" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">branch gbdt&#45;trailing&#45;champions&#45;date&#45;aligned · refit 5 trailing champions on date_aligned, then top&#45;10 true&#45;OOS rerun</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
@@ -114,37 +114,37 @@
 <!-- A2 -->
 <g id="node5" class="node">
 <title>A2</title>
-<path fill="#a3c8e8" stroke="black" d="M670.8,-209.04C670.8,-209.04 541.2,-209.04 541.2,-209.04 535.2,-209.04 529.2,-203.04 529.2,-197.04 529.2,-197.04 529.2,-179.52 529.2,-179.52 529.2,-173.52 535.2,-167.52 541.2,-167.52 541.2,-167.52 670.8,-167.52 670.8,-167.52 676.8,-167.52 682.8,-173.52 682.8,-179.52 682.8,-179.52 682.8,-197.04 682.8,-197.04 682.8,-203.04 676.8,-209.04 670.8,-209.04"/>
-<text xml:space="preserve" text-anchor="start" x="571.12" y="-194.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">A2</text>
-<text xml:space="preserve" text-anchor="start" x="585.38" y="-194.78" font-family="Helvetica,sans-Serif" font-size="10.00"> run 5 refits</text>
-<text xml:space="preserve" text-anchor="start" x="552" y="-184.78" font-family="Helvetica,sans-Serif" font-size="10.00">date_aligned single fit</text>
-<text xml:space="preserve" text-anchor="start" x="540" y="-174.78" font-family="Helvetica,sans-Serif" font-size="10.00">&#45;&#45;snapshot&#45;end 2026&#45;06&#45;20</text>
+<path fill="#cccccc" stroke="black" d="M670.8,-209.04C670.8,-209.04 523.2,-209.04 523.2,-209.04 517.2,-209.04 511.2,-203.04 511.2,-197.04 511.2,-197.04 511.2,-179.52 511.2,-179.52 511.2,-173.52 517.2,-167.52 523.2,-167.52 523.2,-167.52 670.8,-167.52 670.8,-167.52 676.8,-167.52 682.8,-173.52 682.8,-179.52 682.8,-179.52 682.8,-197.04 682.8,-197.04 682.8,-203.04 676.8,-209.04 670.8,-209.04"/>
+<text xml:space="preserve" text-anchor="start" x="562.12" y="-194.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">A2</text>
+<text xml:space="preserve" text-anchor="start" x="576.38" y="-194.78" font-family="Helvetica,sans-Serif" font-size="10.00"> run 5 refits</text>
+<text xml:space="preserve" text-anchor="start" x="543" y="-184.78" font-family="Helvetica,sans-Serif" font-size="10.00">date_aligned single fit</text>
+<text xml:space="preserve" text-anchor="start" x="522" y="-174.78" font-family="Helvetica,sans-Serif" font-size="10.00">(5/5 done; nasdaq via exclude)</text>
 </g>
 <!-- A1&#45;&gt;A2 -->
 <g id="edge6" class="edge">
 <title>A1&#45;&gt;A2</title>
-<path fill="none" stroke="#2e8b57" stroke-width="2" d="M644.61,-263.23C638.16,-250.87 629.72,-234.72 622.38,-220.66"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="625.68,-219.41 617.95,-212.16 619.47,-222.65 625.68,-219.41"/>
+<path fill="none" stroke="#2e8b57" stroke-width="2" d="M642.7,-263.23C634.99,-250.75 624.88,-234.39 616.13,-220.24"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="619.31,-218.72 611.07,-212.05 613.35,-222.4 619.31,-218.72"/>
 </g>
 <!-- A3 -->
 <g id="node6" class="node">
 <title>A3</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M703.8,-130.52C703.8,-130.52 604.2,-130.52 604.2,-130.52 598.2,-130.52 592.2,-124.52 592.2,-118.52 592.2,-118.52 592.2,-101 592.2,-101 592.2,-95 598.2,-89 604.2,-89 604.2,-89 703.8,-89 703.8,-89 709.8,-89 715.8,-95 715.8,-101 715.8,-101 715.8,-118.52 715.8,-118.52 715.8,-124.52 709.8,-130.52 703.8,-130.52"/>
+<path fill="#cccccc" stroke="black" d="M703.8,-130.52C703.8,-130.52 604.2,-130.52 604.2,-130.52 598.2,-130.52 592.2,-124.52 592.2,-118.52 592.2,-118.52 592.2,-101 592.2,-101 592.2,-95 598.2,-89 604.2,-89 604.2,-89 703.8,-89 703.8,-89 709.8,-89 715.8,-95 715.8,-101 715.8,-101 715.8,-118.52 715.8,-118.52 715.8,-124.52 709.8,-130.52 703.8,-130.52"/>
 <text xml:space="preserve" text-anchor="start" x="603" y="-116.26" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">A3</text>
 <text xml:space="preserve" text-anchor="start" x="617.25" y="-116.26" font-family="Helvetica,sans-Serif" font-size="10.00"> R&#45;p@K → registry</text>
-<text xml:space="preserve" text-anchor="start" x="612" y="-106.26" font-family="Helvetica,sans-Serif" font-size="10.00">append 5 rows to</text>
+<text xml:space="preserve" text-anchor="start" x="606.75" y="-106.26" font-family="Helvetica,sans-Serif" font-size="10.00">+5 rows (164 total)</text>
 <text xml:space="preserve" text-anchor="start" x="604.5" y="-96.26" font-family="Helvetica,sans-Serif" font-size="10.00">r_precision_at_k.csv</text>
 </g>
 <!-- A2&#45;&gt;A3 -->
 <g id="edge7" class="edge">
 <title>A2&#45;&gt;A3</title>
-<path fill="none" stroke="#2e8b57" stroke-width="2" d="M618.61,-167.18C623.48,-159.42 629.16,-150.36 634.53,-141.81"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="637.35,-143.89 639.7,-133.56 631.42,-140.17 637.35,-143.89"/>
+<path fill="none" stroke="#2e8b57" stroke-width="2" d="M611.98,-167.18C617.89,-159.24 624.8,-149.95 631.3,-141.23"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="633.95,-143.53 637.12,-133.42 628.34,-139.35 633.95,-143.53"/>
 </g>
 <!-- A4 -->
 <g id="node7" class="node">
 <title>A4</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M725.17,-52C725.17,-52 600.83,-52 600.83,-52 594.83,-52 588.83,-46 588.83,-40 588.83,-40 588.83,-28 588.83,-28 588.83,-22 594.83,-16 600.83,-16 600.83,-16 725.17,-16 725.17,-16 731.17,-16 737.17,-22 737.17,-28 737.17,-28 737.17,-40 737.17,-40 737.17,-46 731.17,-52 725.17,-52"/>
+<path fill="#a3c8e8" stroke="black" d="M725.17,-52C725.17,-52 600.83,-52 600.83,-52 594.83,-52 588.83,-46 588.83,-40 588.83,-40 588.83,-28 588.83,-28 588.83,-22 594.83,-16 600.83,-16 600.83,-16 725.17,-16 725.17,-16 731.17,-16 737.17,-22 737.17,-28 737.17,-28 737.17,-40 737.17,-40 737.17,-46 731.17,-52 725.17,-52"/>
 <text xml:space="preserve" text-anchor="start" x="599.62" y="-35.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">A4</text>
 <text xml:space="preserve" text-anchor="start" x="613.88" y="-35.5" font-family="Helvetica,sans-Serif" font-size="10.00"> memo _265 + commit</text>
 <text xml:space="preserve" text-anchor="start" x="643.5" y="-25.5" font-family="Helvetica,sans-Serif" font-size="10.00">Phase A</text>
