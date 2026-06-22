@@ -1,0 +1,30 @@
+{
+  "id": "_260",
+  "title": "Phase 3 — macro vs champion head-to-head (macro effect sign-flips)",
+  "branch": "gbdt-macro-champion-h2h",
+  "memo": "docs/gbdt/_260_macro_champion_h2h.md",
+  "summary": "Matched A/B under the champion regime (trailing split + default auto FS+HP loop, max_iter 5). Macro effect SIGN-FLIPS across cells: hurts +20%/25d (R-p@1 0.347->0.120), helps +50%/50d (R-p@1 0.120->0.360) — and flips vs the date_aligned A/B (_259) where macro helped +20%. Macro is NOT a robust improvement and does NOT beat the deployed champions. Default-auto champbase also far below the agent-tuned committed champions (window + tuning-mode confound). Objective 'outperform the existing models' NOT met. Recommend: keep F17 opt-in, do NOT promote to champion / daily-predictions.",
+  "regime": {"split": "trailing", "callback_mode": "default", "max_iterations": 5, "n_iterations_run": 3, "snapshot_end": "2026-06-20", "backend": "xgboost"},
+  "cells": [
+    {
+      "name": "sp500_up_20pct_25d_dd10pct",
+      "trailing_test_window": ["2026-01-22", "2026-05-08"], "base_rate": 0.0878, "Q_days": 75,
+      "champbase":  {"R_precision_at_K_test": {"1":0.3467,"3":0.2978,"5":0.2827,"10":0.3067,"20":0.3003}, "test_auc":0.7393},
+      "macrochamp": {"R_precision_at_K_test": {"1":0.1200,"3":0.1867,"5":0.2000,"10":0.2693,"20":0.2766}, "test_auc":0.7389, "f17_importance_frac":0.225, "top_macro_feature":"macro_VIXCLS_chg_60"},
+      "macro_vs_champbase": "HURTS (R-p@1 -65%, every K down)",
+      "committed_champion_ref": {"R_p@1":0.4133,"R_p@10":0.4027,"base_rate":0.0886,"test":["2025-12-30","2026-04-17"]}
+    },
+    {
+      "name": "sp500_up_50pct_50d_dd25pct",
+      "trailing_test_window": ["2026-01-22", "2026-04-02"], "base_rate": 0.0384, "Q_days": 50,
+      "champbase":  {"R_precision_at_K_test": {"1":0.1200,"3":0.1600,"5":0.2040,"10":0.2165,"20":0.3132}, "test_auc":0.8562},
+      "macrochamp": {"R_precision_at_K_test": {"1":0.3600,"3":0.3133,"5":0.3360,"10":0.3050,"20":0.4153}, "test_auc":0.8644, "f17_importance_frac":0.195, "top_macro_feature":"macro_T10YIE_level"},
+      "macro_vs_champbase": "HELPS (R-p@1 +200%, every K up), but R-p@1 0.360 < committed champion 0.640",
+      "committed_champion_ref": {"R_p@1":0.6400,"R_p@10":0.3460,"base_rate":0.0257,"test":["2025-12-30","2026-03-12"]}
+    }
+  ],
+  "key_finding": "macro effect is regime/window-dependent and sign-unstable (helps/hurts depending on cell + split); not a dependable edge",
+  "confounds_vs_committed_champion": ["different trailing window (base_rate 0.0384 vs 0.0257 on +50%)", "default-auto tuning vs agent_file_protocol (champbase 0.120 vs champion 0.640 on +50%)"],
+  "objective_status": "outperform-the-champion NOT achieved; F17 stays an opt-in feature, not promoted to deployed champion",
+  "recommendation": "do not promote macro; if revisited, agent-tune on a matched window AND close the BAMLH0A0HYM2 (HY-OAS) gap first"
+}

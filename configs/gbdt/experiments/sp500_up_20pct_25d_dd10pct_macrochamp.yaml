@@ -1,0 +1,28 @@
+# Experiment: sp500_up_20pct_25d_dd10pct_macrochamp
+#
+# Phase 3 head-to-head MACRO arm (memo _260). Champion regime: TRAILING split +
+# default auto FS+HP loop (5 iter), F1-F16 + F17 (8-series real macro panel).
+# Matched partner of ..._champbase. Reference: committed champion
+# sp500_up_20pct_25d_dd10pct_agentloop (R-p@1 0.413, R-p@10 0.403).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 25
+  max_drawdown: 0.10
+
+# trailing split (default) — intentionally no `split:` block.
+
+features:
+  candidates: all_macro
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 5
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
