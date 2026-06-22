@@ -33,7 +33,7 @@ import json
 
 from gbdt import features as gbdt_features
 from gbdt.data import load_panel
-from gbdt.model import XGBoostModel
+from gbdt.model import CatBoostModel, XGBoostModel
 
 VALIDATION_TOL = 1e-4
 CACHE_DIR = "data/gbdt_feature_cache"
@@ -147,7 +147,15 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
         raise RuntimeError(f"features.yaml columns absent from build: {missing}")
     Xc = X[feats]  # exact saved order (per-cell subset of the shared build)
 
-    model = XGBoostModel.load(cell / "model.ubj", hp=hp, feature_names=feats)
+    # Dispatch on the saved model file: XGBoost (.ubj) or CatBoost (.cbm). Loading a
+    # .cbm through XGBoostModel segfaults (XGBoosterLoadModel on a non-XGBoost blob),
+    # so pick the right loader. XGBoost path is unchanged (daily-predictions champions).
+    if (cell / "model.ubj").exists():
+        model = XGBoostModel.load(cell / "model.ubj", hp=hp, feature_names=feats)
+    elif (cell / "model.cbm").exists():
+        model = CatBoostModel.load(cell / "model.cbm", hp=hp, feature_names=feats)
+    else:
+        raise RuntimeError(f"no model.ubj / model.cbm in {cell}")
     p_raw = model.predict_proba(Xc)
 
     out = Xc.index.to_frame(index=False)  # date, ticker
