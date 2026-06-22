@@ -31,7 +31,7 @@
     {
       "cell": "nasdaq100_up_20pct_10d_dd10pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_20pct_10d_dd10pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_20pct_10d_dd10pct",
       "source": "predictions"
     },
     {
@@ -41,37 +41,37 @@
     {
       "cell": "nasdaq100_up_10pct_5d_dd5pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_5d_dd5pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_5d_dd5pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_50pct_25d_dd25pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_50pct_25d_dd25pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_50pct_25d_dd25pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_20pct_5d_dd10pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_20pct_5d_dd10pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_20pct_5d_dd10pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_40pct_50d_dd20pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_40pct_10d_dd20pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_40pct_10d_dd20pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_40pct_10d_dd20pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_50pct_50d_dd25pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_50pct_50d_dd25pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_50pct_50d_dd25pct",
       "source": "predictions"
     },
     {
@@ -81,7 +81,7 @@
     {
       "cell": "nasdaq100_up_40pct_25d_dd20pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_40pct_25d_dd20pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_40pct_25d_dd20pct",
       "source": "predictions"
     },
     {
@@ -91,19 +91,19 @@
     {
       "cell": "nasdaq100_up_20pct_25d_dd10pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_20pct_25d_dd10pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_20pct_25d_dd10pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_20pct_50d_dd10pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_20pct_50d_dd10pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_20pct_50d_dd10pct",
       "source": "predictions"
     },
     {
       "cell": "nasdaq100_up_10pct_10d_dd5pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_10d_dd5pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_10d_dd5pct",
       "source": "predictions"
     },
     {
@@ -113,7 +113,7 @@
     {
       "cell": "nasdaq100_up_10pct_50d_dd5pct",
       "reason": "artifact dir found but no per-segment dates extractable",
-      "artifact_dir": "/mnt/122CEE982CEE765F/Workspace/agent-driven-investment/results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct",
+      "artifact_dir": "results/gbdt/experiments/nasdaq100_up_10pct_50d_dd5pct",
       "source": "predictions"
     },
     {

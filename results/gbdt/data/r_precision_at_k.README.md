@@ -95,7 +95,7 @@ Memos written before 2026-06-01 quote the legacy form in their body narratives; 
 uv run python -m scripts.gbdt.regenerate_r_precision_at_k_csv
 ```
 
-The script scans both the current checkout and sibling worktrees (`/mnt/122CEE982CEE765F/Workspace/wt-*/`), picks the freshest `predictions/test.csv` per experiment name (by mtime), computes the columns above, and writes back to this CSV. Tolerant of corrupted-worktree I/O errors (skips with warning).
+The script scans both the current checkout and sibling worktrees (`../wt-*/`), picks the freshest `predictions/test.csv` per experiment name (by mtime), computes the columns above, and writes back to this CSV. Tolerant of corrupted-worktree I/O errors (skips with warning).
 
 ## See also
 

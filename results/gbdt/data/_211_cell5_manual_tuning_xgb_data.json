@@ -133,7 +133,7 @@
     "F6_K_1_specialization": "The winner sweeps test R-p@1 (+24% vs sweep) but loses test R-p@5 (-7.5%) and test R-p@10 (-7.7%). The model is K=1-specialized -- ideal for top-pick portfolios; sweep would still win for broader top-K strategies."
   },
   "infrastructure_notes": {
-    "scripts_location": "all /tmp/cell5_*.py + per-script JSON output under /mnt/122CEE982CEE765F/Workspace/wt-cell5-agentloop/results/gbdt/experiments/_cell5_*.json",
+    "scripts_location": "all /tmp/cell5_*.py + per-script JSON output under results/gbdt/experiments/_cell5_*.json",
     "data_reuse": "All batches reuse the same per-cell features parquet from the manual artifact dir (no rebuild after stage 1).",
     "fit_wall_clock": "Each fit is 3-10s on hist+nj=8 (PR #107). Entire 8-batch methodology was ~15 min wall-clock end-to-end."
   },
