@@ -1,0 +1,9 @@
+{
+  "hp": {
+    "eta": 0.2,
+    "max_depth": 4,
+    "gamma": 0.5,
+    "colsample_bytree": 0.5
+  },
+  "rationale": "All 48 combine configs fit ok. Optimizing eval R-p@1 (primary, strong-top-1 cell) while keeping the K-profile and R-p@3 (sweep comparison metric) high. Winner = eta0.2_d4_g0.5_cs0.5 (eta=0.2, max_depth=4, gamma=0.5, colsample_bytree=0.5): #1 on R-p@1 (0.895), #1 on balanced avg(p1,p3,p5,p10)=0.725, with a strong full profile (p3=0.743, p5=0.690, p10=0.572, p20=0.462) and train_val_gap=-0.010 (no overfit). Its eval R-p@3 (0.743) already crushes the CatBoost sweep cell's test R-p@3=0.569. Two close runners-up to keep in mind for loop pivots: eta0.05_d4_g0.5 (p1=0.865,p3=0.762,p5=0.701, best val_brier 0.06445) and eta0.1_d3_cs0.5 (best p3=0.785, p1=0.835). I chose the eta=0.2 winner because it tops both the top-1 and balanced rankings; the lower-eta variants are the natural depth/eta pivot directions if the loop wants more bulk-rank (p5/p10/p20) at some top-1 cost. Deliberately avoided stacking heavy regularizers (high mcw/alpha) per playbook rule 7/8 — those smoothed the prediction tail in the single-knob scout (alpha=0.5 dropped R-p@1 to 0.56). gamma=0.5 + cs=0.5 are the two moderate-reg knobs that the combine grid showed jointly LIFT the top tail here rather than smother it (the cell tolerates split-quality + column subsampling without losing top-1)."
+}

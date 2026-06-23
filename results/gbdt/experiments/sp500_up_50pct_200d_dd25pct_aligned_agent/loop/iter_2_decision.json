@@ -1,0 +1,6 @@
+{
+  "iter": 2,
+  "hp_changes": { "max_depth": 4, "colsample_bytree": 0.4 },
+  "should_stop": false,
+  "rationale": "iter_2 (depth=3) result: eval R-p@1=0.78, p3=0.697, p5=0.649, p10=0.573 — depth=3 only marginally beats iter_0 (depth=4) at p10 (0.573 vs 0.572) and LOSES on p1/p3/p5 (0.895/0.743/0.690 vs 0.780/0.697/0.649). So depth=4 (iter_0) is the structural sweet spot. I've now mapped TWO knob families and iter_0 dominates: learning-rate (eta 0.1 hurt R-p, 0.2 best) and structural depth (3 vs 4, 4 best). Reverting depth to 4. Third probe = column-subsampling family (rule 9 wants >=2 structurally-different families before should_stop; this is a 3rd): the scout/combine showed this cell TOLERATES column subsampling without losing top-1 (cs=0.5 was a top performer, cs=0.3 hurt). Testing colsample_bytree 0.5->0.4 to see if slightly stronger feature subsampling sharpens the top-1 tail further OR confirms 0.5 is the sweet spot. Gap is negative (no overfit) so this is a tail-shape probe, not regularization. If cs=0.4 doesn't beat iter_0's R-p@1=0.895, the loop has converged on iter_0 across 3 knob families and I'll should_stop."
+}

@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "hp_changes": { "eta": 0.2, "max_depth": 3 },
+  "should_stop": false,
+  "rationale": "iter_1 (eta=0.1) result confirms playbook rule 9: val_brier IMPROVED (0.0695->0.0657) but eval R-p got WORSE across the board (R-p@1 0.895->0.735, p3 0.743->0.665, p5 0.690->0.627, p10 0.572->0.518). Val movement does NOT track the operating metric here. So eta=0.2 (iter_0) is the learning-rate sweet spot for this d4/g0.5/cs0.5 config; reverting eta to 0.2. Now PIVOTING to a structurally-different knob family (rule 9): the structural/depth knob. The combine grid's best-R-p@3 config was eta0.1_d3_cs0.5 (p3=0.785) and eta0.2_d3_g0.5 had strong p10=0.594, suggesting depth=3 can sharpen the mid-rank tail. Testing max_depth 4->3 at eta=0.2 to see if shallower trees lift p3/p5/p10 while holding the strong p1. Gap is still negative (no overfit) so this is a capacity/shape probe, not regularization. One structural change + the eta revert (the revert isn't a new exploration axis, just returning to the established sweet spot)."
+}

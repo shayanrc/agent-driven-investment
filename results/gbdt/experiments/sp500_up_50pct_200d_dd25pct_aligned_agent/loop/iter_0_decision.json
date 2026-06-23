@@ -1,0 +1,6 @@
+{
+  "iter": 0,
+  "hp_changes": { "eta": 0.1 },
+  "should_stop": false,
+  "rationale": "Diagnostic-first gate: train_val_gap=-0.0102 (val BETTER than train) -> NO overfit (no_overfit=true), so do NOT prune for regularization (playbook rule 1 — FS would be neutral-to-harmful on a non-overfit model). iter_0 (eta=0.2,d4,g0.5,cs0.5,143 feats) is already excellent: eval R-p@1=0.895, R-p@3=0.743, R-p@5=0.690, R-p@10=0.572 — already well above the CatBoost sweep cell (test R-p@3=0.569). anti_auc_flag=unknown, degenerate_sink_warning=false, val_brier 0.0695 > weighted_base_rate 0.061 (not degenerate). Knob family 1 (learning rate): the combine grid showed eta0.05_d4_g0.5 (p1=0.865,p3=0.762,p5=0.701, val_brier 0.0645) lifts the bulk-rank tail (p3/p5) and improves calibration vs the eta=0.2 winner, at a small top-1 cost. I test the midpoint eta=0.1 first as the single cleanest move from the current config — if it lifts p3/p5/p10 without much R-p@1 loss I'll continue down; if it hurts top-1, I revert and pivot to a different knob family (colsample/depth) per rule 9. Holding everything else fixed (one attributable change per iter, rule 6)."
+}
