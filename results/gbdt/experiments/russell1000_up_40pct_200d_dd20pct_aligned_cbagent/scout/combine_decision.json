@@ -1,0 +1,203 @@
+{
+  "configs": [
+    {
+      "label": "defaults",
+      "hp": {}
+    },
+    {
+      "label": "lex_auto_compose",
+      "hp": {
+        "max_depth": 8,
+        "eta": 0.1,
+        "colsample_bytree": 0.4,
+        "alpha": 0.5
+      }
+    },
+    {
+      "label": "d8_only",
+      "hp": {
+        "max_depth": 8
+      }
+    },
+    {
+      "label": "rsm04_only",
+      "hp": {
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "alpha01_only",
+      "hp": {
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "alpha05_only",
+      "hp": {
+        "alpha": 0.5
+      }
+    },
+    {
+      "label": "alpha01_d8",
+      "hp": {
+        "alpha": 0.1,
+        "max_depth": 8
+      }
+    },
+    {
+      "label": "alpha05_d8",
+      "hp": {
+        "alpha": 0.5,
+        "max_depth": 8
+      }
+    },
+    {
+      "label": "alpha03_d6",
+      "hp": {
+        "alpha": 0.3
+      }
+    },
+    {
+      "label": "alpha03_d8",
+      "hp": {
+        "alpha": 0.3,
+        "max_depth": 8
+      }
+    },
+    {
+      "label": "alpha01_rsm04",
+      "hp": {
+        "alpha": 0.1,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "alpha05_rsm04",
+      "hp": {
+        "alpha": 0.5,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "alpha01_rsm05",
+      "hp": {
+        "alpha": 0.1,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "label": "alpha03_rsm04",
+      "hp": {
+        "alpha": 0.3,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "d8_rsm04",
+      "hp": {
+        "max_depth": 8,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "d8_rsm05",
+      "hp": {
+        "max_depth": 8,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "label": "d8_rsm04_alpha01",
+      "hp": {
+        "max_depth": 8,
+        "colsample_bytree": 0.4,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "d8_rsm04_alpha05",
+      "hp": {
+        "max_depth": 8,
+        "colsample_bytree": 0.4,
+        "alpha": 0.5
+      }
+    },
+    {
+      "label": "d8_rsm05_alpha01",
+      "hp": {
+        "max_depth": 8,
+        "colsample_bytree": 0.5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta01_d8",
+      "hp": {
+        "eta": 0.1,
+        "max_depth": 8
+      }
+    },
+    {
+      "label": "eta01_alpha01",
+      "hp": {
+        "eta": 0.1,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta01_rsm04_alpha01",
+      "hp": {
+        "eta": 0.1,
+        "colsample_bytree": 0.4,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta01_d8_alpha01",
+      "hp": {
+        "eta": 0.1,
+        "max_depth": 8,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "d6_rsm05_alpha01",
+      "hp": {
+        "max_depth": 6,
+        "colsample_bytree": 0.5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "d6_rsm05_alpha03",
+      "hp": {
+        "max_depth": 6,
+        "colsample_bytree": 0.5,
+        "alpha": 0.3
+      }
+    },
+    {
+      "label": "d6_rsm07_alpha01",
+      "hp": {
+        "max_depth": 6,
+        "colsample_bytree": 0.7,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "d3_rsm05_alpha01",
+      "hp": {
+        "max_depth": 3,
+        "colsample_bytree": 0.5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "d4_alpha01",
+      "hp": {
+        "max_depth": 4,
+        "alpha": 0.1
+      }
+    }
+  ]
+}
