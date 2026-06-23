@@ -1,0 +1,32 @@
+{
+  "experiment": "_271_russell40_100d_cbagent",
+  "description": "CatBoost agent-tune of russell1000 +40%/100d/dd20% (#18 by R-p@3) — the sole table-wide pattern-match outside the top-10 (CatBoost sweep whose XGBoost agent lost, no cbagent). _270 follow-up; closes the cbagent-extension thread. Date-aligned H=100, test window 2024-07-26..2025-05-13 (test_end 2025-05-13).",
+  "snapshot_end": "2026-06-20",
+  "metric": "R-Precision@K (per-day fixed K, macro over days R_q>0, min(K,R_q) denominator)",
+  "cell": "russell1000_up_40pct_100d_dd20pct",
+  "base_rate": 0.0796,
+  "bar_resnap": {
+    "note": "russell cells are _266-faithfulness-suspect; resnapped on current vintage for a fair bar.",
+    "resnap_replicates_stale": true,
+    "stale_sweep":  {"1": 0.550, "3": 0.517, "5": 0.447, "10": 0.382, "20": 0.341},
+    "resnap_sweep": {"1": 0.5500, "3": 0.5167, "5": 0.4470, "10": 0.3820, "20": 0.3407},
+    "conclusion": "Resnap reproduces the sweep to the decimal (same as the _270 russell/50 resnap) -> bar trustworthy; the negative verdict holds against a verified sweep."
+  },
+  "models": {
+    "catboost_agent": {
+      "hp": {"learning_rate": 0.05, "depth": 6, "l2_leaf_reg": 0.5, "rsm": 1.0, "bootstrap_type": "Bayesian", "boosting_type": "Ordered", "early_stop_tree": 59},
+      "n_features": 53, "combine_pick": "alpha05_only (broad, L2-regularized, NOT subsampled — per the _270 @3 lesson)",
+      "test": {"1": 0.450, "3": 0.408, "5": 0.419, "10": 0.392, "20": 0.334}, "AUC": 0.818,
+      "eval": {"1": 0.820, "3": 0.683, "5": 0.642}, "decay_at_1": -0.370, "decay_at_3": -0.275
+    },
+    "catboost_sweep_fair": {"test": {"1": 0.550, "3": 0.517, "5": 0.447, "10": 0.382, "20": 0.341}},
+    "xgboost_agent": {"test": {"1": 0.485, "3": 0.407, "5": 0.431, "10": 0.379, "20": 0.338}}
+  },
+  "cbagent_vs_sweep_delta": {"1": -0.100, "3": -0.108, "5": -0.028, "10": 0.010, "20": -0.007},
+  "verdict": "NEGATIVE — the CatBoost agent-tune loses @1 (-0.100) and @3 (-0.108) to the verified sweep, only edges @10. Even vs the XGBoost agent it merely ties @3 and loses @1. Cause: catastrophic eval->test decay (-0.370 @1), worse than _270's russell/50; the eval window did not generalize. The CatBoost sweep is the robust default; not promoted.",
+  "thread_closure": {
+    "summary": "Across all 5 pattern-match cells, agent-tuning CatBoost is opportunistic not dependable: sp500/50 WIN (+0.300@1), sp500/40 & russell/40-200d @1-loss-but-@3-win, russell/50 marginal mixed, russell/40/100d clear loss. Outcome set by eval->test decay direction (agent can't see it). Not horizon-specific (the H=100 extension behaves like H=200). No remaining pattern-match to try.",
+    "cells": {"sp500_50_200d": "WIN _269", "sp500_40_200d": "loss@1/win@3 _269", "russell_40_200d": "loss@1/win@3 _269", "russell_50_200d": "marginal mixed _270", "russell_40_100d": "clear loss _271"}
+  },
+  "followups": ["V1.5_TBD #2 multi-window/decay-penalized eval objective — now demonstrated across 5 cells / 2 horizons as the binding constraint; promote before further agent-tuning", "#26 russell/50 @3 FS-prefit investigation (secondary — window decay dominates)"]
+}
