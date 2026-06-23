@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 16:35 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\n3/3 DONE: agent-tuning did NOT beat sweep — _268 verdict: backend (CatBoost) dominates at H=200 (vintage rejected)\nNOW (2026-06-23 17:25 IST): CatBoost agent-tune ×3 — can tuning the robust backend beat its own cheap sweep?", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 16:35 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\n3/3 DONE: agent-tuning did NOT beat sweep — _268 verdict: backend (CatBoost) dominates at H=200 (vintage rejected)\n_269 (2026-06-23 21:35 IST): CatBoost agent-tune ×3 — HIGH-VARIANCE: sp500/50 WON big (@1 0.930 vs 0.630), russell + sp500/40 LOST @1 → CatBoost sweep stays the H=200 default", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -97,10 +97,10 @@ digraph tasks {
   subgraph cluster_cbtune {
     label = "CatBoost agent-tune ×3 (V1.5_TBD #1 — can tuning the robust backend beat the CatBoost sweep?)";
     style = "rounded"; color = "#aa3399"; fontname = "Helvetica-Bold"; fontsize = 11;
-    CBR  [label=<<B>CB-R</B> russell1000 +40%/200d<BR/>CatBoost agent loop (running)<BR/>bar: sweep @1 0.740 · XGB-agent 0.447>, fillcolor="#a3c8e8"];
-    CB50 [label=<<B>CB-50</B> sp500 +50%/200d<BR/>bar: sweep @1 0.630>, fillcolor="#ffffff", style="rounded,filled,dashed"];
-    CB40 [label=<<B>CB-40</B> sp500 +40%/200d<BR/>bar: sweep @1 0.727>, fillcolor="#ffffff", style="rounded,filled,dashed"];
-    M269 [label=<<B>_269</B> memo + PR<BR/>CatBoost-agent vs sweep vs XGB-agent>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    CBR  [label=<<B>CB-R ✓</B> russell1000 +40%/200d<BR/>@1 0.567 vs sweep 0.740 — LOST @1, edged @3>, fillcolor="#cccccc"];
+    CB50 [label=<<B>CB-50 ✓</B> sp500 +50%/200d<BR/>@1 0.930 vs sweep 0.630 — WON big (+0.30)>, fillcolor="#a4e9a4"];
+    CB40 [label=<<B>CB-40 ✓</B> sp500 +40%/200d<BR/>@1 0.557 vs sweep 0.727 — LOST @1, won @3>, fillcolor="#cccccc"];
+    M269 [label=<<B>_269</B> memo + PR (in-flight)<BR/>high-variance: 1 win, 2 @1 losses → sweep stays default>, fillcolor="#a3c8e8"];
   }
   TBD -> CBR [color="#aa3399", penwidth=2];
   CBR  -> CB50 [color="#cc3333", penwidth=2, label="then (single-writer)"];

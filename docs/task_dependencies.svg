@@ -12,7 +12,7 @@
 <text xml:space="preserve" text-anchor="middle" x="1081.5" y="-606.3" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — agent&#45;tune the 3 un&#45;tuned top&#45;200d cells (2026&#45;06&#45;23 16:35 IST)</text>
 <text xml:space="preserve" text-anchor="middle" x="1081.5" y="-589.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">branch gbdt&#45;200d&#45;aligned&#45;agent&#45;tune · sub&#45;agent per cell (sole driver) · separate commit per experiment</text>
 <text xml:space="preserve" text-anchor="middle" x="1081.5" y="-573.3" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">3/3 DONE: agent&#45;tuning did NOT beat sweep — _268 verdict: backend (CatBoost) dominates at H=200 (vintage rejected)</text>
-<text xml:space="preserve" text-anchor="middle" x="1081.5" y="-556.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">NOW (2026&#45;06&#45;23 17:25 IST): CatBoost agent&#45;tune ×3 — can tuning the robust backend beat its own cheap sweep?</text>
+<text xml:space="preserve" text-anchor="middle" x="1081.5" y="-556.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">_269 (2026&#45;06&#45;23 21:35 IST): CatBoost agent&#45;tune ×3 — HIGH&#45;VARIANCE: sp500/50 WON big (@1 0.930 vs 0.630), russell + sp500/40 LOST @1 → CatBoost sweep stays the H=200 default</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-357.05 8,-431.57 440,-431.57 440,-357.05 8,-357.05"/>
@@ -35,8 +35,8 @@
 </g>
 <g id="clust6" class="cluster">
 <title>cluster_cbtune</title>
-<path fill="white" stroke="#aa3399" d="M1540,-86.18C1540,-86.18 2143,-86.18 2143,-86.18 2149,-86.18 2155,-92.18 2155,-98.18 2155,-98.18 2155,-421.82 2155,-421.82 2155,-427.82 2149,-433.82 2143,-433.82 2143,-433.82 1540,-433.82 1540,-433.82 1534,-433.82 1528,-427.82 1528,-421.82 1528,-421.82 1528,-98.18 1528,-98.18 1528,-92.18 1534,-86.18 1540,-86.18"/>
-<text xml:space="preserve" text-anchor="middle" x="1841.5" y="-419.37" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">CatBoost agent&#45;tune ×3 (V1.5_TBD #1 — can tuning the robust backend beat the CatBoost sweep?)</text>
+<path fill="white" stroke="#aa3399" d="M1540,-86.18C1540,-86.18 2143,-86.18 2143,-86.18 2149,-86.18 2155,-92.18 2155,-98.18 2155,-98.18 2155,-419.06 2155,-419.06 2155,-425.06 2149,-431.06 2143,-431.06 2143,-431.06 1540,-431.06 1540,-431.06 1534,-431.06 1528,-425.06 1528,-419.06 1528,-419.06 1528,-98.18 1528,-98.18 1528,-92.18 1534,-86.18 1540,-86.18"/>
+<text xml:space="preserve" text-anchor="middle" x="1841.5" y="-416.61" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">CatBoost agent&#45;tune ×3 (V1.5_TBD #1 — can tuning the robust backend beat the CatBoost sweep?)</text>
 </g>
 <!-- legend -->
 <g id="node1" class="node">
@@ -105,11 +105,10 @@
 <!-- CBR -->
 <g id="node14" class="node">
 <title>CBR</title>
-<path fill="#a3c8e8" stroke="black" d="M1739.55,-404.32C1739.55,-404.32 1548.45,-404.32 1548.45,-404.32 1542.45,-404.32 1536.45,-398.32 1536.45,-392.32 1536.45,-392.32 1536.45,-374.8 1536.45,-374.8 1536.45,-368.8 1542.45,-362.8 1548.45,-362.8 1548.45,-362.8 1739.55,-362.8 1739.55,-362.8 1745.55,-362.8 1751.55,-368.8 1751.55,-374.8 1751.55,-374.8 1751.55,-392.32 1751.55,-392.32 1751.55,-398.32 1745.55,-404.32 1739.55,-404.32"/>
-<text xml:space="preserve" text-anchor="start" x="1570.88" y="-390.06" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;R</text>
-<text xml:space="preserve" text-anchor="start" x="1597.88" y="-390.06" font-family="Helvetica,sans-Serif" font-size="10.00"> russell1000 +40%/200d</text>
-<text xml:space="preserve" text-anchor="start" x="1570.88" y="-380.06" font-family="Helvetica,sans-Serif" font-size="10.00">CatBoost agent loop (running)</text>
-<text xml:space="preserve" text-anchor="start" x="1547.25" y="-370.06" font-family="Helvetica,sans-Serif" font-size="10.00">bar: sweep @1 0.740 · XGB&#45;agent 0.447</text>
+<path fill="#cccccc" stroke="black" d="M1784.05,-401.56C1784.05,-401.56 1547.95,-401.56 1547.95,-401.56 1541.95,-401.56 1535.95,-395.56 1535.95,-389.56 1535.95,-389.56 1535.95,-377.56 1535.95,-377.56 1535.95,-371.56 1541.95,-365.56 1547.95,-365.56 1547.95,-365.56 1784.05,-365.56 1784.05,-365.56 1790.05,-365.56 1796.05,-371.56 1796.05,-377.56 1796.05,-377.56 1796.05,-389.56 1796.05,-389.56 1796.05,-395.56 1790.05,-401.56 1784.05,-401.56"/>
+<text xml:space="preserve" text-anchor="start" x="1586.88" y="-385.06" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;R ✓</text>
+<text xml:space="preserve" text-anchor="start" x="1625.88" y="-385.06" font-family="Helvetica,sans-Serif" font-size="10.00"> russell1000 +40%/200d</text>
+<text xml:space="preserve" text-anchor="start" x="1546.75" y="-375.06" font-family="Helvetica,sans-Serif" font-size="10.00">@1 0.567 vs sweep 0.740 — LOST @1, edged @3</text>
 </g>
 <!-- legend&#45;&gt;CBR -->
 <!-- ident -->
@@ -254,65 +253,65 @@
 <!-- TBD&#45;&gt;CBR -->
 <g id="edge17" class="edge">
 <title>TBD&#45;&gt;CBR</title>
-<path fill="none" stroke="#aa3399" stroke-width="2" d="M1437.6,-207.45C1466.97,-218.49 1502.07,-234.73 1529,-256.46 1551.14,-274.33 1548.27,-286.56 1567,-307.98 1580.93,-323.92 1597.69,-340.42 1612,-353.83"/>
-<polygon fill="#aa3399" stroke="#aa3399" stroke-width="2" points="1609.52,-356.3 1619.24,-360.53 1614.28,-351.17 1609.52,-356.3"/>
+<path fill="none" stroke="#aa3399" stroke-width="2" d="M1437.6,-207.45C1466.97,-218.49 1502.07,-234.73 1529,-256.46 1551.14,-274.33 1546.98,-287.76 1567,-307.98 1585.44,-326.6 1608.73,-344.38 1628.1,-357.91"/>
+<polygon fill="#aa3399" stroke="#aa3399" stroke-width="2" points="1625.96,-360.69 1636.19,-363.45 1629.91,-354.91 1625.96,-360.69"/>
 </g>
 <!-- CB50 -->
 <g id="node15" class="node">
 <title>CB50</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M1710.42,-300.22C1710.42,-300.22 1587.58,-300.22 1587.58,-300.22 1581.58,-300.22 1575.58,-294.22 1575.58,-288.22 1575.58,-288.22 1575.58,-276.22 1575.58,-276.22 1575.58,-270.22 1581.58,-264.22 1587.58,-264.22 1587.58,-264.22 1710.42,-264.22 1710.42,-264.22 1716.42,-264.22 1722.42,-270.22 1722.42,-276.22 1722.42,-276.22 1722.42,-288.22 1722.42,-288.22 1722.42,-294.22 1716.42,-300.22 1710.42,-300.22"/>
-<text xml:space="preserve" text-anchor="start" x="1586.38" y="-283.72" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;50</text>
-<text xml:space="preserve" text-anchor="start" x="1619.38" y="-283.72" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +50%/200d</text>
-<text xml:space="preserve" text-anchor="start" x="1598" y="-273.72" font-family="Helvetica,sans-Serif" font-size="10.00">bar: sweep @1 0.630</text>
+<path fill="#a4e9a4" stroke="black" d="M1808.17,-300.22C1808.17,-300.22 1587.83,-300.22 1587.83,-300.22 1581.83,-300.22 1575.83,-294.22 1575.83,-288.22 1575.83,-288.22 1575.83,-276.22 1575.83,-276.22 1575.83,-270.22 1581.83,-264.22 1587.83,-264.22 1587.83,-264.22 1808.17,-264.22 1808.17,-264.22 1814.17,-264.22 1820.17,-270.22 1820.17,-276.22 1820.17,-276.22 1820.17,-288.22 1820.17,-288.22 1820.17,-294.22 1814.17,-300.22 1808.17,-300.22"/>
+<text xml:space="preserve" text-anchor="start" x="1629.38" y="-283.72" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;50 ✓</text>
+<text xml:space="preserve" text-anchor="start" x="1674.38" y="-283.72" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +50%/200d</text>
+<text xml:space="preserve" text-anchor="start" x="1586.62" y="-273.72" font-family="Helvetica,sans-Serif" font-size="10.00">@1 0.930 vs sweep 0.630 — WON big (+0.30)</text>
 </g>
 <!-- CBR&#45;&gt;CB50 -->
 <g id="edge18" class="edge">
 <title>CBR&#45;&gt;CB50</title>
-<path fill="none" stroke="#cc3333" stroke-width="2" d="M1645.01,-362.46C1645.72,-348.43 1646.67,-329.44 1647.47,-313.58"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="1650.96,-313.82 1647.97,-303.66 1643.97,-313.47 1650.96,-313.82"/>
-<text xml:space="preserve" text-anchor="middle" x="1690.3" y="-328.68" font-family="Helvetica,sans-Serif" font-size="9.00">then (single&#45;writer)</text>
+<path fill="none" stroke="#cc3333" stroke-width="2" d="M1671.57,-365.26C1676.23,-350.82 1682.96,-329.91 1688.47,-312.82"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="1691.72,-314.13 1691.45,-303.54 1685.06,-311.98 1691.72,-314.13"/>
+<text xml:space="preserve" text-anchor="middle" x="1727.42" y="-328.68" font-family="Helvetica,sans-Serif" font-size="9.00">then (single&#45;writer)</text>
 </g>
 <!-- CB40 -->
 <g id="node16" class="node">
 <title>CB40</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M1710.42,-206.45C1710.42,-206.45 1587.58,-206.45 1587.58,-206.45 1581.58,-206.45 1575.58,-200.45 1575.58,-194.45 1575.58,-194.45 1575.58,-182.45 1575.58,-182.45 1575.58,-176.45 1581.58,-170.45 1587.58,-170.45 1587.58,-170.45 1710.42,-170.45 1710.42,-170.45 1716.42,-170.45 1722.42,-176.45 1722.42,-182.45 1722.42,-182.45 1722.42,-194.45 1722.42,-194.45 1722.42,-200.45 1716.42,-206.45 1710.42,-206.45"/>
-<text xml:space="preserve" text-anchor="start" x="1586.38" y="-189.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;40</text>
-<text xml:space="preserve" text-anchor="start" x="1619.38" y="-189.95" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +40%/200d</text>
-<text xml:space="preserve" text-anchor="start" x="1598" y="-179.95" font-family="Helvetica,sans-Serif" font-size="10.00">bar: sweep @1 0.727</text>
+<path fill="#cccccc" stroke="black" d="M1811.17,-206.45C1811.17,-206.45 1584.83,-206.45 1584.83,-206.45 1578.83,-206.45 1572.83,-200.45 1572.83,-194.45 1572.83,-194.45 1572.83,-182.45 1572.83,-182.45 1572.83,-176.45 1578.83,-170.45 1584.83,-170.45 1584.83,-170.45 1811.17,-170.45 1811.17,-170.45 1817.17,-170.45 1823.17,-176.45 1823.17,-182.45 1823.17,-182.45 1823.17,-194.45 1823.17,-194.45 1823.17,-200.45 1817.17,-206.45 1811.17,-206.45"/>
+<text xml:space="preserve" text-anchor="start" x="1629.38" y="-189.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">CB&#45;40 ✓</text>
+<text xml:space="preserve" text-anchor="start" x="1674.38" y="-189.95" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +40%/200d</text>
+<text xml:space="preserve" text-anchor="start" x="1583.62" y="-179.95" font-family="Helvetica,sans-Serif" font-size="10.00">@1 0.557 vs sweep 0.727 — LOST @1, won @3</text>
 </g>
 <!-- CB50&#45;&gt;CB40 -->
 <g id="edge19" class="edge">
 <title>CB50&#45;&gt;CB40</title>
-<path fill="none" stroke="#cc3333" stroke-width="2" d="M1649,-263.96C1649,-251.47 1649,-234.29 1649,-219.57"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="1652.5,-219.97 1649,-209.97 1645.5,-219.97 1652.5,-219.97"/>
-<text xml:space="preserve" text-anchor="middle" x="1659.5" y="-229.91" font-family="Helvetica,sans-Serif" font-size="9.00">then</text>
+<path fill="none" stroke="#cc3333" stroke-width="2" d="M1698,-263.96C1698,-251.47 1698,-234.29 1698,-219.57"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="1701.5,-219.97 1698,-209.97 1694.5,-219.97 1701.5,-219.97"/>
+<text xml:space="preserve" text-anchor="middle" x="1708.5" y="-229.91" font-family="Helvetica,sans-Serif" font-size="9.00">then</text>
 </g>
 <!-- M269 -->
 <g id="node17" class="node">
 <title>M269</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M1744.92,-130.18C1744.92,-130.18 1553.08,-130.18 1553.08,-130.18 1547.08,-130.18 1541.08,-124.18 1541.08,-118.18 1541.08,-118.18 1541.08,-106.18 1541.08,-106.18 1541.08,-100.18 1547.08,-94.18 1553.08,-94.18 1553.08,-94.18 1744.92,-94.18 1744.92,-94.18 1750.92,-94.18 1756.92,-100.18 1756.92,-106.18 1756.92,-106.18 1756.92,-118.18 1756.92,-118.18 1756.92,-124.18 1750.92,-130.18 1744.92,-130.18"/>
-<text xml:space="preserve" text-anchor="start" x="1605.5" y="-113.68" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">_269</text>
-<text xml:space="preserve" text-anchor="start" x="1631" y="-113.68" font-family="Helvetica,sans-Serif" font-size="10.00"> memo + PR</text>
-<text xml:space="preserve" text-anchor="start" x="1551.88" y="-103.68" font-family="Helvetica,sans-Serif" font-size="10.00">CatBoost&#45;agent vs sweep vs XGB&#45;agent</text>
+<path fill="#a3c8e8" stroke="black" d="M1834.42,-130.18C1834.42,-130.18 1561.58,-130.18 1561.58,-130.18 1555.58,-130.18 1549.58,-124.18 1549.58,-118.18 1549.58,-118.18 1549.58,-106.18 1549.58,-106.18 1549.58,-100.18 1555.58,-94.18 1561.58,-94.18 1561.58,-94.18 1834.42,-94.18 1834.42,-94.18 1840.42,-94.18 1846.42,-100.18 1846.42,-106.18 1846.42,-106.18 1846.42,-118.18 1846.42,-118.18 1846.42,-124.18 1840.42,-130.18 1834.42,-130.18"/>
+<text xml:space="preserve" text-anchor="start" x="1630.5" y="-113.68" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">_269</text>
+<text xml:space="preserve" text-anchor="start" x="1656" y="-113.68" font-family="Helvetica,sans-Serif" font-size="10.00"> memo + PR (in&#45;flight)</text>
+<text xml:space="preserve" text-anchor="start" x="1560.38" y="-103.68" font-family="Helvetica,sans-Serif" font-size="10.00">high&#45;variance: 1 win, 2 @1 losses → sweep stays default</text>
 </g>
 <!-- CB40&#45;&gt;M269 -->
 <g id="edge20" class="edge">
 <title>CB40&#45;&gt;M269</title>
-<path fill="none" stroke="#aa3399" d="M1649,-170.22C1649,-161.85 1649,-151.55 1649,-142.02"/>
-<polygon fill="#aa3399" stroke="#aa3399" points="1652.5,-142.08 1649,-132.08 1645.5,-142.08 1652.5,-142.08"/>
+<path fill="none" stroke="#aa3399" d="M1698,-170.22C1698,-161.85 1698,-151.55 1698,-142.02"/>
+<polygon fill="#aa3399" stroke="#aa3399" points="1701.5,-142.08 1698,-132.08 1694.5,-142.08 1701.5,-142.08"/>
 </g>
 <!-- G2 -->
 <g id="node18" class="node">
 <title>G2</title>
-<path fill="#ffd966" stroke="black" d="M1857.26,-24.42C1857.26,-24.42 1857.26,-32.25 1857.26,-32.25 1857.26,-36.16 1853.38,-40.6 1849.5,-41.12 1849.5,-41.12 1743.02,-55.61 1743.02,-55.61 1739.14,-56.14 1731.35,-56.67 1727.44,-56.67 1727.44,-56.67 1570.56,-56.67 1570.56,-56.67 1566.65,-56.67 1558.86,-56.14 1554.98,-55.61 1554.98,-55.61 1448.5,-41.12 1448.5,-41.12 1444.62,-40.6 1440.74,-36.16 1440.74,-32.25 1440.74,-32.25 1440.74,-24.42 1440.74,-24.42 1440.74,-20.51 1444.62,-16.07 1448.5,-15.54 1448.5,-15.54 1554.98,-1.05 1554.98,-1.05 1558.86,-0.53 1566.65,0 1570.56,0 1570.56,0 1727.44,0 1727.44,0 1731.35,0 1739.14,-0.53 1743.02,-1.05 1743.02,-1.05 1849.5,-15.54 1849.5,-15.54 1853.38,-16.07 1857.26,-20.51 1857.26,-24.42"/>
-<text xml:space="preserve" text-anchor="middle" x="1649" y="-31.58" font-family="Helvetica,sans-Serif" font-size="10.00">CatBoost 200d top cells that beat the sweep</text>
-<text xml:space="preserve" text-anchor="middle" x="1649" y="-18.83" font-family="Helvetica,sans-Serif" font-size="10.00">(or a documented null — sweep stays the baseline)</text>
+<path fill="#ffd966" stroke="black" d="M1906.26,-24.42C1906.26,-24.42 1906.26,-32.25 1906.26,-32.25 1906.26,-36.16 1902.38,-40.6 1898.5,-41.12 1898.5,-41.12 1792.02,-55.61 1792.02,-55.61 1788.14,-56.14 1780.35,-56.67 1776.44,-56.67 1776.44,-56.67 1619.56,-56.67 1619.56,-56.67 1615.65,-56.67 1607.86,-56.14 1603.98,-55.61 1603.98,-55.61 1497.5,-41.12 1497.5,-41.12 1493.62,-40.6 1489.74,-36.16 1489.74,-32.25 1489.74,-32.25 1489.74,-24.42 1489.74,-24.42 1489.74,-20.51 1493.62,-16.07 1497.5,-15.54 1497.5,-15.54 1603.98,-1.05 1603.98,-1.05 1607.86,-0.53 1615.65,0 1619.56,0 1619.56,0 1776.44,0 1776.44,0 1780.35,0 1788.14,-0.53 1792.02,-1.05 1792.02,-1.05 1898.5,-15.54 1898.5,-15.54 1902.38,-16.07 1906.26,-20.51 1906.26,-24.42"/>
+<text xml:space="preserve" text-anchor="middle" x="1698" y="-31.58" font-family="Helvetica,sans-Serif" font-size="10.00">CatBoost 200d top cells that beat the sweep</text>
+<text xml:space="preserve" text-anchor="middle" x="1698" y="-18.83" font-family="Helvetica,sans-Serif" font-size="10.00">(or a documented null — sweep stays the baseline)</text>
 </g>
 <!-- M269&#45;&gt;G2 -->
 <g id="edge21" class="edge">
 <title>M269&#45;&gt;G2</title>
-<path fill="none" stroke="#aa3399" stroke-width="2" d="M1649,-93.82C1649,-86.8 1649,-78.38 1649,-69.97"/>
-<polygon fill="#aa3399" stroke="#aa3399" stroke-width="2" points="1652.5,-70 1649,-60 1645.5,-70 1652.5,-70"/>
+<path fill="none" stroke="#aa3399" stroke-width="2" d="M1698,-93.82C1698,-86.8 1698,-78.38 1698,-69.97"/>
+<polygon fill="#aa3399" stroke="#aa3399" stroke-width="2" points="1701.5,-70 1698,-60 1694.5,-70 1701.5,-70"/>
 </g>
 </g>
 </svg>
