@@ -9,9 +9,9 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 521.46)">
 <title>tasks</title>
 <polygon fill="white" stroke="none" points="-4,4 -4,-521.46 1538,-521.46 1538,4 -4,4"/>
-<text xml:space="preserve" text-anchor="middle" x="767" y="-501.11" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — agent&#45;tune the 3 un&#45;tuned top&#45;200d cells (2026&#45;06&#45;23 13:52 IST)</text>
+<text xml:space="preserve" text-anchor="middle" x="767" y="-501.11" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">agent&#45;driven&#45;investment — agent&#45;tune the 3 un&#45;tuned top&#45;200d cells (2026&#45;06&#45;23 14:00 IST)</text>
 <text xml:space="preserve" text-anchor="middle" x="767" y="-484.61" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">branch gbdt&#45;200d&#45;aligned&#45;agent&#45;tune · sub&#45;agent per cell (sole driver) · separate commit per experiment</text>
-<text xml:space="preserve" text-anchor="middle" x="767" y="-468.11" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">C1 done: agent&#45;tuned matched sweep @1, lost @3+ (steep H=200 eval→test decay)</text>
+<text xml:space="preserve" text-anchor="middle" x="767" y="-468.11" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00">C1+C2 done: agent&#45;tuning did NOT beat sweep on test (2/2) — steep H=200 eval→test decay</text>
 <g id="clust2" class="cluster">
 <title>cluster_done</title>
 <polygon fill="#fafafa" stroke="#cccccc" points="8,-268.36 8,-342.88 440,-342.88 440,-268.36 8,-268.36"/>
@@ -112,18 +112,18 @@
 <!-- C2 -->
 <g id="node5" class="node">
 <title>C2</title>
-<path fill="#a3c8e8" stroke="black" d="M807.05,-219.29C807.05,-219.29 702.95,-219.29 702.95,-219.29 696.95,-219.29 690.95,-213.29 690.95,-207.29 690.95,-207.29 690.95,-189.77 690.95,-189.77 690.95,-183.77 696.95,-177.77 702.95,-177.77 702.95,-177.77 807.05,-177.77 807.05,-177.77 813.05,-177.77 819.05,-183.77 819.05,-189.77 819.05,-189.77 819.05,-207.29 819.05,-207.29 819.05,-213.29 813.05,-219.29 807.05,-219.29"/>
-<text xml:space="preserve" text-anchor="start" x="701.75" y="-205.03" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">C2</text>
-<text xml:space="preserve" text-anchor="start" x="716" y="-205.03" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +40%/200d</text>
-<text xml:space="preserve" text-anchor="start" x="705.5" y="-195.03" font-family="Helvetica,sans-Serif" font-size="10.00">agent loop (running)</text>
-<text xml:space="preserve" text-anchor="start" x="706.62" y="-185.03" font-family="Helvetica,sans-Serif" font-size="10.00">sweep R&#45;p@3 0.556</text>
+<path fill="#cccccc" stroke="black" d="M806.67,-219.29C806.67,-219.29 649.33,-219.29 649.33,-219.29 643.33,-219.29 637.33,-213.29 637.33,-207.29 637.33,-207.29 637.33,-189.77 637.33,-189.77 637.33,-183.77 643.33,-177.77 649.33,-177.77 649.33,-177.77 806.67,-177.77 806.67,-177.77 812.67,-177.77 818.67,-183.77 818.67,-189.77 818.67,-189.77 818.67,-207.29 818.67,-207.29 818.67,-213.29 812.67,-219.29 806.67,-219.29"/>
+<text xml:space="preserve" text-anchor="start" x="669.12" y="-205.03" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">C2</text>
+<text xml:space="preserve" text-anchor="start" x="683.38" y="-205.03" font-family="Helvetica,sans-Serif" font-size="10.00"> sp500 +40%/200d ✓</text>
+<text xml:space="preserve" text-anchor="start" x="669.88" y="-195.03" font-family="Helvetica,sans-Serif" font-size="10.00">test @1 0.697 @3 0.468</text>
+<text xml:space="preserve" text-anchor="start" x="648.12" y="-185.03" font-family="Helvetica,sans-Serif" font-size="10.00">(sweep @3 0.556 — lost @1&#45;@5)</text>
 </g>
 <!-- C1&#45;&gt;C2 -->
 <g id="edge6" class="edge">
 <title>C1&#45;&gt;C2</title>
-<path fill="none" stroke="#cc3333" stroke-width="2" d="M807.8,-273.69C798.07,-266.55 787.88,-257.94 780,-248.54 775.59,-243.28 771.68,-237.1 768.35,-230.95"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="771.54,-229.51 763.99,-222.09 765.26,-232.61 771.54,-229.51"/>
-<text xml:space="preserve" text-anchor="middle" x="823.5" y="-239.99" font-family="Helvetica,sans-Serif" font-size="9.00">then (single&#45;writer)</text>
+<path fill="none" stroke="#cc3333" stroke-width="2" d="M810.63,-273.72C800.09,-266.14 788.27,-257.25 778,-248.54 770.73,-242.38 763.23,-235.4 756.32,-228.67"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="759.05,-226.45 749.48,-221.9 754.12,-231.42 759.05,-226.45"/>
+<text xml:space="preserve" text-anchor="middle" x="821.5" y="-239.99" font-family="Helvetica,sans-Serif" font-size="9.00">then (single&#45;writer)</text>
 </g>
 <!-- K1 -->
 <g id="node7" class="node">
@@ -135,48 +135,49 @@
 <!-- C1&#45;&gt;K1 -->
 <g id="edge8" class="edge">
 <title>C1&#45;&gt;K1</title>
-<path fill="none" stroke="#2e8b57" d="M854.31,-273.84C859.71,-266.05 865.8,-256.99 871,-248.54 875.17,-241.76 879.44,-234.3 883.32,-227.28"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" points="886.23,-229.25 887.93,-218.79 880.08,-225.9 886.23,-229.25"/>
+<path fill="none" stroke="#2e8b57" d="M852.3,-273.87C860.68,-260.24 871.87,-242.03 881.08,-227.05"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" points="884.04,-228.92 886.29,-218.57 878.07,-225.26 884.04,-228.92"/>
 </g>
 <!-- C3 -->
 <g id="node6" class="node">
 <title>C3</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M817.55,-130.52C817.55,-130.52 686.45,-130.52 686.45,-130.52 680.45,-130.52 674.45,-124.52 674.45,-118.52 674.45,-118.52 674.45,-101 674.45,-101 674.45,-95 680.45,-89 686.45,-89 686.45,-89 817.55,-89 817.55,-89 823.55,-89 829.55,-95 829.55,-101 829.55,-101 829.55,-118.52 829.55,-118.52 829.55,-124.52 823.55,-130.52 817.55,-130.52"/>
-<text xml:space="preserve" text-anchor="start" x="685.25" y="-116.26" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">C3</text>
-<text xml:space="preserve" text-anchor="start" x="699.5" y="-116.26" font-family="Helvetica,sans-Serif" font-size="10.00"> russell1000 +40%/200d</text>
-<text xml:space="preserve" text-anchor="start" x="724.62" y="-106.26" font-family="Helvetica,sans-Serif" font-size="10.00">(cold build)</text>
-<text xml:space="preserve" text-anchor="start" x="703.62" y="-96.26" font-family="Helvetica,sans-Serif" font-size="10.00">sweep R&#45;p@3 0.570</text>
+<path fill="#a3c8e8" stroke="black" d="M804.92,-130.52C804.92,-130.52 655.08,-130.52 655.08,-130.52 649.08,-130.52 643.08,-124.52 643.08,-118.52 643.08,-118.52 643.08,-101 643.08,-101 643.08,-95 649.08,-89 655.08,-89 655.08,-89 804.92,-89 804.92,-89 810.92,-89 816.92,-95 816.92,-101 816.92,-101 816.92,-118.52 816.92,-118.52 816.92,-124.52 810.92,-130.52 804.92,-130.52"/>
+<text xml:space="preserve" text-anchor="start" x="663.25" y="-116.26" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">C3</text>
+<text xml:space="preserve" text-anchor="start" x="677.5" y="-116.26" font-family="Helvetica,sans-Serif" font-size="10.00"> russell1000 +40%/200d</text>
+<text xml:space="preserve" text-anchor="start" x="653.88" y="-106.26" font-family="Helvetica,sans-Serif" font-size="10.00">agent loop (running, cold build)</text>
+<text xml:space="preserve" text-anchor="start" x="681.62" y="-96.26" font-family="Helvetica,sans-Serif" font-size="10.00">sweep R&#45;p@3 0.570</text>
 </g>
 <!-- C2&#45;&gt;C3 -->
 <g id="edge7" class="edge">
 <title>C2&#45;&gt;C3</title>
-<path fill="none" stroke="#cc3333" stroke-width="2" d="M754.3,-177.41C753.96,-167.33 753.53,-154.88 753.13,-143.48"/>
-<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="756.64,-143.67 752.8,-133.8 749.64,-143.92 756.64,-143.67"/>
-<text xml:space="preserve" text-anchor="middle" x="764.18" y="-151.22" font-family="Helvetica,sans-Serif" font-size="9.00">then</text>
+<path fill="none" stroke="#cc3333" stroke-width="2" d="M728.46,-177.41C728.7,-167.33 728.98,-154.88 729.25,-143.48"/>
+<polygon fill="#cc3333" stroke="#cc3333" stroke-width="2" points="732.74,-143.88 729.47,-133.8 725.74,-143.72 732.74,-143.88"/>
+<text xml:space="preserve" text-anchor="middle" x="739.62" y="-151.22" font-family="Helvetica,sans-Serif" font-size="9.00">then</text>
 </g>
 <!-- K2 -->
 <g id="node8" class="node">
 <title>K2</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M946.8,-127.76C946.8,-127.76 859.2,-127.76 859.2,-127.76 853.2,-127.76 847.2,-121.76 847.2,-115.76 847.2,-115.76 847.2,-103.76 847.2,-103.76 847.2,-97.76 853.2,-91.76 859.2,-91.76 859.2,-91.76 946.8,-91.76 946.8,-91.76 952.8,-91.76 958.8,-97.76 958.8,-103.76 958.8,-103.76 958.8,-115.76 958.8,-115.76 958.8,-121.76 952.8,-127.76 946.8,-127.76"/>
-<text xml:space="preserve" text-anchor="start" x="858" y="-106.38" font-family="Helvetica,sans-Serif" font-size="10.00">commit: sp500_40</text>
+<path fill="#cccccc" stroke="black" d="M947.42,-128.27C947.42,-128.27 848.58,-128.27 848.58,-128.27 842.58,-128.27 836.58,-122.27 836.58,-116.27 836.58,-116.27 836.58,-103.25 836.58,-103.25 836.58,-97.25 842.58,-91.25 848.58,-91.25 848.58,-91.25 947.42,-91.25 947.42,-91.25 953.42,-91.25 959.42,-97.25 959.42,-103.25 959.42,-103.25 959.42,-116.27 959.42,-116.27 959.42,-122.27 953.42,-128.27 947.42,-128.27"/>
+<text xml:space="preserve" text-anchor="start" x="847.38" y="-112.76" font-family="Helvetica,sans-Serif" font-size="10.00">commit: sp500_40 ✓</text>
+<text xml:space="preserve" text-anchor="start" x="877.38" y="-100.01" font-family="Helvetica,sans-Serif" font-size="10.00">d36c45b</text>
 </g>
 <!-- C2&#45;&gt;K2 -->
 <g id="edge9" class="edge">
 <title>C2&#45;&gt;K2</title>
-<path fill="none" stroke="#2e8b57" d="M789.33,-177.41C811.49,-164.41 840.4,-147.46 863.52,-133.91"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" points="865.2,-136.98 872.06,-128.9 861.66,-130.94 865.2,-136.98"/>
+<path fill="none" stroke="#2e8b57" d="M767.43,-177.41C792.89,-164.41 826.09,-147.47 852.64,-133.91"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" points="854.16,-137.06 861.48,-129.4 850.98,-130.83 854.16,-137.06"/>
 </g>
 <!-- K3 -->
 <g id="node9" class="node">
 <title>K3</title>
-<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M872.3,-52C872.3,-52 781.7,-52 781.7,-52 775.7,-52 769.7,-46 769.7,-40 769.7,-40 769.7,-28 769.7,-28 769.7,-22 775.7,-16 781.7,-16 781.7,-16 872.3,-16 872.3,-16 878.3,-16 884.3,-22 884.3,-28 884.3,-28 884.3,-40 884.3,-40 884.3,-46 878.3,-52 872.3,-52"/>
-<text xml:space="preserve" text-anchor="start" x="780.5" y="-30.62" font-family="Helvetica,sans-Serif" font-size="10.00">commit: russell_40</text>
+<path fill="#ffffff" stroke="black" stroke-dasharray="5,2" d="M861.3,-52C861.3,-52 770.7,-52 770.7,-52 764.7,-52 758.7,-46 758.7,-40 758.7,-40 758.7,-28 758.7,-28 758.7,-22 764.7,-16 770.7,-16 770.7,-16 861.3,-16 861.3,-16 867.3,-16 873.3,-22 873.3,-28 873.3,-28 873.3,-40 873.3,-40 873.3,-46 867.3,-52 861.3,-52"/>
+<text xml:space="preserve" text-anchor="start" x="769.5" y="-30.62" font-family="Helvetica,sans-Serif" font-size="10.00">commit: russell_40</text>
 </g>
 <!-- C3&#45;&gt;K3 -->
 <g id="edge10" class="edge">
 <title>C3&#45;&gt;K3</title>
-<path fill="none" stroke="#2e8b57" d="M772.49,-88.6C781.48,-79.76 792.13,-69.29 801.61,-59.97"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" points="803.83,-62.7 808.5,-53.19 798.92,-57.71 803.83,-62.7"/>
+<path fill="none" stroke="#2e8b57" d="M753.5,-88.6C763.94,-79.65 776.32,-69.03 787.3,-59.61"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" points="789.28,-62.53 794.59,-53.36 784.72,-57.21 789.28,-62.53"/>
 </g>
 <!-- K1&#45;&gt;FIN -->
 <g id="edge11" class="edge">
@@ -187,14 +188,14 @@
 <!-- K2&#45;&gt;FIN -->
 <g id="edge12" class="edge">
 <title>K2&#45;&gt;FIN</title>
-<path fill="none" stroke="#338866" stroke-dasharray="5,2" d="M920.49,-128.07C953.34,-160.59 1024.37,-230.9 1062.53,-268.67"/>
-<polygon fill="#338866" stroke="#338866" points="1059.95,-271.03 1069.52,-275.58 1064.87,-266.06 1059.95,-271.03"/>
+<path fill="none" stroke="#338866" stroke-dasharray="5,2" d="M916.74,-128.65C930.86,-142.13 950.67,-161.09 968,-177.77 1000.51,-209.06 1037.85,-245.22 1062.12,-268.76"/>
+<polygon fill="#338866" stroke="#338866" points="1059.44,-271.03 1069.05,-275.48 1064.31,-266.01 1059.44,-271.03"/>
 </g>
 <!-- K3&#45;&gt;FIN -->
 <g id="edge13" class="edge">
 <title>K3&#45;&gt;FIN</title>
-<path fill="none" stroke="#2e8b57" stroke-width="2" d="M884.48,-47.51C912.07,-55.74 944.21,-68.82 968,-89 1025.1,-137.43 1061.59,-220.27 1077.96,-264.32"/>
-<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="1074.61,-265.33 1081.29,-273.56 1081.2,-262.96 1074.61,-265.33"/>
+<path fill="none" stroke="#2e8b57" stroke-width="2" d="M873.48,-45.42C904.16,-53.29 941.03,-66.69 968,-89 1025.84,-136.85 1062.11,-220.28 1078.23,-264.47"/>
+<polygon fill="#2e8b57" stroke="#2e8b57" stroke-width="2" points="1074.87,-265.47 1081.5,-273.73 1081.47,-263.14 1074.87,-265.47"/>
 </g>
 <!-- FIN&#45;&gt;G -->
 <g id="edge14" class="edge">
