@@ -1,0 +1,9 @@
+{
+  "iter": 0,
+  "prune_features": [],
+  "hp_changes": {
+    "random_strength": 2.0
+  },
+  "should_stop": false,
+  "rationale": "Diagnostic-first gate: train_val_gap=-0.0085 (no_overfit), val_brier 0.1158 well above sink 0.1039, degenerate_sink_warning=false -> do NOT prune (rule 1, FS neutral-to-harmful). iter_0 (alpha03_d6) eval R-p@1=0.805/@3=0.717 already matches the CatBoost-sweep eval bar. Per rule 9, before stopping test ONE structurally-different lever: raise random_strength 1->2 (CatBoost-native split-randomness/generalization knob untouched by scout). It probes the _268 eval-overfit hypothesis without the tail-sharpening of depth/low-colsample: if the eval K-profile holds, the signal is robust (low test decay); if it collapses, iter_0 eval was fragile."
+}

@@ -1,0 +1,171 @@
+{
+  "run_id": "russell1000_up_40pct_200d_dd20pct_aligned_cbagent",
+  "backend": "catboost",
+  "n_configs_total": 31,
+  "n_configs_completed": 27,
+  "runtime_seconds": 1561.6998753547668,
+  "defaults_metrics": {
+    "config": {
+      "knob_name": "defaults",
+      "knob_value": null,
+      "hp_overlay": {}
+    },
+    "val_brier": 0.11329833027701885,
+    "train_brier": 0.1242461303562552,
+    "eval_R_p_at_K": {
+      "1": 0.72,
+      "3": 0.6083333333333333,
+      "5": 0.538,
+      "10": 0.5185,
+      "20": 0.48225
+    },
+    "train_val_gap": -0.010947800079236347,
+    "spiegelhalter_z": -6.535775398664759,
+    "fit_seconds": 61.31055307388306,
+    "status": "ok",
+    "error_message": null
+  },
+  "per_knob_winner": {
+    "max_depth": {
+      "knob_value": 8,
+      "eval_R_p_at_K": {
+        "1": 0.745,
+        "3": 0.665,
+        "5": 0.627,
+        "10": 0.5205,
+        "20": 0.48025
+      },
+      "val_brier": 0.11375733187182334
+    },
+    "eta": {
+      "knob_value": 0.1,
+      "eval_R_p_at_K": {
+        "1": 0.74,
+        "3": 0.6516666666666667,
+        "5": 0.589,
+        "10": 0.5175,
+        "20": 0.4784999999999999
+      },
+      "val_brier": 0.1184773471179121
+    },
+    "colsample_bytree": {
+      "knob_value": 0.4,
+      "eval_R_p_at_K": {
+        "1": 0.775,
+        "3": 0.67,
+        "5": 0.6559999999999999,
+        "10": 0.5385,
+        "20": 0.47800000000000004
+      },
+      "val_brier": 0.12074840375588276
+    },
+    "min_child_weight": {
+      "knob_value": 1,
+      "eval_R_p_at_K": {
+        "1": 0.72,
+        "3": 0.6083333333333333,
+        "5": 0.538,
+        "10": 0.5185,
+        "20": 0.48225
+      },
+      "val_brier": 0.11329833027701885
+    },
+    "alpha": {
+      "knob_value": 0.5,
+      "eval_R_p_at_K": {
+        "1": 0.77,
+        "3": 0.66,
+        "5": 0.655,
+        "10": 0.5365,
+        "20": 0.47424999999999995
+      },
+      "val_brier": 0.11268665310481446
+    },
+    "scale_pos_weight": {
+      "knob_value": 1.0,
+      "eval_R_p_at_K": {
+        "1": 0.72,
+        "3": 0.6083333333333333,
+        "5": 0.538,
+        "10": 0.5185,
+        "20": 0.48225
+      },
+      "val_brier": 0.11329833027701885
+    }
+  },
+  "lexicographic_auto_compose": {
+    "hp_overlay": {
+      "depth": 8,
+      "learning_rate": 0.1,
+      "rsm": 0.4,
+      "l2_leaf_reg": 0.5
+    }
+  },
+  "fs_prefit": {
+    "enabled": true,
+    "cliff_pct": 0.01,
+    "n_kept": 53,
+    "n_dropped": 226,
+    "top_importance": 15.28702749836763,
+    "cliff_threshold": 0.1528702749836763,
+    "fit_seconds": 210.35270023345947,
+    "kept_features": [
+      "index_vol_200",
+      "garman_klass_200",
+      "garman_klass_50",
+      "realized_vol_200",
+      "index_vol_50",
+      "vol_xs_zscore_200",
+      "index_return_100",
+      "index_drawdown_200",
+      "beta_200",
+      "vol_xs_rank_100",
+      "vol_xs_zscore_100",
+      "index_vol_20",
+      "index_return_200",
+      "parkinson_20",
+      "parkinson_200",
+      "garman_klass_100",
+      "vol_xs_rank_200",
+      "parkinson_100",
+      "garman_klass_20",
+      "returns_kurt_200",
+      "vol_xs_zscore_50",
+      "return_xs_zscore_200",
+      "vol_change_100",
+      "drawdown_100",
+      "vol_change_200",
+      "realized_vol_zscore_200_outside_band_2",
+      "vol_xs_zscore_50_outside_band_1",
+      "parkinson_50",
+      "dollar_move_xs_rank",
+      "vol_xs_rank_50",
+      "garman_klass_10",
+      "vol_of_vol_200",
+      "index_vol_10",
+      "rel_strength_200",
+      "index_vol_100",
+      "stock_return_zscore_100_outside_band_1",
+      "parkinson_5",
+      "realized_vol_zscore_50_outside_band_1",
+      "return_xs_rank_200",
+      "vol_xs_zscore_200_outside_band_3",
+      "parkinson_10",
+      "vol_of_vol_50",
+      "returns_kurt_100",
+      "index_return_50",
+      "vol_xs_rank_20",
+      "runup_200",
+      "drawdown_20",
+      "realized_vol_20",
+      "vol_of_vol_100",
+      "index_runup_200",
+      "dollar_move_xs_zscore",
+      "vol_xs_zscore_200_outside_band_2",
+      "drawdown_200"
+    ],
+    "cache_hit": false,
+    "cache_key": "10362d30875761160733c15a558db5c3"
+  },
+  "grid_spec": {}
+}

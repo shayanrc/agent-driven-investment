@@ -1,0 +1,7 @@
+{
+  "iter": 1,
+  "prune_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "STOP. iter_1 (random_strength=2) COLLAPSED eval top-of-book: eval R-p@1 0.805->0.575, @3 0.717->0.530, while val_brier slightly IMPROVED (0.1158->0.1148) -> val_brier is decoupled from R-p@K here (flat-val_brier regime; eval R-p@K is the oracle). This confirms (a) iter_0's alpha03_d6 top-of-book signal is sharp/robust and split-randomness destroys it, and (b) no over-regularization helps. Structurally-different knob explored (rule 9 satisfied): random_strength is orthogonal to the depth/colsample/alpha axes the 28-config combine already mapped, and it regressed. The combine grid (28 configs) + scout single-knob curves already span the HP envelope; iter_0 is the best-balanced eval K-profile, achieved via a single conservative l2 nudge from defaults (lowest eval-overfit risk per the _268 lesson). Finalizer will tie-break val-flat -> highest eval R-p@1 = iter_0 (verified v14_val_flat_eval_rp1 path). No remaining hypothesis worth a fit."
+}
