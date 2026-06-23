@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "run_id": "sp500_up_40pct_200d_dd20pct_aligned_cbagent",
+  "iter_idx": 0,
+  "phase": "complete",
+  "awaiting_decision": false,
+  "last_update_utc": "2026-06-23T16:16:14+00:00",
+  "last_heartbeat_utc": "2026-06-23T16:15:56+00:00",
+  "best_val_brier": 0.1114665585785032,
+  "stop_reason": "agent_should_stop"
+}
