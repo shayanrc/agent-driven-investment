@@ -1,0 +1,57 @@
+# CatBoost agent-tune of russell1000 +50%/200d/dd25% (date-aligned). _270 addendum to _269.
+#
+# This is the TOP date-aligned cell by R-p@3 (the `_aligned` CatBoost sweep leads the board:
+# test @1=0.737 @3=0.642). Two XGBoost agent-tunes already exist and BOTH lost @1/@3 to the
+# sweep (_aligned_agent @1=0.577, _aligned_agent_v14p1 @1=0.647). No CatBoost agent-tune yet.
+# This run tests whether tuning the ROBUST backend (CatBoost) can finally beat the top sweep
+# cell — motivated by its sibling sp500 +50%/200d, where the CatBoost agent-tune CRUSHED its
+# sweep (_269: test @1 0.930 vs 0.630).
+#
+# Bar to beat (CatBoost sweep = russell1000_up_50pct_200d_dd25pct_aligned, same window):
+#   test R-p@1=0.737 @3=0.642 @5=0.539 @10=0.466 @20=0.396 (base 0.152). test_end 2024-10-03.
+# XGBoost agents (cautionary): v14p1 @1=0.647 @3=0.559; plain @1=0.577 @3=0.467.
+#
+# Per _269: cbagent is HIGH-VARIANCE (win/loss set by eval->test decay the agent can't see) —
+# watch the eval->test gap; don't chase eval @1 via aggressive regularization. The scout
+# translates XGBoost-vocab HP -> CatBoost (gamma dropped). Scout timeouts bumped (CatBoost slower).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: russell1000_up_50pct_200d_dd25pct_aligned_cbagent
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    per_config_timeout_seconds: 300
+    wall_clock_cap_seconds: 3600
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05
+    tie_band: 0.005
+
+random_seed: 42
