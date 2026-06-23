@@ -1,0 +1,4 @@
+{
+  "hp": {"colsample_bytree": 0.4},
+  "rationale": "Combine oracle = eval R-p@1 then @3. Ranking: cs0.4 (@1=0.795/@3=0.688/@5=0.628/@10=0.522/@20=0.458) is #1 by oracle (best top-1, 2nd-best @3); gamma0.5 #2 (@1=0.790/@3=0.660); gamma1.0 #5 by @1 (0.735) but DOMINATES the @3-@20 deep tail (@3=0.708/@5=0.696/@10=0.609/@20=0.533, val_brier=0.112 best, gap=-0.008 no-overfit). Seeding iter_0 with cs0.4 per the strict R-p@1>@3 oracle. cs0.4 has mild overfit (gap=0.038, val_brier=0.131) so the iter loop will test gamma (a structurally-different no-overfit regularizer) to see if gamma1.0's deep-tail strength transfers while preserving top-1. Multi-knob stacks (gamma+cs, +ss, +mcw) mostly REGRESSED top-1 vs the single knobs (e.g. gamma1.0_cs0.4 -> @1=0.54; gamma1.0_cs0.4_mcw5 -> @1=0.515) confirming playbook rule 8 (no transferable mix recipe on strong-top cells) -> staying single-knob at iter_0."
+}

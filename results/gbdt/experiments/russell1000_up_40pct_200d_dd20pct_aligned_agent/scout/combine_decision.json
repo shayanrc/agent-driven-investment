@@ -1,0 +1,47 @@
+{
+  "rationale": "Scout oracle = eval R-p@1 then @3. Defaults (md=6,eta=0.3,cs=1,gamma=0) give R-p@1=0.730/@3=0.553/@5=0.531/@10=0.493/@20=0.453. Productive single-knob directions: gamma is the dominant lever (gamma=1.0 -> @3=0.708/@5=0.696/@10=0.609/@20=0.533 with train_val_gap=-0.008 no-overfit, best deep-tail; gamma=0.5 -> @1=0.790/@3=0.660). colsample_bytree=0.4 -> @1=0.795 (best top-1)/@3=0.688/@5=0.628; cs=0.3 -> @3=0.665. subsample=0.5 -> @1=0.765/@3=0.658; ss=0.7 -> @3=0.658/@10=0.511. min_child_weight=5 -> @1=0.770/@3=0.610. max_depth=4 -> @10=0.543. REJECTED: scale_pos_weight (the lex_auto_compose overlay includes spw=3.14 which BLOWS UP val_brier to 0.232, a degenerate calibration sink, Spiegelhalter z flips to +6.6; spw=1.77 also gap 0.074 -> keep spw=1.0). eta=0.01 kills top-1 (@1=0.515) despite good deep-tail. max_depth=2 collapses (@1=0.49). NOT defaulting mcw=10 (playbook rule 7, strong-top cell) nor a fixed mix recipe (rule 8) - exploring the gamma x colsample x subsample x mcw x max_depth surface centered on the two best knobs (gamma, colsample). Speed-biased depth-2 prompt overridden per scout evidence (depth-2 collapses top-1, defaults depth-6 + gamma is the winning regime here). Combine cap 50; 36 configs spanning the productive cross-product.",
+  "configs": [
+    {"label": "gamma1.0", "hp": {"gamma": 1.0}},
+    {"label": "gamma0.5", "hp": {"gamma": 0.5}},
+    {"label": "gamma1.5", "hp": {"gamma": 1.5}},
+    {"label": "gamma2.0", "hp": {"gamma": 2.0}},
+    {"label": "cs0.4", "hp": {"colsample_bytree": 0.4}},
+    {"label": "cs0.3", "hp": {"colsample_bytree": 0.3}},
+
+    {"label": "gamma1.0_cs0.4", "hp": {"gamma": 1.0, "colsample_bytree": 0.4}},
+    {"label": "gamma1.0_cs0.3", "hp": {"gamma": 1.0, "colsample_bytree": 0.3}},
+    {"label": "gamma0.5_cs0.4", "hp": {"gamma": 0.5, "colsample_bytree": 0.4}},
+    {"label": "gamma0.5_cs0.3", "hp": {"gamma": 0.5, "colsample_bytree": 0.3}},
+    {"label": "gamma1.5_cs0.4", "hp": {"gamma": 1.5, "colsample_bytree": 0.4}},
+    {"label": "gamma1.5_cs0.3", "hp": {"gamma": 1.5, "colsample_bytree": 0.3}},
+
+    {"label": "gamma1.0_ss0.7", "hp": {"gamma": 1.0, "subsample": 0.7}},
+    {"label": "gamma1.0_ss0.5", "hp": {"gamma": 1.0, "subsample": 0.5}},
+    {"label": "gamma0.5_ss0.7", "hp": {"gamma": 0.5, "subsample": 0.7}},
+    {"label": "gamma0.5_ss0.5", "hp": {"gamma": 0.5, "subsample": 0.5}},
+
+    {"label": "gamma1.0_cs0.4_ss0.7", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "subsample": 0.7}},
+    {"label": "gamma1.0_cs0.4_ss0.5", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "subsample": 0.5}},
+    {"label": "gamma1.0_cs0.3_ss0.7", "hp": {"gamma": 1.0, "colsample_bytree": 0.3, "subsample": 0.7}},
+    {"label": "gamma0.5_cs0.4_ss0.7", "hp": {"gamma": 0.5, "colsample_bytree": 0.4, "subsample": 0.7}},
+    {"label": "gamma0.5_cs0.4_ss0.5", "hp": {"gamma": 0.5, "colsample_bytree": 0.4, "subsample": 0.5}},
+    {"label": "gamma1.5_cs0.4_ss0.7", "hp": {"gamma": 1.5, "colsample_bytree": 0.4, "subsample": 0.7}},
+
+    {"label": "gamma1.0_mcw5", "hp": {"gamma": 1.0, "min_child_weight": 5}},
+    {"label": "gamma0.5_mcw5", "hp": {"gamma": 0.5, "min_child_weight": 5}},
+    {"label": "gamma1.0_cs0.4_mcw5", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "min_child_weight": 5}},
+    {"label": "gamma0.5_cs0.4_mcw5", "hp": {"gamma": 0.5, "colsample_bytree": 0.4, "min_child_weight": 5}},
+    {"label": "gamma1.0_cs0.4_ss0.7_mcw5", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "subsample": 0.7, "min_child_weight": 5}},
+
+    {"label": "gamma1.0_md4", "hp": {"gamma": 1.0, "max_depth": 4}},
+    {"label": "gamma0.5_md4", "hp": {"gamma": 0.5, "max_depth": 4}},
+    {"label": "gamma1.0_cs0.4_md4", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "max_depth": 4}},
+    {"label": "gamma1.0_cs0.4_ss0.7_md4", "hp": {"gamma": 1.0, "colsample_bytree": 0.4, "subsample": 0.7, "max_depth": 4}},
+    {"label": "md4_cs0.4", "hp": {"max_depth": 4, "colsample_bytree": 0.4}},
+    {"label": "md4_cs0.4_ss0.7", "hp": {"max_depth": 4, "colsample_bytree": 0.4, "subsample": 0.7}},
+
+    {"label": "cs0.4_ss0.7", "hp": {"colsample_bytree": 0.4, "subsample": 0.7}},
+    {"label": "cs0.4_ss0.5", "hp": {"colsample_bytree": 0.4, "subsample": 0.5}},
+    {"label": "cs0.4_mcw5", "hp": {"colsample_bytree": 0.4, "min_child_weight": 5}}
+  ]
+}
