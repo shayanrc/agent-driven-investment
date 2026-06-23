@@ -1,0 +1,7 @@
+{
+  "iter": 0,
+  "prune_features": [],
+  "hp_changes": { "learning_rate": 0.03, "iterations": 2000, "early_stopping_rounds": 125 },
+  "should_stop": false,
+  "rationale": "iter_0 (alpha=0.5 -> l2_leaf_reg=0.5) is the broad combine optimum: eval R-p @1 0.82 @3 0.683 @5 0.642 @10 0.540, gap -0.018 (NO OVERFIT per rule 1) -> do NOT prune (FS neutral-to-harmful here). degenerate_sink_warning=True is a low-base-rate false alarm (eval R-p@1 0.82 >> base 0.08, clearly discriminating) -> do NOT push regularization further (would walk the val_brier toward the constant predictor). The unaddressed risk is eval->test decay (the _270 failure mode), which has no regularization lever. Test ONE structurally-different CAPACITY/smoothness knob: slow learning_rate 0.05->0.03 + iterations 1000->2000 + ES 75->125, a lower-variance ensemble that should hold the broad @3-@10 band more robustly out-of-sample without touching FS or reg. Keep all 53 features."
+}
