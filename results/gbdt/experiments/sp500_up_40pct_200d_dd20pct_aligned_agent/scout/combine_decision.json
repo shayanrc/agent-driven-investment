@@ -1,0 +1,328 @@
+{
+  "run_id": "sp500_up_40pct_200d_dd20pct_aligned_agent",
+  "rationale": "Scout oracle = eval R-p@1 then @3. Strongest single-knob axes: max_depth=3 (best @1 0.825), eta lower (0.05 best @3 0.722; 0.1; 0.2 balanced @1 0.820/@3 0.668), min_child_weight=5 (best @3 0.690 in top-@1 tier), mild alpha=0.1 (@1 0.820) and gamma=0.1. Grid = depth{2,3} x eta{0.05,0.1,0.2} x mcw{1,5} core, plus mild L1/gamma reg overlays on the 5 best cores, plus light subsample/colsample(0.7) tail probes on the 2 balanced cores, plus single-knob reference anchors. Followed scout evidence over the speed-biased prompt: rejected the prompt's aggressive colsample=0.3 (rank 11, below-defaults @1) and only lightly sampled rows/cols at 0.7. Depth=2 included as the tiny-model probe (rule 12). Did NOT default mcw=10 (rule 7) or the cell-4 mix recipe (rule 8) \u2014 this is a strong-top cell.",
+  "configs": [
+    {
+      "label": "d2_e0.05_m1",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d2_e0.05_m5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.05,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "d2_e0.1_m1",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d2_e0.1_m5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "d2_e0.2_m1",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.2,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d2_e0.2_m5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.2,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "d3_e0.05_m1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.05,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d3_e0.05_m5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.05,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "d3_e0.1_m1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d3_e0.1_m5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "d3_e0.2_m1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 1
+      }
+    },
+    {
+      "label": "d3_e0.2_m5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.2_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta0.2_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.2_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "alpha": 0.1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta0.1_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.1_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "alpha": 0.1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.05_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.05,
+        "min_child_weight": 5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta0.05_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.05,
+        "min_child_weight": 5,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.05_gamma0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.05,
+        "min_child_weight": 5,
+        "alpha": 0.1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.2_max_depth3_min_child_weight1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 1,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta0.2_gamma0.1_max_depth3_min_child_weight1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.2_gamma0.1_max_depth3_min_child_weight1",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 1,
+        "alpha": 0.1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.1_max_depth2_min_child_weight5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "alpha": 0.1
+      }
+    },
+    {
+      "label": "eta0.1_gamma0.1_max_depth2_min_child_weight5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "alpha0.1_eta0.1_gamma0.1_max_depth2_min_child_weight5",
+      "hp": {
+        "max_depth": 2,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "alpha": 0.1,
+        "gamma": 0.1
+      }
+    },
+    {
+      "label": "eta0.2_max_depth3_min_child_weight5_subsample0.7",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "subsample": 0.7
+      }
+    },
+    {
+      "label": "colsample_bytree0.7_eta0.2_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "colsample_bytree": 0.7
+      }
+    },
+    {
+      "label": "colsample_bytree0.7_eta0.2_max_depth3_min_child_weight5_subsample0.7",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.2,
+        "min_child_weight": 5,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7
+      }
+    },
+    {
+      "label": "eta0.1_max_depth3_min_child_weight5_subsample0.7",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "subsample": 0.7
+      }
+    },
+    {
+      "label": "colsample_bytree0.7_eta0.1_max_depth3_min_child_weight5",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "colsample_bytree": 0.7
+      }
+    },
+    {
+      "label": "colsample_bytree0.7_eta0.1_max_depth3_min_child_weight5_subsample0.7",
+      "hp": {
+        "max_depth": 3,
+        "eta": 0.1,
+        "min_child_weight": 5,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7
+      }
+    },
+    {
+      "label": "ref_depth3",
+      "hp": {
+        "max_depth": 3
+      }
+    },
+    {
+      "label": "ref_eta0.2",
+      "hp": {
+        "eta": 0.2
+      }
+    },
+    {
+      "label": "ref_mcw5",
+      "hp": {
+        "min_child_weight": 5
+      }
+    },
+    {
+      "label": "ref_eta0.05",
+      "hp": {
+        "eta": 0.05
+      }
+    },
+    {
+      "label": "ref_alpha0.1",
+      "hp": {
+        "alpha": 0.1
+      }
+    }
+  ]
+}

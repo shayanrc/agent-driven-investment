@@ -1,0 +1,5 @@
+{
+  "iter": 2,
+  "should_stop": true,
+  "rationale": "STOP. iter_0 combine winner (d3/eta0.1/mcw5/alpha0.1/gamma0.1) is the clear eval R-p@1 optimum at 0.895/@3 0.728. Pivoted across 2 structurally-different knob families per rule 9: (1) row-subsampling iter_1 subsample=0.7 -> @1 0.785 (lifts tail @5-@20, trades top); (2) learning-rate/capacity iter_2 eta=0.05 -> @1 0.795/@3 0.735 (same pattern: smoother surface helps @3+ but loses top picks). The Phase-1.6 combine already swept depth/eta/mcw/alpha/gamma/colsample/subsample (38 configs); iter_0 emerged the @1 winner and neither loop pivot beat it. eval R-p@1 has plateaued/regressed across families and the gap stays negative (no overfit, no prune lever). Finalizer val_brier range across iters 0-2 is 0.0023 < tie_band 0.005 -> v14_val_flat_eval_rp1 selects iter_0 by eval R-p@1."
+}

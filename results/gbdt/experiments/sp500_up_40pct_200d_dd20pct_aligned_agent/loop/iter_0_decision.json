@@ -1,0 +1,8 @@
+{
+  "iter": 0,
+  "hp_changes": {
+    "subsample": 0.7
+  },
+  "should_stop": false,
+  "rationale": "iter_0 winner (d3/eta0.1/mcw5/alpha0.1/gamma0.1) eval R-p@1=0.895/@3=0.728, gap=-0.0026 (no overfit -> NO prune, playbook rule 1). Pivot to a structurally-different knob family (row-subsampling, untested at this point in the winner config): subsample=0.7 was the best-@3 direction in combine (rank1 eta0.1+mcw5+subsample0.7 @3=0.755). Testing whether row-sampling lifts the tail (@3/@5/@10) on top of the alpha/gamma reg winner."
+}
