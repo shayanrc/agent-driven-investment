@@ -1,0 +1,9 @@
+{
+  "iter": 0,
+  "prune_features": [],
+  "hp_changes": {
+    "min_data_in_leaf": 20
+  },
+  "should_stop": false,
+  "rationale": "NO prune: train_val_gap=-0.015 (<=0.02) => not overfitting, FS neutral-to-harmful (rule 1). Seed is the broadest combine winner (eval @1=0.900 @3=0.687 @5=0.698). Per _269, eval->test decay is the invisible killer; probe ONE anti-decay lever \u2014 min_data_in_leaf 1->20 to populate leaves and steady predictions on held-out. Not an @1-chase. Revert if breadth/@1 drops."
+}

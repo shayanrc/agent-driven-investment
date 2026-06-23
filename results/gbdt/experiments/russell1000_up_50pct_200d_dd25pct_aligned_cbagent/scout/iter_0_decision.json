@@ -1,0 +1,8 @@
+{
+  "hp": {
+    "eta": 0.01,
+    "max_depth": 4,
+    "colsample_bytree": 0.4,
+    "alpha": 1.0
+  }
+}

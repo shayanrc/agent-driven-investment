@@ -1,0 +1,135 @@
+{
+  "configs": [
+    {
+      "label": "ref_defaults",
+      "hp": {}
+    },
+    {
+      "label": "ref_lex_auto",
+      "hp": {
+        "depth": 8,
+        "learning_rate": 0.01,
+        "rsm": 0.3,
+        "l2_leaf_reg": 1.0
+      }
+    },
+    {
+      "label": "lr01_cs05",
+      "hp": {
+        "eta": 0.01,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "label": "lr01_cs04",
+      "hp": {
+        "eta": 0.01,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "lr01_cs03",
+      "hp": {
+        "eta": 0.01,
+        "colsample_bytree": 0.3
+      }
+    },
+    {
+      "label": "lr01_cs04_l2_1",
+      "hp": {
+        "eta": 0.01,
+        "colsample_bytree": 0.4,
+        "alpha": 1.0
+      }
+    },
+    {
+      "label": "lr01_cs03_l2_1",
+      "hp": {
+        "eta": 0.01,
+        "colsample_bytree": 0.3,
+        "alpha": 1.0
+      }
+    },
+    {
+      "label": "lr01_d4_cs05",
+      "hp": {
+        "eta": 0.01,
+        "max_depth": 4,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "label": "lr01_d4_cs04_l2_1",
+      "hp": {
+        "eta": 0.01,
+        "max_depth": 4,
+        "colsample_bytree": 0.4,
+        "alpha": 1.0
+      }
+    },
+    {
+      "label": "l2_1_cs04",
+      "hp": {
+        "alpha": 1.0,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "l2_1_cs03",
+      "hp": {
+        "alpha": 1.0,
+        "colsample_bytree": 0.3
+      }
+    },
+    {
+      "label": "l2_1_cs05",
+      "hp": {
+        "alpha": 1.0,
+        "colsample_bytree": 0.5
+      }
+    },
+    {
+      "label": "cs04_d6",
+      "hp": {
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "cs04_d4",
+      "hp": {
+        "max_depth": 4,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "cs05_d6_l2_1",
+      "hp": {
+        "colsample_bytree": 0.5,
+        "alpha": 1.0
+      }
+    },
+    {
+      "label": "lr2_cs04",
+      "hp": {
+        "eta": 0.2,
+        "colsample_bytree": 0.4
+      }
+    },
+    {
+      "label": "lr2_cs04_l2_1",
+      "hp": {
+        "eta": 0.2,
+        "colsample_bytree": 0.4,
+        "alpha": 1.0
+      }
+    },
+    {
+      "label": "broad_lr05_d4_cs04_l2_1",
+      "hp": {
+        "max_depth": 4,
+        "colsample_bytree": 0.4,
+        "alpha": 1.0
+      }
+    }
+  ]
+}
