@@ -25,6 +25,14 @@
   },
   "cbagent_vs_sweep_delta": {"1": 0.007, "3": -0.055, "5": 0.028, "10": 0.005, "20": 0.005},
   "verdict": "Marginal mixed win: CatBoost-agent edges the (verified) #1 sweep at 4/5 K (@1/@5/@10/@20) but LOSES @3 (-0.055), the board's headline metric. Beats both XGBoost agents at @1/@3 (best agent variant), but cannot clear the cheap CatBoost sweep at @3. Not the sp500/50-style breakout. The CatBoost sweep remains the #1-cell default; do NOT promote the cbagent.",
-  "finding": "Three agent-tunes (2x XGBoost, 1x CatBoost) have all failed to beat the ≤3-iter CatBoost sweep at @3 on the #1 cell. The sweep's un-FS'd, un-subsampled defaults hold the @2-@3 band better; the cbagent's FS-prefit (53 of 279 feats) + subsample gained @1 and the broad tail but gave up @3. Eval->test decay -0.157 @1 is the _269 long-horizon disease.",
-  "followups": ["#26 investigate the @3 regression (chiefly FS-prefit) vs the verified bar", "V1.5_TBD #2 multi-window/decay-penalized eval objective"]
+  "finding": "Three agent-tunes (2x XGBoost, 1x CatBoost) have all failed to beat the ≤3-iter CatBoost sweep at @3 on the #1 cell. Eval->test decay -0.157 @1 is the _269 long-horizon disease. Per #26, the @3 loss is a rank-2/3 ranking-shape difference (NOT FS — see investigation_26).",
+  "investigation_26": {
+    "question": "Why does the cbagent lose @3 (-0.056)?",
+    "per_rank_hit_rate": {"comment": "p_calibrated-ranked, 300 test days; @3 loss localizes entirely to ranks 2-3",
+      "rank1": {"cb": 0.743, "sweep": 0.737}, "rank2": {"cb": 0.610, "sweep": 0.700}, "rank3": {"cb": 0.407, "sweep": 0.490}, "rank4": {"cb": 0.503, "sweep": 0.460}, "rank5": {"cb": 0.570, "sweep": 0.307}},
+    "fs_hypothesis": "REFUTED — cbagent's 53 feats (subset of sweep's 279) retain 92.8% of the sweep's feature-importance mass; all 20 of the sweep's top-20 features survived FS. Same vol/regime model (garman_klass_200, realized_vol_200, index_vol_*). FS dropped only 7.2% low-importance tail mass.",
+    "conclusion": "The @3 loss is an HP/training-shape effect (agent lr=0.01/depth=4 vs sweep defaults reorders the mid-tail: #2-3 weaker, #4-5 stronger) — not FS, not capacity. Window-dependent, consistent with _271. No-FS confirmatory fit is low-value given the 92.8% retention.",
+    "status": "closed"
+  },
+  "followups": ["V1.5_TBD #2 multi-window/decay-penalized eval objective (the binding constraint across 5 cells / 2 horizons)"]
 }
