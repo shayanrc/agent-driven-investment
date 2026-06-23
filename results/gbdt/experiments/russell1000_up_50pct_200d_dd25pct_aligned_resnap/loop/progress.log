@@ -1,0 +1,33 @@
+2026-06-23T18:05:55+00:00 [experiment] start spec=russell1000_up_50pct_200d_dd25pct_aligned_resnap.yaml -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_resnap
+2026-06-23T18:05:55+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2631 trading days available from 2017-01-01)
+2026-06-23T18:05:55+00:00 [preflight] cache currency OK: 1002 ticker(s) covered through 2025-07-24
+2026-06-23T18:05:55+00:00 [data] start universe=russell1000
+2026-06-23T18:06:25+00:00 [heartbeat] t=23:36:25 phase=data elapsed_phase=29s elapsed_total=30s rss_mb=578
+2026-06-23T18:06:33+00:00 [data] complete in 37.4s rows=6011681 tickers_kept=858
+2026-06-23T18:06:55+00:00 [heartbeat] t=23:36:55 phase=features elapsed_phase=21s elapsed_total=60s rss_mb=15629
+2026-06-23T18:06:58+00:00 [features] loaded from universe cache (key match) in 7.8s shape=(6011681, 279)
+2026-06-23T18:07:25+00:00 [heartbeat] t=23:37:25 phase=features elapsed_phase=51s elapsed_total=90s rss_mb=27625
+2026-06-23T18:07:38+00:00 [target] start
+2026-06-23T18:07:55+00:00 [heartbeat] t=23:37:55 phase=target elapsed_phase=16s elapsed_total=120s rss_mb=27625
+2026-06-23T18:08:03+00:00 [target] complete in 24.5s positive_prevalence=0.150
+2026-06-23T18:08:03+00:00 [uniqueness] start
+2026-06-23T18:08:12+00:00 [uniqueness] complete in 9.5s horizon=200 rows=6011681 ESS=5940777 inflation=1.01x
+2026-06-23T18:08:12+00:00 [loop] V1.3 no sweep_row for cell='russell1000_up_50pct_200d_dd25pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-23T18:08:12+00:00 [loop] start max_iter=3 callback_mode=default
+2026-06-23T18:08:25+00:00 [heartbeat] t=23:38:25 phase=loop elapsed_phase=12s elapsed_total=150s rss_mb=27625
+2026-06-23T18:08:55+00:00 [heartbeat] t=23:38:55 phase=loop elapsed_phase=42s elapsed_total=180s rss_mb=27625
+2026-06-23T18:09:25+00:00 [heartbeat] t=23:39:25 phase=loop elapsed_phase=72s elapsed_total=210s rss_mb=27625
+2026-06-23T18:09:55+00:00 [heartbeat] t=23:39:55 phase=loop elapsed_phase=102s elapsed_total=240s rss_mb=27625
+2026-06-23T18:10:25+00:00 [heartbeat] t=23:40:25 phase=loop elapsed_phase=132s elapsed_total=270s rss_mb=27625
+2026-06-23T18:10:55+00:00 [heartbeat] t=23:40:55 phase=loop elapsed_phase=162s elapsed_total=300s rss_mb=27625
+2026-06-23T18:11:25+00:00 [heartbeat] t=23:41:25 phase=loop elapsed_phase=192s elapsed_total=330s rss_mb=27625
+2026-06-23T18:11:55+00:00 [heartbeat] t=23:41:55 phase=loop elapsed_phase=222s elapsed_total=360s rss_mb=27625
+2026-06-23T18:12:25+00:00 [heartbeat] t=23:42:25 phase=loop elapsed_phase=252s elapsed_total=390s rss_mb=27625
+2026-06-23T18:12:55+00:00 [heartbeat] t=23:42:55 phase=loop elapsed_phase=282s elapsed_total=420s rss_mb=27625
+2026-06-23T18:13:25+00:00 [heartbeat] t=23:43:25 phase=loop elapsed_phase=312s elapsed_total=450s rss_mb=27625
+2026-06-23T18:13:53+00:00 [loop] LOOP COMPLETE in 340.7s best_iter=0 val_brier=0.0811 reason=degradation
+2026-06-23T18:13:53+00:00 [artifact] start
+2026-06-23T18:13:55+00:00 [heartbeat] t=23:43:55 phase=artifact elapsed_phase=2s elapsed_total=480s rss_mb=27625
+2026-06-23T18:14:03+00:00 [artifact] complete in 9.8s -> results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_resnap
+2026-06-23T18:14:03+00:00 [loop] STOPPED reason=degradation
+2026-06-23T18:14:03+00:00 [experiment] complete in 488.1s
