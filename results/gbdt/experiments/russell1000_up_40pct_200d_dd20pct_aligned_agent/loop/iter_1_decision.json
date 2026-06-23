@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "hp_changes": {"gamma": 1.0},
+  "should_stop": false,
+  "rationale": "iter_1 (gamma0.5) gave eval R-p@1=0.790/@3=0.660/@5=0.594/@10=0.517 with no_overfit=True (gap=-0.0008, val_brier=0.114) -- a clean fit matching iter_0 (cs0.4) at top-1 (0.795) but slightly below it at @3/@5/@10. iter_0 cs0.4 still leads top-of-book but has a mild overfit gap (0.038). Per playbook rule 9 (map >=2 values on a knob before pivoting), iter_2 moves UP the gamma response curve to gamma=1.0 -- the combine showed gamma1.0 DOMINATES the @3-@20 deep tail (0.708/0.696/0.609/0.533) with the best val_brier (0.112) and no overfit (gap=-0.008), trading ~0.06 top-1 for large @3-@20 gains. This maps the gamma curve {0.5,1.0} and tests whether the deep-tail-strong regime is preferable to cs0.4's top-1-strong regime. colsample stays 1.0. Oracle = eval R-p@1 then @3."
+}

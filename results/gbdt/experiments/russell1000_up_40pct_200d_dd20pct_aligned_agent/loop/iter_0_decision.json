@@ -1,0 +1,6 @@
+{
+  "iter": 0,
+  "hp_changes": {"colsample_bytree": 1.0, "gamma": 0.5},
+  "should_stop": false,
+  "rationale": "iter_0 (cs0.4) is the combine top-1 leader: eval R-p@1=0.795/@3=0.688/@5=0.628/@10=0.522/@20=0.458, but train_val_gap=0.038>0.02 (mild overfit, val_brier 0.131 vs train 0.094) and anti_auc_flag=unknown. Pivoting iter_1 to a structurally-different regularizer family (split-quality gamma) per playbook rules 6+9. Scout/combine evidence: gamma is the dominant NO-OVERFIT lever here -- gamma0.5 standalone gave eval R-p@1=0.790 (matches cs0.4's top-1) with val_brier=0.114 (vs 0.131) and gap=-0.001 (vs +0.038), i.e. same top-of-book at a clean fit; gamma1.0 DOMINATES the @3-@20 deep tail (0.708/0.696/0.609/0.533, gap=-0.008). Setting colsample_bytree back to 1.0 + gamma=0.5 to test pure gamma0.5 (the cs0.4+gamma STACK regressed top-1 to 0.54 in combine, so NOT stacking -- playbook rule 8). No feature prune: gap is mild and the 5 sub-floor features are redundant not noise (rule 2), FS is neutral-to-harmful on this near-balanced model. Oracle = eval R-p@1 then @3; val_brier is misaligned (gamma1.0 best val_brier but lower @1) so reading eval R-p@1 as primary."
+}
