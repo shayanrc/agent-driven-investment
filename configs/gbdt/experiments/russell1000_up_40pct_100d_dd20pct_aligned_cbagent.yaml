@@ -1,0 +1,54 @@
+# CatBoost agent-tune of russell1000 +40%/100d/dd20% (date-aligned). _271 (extends _269/_270).
+#
+# The sole table-wide pattern-match outside the top-10: this CatBoost sweep (#18 by R-p@3)
+# has an XGBoost agent that LOST to it (sweep @1 0.550/@3 0.517 vs agent @1 0.485/@3 0.407),
+# and no CatBoost agent-tune yet. Tests whether tuning the robust backend beats the sweep here.
+#
+# Bar to beat (CatBoost sweep = russell1000_up_40pct_100d_dd20pct_aligned, same window):
+#   test R-p@1=0.550 @3=0.517 @5=0.447 @10=0.382 @20=0.341 (base 0.080). test_end 2025-05-13.
+# NOTE: russell cells failed _266's faithfulness check (universe-refresh drift); this sweep
+# bar was NOT resnap-verified, so the _271 finalize should ALSO resnap it for a fair comparison.
+#
+# H=100 split: anchor 2019-01-01 (canonical D2), test_rows=200 (= horizon+100). Per _269,
+# cbagent is HIGH-VARIANCE — watch eval->test decay, don't chase eval @1. Scout translates
+# XGBoost-vocab HP -> CatBoost (gamma dropped). Scout timeouts bumped (CatBoost slower).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: russell1000_up_40pct_100d_dd20pct_aligned_cbagent
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 40
+  horizon_days: 100
+  max_drawdown: 0.20
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 200
+  min_train_rows_per_ticker: 200
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    per_config_timeout_seconds: 300
+    wall_clock_cap_seconds: 3600
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05
+    tie_band: 0.005
+
+random_seed: 42
