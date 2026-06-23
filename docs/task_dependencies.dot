@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 14:00 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\nC1+C2 done: agent-tuning did NOT beat sweep on test (2/2) — steep H=200 eval→test decay", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 16:35 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\n3/3 DONE: agent-tuning did NOT beat sweep on test R-p@1/@3 — steep H=200 eval→test decay → _268 investigates why", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -40,17 +40,17 @@ digraph tasks {
     style = "rounded"; color = "#3366aa"; fontname = "Helvetica-Bold"; fontsize = 11;
     C1 [label=<<B>C1</B> sp500 +50%/200d ✓<BR/>test @1 0.623 @3 0.454<BR/>(sweep @3 0.569 — matched @1, lost @3+)>, fillcolor="#cccccc"];
     C2 [label=<<B>C2</B> sp500 +40%/200d ✓<BR/>test @1 0.697 @3 0.468<BR/>(sweep @3 0.556 — lost @1-@5)>, fillcolor="#cccccc"];
-    C3 [label=<<B>C3</B> russell1000 +40%/200d<BR/>agent loop (running, cold build)<BR/>sweep R-p@3 0.570>, fillcolor="#a3c8e8"];
+    C3 [label=<<B>C3</B> russell1000 +40%/200d ✓<BR/>test @1 0.447 @3 0.457<BR/>(sweep @3 0.570; agent wins K≥5)>, fillcolor="#cccccc"];
     K1 [label=<commit: sp500_50 ✓<BR/>17e8993>, fillcolor="#cccccc"];
     K2 [label=<commit: sp500_40 ✓<BR/>d36c45b>, fillcolor="#cccccc"];
-    K3 [label=<commit: russell_40>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    K3 [label=<commit: russell_40 ✓<BR/>7820a87>, fillcolor="#cccccc"];
   }
 
   // Finalize
   subgraph cluster_fin {
     label = "Finalize";
     style = "rounded"; color = "#aa6633"; fontname = "Helvetica-Bold"; fontsize = 11;
-    FIN [label=<<B>FIN</B> regen registry + memo _267 + PR<BR/>agent-tuned vs sweep>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    FIN [label=<<B>FIN</B> memo _267 + PR<BR/>3/3: agent did not beat sweep @1/@3>, fillcolor="#a3c8e8"];
   }
 
   // Goal
@@ -84,4 +84,8 @@ digraph tasks {
   K3 -> FIN [color="#2e8b57", penwidth=2];
 
   FIN -> G [color="#cc3333", penwidth=2];
+
+  // follow-up investigation (queued, task #17)
+  INV [label=<<B>_268 INV</B> why agent &lt; sweep?<BR/>backend (XGB vs CatBoost) / stale-vintage bar<BR/>/ eval-overfit / capacity>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+  G -> INV [style="dashed", color="#999999", label="follow-up (task #17)"];
 }

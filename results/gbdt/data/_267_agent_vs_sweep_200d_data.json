@@ -1,0 +1,35 @@
+{
+  "experiment": "_267_agent_tuned_200d_vs_sweep",
+  "description": "Agent-tuned (xgboost, agent_file_protocol, V1.3 scout+combine, current vintage) date-aligned counterparts of the 3 un-tuned top-200d sweep cells, vs the stale-vintage sweep CatBoost bar. test window 2023-07-27..2024-10-03.",
+  "snapshot_end": "2026-06-20",
+  "metric": "R-Precision@K (per-day fixed K, macro over days R_q>0, min(K,R_q) denominator)",
+  "vintage_caveat": "sweep numbers are stale-vintage (cells failed _266 forward-OOS self-check); agent numbers are current-vintage. Confound to be resolved in _268.",
+  "cells": [
+    {
+      "cell": "sp500_up_50pct_200d_dd25pct",
+      "base_rate": 0.135,
+      "agent": {"backend": "xgboost", "commit": "17e8993", "hp": {"eta": 0.2, "max_depth": 4, "gamma": 0.5, "colsample_bytree": 0.5}, "n_features": 143,
+                "test": {"1": 0.623, "3": 0.454, "5": 0.467, "10": 0.449, "20": 0.445, "AUC": 0.72},
+                "eval": {"1": 0.895, "3": 0.743, "5": 0.690, "10": 0.572, "20": 0.462}},
+      "sweep": {"backend": "catboost", "test": {"1": 0.607, "3": 0.569, "5": 0.543, "10": 0.488, "20": 0.458}}
+    },
+    {
+      "cell": "sp500_up_40pct_200d_dd20pct",
+      "base_rate": 0.219,
+      "agent": {"backend": "xgboost", "commit": "d36c45b", "hp": {"max_depth": 3, "eta": 0.1, "min_child_weight": 5, "alpha": 0.1, "gamma": 0.1}, "n_features": 143,
+                "test": {"1": 0.697, "3": 0.468, "5": 0.429, "10": 0.445, "20": 0.466, "AUC": 0.70},
+                "eval": {"1": 0.895, "3": 0.728, "5": 0.628, "10": 0.543, "20": 0.486}},
+      "sweep": {"backend": "catboost", "test": {"1": 0.727, "3": 0.556, "5": 0.521, "10": 0.450, "20": 0.451}}
+    },
+    {
+      "cell": "russell1000_up_40pct_200d_dd20pct",
+      "base_rate": 0.236,
+      "agent": {"backend": "xgboost", "commit": "7820a87", "hp": {"colsample_bytree": 1.0, "gamma": 0.5}, "n_features": 130,
+                "test": {"1": 0.447, "3": 0.457, "5": 0.534, "10": 0.537, "20": 0.511, "AUC": 0.681},
+                "eval": {"1": 0.790, "3": 0.660, "5": 0.594, "10": 0.517, "20": 0.472}},
+      "sweep": {"backend": "catboost", "test": {"1": 0.717, "3": 0.570, "5": 0.507, "10": 0.465, "20": 0.432, "AUC": 0.662}}
+    }
+  ],
+  "finding": "Agent-tuning did NOT beat the sweep on headline test R-p@1/@3 on any of the 3 H=200 cells (sweep wins/ties @1, wins @3 all three). Agent wins the deep tail (K>=5) on russell1000 + @20 on sp500/40, with higher test AUC on russell. Dominant cause = steep H=200 eval->test decay (agent eval @1 ~0.79-0.90 -> test 0.45-0.70). Agent models are current-vintage + reproducible (sweep cells failed _266).",
+  "followup": "_268: decompose backend (XGB vs CatBoost) / stale-vintage bar / eval-overfit / capacity."
+}
