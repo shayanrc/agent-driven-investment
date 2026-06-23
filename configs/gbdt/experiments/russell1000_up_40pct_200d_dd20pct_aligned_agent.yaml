@@ -1,0 +1,54 @@
+# Agent-mode (V1.3 Option B) run of russell1000 +40%/200d/dd20% (date-aligned).
+#
+# Companion to the sweep-mode aligned cell
+# (results/gbdt/experiments/russell1000_up_40pct_200d_dd20pct_aligned/, CatBoost,
+# sweep ≤3 iters, R-p@3 = 0.570). That sweep cell currently sits top-4 of the
+# R-p@3 table but is sweep-grade AND failed _266's forward-OOS self-check (stale
+# 2024 data vintage). This run produces a properly agent-tuned, current-vintage,
+# date-aligned counterpart. Strong-top-ish cell per playbook rule 8 — agent must
+# NOT default mcw=10 or the cell-4 mix recipe; explore per-cell.
+#
+# train_start 2018-01-01 (H=200 needs cache headroom: test_end + 200d <= cache_end;
+# anchor 2018 -> test_end ~2024-10-03, label_end ~2025-07-24, cache ~2026-06-18 OK).
+# Mirrors the sweep companion's anchor for apples-to-apples comparison.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: russell1000_up_40pct_200d_dd20pct_aligned_agent
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 40
+  horizon_days: 200
+  max_drawdown: 0.20
+
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    per_config_timeout_seconds: 120
+    wall_clock_cap_seconds: 1800
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05
+    tie_band: 0.005
+
+random_seed: 42
