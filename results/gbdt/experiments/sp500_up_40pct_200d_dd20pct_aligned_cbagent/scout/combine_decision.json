@@ -1,0 +1,23 @@
+{
+  "configs": [
+    {"label": "defaults", "hp": {}},
+    {"label": "eta03", "hp": {"eta": 0.3}},
+    {"label": "rsm05", "hp": {"colsample_bytree": 0.5}},
+    {"label": "rsm07", "hp": {"colsample_bytree": 0.7}},
+    {"label": "depth4", "hp": {"max_depth": 4}},
+    {"label": "alpha05", "hp": {"alpha": 0.5}},
+    {"label": "alpha10", "hp": {"alpha": 1.0}},
+    {"label": "eta03_rsm05", "hp": {"eta": 0.3, "colsample_bytree": 0.5}},
+    {"label": "eta03_rsm07", "hp": {"eta": 0.3, "colsample_bytree": 0.7}},
+    {"label": "eta03_alpha05", "hp": {"eta": 0.3, "alpha": 0.5}},
+    {"label": "eta03_rsm05_alpha05", "hp": {"eta": 0.3, "colsample_bytree": 0.5, "alpha": 0.5}},
+    {"label": "rsm05_alpha05", "hp": {"colsample_bytree": 0.5, "alpha": 0.5}},
+    {"label": "rsm05_alpha10", "hp": {"colsample_bytree": 0.5, "alpha": 1.0}},
+    {"label": "rsm07_alpha05", "hp": {"colsample_bytree": 0.7, "alpha": 0.5}},
+    {"label": "depth4_rsm05", "hp": {"max_depth": 4, "colsample_bytree": 0.5}},
+    {"label": "depth4_eta03", "hp": {"max_depth": 4, "eta": 0.3}},
+    {"label": "depth4_rsm05_alpha05", "hp": {"max_depth": 4, "colsample_bytree": 0.5, "alpha": 0.5}},
+    {"label": "eta01_rsm05", "hp": {"eta": 0.1, "colsample_bytree": 0.5}}
+  ],
+  "rationale": "H=200 discipline (per the +50%/200d cbagent crusher's win): the sweep's default model held eval@1 0.825->test 0.630 BECAUSE it was broad, not @1-spiky -- so favor configs that lift the broad top-tail (@3/@5/@10), be skeptical of configs that buy @1 by collapsing @20. Scout read: defaults (depth6/eta0.05/rsm1.0/mcw1/alpha0) eval @1=0.695/@3=0.623/@5=0.595/@10=0.535/@20=0.507, gap -0.008 (not overfit). The broad-lift single-knob winners are: eta=0.3 (BEST val_brier 0.10425, broad @3=0.712/@5=0.662/@10=0.562 WITHOUT spiking @1=0.705 -- the cleanest signal), rsm=0.5 (BEST @10=0.573, also lifts @1=0.805/@3=0.688/@5=0.639), rsm=0.7 (@1=0.80/@10=0.567). alpha=0.5/1.0 lift top-of-book hard (@1 0.845, @3 0.735/0.755) but ERODE the tail (@10 0.538, @20 0.485/0.473) -- the @1-spiky over-fit risk pattern, so included singly + as a light addition but NOT anchored on. depth=8 spikes @1=0.81 but @20 drops to 0.487 (over-fit pattern) -- EXCLUDED; depth=2/3 collapse @1 (0.63/0.61) -- EXCLUDED. min_child_weight is FLAT (1=5=10=25 identical) -- no signal, omitted. scale_pos_weight balloons val_brier to 0.145 (probability bias) -- omitted from combine (recalibration risk). Grid = defaults anchor + the broad single-knob winners (eta0.3, rsm0.5/0.7, depth4) + their pairwise/triple synergies + light-alpha augmentations to probe whether the @1 boost transfers without tail collapse. 18 configs, all CatBoost-translatable XGBoost vocab (gamma/subsample excluded)."
+}

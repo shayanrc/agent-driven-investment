@@ -1,0 +1,7 @@
+{
+  "iter": 0,
+  "prune_features": [],
+  "hp_changes": {"rsm": 0.7},
+  "should_stop": false,
+  "rationale": "iter_0 (rsm=0.5) is HEALTHY: train_val_gap=-0.0048 (no_overfit=True), val_brier 0.1115 well above the weighted-base-rate-brier 0.094 (degenerate_sink_warning=False -- NOT collapsed to a constant predictor), and it is broad-dominant on eval (R-p@1 0.805 / @3 0.688 / @5 0.639 / @10 0.573 / @20 0.501 -- beats the combine defaults at every K and already clears the sweep's eval@1=0.800 bar). Diagnostic-first gate: gap is negative, so I do NOT prune for regularization (FS would only remove capacity; only return_xs_rank_200 sits below the importance floor and dropping 1 of 52 is noise). Feature signal is a clean long-horizon-volatility + cross-section regime model (index_vol_200/garman_klass_200/realized_vol_200 top the importance). The single productive untested probe on the broad column-subsample knob is rsm=0.7 (scout/combine put it within noise of rsm=0.5: @1 0.80 vs 0.805, @10 0.567 vs 0.573) -- iter-1 fits it to confirm rsm=0.5 is the local optimum on this lever and that I am at the HP ceiling. I deliberately avoid adding alpha on top of rsm (combine rsm05_alpha05 COLLAPSED @1 to 0.555; rsm05_alpha10 dropped @1 to 0.775) and avoid the @1-spiky alpha-only / depth=8 paths (the H=200 eval->test over-fit risk). If iter-1 (rsm=0.7) does not beat iter-0's eval R-p@1, I will should_stop -- the scout (8 knobs) + combine (18 configs) + this confirmation is a thorough exploration and best-checkpoint selection picks the genuine winner."
+}

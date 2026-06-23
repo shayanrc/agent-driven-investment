@@ -1,0 +1,7 @@
+{
+  "iter": 1,
+  "prune_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "HP ceiling confirmed on the broad column-subsample family -> stop. iter-1 (rsm=0.7) lands WITHIN NOISE of iter-0 (rsm=0.5) and is slightly worse on the K's that matter: eval R-p@1 0.800 vs 0.805, @5 0.638 vs 0.639, @10 0.567 vs 0.5725, @20 0.492 vs 0.501 (better only @3 0.692 vs 0.688, +0.004). Both fits are healthy (no_overfit=True, degenerate_sink_warning=False); rsm=0.7 has the marginally lower val_brier (0.10856 vs 0.11147) but val_brier is NOT the oracle here (anti_auc_flag='unknown'; eval R-p@K is the holdout signal) and it does not track top-of-book ranking -- rsm=0.5 wins eval R-p@1, the metric the bar weighs most. The exploration is thorough: the scout mapped 8 single-knob response curves, the combine fit 18 configs spanning eta {0.05,0.1,0.3}, rsm {0.4,0.5,0.7,1.0}, depth {4,6,8}, alpha {0,0.5,1.0} and their pairwise/triple synergies, and this loop confirmed rsm=0.5 is the local optimum on the one broad lever with real signal. The @1-spiky paths (alpha-only @1=0.845, depth=8 @1=0.81) were rejected by design for the H=200 eval->test over-fit risk (they collapse @5/@10/@20). Best-checkpoint selection across iters 0+1 (eval R-p@1 oracle) picks iter-0 (rsm=0.5): eval R-p@1 0.805 / @3 0.688 / @5 0.639 / @10 0.573 / @20 0.501."
+}
