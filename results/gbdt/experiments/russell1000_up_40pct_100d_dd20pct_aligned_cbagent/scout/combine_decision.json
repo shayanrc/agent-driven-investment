@@ -1,0 +1,45 @@
+{
+  "configs": [
+    { "label": "defaults", "hp": {} },
+    { "label": "lex_auto_compose", "hp": { "max_depth": 8, "eta": 0.1, "colsample_bytree": 0.7, "alpha": 0.5 } },
+
+    { "label": "alpha05_only", "hp": { "alpha": 0.5 } },
+    { "label": "alpha10_only", "hp": { "alpha": 1.0 } },
+    { "label": "alpha00_only", "hp": { "alpha": 0.0 } },
+
+    { "label": "rsm03_only", "hp": { "colsample_bytree": 0.3 } },
+    { "label": "rsm05_only", "hp": { "colsample_bytree": 0.5 } },
+    { "label": "rsm07_only", "hp": { "colsample_bytree": 0.7 } },
+
+    { "label": "eta01_only", "hp": { "eta": 0.1 } },
+    { "label": "d8_only", "hp": { "max_depth": 8 } },
+    { "label": "d4_only", "hp": { "max_depth": 4 } },
+
+    { "label": "alpha05_rsm07", "hp": { "alpha": 0.5, "colsample_bytree": 0.7 } },
+    { "label": "alpha05_rsm05", "hp": { "alpha": 0.5, "colsample_bytree": 0.5 } },
+    { "label": "alpha05_rsm03", "hp": { "alpha": 0.5, "colsample_bytree": 0.3 } },
+    { "label": "alpha10_rsm07", "hp": { "alpha": 1.0, "colsample_bytree": 0.7 } },
+    { "label": "alpha10_rsm05", "hp": { "alpha": 1.0, "colsample_bytree": 0.5 } },
+
+    { "label": "alpha05_eta01", "hp": { "alpha": 0.5, "eta": 0.1 } },
+    { "label": "alpha10_eta01", "hp": { "alpha": 1.0, "eta": 0.1 } },
+    { "label": "eta01_rsm07", "hp": { "eta": 0.1, "colsample_bytree": 0.7 } },
+    { "label": "eta01_rsm05", "hp": { "eta": 0.1, "colsample_bytree": 0.5 } },
+
+    { "label": "alpha05_d8", "hp": { "alpha": 0.5, "max_depth": 8 } },
+    { "label": "alpha10_d8", "hp": { "alpha": 1.0, "max_depth": 8 } },
+    { "label": "alpha05_d4", "hp": { "alpha": 0.5, "max_depth": 4 } },
+    { "label": "d8_rsm07", "hp": { "max_depth": 8, "colsample_bytree": 0.7 } },
+    { "label": "d8_eta01", "hp": { "max_depth": 8, "eta": 0.1 } },
+    { "label": "d4_eta01", "hp": { "max_depth": 4, "eta": 0.1 } },
+
+    { "label": "alpha05_rsm07_eta01", "hp": { "alpha": 0.5, "colsample_bytree": 0.7, "eta": 0.1 } },
+    { "label": "alpha05_rsm07_d8", "hp": { "alpha": 0.5, "colsample_bytree": 0.7, "max_depth": 8 } },
+    { "label": "alpha05_rsm05_d8", "hp": { "alpha": 0.5, "colsample_bytree": 0.5, "max_depth": 8 } },
+    { "label": "alpha10_rsm07_d8", "hp": { "alpha": 1.0, "colsample_bytree": 0.7, "max_depth": 8 } },
+    { "label": "alpha05_eta01_d8", "hp": { "alpha": 0.5, "eta": 0.1, "max_depth": 8 } },
+    { "label": "alpha05_eta01_d4", "hp": { "alpha": 0.5, "eta": 0.1, "max_depth": 4 } },
+    { "label": "alpha05_rsm05_eta01", "hp": { "alpha": 0.5, "colsample_bytree": 0.5, "eta": 0.1 } },
+    { "label": "alpha10_rsm05_eta01", "hp": { "alpha": 1.0, "colsample_bytree": 0.5, "eta": 0.1 } }
+  ]
+}

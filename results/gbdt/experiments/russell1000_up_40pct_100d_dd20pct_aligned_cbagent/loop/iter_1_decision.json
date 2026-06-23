@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "prune_features": [],
+  "should_stop": true,
+  "rationale": "HP ceiling reached. iter_1 slowed learning_rate 0.05->0.03 (+ iters 2000, ES 125, early-stop at 115 trees) as a structurally-different CAPACITY/smoothness lever to fight eval->test variance; it REGRESSED the broad band that matters: eval R-p @1 0.82->0.69, @3 0.683->0.657, @5 0.642->0.604, @10 0.540->0.520 (only @20 +0.015), while val_brier moved a trivial -0.00015. The smoother ensemble does not help R-p@K here. Combined with the scout's full per-knob sweep (depth/colsample/alpha/eta/mcw/scale_pos_weight) where alpha=0.5 at defaults was already the broad winner, and the diagnostic-first gate (gap -0.018 = NO OVERFIT -> no FS; degenerate_sink_warning=True -> no more reg), there is no remaining promising knob family. Stop and finalize on the best checkpoint = iter_0 (l2_leaf_reg=0.5, lr=0.05, depth=6, 53 features)."
+}

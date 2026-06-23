@@ -1,0 +1,175 @@
+{
+  "run_id": "russell1000_up_40pct_100d_dd20pct_aligned_cbagent",
+  "backend": "catboost",
+  "n_configs_total": 31,
+  "n_configs_completed": 27,
+  "runtime_seconds": 1839.8518559932709,
+  "defaults_metrics": {
+    "config": {
+      "knob_name": "defaults",
+      "knob_value": null,
+      "hp_overlay": {}
+    },
+    "val_brier": 0.05644253665906743,
+    "train_brier": 0.07413676801435118,
+    "eval_R_p_at_K": {
+      "1": 0.76,
+      "3": 0.6466666666666666,
+      "5": 0.621,
+      "10": 0.528,
+      "20": 0.40025
+    },
+    "train_val_gap": -0.01769423135528375,
+    "spiegelhalter_z": -4.123629062473666,
+    "fit_seconds": 62.9751763343811,
+    "status": "ok",
+    "error_message": null
+  },
+  "per_knob_winner": {
+    "max_depth": {
+      "knob_value": 8,
+      "eval_R_p_at_K": {
+        "1": 0.89,
+        "3": 0.6583333333333334,
+        "5": 0.615,
+        "10": 0.54,
+        "20": 0.3885
+      },
+      "val_brier": 0.05684241572714983
+    },
+    "eta": {
+      "knob_value": 0.1,
+      "eval_R_p_at_K": {
+        "1": 0.85,
+        "3": 0.675,
+        "5": 0.6,
+        "10": 0.529,
+        "20": 0.39125
+      },
+      "val_brier": 0.05620999700468122
+    },
+    "colsample_bytree": {
+      "knob_value": 0.7,
+      "eval_R_p_at_K": {
+        "1": 0.835,
+        "3": 0.665,
+        "5": 0.605,
+        "10": 0.5175,
+        "20": 0.3985000000000001
+      },
+      "val_brier": 0.056914146717774255
+    },
+    "min_child_weight": {
+      "knob_value": 1,
+      "eval_R_p_at_K": {
+        "1": 0.76,
+        "3": 0.6466666666666666,
+        "5": 0.621,
+        "10": 0.528,
+        "20": 0.40025
+      },
+      "val_brier": 0.05644253665906743
+    },
+    "alpha": {
+      "knob_value": 0.5,
+      "eval_R_p_at_K": {
+        "1": 0.82,
+        "3": 0.6833333333333335,
+        "5": 0.6419999999999999,
+        "10": 0.5395,
+        "20": 0.387
+      },
+      "val_brier": 0.056627357471648106
+    },
+    "scale_pos_weight": {
+      "knob_value": 2.6969486886200422,
+      "eval_R_p_at_K": {
+        "1": 0.835,
+        "3": 0.6316666666666666,
+        "5": 0.563,
+        "10": 0.4734999999999999,
+        "20": 0.389
+      },
+      "val_brier": 0.07682005288523915
+    }
+  },
+  "lexicographic_auto_compose": {
+    "hp_overlay": {
+      "depth": 8,
+      "learning_rate": 0.1,
+      "rsm": 0.7,
+      "l2_leaf_reg": 0.5,
+      "class_weights": {
+        "0": 1.0,
+        "1": 2.6969486886200422
+      }
+    }
+  },
+  "fs_prefit": {
+    "enabled": true,
+    "cliff_pct": 0.01,
+    "n_kept": 53,
+    "n_dropped": 226,
+    "top_importance": 15.28702749836763,
+    "cliff_threshold": 0.1528702749836763,
+    "fit_seconds": 210.35270023345947,
+    "kept_features": [
+      "index_vol_200",
+      "garman_klass_200",
+      "garman_klass_50",
+      "realized_vol_200",
+      "index_vol_50",
+      "vol_xs_zscore_200",
+      "index_return_100",
+      "index_drawdown_200",
+      "beta_200",
+      "vol_xs_rank_100",
+      "vol_xs_zscore_100",
+      "index_vol_20",
+      "index_return_200",
+      "parkinson_20",
+      "parkinson_200",
+      "garman_klass_100",
+      "vol_xs_rank_200",
+      "parkinson_100",
+      "garman_klass_20",
+      "returns_kurt_200",
+      "vol_xs_zscore_50",
+      "return_xs_zscore_200",
+      "vol_change_100",
+      "drawdown_100",
+      "vol_change_200",
+      "realized_vol_zscore_200_outside_band_2",
+      "vol_xs_zscore_50_outside_band_1",
+      "parkinson_50",
+      "dollar_move_xs_rank",
+      "vol_xs_rank_50",
+      "garman_klass_10",
+      "vol_of_vol_200",
+      "index_vol_10",
+      "rel_strength_200",
+      "index_vol_100",
+      "stock_return_zscore_100_outside_band_1",
+      "parkinson_5",
+      "realized_vol_zscore_50_outside_band_1",
+      "return_xs_rank_200",
+      "vol_xs_zscore_200_outside_band_3",
+      "parkinson_10",
+      "vol_of_vol_50",
+      "returns_kurt_100",
+      "index_return_50",
+      "vol_xs_rank_20",
+      "runup_200",
+      "drawdown_20",
+      "realized_vol_20",
+      "vol_of_vol_100",
+      "index_runup_200",
+      "dollar_move_xs_zscore",
+      "vol_xs_zscore_200_outside_band_2",
+      "drawdown_200"
+    ],
+    "cache_hit": true,
+    "cache_key": "10362d30875761160733c15a558db5c3"
+  },
+  "grid_spec": {}
+}
