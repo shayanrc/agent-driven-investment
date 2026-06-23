@@ -1,0 +1,6 @@
+{
+  "iter": 1,
+  "hp_changes": { "rsm": 0.5, "l2_leaf_reg": 3.0 },
+  "should_stop": false,
+  "rationale": "Clean in-window A/B confirmed the scout: iter0 rsm0.5/l2_0.5 wins @1 (0.845) + val_brier (0.0656); iter1 defaults rsm1.0/l2_3.0 wins @3/@5/@10/@20 (the broad top-tail: 0.750/0.666/0.5435/0.457). Both no_overfit. iter 2 tests the DECOUPLED column-subsample rsm=0.5 + default l2_leaf_reg=3.0 (never run in combine -- combine paired rsm0.5 only with alpha/l2 changes). In the scout single-knob curve rsm=0.5 alone gave eval @1=0.810 AND the best @10 in the whole scout (0.569) -- a candidate that may keep the broad top-tail of defaults while picking up the column-subsample diversity benefit. Adds a third structurally-distinct candidate to the best-checkpoint pool. No pruning (rule 1: not overfit)."
+}

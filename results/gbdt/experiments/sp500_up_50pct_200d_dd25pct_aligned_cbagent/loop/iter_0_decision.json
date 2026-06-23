@@ -1,0 +1,6 @@
+{
+  "iter": 0,
+  "hp_changes": { "rsm": 1.0, "l2_leaf_reg": 3.0 },
+  "should_stop": false,
+  "rationale": "LOOP decisions use CatBoost-native HP names (apply_decision merges into current_hp without translation; validate_decision uses catboost tables). iter_0 (rsm=0.5/l2_leaf_reg=0.5) is clean: gap=-0.019 (no_overfit), no degenerate sink, eval @1=0.845/@3=0.738/@5=0.644/@10=0.536. Per rule 1 do NOT prune (FS neutral-to-harmful on a non-overfit model); HP transfer is the real lever. iter 1 reverts to PURE CatBoost DEFAULTS (rsm=1.0, l2_leaf_reg=3.0) = the exact CatBoost-sweep config that held eval @1 0.825 -> test 0.630. This A/B puts the proven-transferring sweep model into the best-checkpoint pool alongside the @1-spiky rsm0.5/l2_0.5 start; the H=200 over-fit warning says the @1-spiky config may not transfer, so the sweep config MUST be a candidate to be honest about whether agent-tuning actually beats the cheap sweep on TEST."
+}

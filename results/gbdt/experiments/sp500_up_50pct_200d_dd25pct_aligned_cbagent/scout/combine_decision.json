@@ -1,0 +1,17 @@
+{
+  "configs": [
+    { "label": "defaults", "hp": {} },
+    { "label": "rsm04", "hp": { "colsample_bytree": 0.4 } },
+    { "label": "rsm05", "hp": { "colsample_bytree": 0.5 } },
+    { "label": "rsm07", "hp": { "colsample_bytree": 0.7 } },
+    { "label": "rsm05_eta01", "hp": { "colsample_bytree": 0.5, "eta": 0.1 } },
+    { "label": "rsm04_alpha01", "hp": { "colsample_bytree": 0.4, "alpha": 0.1 } },
+    { "label": "rsm05_alpha01", "hp": { "colsample_bytree": 0.5, "alpha": 0.1 } },
+    { "label": "rsm05_alpha05", "hp": { "colsample_bytree": 0.5, "alpha": 0.5 } },
+    { "label": "alpha01", "hp": { "alpha": 0.1 } },
+    { "label": "alpha05", "hp": { "alpha": 0.5 } },
+    { "label": "d8_rsm05", "hp": { "max_depth": 8, "colsample_bytree": 0.5 } },
+    { "label": "d6_eta01_rsm05", "hp": { "eta": 0.1, "colsample_bytree": 0.5 } }
+  ],
+  "rationale": "Defaults (depth6/eta0.05/rsm1.0/mcw1/alpha0) dominate scout at @3/@5/@10 (the sweep model: eval @1=0.825/@3=0.750/@10=0.543) and held to test @1=0.630 historically. The ONLY lever with eval signal is column subsampling: rsm=0.4 wins @1 (0.845, best in scout) but loses @3-@20; rsm=0.5 is the balanced variant (best @10=0.569). mcw is flat (1=5=10=25). subsample errors under CatBoost; scale_pos_weight>1 corrupts Brier (0.108/0.190) -> both excluded. Probe the rsm 0.4-0.7 region plus gentle alpha regularization to find a config that beats the sweep on test @1/@3 while resisting the H=200 eval->test over-fit. Anchor with defaults so combine confirms the sweep baseline in-window."
+}

@@ -1,0 +1,18 @@
+{
+  "run_id": "sp500_up_50pct_200d_dd25pct_aligned_cbagent",
+  "backend": "catboost",
+  "prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "cap_n_configs": 50,
+  "lex_auto_compose_overlay": {
+    "rsm": 0.4
+  },
+  "zeroth_candidate_recommendation": {
+    "label": "lex_auto_compose",
+    "hp": {
+      "rsm": 0.4
+    }
+  },
+  "speed_biased_prompt": "Prefer configs that train fast \u2014 favor shallow max_depth \u2208 {2, 3}, higher eta with early stopping (eta \u2265 0.1 + early_stopping_rounds: 30), smaller n_estimators, lower colsample_bytree \u2208 {0.3, 0.4, 0.5}. The cell-5 winner was a 6-tree depth-2 fit in 3 seconds; aim for similar leaf budgets unless scout data argues otherwise.",
+  "scout_results_jsonl": "/mnt/Workspace/Workspace/agent-driven-investment/results/gbdt/experiments/sp500_up_50pct_200d_dd25pct_aligned_cbagent/scout/scout_results.jsonl",
+  "scout_bundle_json": "/mnt/Workspace/Workspace/agent-driven-investment/results/gbdt/experiments/sp500_up_50pct_200d_dd25pct_aligned_cbagent/scout/scout_bundle.json"
+}

@@ -1,0 +1,5 @@
+{
+  "iter": 2,
+  "should_stop": true,
+  "rationale": "STOP — the HP landscape is fully characterized across structurally-distinct knob families and the cell is non-overfit everywhere (rule 1 + rule 9: don't burn iters on a well-mapped, clean cell). Three clean candidates now span the @1<->@10 tradeoff: iter0 rsm0.5/l2_0.5 (eval @1=0.845 best, val_brier 0.0656 best), iter1 pure defaults=the CatBoost sweep (eval @3/@5/@20 best: 0.750/0.666/0.457), iter2 rsm0.5/l2_3.0 (eval @10 best 0.5685). The scout exhaustively mapped depth (6 dominates), eta (0.05 dominates), mcw (flat 1=5=10=25), alpha, rsm; combine confirmed rsm/alpha are the ONLY levers and they trade @1 vs the broad top-tail. No unexplored knob family remains. All val_briers within 0.0017 (< tie_band 0.005) -> the v14_val_flat_eval_rp1 finalizer treats them as a val-tie and commits the highest-eval-@1 checkpoint (iter0). That is the honest test of the brief's H=200 over-fit hypothesis: let the finalizer commit its eval-@1 pick and read whether the @1 edge transfers to the held-out test window or decays vs the sweep defaults (iter1, in the pool)."
+}
