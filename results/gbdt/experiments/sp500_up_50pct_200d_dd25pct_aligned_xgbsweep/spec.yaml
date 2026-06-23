@@ -1,0 +1,24 @@
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+date_range:
+  end: 2026-06-20

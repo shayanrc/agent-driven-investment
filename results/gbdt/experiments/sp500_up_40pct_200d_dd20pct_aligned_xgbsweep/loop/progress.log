@@ -1,0 +1,23 @@
+2026-06-23T11:18:32+00:00 [experiment] start spec=sp500_up_40pct_200d_dd20pct_aligned_xgbsweep.yaml -> results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_aligned_xgbsweep
+2026-06-23T11:18:33+00:00 [split] date_aligned: train_start=2018-01-01 calendar=NYSE (2631 trading days available from 2017-01-01)
+2026-06-23T11:18:33+00:00 [preflight] cache currency OK: 503 ticker(s) covered through 2025-07-24
+2026-06-23T11:18:33+00:00 [data] start universe=sp500
+2026-06-23T11:18:54+00:00 [data] complete in 21.6s rows=3629725 tickers_kept=477
+2026-06-23T11:19:02+00:00 [heartbeat] t=16:49:02 phase=features elapsed_phase=7s elapsed_total=30s rss_mb=1092
+2026-06-23T11:19:10+00:00 [features] loaded from universe cache (key match) in 4.5s shape=(3629725, 279)
+2026-06-23T11:19:32+00:00 [heartbeat] t=16:49:32 phase=features elapsed_phase=37s elapsed_total=60s rss_mb=18282
+2026-06-23T11:19:35+00:00 [target] start
+2026-06-23T11:19:49+00:00 [target] complete in 14.0s positive_prevalence=0.197
+2026-06-23T11:19:49+00:00 [uniqueness] start
+2026-06-23T11:19:54+00:00 [uniqueness] complete in 4.3s horizon=200 rows=3629725 ESS=3590015 inflation=1.01x
+2026-06-23T11:19:54+00:00 [loop] V1.3 no sweep_row for cell='sp500_up_40pct_200d_dd20pct' (csv=results/gbdt/data/r_precision_at_k.csv); anti_auc_flag will be 'unknown'
+2026-06-23T11:19:54+00:00 [loop] start max_iter=3 callback_mode=default
+2026-06-23T11:20:02+00:00 [heartbeat] t=16:50:02 phase=loop elapsed_phase=9s elapsed_total=90s rss_mb=18282
+2026-06-23T11:20:32+00:00 [heartbeat] t=16:50:32 phase=loop elapsed_phase=39s elapsed_total=120s rss_mb=18282
+2026-06-23T11:21:02+00:00 [heartbeat] t=16:51:02 phase=loop elapsed_phase=69s elapsed_total=150s rss_mb=18282
+2026-06-23T11:21:32+00:00 [heartbeat] t=16:51:32 phase=loop elapsed_phase=99s elapsed_total=180s rss_mb=18282
+2026-06-23T11:21:47+00:00 [loop] LOOP COMPLETE in 113.3s best_iter=0 val_brier=0.1153 reason=degradation
+2026-06-23T11:21:47+00:00 [artifact] start
+2026-06-23T11:21:52+00:00 [artifact] complete in 4.9s -> results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_aligned_xgbsweep
+2026-06-23T11:21:52+00:00 [loop] STOPPED reason=degradation
+2026-06-23T11:21:52+00:00 [experiment] complete in 199.5s

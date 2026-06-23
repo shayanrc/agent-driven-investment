@@ -1,0 +1,46 @@
+# Experiment: russell1000_up_40pct_200d_dd20pct_aligned
+#
+# V1.4 date-aligned variant of the cell — train_start=2018-01-01
+# (earlier than canonical D2 (2019-01-01) to give the H=200 label window enough cache headroom: test_end + 200d must fall <= cache_end 2026-05-22). Rerun under bug #228 to fix
+# the H>=100 trailing-anchor test-window-eaten-by-horizon issue (bug #129).
+#
+# test_rows=300 (= horizon_days+100) gives ~100 usable test rows per ticker;
+# the trailing horizon_days=200 rows of the test segment have NaN labels and are dropped.
+#
+#
+# Cell: russell1000 UP 40% in 200 trading days with max drawdown 20%.
+#
+# Historical base rate (non-overlapping blocks from EDA scan 2026-05-26,
+# russell1000 panel, 1990-01-02 to 2026-05-22): 12.636%  (3818 positives
+# / 30215 blocks).  Priority rank: #13 of 57 in the
+# US sweep.
+#
+# Sweep-mode params: fs_hp_loop.max_iterations=3. This is a SCREENING
+# run; cells with meaningful calibration improvement get re-run with
+# the full 8-iter loop later.
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 40
+  horizon_days: 200
+  max_drawdown: 0.2
+
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000   # bug #228: train(800)+val(400)+eval(200)+test(300)=1700 > default 1600 — raise floor
+
+backend:
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    max_iterations: 3
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
