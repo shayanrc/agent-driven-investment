@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 16:35 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\n3/3 DONE: agent-tuning did NOT beat sweep — _268 verdict: backend (CatBoost) dominates + agent eval-R-p@1 objective unreliable at H=200 (vintage rejected) → use CatBoost sweep", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 16:35 IST)\nbranch gbdt-200d-aligned-agent-tune · sub-agent per cell (sole driver) · separate commit per experiment\n3/3 DONE: agent-tuning did NOT beat sweep — _268 verdict: backend (CatBoost) dominates at H=200 (vintage rejected)\nNOW (2026-06-23 17:25 IST): CatBoost agent-tune ×3 — can tuning the robust backend beat its own cheap sweep?", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -89,7 +89,25 @@ digraph tasks {
   INV [label=<<B>_268 ✓</B> why agent &lt; sweep (2×2 backend×tuning)<BR/>BACKEND dominates — CatBoost robust, lowest eval→test decay<BR/>+ eval-overfit (cell-dep: rescued sp500, hurt russell); vintage REJECTED<BR/>→ use CatBoost sweep for H=200>, fillcolor="#cccccc"];
   G -> INV [style="dashed", color="#999999", label="follow-up (task #17) ✓"];
 
-  // _268 recommended follow-up (parked)
-  TBD [label=<CatBoost agent-tune vs CatBoost sweep<BR/>(can tuning beat the robust backend?)<BR/>→ V1.5_TBD>, fillcolor="#ffffff", style="rounded,filled,dashed"];
-  INV -> TBD [style="dashed", color="#999999", label="parked"];
+  // _268 recommended follow-up (now actioned)
+  TBD [label=<V1.5_TBD #1: CatBoost agent-tune<BR/>vs CatBoost sweep — actioned>, fillcolor="#cccccc"];
+  INV -> TBD [style="dashed", color="#999999", label="promoted"];
+
+  // CatBoost agent-tune phase (3 cells, sequential single-writer)
+  subgraph cluster_cbtune {
+    label = "CatBoost agent-tune ×3 (V1.5_TBD #1 — can tuning the robust backend beat the CatBoost sweep?)";
+    style = "rounded"; color = "#aa3399"; fontname = "Helvetica-Bold"; fontsize = 11;
+    CBR  [label=<<B>CB-R</B> russell1000 +40%/200d<BR/>CatBoost agent loop (running)<BR/>bar: sweep @1 0.740 · XGB-agent 0.447>, fillcolor="#a3c8e8"];
+    CB50 [label=<<B>CB-50</B> sp500 +50%/200d<BR/>bar: sweep @1 0.630>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    CB40 [label=<<B>CB-40</B> sp500 +40%/200d<BR/>bar: sweep @1 0.727>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    M269 [label=<<B>_269</B> memo + PR<BR/>CatBoost-agent vs sweep vs XGB-agent>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+  }
+  TBD -> CBR [color="#aa3399", penwidth=2];
+  CBR  -> CB50 [color="#cc3333", penwidth=2, label="then (single-writer)"];
+  CB50 -> CB40 [color="#cc3333", penwidth=2, label="then"];
+  CB40 -> M269 [color="#aa3399"];
+
+  G2 [label="CatBoost 200d top cells that beat the sweep\n(or a documented null — sweep stays the baseline)", fillcolor="#ffd966", shape=octagon];
+  M269 -> G2 [color="#aa3399", penwidth=2];
+  legend -> CBR [style="invis", weight=100];
 }

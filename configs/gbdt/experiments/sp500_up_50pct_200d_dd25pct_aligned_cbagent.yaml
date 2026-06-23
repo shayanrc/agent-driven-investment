@@ -1,0 +1,53 @@
+# CatBoost agent-tune of sp500 +50%/200d/dd25% (date-aligned). V1.5_TBD #1.
+#
+# _268: at H=200 the CatBoost backend dominates; this run tests whether tuning the
+# robust backend (CatBoost) via agent_file_protocol can BEAT the cheap CatBoost sweep.
+#
+# Bar to beat (CatBoost sweep = *_aligned_resnap, current vintage, same window):
+#   test R-p@1=0.630 @3=0.532 @5=0.494 @10=0.491 @20=0.448 (base 0.135; eval @1=0.820).
+# XGBoost agent (the _267 cell) test @1=0.623 — it ~matched the sweep @1 here.
+#
+# Scout translates XGBoost-vocab HP -> CatBoost (max_depth->depth, eta->learning_rate,
+# colsample_bytree->rsm, min_child_weight->min_data_in_leaf, alpha->l2_leaf_reg; gamma
+# dropped). Scout timeouts bumped (CatBoost slower than XGBoost).
+#
+# Schema reference: docs/gbdt/EXPERIMENT_SPEC.md.
+
+experiment_name: sp500_up_50pct_200d_dd25pct_aligned_cbagent
+
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2018-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 300
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 2000
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  scout:
+    enabled: true
+    per_config_timeout_seconds: 300
+    wall_clock_cap_seconds: 3600
+  fs_prefit:
+    enabled: true
+    cliff_pct: 0.01
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.05
+    degenerate_sink_threshold: 1.05
+    tie_band: 0.005
+
+random_seed: 42
