@@ -1,0 +1,7 @@
+{
+  "hp": {
+    "colsample_bytree": 0.5,
+    "alpha": 0.5
+  },
+  "rationale": "iter_0 starts from rsm05_alpha05 (CatBoost: rsm=0.5, l2_leaf_reg=0.5). It is the only combine config that improves eval @1 (0.845 vs defaults 0.825) WITHOUT collapsing the broader top-tail: @3=0.738 (defaults 0.750), @5=0.644, @10=0.536, plus the best val_brier in the set (0.0656) and a healthy -0.019 train_val_gap (not overfit). Deliberately NOT picking rsm04_alpha01 (eval @1=0.885) despite its higher @1 -- that config buys @1 via aggressive column subsampling + alpha and loses @3/@5/@10, the exact eval->test over-fit pattern flagged for H=200 (the sweep's defaults held @1 0.825->0.630 BECAUSE the model was broad, not @1-spiky). Will use loop iters to A/B this start vs defaults and probe whether the modest @1 edge transfers; best-checkpoint selection across iters picks the genuine winner."
+}
