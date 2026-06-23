@@ -4,7 +4,7 @@ digraph tasks {
   bgcolor="white";
   node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", margin="0.15,0.08"];
   edge [fontname="Helvetica", fontsize=9];
-  graph [labelloc="t", label="agent-driven-investment — date-aligned refit + true-OOS pipeline (2026-06-23 01:57 IST)\nbranch gbdt-trailing-champions-date-aligned · refit 5 trailing champions on date_aligned, then top-10 true-OOS rerun", fontsize=13, fontname="Helvetica-Bold"];
+  graph [labelloc="t", label="agent-driven-investment — agent-tune the 3 un-tuned top-200d cells (2026-06-23 12:22 IST)\nbranch gbdt-200d-aligned-agent-tune · sequential agent_file_protocol (single-writer) · separate commit per experiment", fontsize=13, fontname="Helvetica-Bold"];
 
   // Legend in isolated top rank
   {
@@ -20,68 +20,68 @@ digraph tasks {
           <TD BGCOLOR="#cccccc">done / merged</TD>
           <TD BGCOLOR="#a3c8e8">recurring (dotted)</TD>
         </TR>
-        <TR><TD COLSPAN="6" BGCOLOR="#f8f8f8">solid edge = hard dep · dashed = soft / context · green = critical path</TD></TR>
+        <TR><TD COLSPAN="6" BGCOLOR="#f8f8f8">solid edge = hard dep · dashed = soft / context · red = sequential single-writer chain</TD></TR>
       </TABLE>
     >];
   }
 
-  // Recently merged (context)
+  // Context — merged
   subgraph cluster_done {
-    label = "Recently merged (context)";
+    label = "Context (merged)";
     style = "filled"; fillcolor = "#fafafa"; color = "#cccccc";
     fontname = "Helvetica-Bold"; fontsize = 11;
-    macro [label="macro program (F17)\nconcluded — not deployed\n(_258–_264)", fillcolor="#cccccc"];
-    paths [label="path cleanup + venv fix\n(#209) — relative-from-root", fillcolor="#cccccc"];
+    prior [label="_265 + _266 pipeline (PR #210)\ndate-aligned refits + true-OOS rerun", fillcolor="#cccccc"];
+    ident [label="top-10 analysis: 3 un-tuned 200d\nsweep cells (also _266 OOS failures)", fillcolor="#cccccc"];
   }
 
-  // Phase A — date-aligned matched refits
-  subgraph cluster_A {
-    label = "Phase A — date-aligned matched refits (5 trailing champions)";
+  // Phase — agent-tune
+  subgraph cluster_tune {
+    label = "Agent-tune (xgboost, V1.3 scout + agent_file_protocol, date-aligned 2018-anchor)";
     style = "rounded"; color = "#3366aa"; fontname = "Helvetica-Bold"; fontsize = 11;
-    A1 [label=<<B>A1</B> generate 5 specs<BR/>pin HP+features, single fit<BR/>gen_aligned_champion_specs.py>, fillcolor="#cccccc"];
-    A2 [label=<<B>A2</B> run 5 refits<BR/>date_aligned single fit<BR/>(5/5 done; nasdaq via exclude)>, fillcolor="#cccccc"];
-    A3 [label=<<B>A3</B> R-p@K &rarr; registry<BR/>+5 rows (164 total)<BR/>r_precision_at_k.csv>, fillcolor="#cccccc"];
-    A4 [label=<<B>A4</B> memo _265 + commit<BR/>Phase A>, fillcolor="#cccccc"];
+    C1 [label=<<B>C1</B> sp500 +50%/200d<BR/>agent loop (running)<BR/>sweep R-p@3 0.569>, fillcolor="#a3c8e8"];
+    C2 [label=<<B>C2</B> sp500 +40%/200d<BR/>(warm sp500 cache)<BR/>sweep R-p@3 0.556>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    C3 [label=<<B>C3</B> russell1000 +40%/200d<BR/>(cold build)<BR/>sweep R-p@3 0.570>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    K1 [label=<commit: sp500_50<BR/>artifacts + registry row>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    K2 [label=<commit: sp500_40>, fillcolor="#ffffff", style="rounded,filled,dashed"];
+    K3 [label=<commit: russell_40>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
-  // Phase B — top-10 true-OOS rerun
-  subgraph cluster_B {
-    label = "Phase B — top-10 &rarr; true post-test-set OOS rerun";
+  // Finalize
+  subgraph cluster_fin {
+    label = "Finalize";
     style = "rounded"; color = "#aa6633"; fontname = "Helvetica-Bold"; fontsize = 11;
-    B1 [label=<<B>B1</B> select top-10 (by R-p@3)<BR/>5 aligned-200d + 5 trailing-nasdaq>, fillcolor="#cccccc"];
-    B2 [label=<<B>B2</B> true-OOS inference<BR/>+CatBoost dispatch; 4/10 scored,<BR/>5 self-check abort, 1 absent>, fillcolor="#cccccc"];
-    B3 [label=<<B>B3</B> realized R-p@K<BR/>OOS &lt; in-test; @10 &asymp; base<BR/>(no wide-K edge OOS)>, fillcolor="#cccccc"];
-    B4 [label=<<B>B4</B> memo _266 + commit<BR/>Phase B>, fillcolor="#cccccc"];
+    FIN [label=<<B>FIN</B> regen registry + memo _267 + PR<BR/>agent-tuned vs sweep>, fillcolor="#ffffff", style="rounded,filled,dashed"];
   }
 
   // Goal
   subgraph cluster_goal {
     label = "Goal"; style = "filled"; fillcolor = "#fffcec"; color = "#cc9933";
     fontname = "Helvetica-Bold"; fontsize = 11;
-    G [label="date-aligned + true-OOS\nmetrics for the backtested\nchampions", fillcolor="#ffd966", shape=octagon];
+    G [label="agent-tuned, forward-reproducible\ncurrent-vintage 200d top cells", fillcolor="#ffd966", shape=octagon];
   }
 
   // Legend centering anchors
-  legend -> macro [style="invis", weight=100];
-  legend -> A1 [style="invis", weight=100];
-  legend -> B1 [style="invis", weight=100];
+  legend -> prior [style="invis", weight=100];
+  legend -> C1 [style="invis", weight=100];
+  legend -> FIN [style="invis", weight=100];
   legend -> G  [style="invis", weight=100];
 
-  // context -> start (soft)
-  paths -> A1 [style="dashed", color="#999999", label="branch off main"];
+  // context -> start
+  ident -> C1 [style="dashed", color="#999999"];
 
-  // Phase A critical path
-  A1 -> A2 [color="#2e8b57", penwidth=2];
-  A2 -> A3 [color="#2e8b57", penwidth=2];
-  A3 -> A4 [color="#2e8b57", penwidth=2];
+  // sequential single-writer chain (red)
+  C1 -> C2 [color="#cc3333", penwidth=2, label="then (single-writer)"];
+  C2 -> C3 [color="#cc3333", penwidth=2, label="then"];
 
-  // A3 gates Phase B (registry must be updated before top-10 select)
-  A3 -> B1 [color="#cc3333", penwidth=2, label="registry updated"];
-  B1 -> B2 [color="#2e8b57", penwidth=2];
-  B2 -> B3 [color="#2e8b57", penwidth=2];
-  B3 -> B4 [color="#2e8b57", penwidth=2];
+  // each cell -> its own commit
+  C1 -> K1 [color="#2e8b57"];
+  C2 -> K2 [color="#2e8b57"];
+  C3 -> K3 [color="#2e8b57"];
 
-  // -> goal
-  A4 -> G [style="dashed", color="#338866"];
-  B4 -> G [color="#cc3333", penwidth=2];
+  // commits -> finalize
+  K1 -> FIN [style="dashed", color="#338866"];
+  K2 -> FIN [style="dashed", color="#338866"];
+  K3 -> FIN [color="#2e8b57", penwidth=2];
+
+  FIN -> G [color="#cc3333", penwidth=2];
 }
