@@ -78,6 +78,36 @@ eval objective (multi-window / decay-penalized, V1.5_TBD #2), not the backend.
 - **Investigate the @3 regression (#26)** — chiefly the FS-prefit effect — against this verified bar.
 - **Promote V1.5_TBD #2 before any further H=200 agent-tuning push.**
 
+## Addendum (#26) — the @3 loss is a rank-2/3 reshape, NOT FS-prefit
+
+Investigation #26 dug into *why* the cbagent loses @3. Two no-fit analyses against the verified resnap bar:
+
+**(1) Per-rank hit-rate decomposition** (per-day, p_calibrated-ranked, 300 test days):
+
+| rank | cbagent P_k | sweep P_k | Δ |
+|---|---|---|---|
+| 1 | 0.743 | 0.737 | +0.007 |
+| 2 | 0.610 | 0.700 | **−0.090** |
+| 3 | 0.407 | 0.490 | **−0.083** |
+| 4 | 0.503 | 0.460 | +0.043 |
+| 5 | 0.570 | 0.307 | **+0.263** |
+
+The −0.056 @3 gap localizes **entirely to ranks 2–3** (−0.090, −0.083); rank-1 is a tie, and the cbagent
+*wins* ranks 4–5 (which is why it edges @5/@10). So this is a **ranking-shape difference** — the cbagent
+demotes some true positives out of the 2–3 band into 4–5 — not a uniformly weaker model.
+
+**(2) FS-prefit hypothesis — REFUTED.** The cbagent's 53-feature subset (⊂ the sweep's 279) **retains
+92.8% of the sweep's total feature-importance mass, and all 20 of the sweep's top-20 features survived
+FS.** Both models are the same volatility/regime model on the same dominant features (`garman_klass_200`,
+`realized_vol_200`, `index_vol_*`, `parkinson_*`). FS dropped only low-importance tail features (7.2% mass).
+So the @2–3 demotion is **not** a feature-availability deficit.
+
+**Conclusion.** The @3 loss is an **HP/training-shape effect** — the agent's `lr=0.01, depth=4` (vs the
+sweep's plain defaults) reorders the mid-tail (#2–3 weaker, #4–5 stronger) — not FS and not capacity. This
+reinforces `_271`: the cbagent's eval-optimized config produces a *different*, window-dependent ranking, not
+a strictly worse one; the binding constraint is the single-window eval objective (V1.5_TBD #2), not a knob.
+A no-FS confirmatory fit is low-value given the 92.8% importance retention. (Closes #26.)
+
 ## Artifacts
 
 - Cells committed: `25bb679` (cbagent), `4b50015` (sweep resnap); registry rows
