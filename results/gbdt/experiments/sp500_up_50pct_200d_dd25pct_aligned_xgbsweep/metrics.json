@@ -1,0 +1,6230 @@
+{
+  "experiment_name": "sp500_up_50pct_200d_dd25pct_aligned_xgbsweep",
+  "backend": {
+    "library": "xgboost",
+    "model_filename": "model.ubj"
+  },
+  "spec_hash": "sha256:8afac0ed3336735ee5612e2ec8d8c69b4a9b186fd8b3a924670184f8036d4df2",
+  "data_hash": "sha256:0e9d033c00ab8dfb3d2f120fa039c4a8a28739ba0532890abed246156565b3b1",
+  "preflight": {
+    "cache_db": "data/processed.db",
+    "cache_db_size": 959643648,
+    "cache_db_mtime": "2026-06-22T04:54:44.703259+00:00",
+    "data_root": "data",
+    "code_commit": "9d7287beccb6e184403aef68d98cb088e8056233",
+    "code_dirty": true,
+    "snapshot_end_override": "2026-06-20"
+  },
+  "split_mode": "date_aligned",
+  "split_train_start": "2018-01-01",
+  "segment_dates": {
+    "train": {
+      "start": "2018-01-02",
+      "end": "2021-03-08"
+    },
+    "val": {
+      "start": "2021-03-09",
+      "end": "2022-10-06"
+    },
+    "eval": {
+      "start": "2022-10-07",
+      "end": "2023-07-26"
+    },
+    "test": {
+      "start": "2023-07-27",
+      "end": "2024-10-03"
+    }
+  },
+  "data": {
+    "n_tickers_in_universe": 503,
+    "n_tickers_used": 477,
+    "tickers_excluded": [
+      "NASDAQ:ABNB",
+      "NASDAQ:APP",
+      "NASDAQ:CEG",
+      "NASDAQ:CRWD",
+      "NASDAQ:DASH",
+      "NASDAQ:DDOG",
+      "NASDAQ:GEHC",
+      "NASDAQ:PLTR",
+      "NYSE:CARR",
+      "NYSE:COIN",
+      "NYSE:CTVA",
+      "NYSE:DOW",
+      "NYSE:EXE",
+      "NYSE:FOX",
+      "NYSE:FOXA",
+      "NYSE:GEV",
+      "NYSE:HOOD",
+      "NYSE:KVUE",
+      "NYSE:MRNA",
+      "NYSE:OTIS",
+      "NYSE:Q",
+      "NYSE:SNDK",
+      "NYSE:SOLV",
+      "NYSE:UBER",
+      "NYSE:VLTO",
+      "NYSE:VRT"
+    ],
+    "staleness_days_threshold": 20,
+    "stale_tickers": [],
+    "n_tickers_stale": 0,
+    "cache_age_days_by_ticker": {
+      "NASDAQ:AAPL": 2,
+      "NASDAQ:ADBE": 2,
+      "NASDAQ:ADI": 2,
+      "NASDAQ:ADP": 2,
+      "NASDAQ:ADSK": 2,
+      "NASDAQ:AEP": 2,
+      "NASDAQ:AMAT": 2,
+      "NASDAQ:AMD": 2,
+      "NASDAQ:AMGN": 2,
+      "NASDAQ:AMZN": 2,
+      "NASDAQ:AVGO": 2,
+      "NASDAQ:BIIB": 2,
+      "NASDAQ:BKNG": 2,
+      "NASDAQ:BKR": 2,
+      "NASDAQ:CDNS": 2,
+      "NASDAQ:CDW": 2,
+      "NASDAQ:CHTR": 2,
+      "NASDAQ:CMCSA": 2,
+      "NASDAQ:COST": 2,
+      "NASDAQ:CPRT": 2,
+      "NASDAQ:CSCO": 2,
+      "NASDAQ:CSGP": 2,
+      "NASDAQ:CSX": 2,
+      "NASDAQ:CTAS": 2,
+      "NASDAQ:CTSH": 2,
+      "NASDAQ:DXCM": 2,
+      "NASDAQ:EA": 2,
+      "NASDAQ:EXC": 2,
+      "NASDAQ:FANG": 2,
+      "NASDAQ:FAST": 2,
+      "NASDAQ:FTNT": 2,
+      "NASDAQ:GILD": 2,
+      "NASDAQ:GOOG": 2,
+      "NASDAQ:GOOGL": 2,
+      "NASDAQ:HON": 2,
+      "NASDAQ:IDXX": 2,
+      "NASDAQ:INTC": 2,
+      "NASDAQ:INTU": 2,
+      "NASDAQ:ISRG": 2,
+      "NASDAQ:KDP": 2,
+      "NASDAQ:KHC": 2,
+      "NASDAQ:KLAC": 2,
+      "NASDAQ:LIN": 2,
+      "NASDAQ:LRCX": 2,
+      "NASDAQ:LULU": 2,
+      "NASDAQ:MAR": 2,
+      "NASDAQ:MCHP": 2,
+      "NASDAQ:MDLZ": 2,
+      "NASDAQ:META": 2,
+      "NASDAQ:MNST": 2,
+      "NASDAQ:MSFT": 2,
+      "NASDAQ:MU": 2,
+      "NASDAQ:NFLX": 2,
+      "NASDAQ:NVDA": 2,
+      "NASDAQ:NXPI": 2,
+      "NASDAQ:ODFL": 2,
+      "NASDAQ:ON": 2,
+      "NASDAQ:ORLY": 2,
+      "NASDAQ:PANW": 2,
+      "NASDAQ:PAYX": 2,
+      "NASDAQ:PCAR": 2,
+      "NASDAQ:PEP": 2,
+      "NASDAQ:PYPL": 2,
+      "NASDAQ:QCOM": 2,
+      "NASDAQ:REGN": 2,
+      "NASDAQ:ROP": 2,
+      "NASDAQ:ROST": 2,
+      "NASDAQ:SBUX": 2,
+      "NASDAQ:SNPS": 2,
+      "NASDAQ:TMUS": 2,
+      "NASDAQ:TSLA": 2,
+      "NASDAQ:TTD": 2,
+      "NASDAQ:TTWO": 2,
+      "NASDAQ:TXN": 2,
+      "NASDAQ:VRSK": 2,
+      "NASDAQ:VRTX": 2,
+      "NASDAQ:WBD": 2,
+      "NASDAQ:WDAY": 2,
+      "NASDAQ:XEL": 2,
+      "NYSE:A": 2,
+      "NYSE:ABBV": 2,
+      "NYSE:ABT": 2,
+      "NYSE:ACGL": 2,
+      "NYSE:ACN": 2,
+      "NYSE:ADM": 2,
+      "NYSE:AEE": 2,
+      "NYSE:AES": 2,
+      "NYSE:AFL": 2,
+      "NYSE:AIG": 2,
+      "NYSE:AIZ": 2,
+      "NYSE:AJG": 2,
+      "NYSE:AKAM": 2,
+      "NYSE:ALB": 2,
+      "NYSE:ALGN": 2,
+      "NYSE:ALL": 2,
+      "NYSE:ALLE": 2,
+      "NYSE:AMCR": 2,
+      "NYSE:AME": 2,
+      "NYSE:AMP": 2,
+      "NYSE:AMT": 2,
+      "NYSE:ANET": 2,
+      "NYSE:AON": 2,
+      "NYSE:AOS": 2,
+      "NYSE:APA": 2,
+      "NYSE:APD": 2,
+      "NYSE:APH": 2,
+      "NYSE:APO": 2,
+      "NYSE:APTV": 2,
+      "NYSE:ARE": 2,
+      "NYSE:ARES": 2,
+      "NYSE:ATO": 2,
+      "NYSE:AVB": 2,
+      "NYSE:AVY": 2,
+      "NYSE:AWK": 2,
+      "NYSE:AXON": 2,
+      "NYSE:AXP": 2,
+      "NYSE:AZO": 2,
+      "NYSE:BA": 2,
+      "NYSE:BAC": 2,
+      "NYSE:BALL": 2,
+      "NYSE:BAX": 2,
+      "NYSE:BBY": 2,
+      "NYSE:BDX": 2,
+      "NYSE:BEN": 2,
+      "NYSE:BF-B": 2,
+      "NYSE:BG": 2,
+      "NYSE:BLDR": 2,
+      "NYSE:BLK": 2,
+      "NYSE:BMY": 2,
+      "NYSE:BNY": 2,
+      "NYSE:BR": 2,
+      "NYSE:BRK-B": 2,
+      "NYSE:BRO": 2,
+      "NYSE:BSX": 2,
+      "NYSE:BX": 2,
+      "NYSE:BXP": 2,
+      "NYSE:C": 2,
+      "NYSE:CAG": 2,
+      "NYSE:CAH": 2,
+      "NYSE:CASY": 2,
+      "NYSE:CAT": 2,
+      "NYSE:CB": 2,
+      "NYSE:CBOE": 2,
+      "NYSE:CBRE": 2,
+      "NYSE:CCI": 2,
+      "NYSE:CCL": 2,
+      "NYSE:CF": 2,
+      "NYSE:CFG": 2,
+      "NYSE:CHD": 2,
+      "NYSE:CHRW": 2,
+      "NYSE:CI": 2,
+      "NYSE:CIEN": 2,
+      "NYSE:CINF": 2,
+      "NYSE:CL": 2,
+      "NYSE:CLX": 2,
+      "NYSE:CME": 2,
+      "NYSE:CMG": 2,
+      "NYSE:CMI": 2,
+      "NYSE:CMS": 2,
+      "NYSE:CNC": 2,
+      "NYSE:CNP": 2,
+      "NYSE:COF": 2,
+      "NYSE:COHR": 2,
+      "NYSE:COO": 2,
+      "NYSE:COP": 2,
+      "NYSE:COR": 2,
+      "NYSE:CPAY": 2,
+      "NYSE:CPB": 2,
+      "NYSE:CPT": 2,
+      "NYSE:CRH": 2,
+      "NYSE:CRL": 2,
+      "NYSE:CRM": 2,
+      "NYSE:CVNA": 2,
+      "NYSE:CVS": 2,
+      "NYSE:CVX": 2,
+      "NYSE:D": 2,
+      "NYSE:DAL": 2,
+      "NYSE:DD": 2,
+      "NYSE:DE": 2,
+      "NYSE:DECK": 2,
+      "NYSE:DELL": 2,
+      "NYSE:DG": 2,
+      "NYSE:DGX": 2,
+      "NYSE:DHI": 2,
+      "NYSE:DHR": 2,
+      "NYSE:DIS": 2,
+      "NYSE:DLR": 2,
+      "NYSE:DLTR": 2,
+      "NYSE:DOC": 2,
+      "NYSE:DOV": 2,
+      "NYSE:DPZ": 2,
+      "NYSE:DRI": 2,
+      "NYSE:DTE": 2,
+      "NYSE:DUK": 2,
+      "NYSE:DVA": 2,
+      "NYSE:DVN": 2,
+      "NYSE:EBAY": 2,
+      "NYSE:ECL": 2,
+      "NYSE:ED": 2,
+      "NYSE:EFX": 2,
+      "NYSE:EG": 2,
+      "NYSE:EIX": 2,
+      "NYSE:EL": 2,
+      "NYSE:ELV": 2,
+      "NYSE:EME": 2,
+      "NYSE:EMR": 2,
+      "NYSE:EOG": 2,
+      "NYSE:EPAM": 2,
+      "NYSE:EQIX": 2,
+      "NYSE:EQR": 2,
+      "NYSE:EQT": 2,
+      "NYSE:ERIE": 2,
+      "NYSE:ES": 2,
+      "NYSE:ESS": 2,
+      "NYSE:ETN": 2,
+      "NYSE:ETR": 2,
+      "NYSE:EVRG": 2,
+      "NYSE:EW": 2,
+      "NYSE:EXPD": 2,
+      "NYSE:EXPE": 2,
+      "NYSE:EXR": 2,
+      "NYSE:F": 2,
+      "NYSE:FCX": 2,
+      "NYSE:FDS": 2,
+      "NYSE:FDX": 2,
+      "NYSE:FE": 2,
+      "NYSE:FFIV": 2,
+      "NYSE:FICO": 2,
+      "NYSE:FIS": 2,
+      "NYSE:FISV": 2,
+      "NYSE:FITB": 2,
+      "NYSE:FIX": 2,
+      "NYSE:FRT": 2,
+      "NYSE:FSLR": 2,
+      "NYSE:FTV": 2,
+      "NYSE:GD": 2,
+      "NYSE:GDDY": 2,
+      "NYSE:GE": 2,
+      "NYSE:GEN": 2,
+      "NYSE:GIS": 2,
+      "NYSE:GL": 2,
+      "NYSE:GLW": 2,
+      "NYSE:GM": 2,
+      "NYSE:GNRC": 2,
+      "NYSE:GPC": 2,
+      "NYSE:GPN": 2,
+      "NYSE:GRMN": 2,
+      "NYSE:GS": 2,
+      "NYSE:GWW": 2,
+      "NYSE:HAL": 2,
+      "NYSE:HAS": 2,
+      "NYSE:HBAN": 2,
+      "NYSE:HCA": 2,
+      "NYSE:HD": 2,
+      "NYSE:HIG": 2,
+      "NYSE:HII": 2,
+      "NYSE:HLT": 2,
+      "NYSE:HPE": 2,
+      "NYSE:HPQ": 2,
+      "NYSE:HRL": 2,
+      "NYSE:HSIC": 2,
+      "NYSE:HST": 2,
+      "NYSE:HSY": 2,
+      "NYSE:HUBB": 2,
+      "NYSE:HUM": 2,
+      "NYSE:HWM": 2,
+      "NYSE:IBKR": 2,
+      "NYSE:IBM": 2,
+      "NYSE:ICE": 2,
+      "NYSE:IEX": 2,
+      "NYSE:IFF": 2,
+      "NYSE:INCY": 2,
+      "NYSE:INVH": 2,
+      "NYSE:IP": 2,
+      "NYSE:IQV": 2,
+      "NYSE:IR": 2,
+      "NYSE:IRM": 2,
+      "NYSE:IT": 2,
+      "NYSE:ITW": 2,
+      "NYSE:IVZ": 2,
+      "NYSE:J": 2,
+      "NYSE:JBHT": 2,
+      "NYSE:JBL": 2,
+      "NYSE:JCI": 2,
+      "NYSE:JKHY": 2,
+      "NYSE:JNJ": 2,
+      "NYSE:JPM": 2,
+      "NYSE:KEY": 2,
+      "NYSE:KEYS": 2,
+      "NYSE:KIM": 2,
+      "NYSE:KKR": 2,
+      "NYSE:KMB": 2,
+      "NYSE:KMI": 2,
+      "NYSE:KO": 2,
+      "NYSE:KR": 2,
+      "NYSE:L": 2,
+      "NYSE:LDOS": 2,
+      "NYSE:LEN": 2,
+      "NYSE:LH": 2,
+      "NYSE:LHX": 2,
+      "NYSE:LII": 2,
+      "NYSE:LITE": 2,
+      "NYSE:LLY": 2,
+      "NYSE:LMT": 2,
+      "NYSE:LNT": 2,
+      "NYSE:LOW": 2,
+      "NYSE:LUV": 2,
+      "NYSE:LVS": 2,
+      "NYSE:LYB": 2,
+      "NYSE:LYV": 2,
+      "NYSE:MA": 2,
+      "NYSE:MAA": 2,
+      "NYSE:MAS": 2,
+      "NYSE:MCD": 2,
+      "NYSE:MCK": 2,
+      "NYSE:MCO": 2,
+      "NYSE:MDT": 2,
+      "NYSE:MET": 2,
+      "NYSE:MGM": 2,
+      "NYSE:MKC": 2,
+      "NYSE:MLM": 2,
+      "NYSE:MMM": 2,
+      "NYSE:MO": 2,
+      "NYSE:MOS": 2,
+      "NYSE:MPC": 2,
+      "NYSE:MPWR": 2,
+      "NYSE:MRK": 2,
+      "NYSE:MRSH": 2,
+      "NYSE:MS": 2,
+      "NYSE:MSCI": 2,
+      "NYSE:MSI": 2,
+      "NYSE:MTB": 2,
+      "NYSE:MTD": 2,
+      "NYSE:NCLH": 2,
+      "NYSE:NDAQ": 2,
+      "NYSE:NDSN": 2,
+      "NYSE:NEE": 2,
+      "NYSE:NEM": 2,
+      "NYSE:NI": 2,
+      "NYSE:NKE": 2,
+      "NYSE:NOC": 2,
+      "NYSE:NOW": 2,
+      "NYSE:NRG": 2,
+      "NYSE:NSC": 2,
+      "NYSE:NTAP": 2,
+      "NYSE:NTRS": 2,
+      "NYSE:NUE": 2,
+      "NYSE:NVR": 2,
+      "NYSE:NWS": 2,
+      "NYSE:NWSA": 2,
+      "NYSE:O": 2,
+      "NYSE:OKE": 2,
+      "NYSE:OMC": 2,
+      "NYSE:ORCL": 2,
+      "NYSE:OXY": 2,
+      "NYSE:PCG": 2,
+      "NYSE:PEG": 2,
+      "NYSE:PFE": 2,
+      "NYSE:PFG": 2,
+      "NYSE:PG": 2,
+      "NYSE:PGR": 2,
+      "NYSE:PH": 2,
+      "NYSE:PHM": 2,
+      "NYSE:PKG": 2,
+      "NYSE:PLD": 2,
+      "NYSE:PM": 2,
+      "NYSE:PNC": 2,
+      "NYSE:PNR": 2,
+      "NYSE:PNW": 2,
+      "NYSE:PODD": 2,
+      "NYSE:POOL": 2,
+      "NYSE:PPG": 2,
+      "NYSE:PPL": 2,
+      "NYSE:PRU": 2,
+      "NYSE:PSA": 2,
+      "NYSE:PSKY": 2,
+      "NYSE:PSX": 2,
+      "NYSE:PTC": 2,
+      "NYSE:PWR": 2,
+      "NYSE:RCL": 2,
+      "NYSE:REG": 2,
+      "NYSE:RF": 2,
+      "NYSE:RJF": 2,
+      "NYSE:RL": 2,
+      "NYSE:RMD": 2,
+      "NYSE:ROK": 2,
+      "NYSE:ROL": 2,
+      "NYSE:RSG": 2,
+      "NYSE:RTX": 2,
+      "NYSE:RVTY": 2,
+      "NYSE:SATS": 2,
+      "NYSE:SBAC": 2,
+      "NYSE:SCHW": 2,
+      "NYSE:SHW": 2,
+      "NYSE:SJM": 2,
+      "NYSE:SLB": 2,
+      "NYSE:SMCI": 2,
+      "NYSE:SNA": 2,
+      "NYSE:SO": 2,
+      "NYSE:SPG": 2,
+      "NYSE:SPGI": 2,
+      "NYSE:SRE": 2,
+      "NYSE:STE": 2,
+      "NYSE:STLD": 2,
+      "NYSE:STT": 2,
+      "NYSE:STX": 2,
+      "NYSE:STZ": 2,
+      "NYSE:SW": 2,
+      "NYSE:SWK": 2,
+      "NYSE:SWKS": 2,
+      "NYSE:SYF": 2,
+      "NYSE:SYK": 2,
+      "NYSE:SYY": 2,
+      "NYSE:T": 2,
+      "NYSE:TAP": 2,
+      "NYSE:TDG": 2,
+      "NYSE:TDY": 2,
+      "NYSE:TECH": 2,
+      "NYSE:TEL": 2,
+      "NYSE:TER": 2,
+      "NYSE:TFC": 2,
+      "NYSE:TGT": 2,
+      "NYSE:TJX": 2,
+      "NYSE:TKO": 2,
+      "NYSE:TMO": 2,
+      "NYSE:TPL": 2,
+      "NYSE:TPR": 2,
+      "NYSE:TRGP": 2,
+      "NYSE:TRMB": 2,
+      "NYSE:TROW": 2,
+      "NYSE:TRV": 2,
+      "NYSE:TSCO": 2,
+      "NYSE:TSN": 2,
+      "NYSE:TT": 2,
+      "NYSE:TXT": 2,
+      "NYSE:TYL": 2,
+      "NYSE:UAL": 2,
+      "NYSE:UDR": 2,
+      "NYSE:UHS": 2,
+      "NYSE:ULTA": 2,
+      "NYSE:UNH": 2,
+      "NYSE:UNP": 2,
+      "NYSE:UPS": 2,
+      "NYSE:URI": 2,
+      "NYSE:USB": 2,
+      "NYSE:V": 2,
+      "NYSE:VEEV": 2,
+      "NYSE:VICI": 2,
+      "NYSE:VLO": 2,
+      "NYSE:VMC": 2,
+      "NYSE:VRSN": 2,
+      "NYSE:VST": 2,
+      "NYSE:VTR": 2,
+      "NYSE:VTRS": 2,
+      "NYSE:VZ": 2,
+      "NYSE:WAB": 2,
+      "NYSE:WAT": 2,
+      "NYSE:WDC": 2,
+      "NYSE:WEC": 2,
+      "NYSE:WELL": 2,
+      "NYSE:WFC": 2,
+      "NYSE:WM": 2,
+      "NYSE:WMB": 2,
+      "NYSE:WMT": 2,
+      "NYSE:WRB": 2,
+      "NYSE:WSM": 2,
+      "NYSE:WST": 2,
+      "NYSE:WTW": 2,
+      "NYSE:WY": 2,
+      "NYSE:WYNN": 2,
+      "NYSE:XOM": 2,
+      "NYSE:XYL": 2,
+      "NYSE:XYZ": 2,
+      "NYSE:YUM": 2,
+      "NYSE:ZBH": 2,
+      "NYSE:ZBRA": 2,
+      "NYSE:ZTS": 2
+    },
+    "nan_rows_dropped_by_ticker": {},
+    "n_rows_train": 381600,
+    "n_rows_val": 190800,
+    "n_rows_eval": 95400,
+    "n_rows_test": 143100,
+    "positive_prevalence_train": 0.14677672955974844,
+    "positive_prevalence_eval": 0.1070859538784067,
+    "test_split_warning": null,
+    "test_split_projection": {
+      "expected_test_rows": 47700,
+      "per_ticker_usable": 100,
+      "n_tickers": 477,
+      "test_rows_per_ticker": 300,
+      "horizon_days": 200
+    },
+    "n_tickers_per_segment": {
+      "train": 477,
+      "val": 477,
+      "eval": 477,
+      "test": 477
+    },
+    "tickers_per_segment": {
+      "train": [
+        "NASDAQ:AAPL",
+        "NASDAQ:ADBE",
+        "NASDAQ:ADI",
+        "NASDAQ:ADP",
+        "NASDAQ:ADSK",
+        "NASDAQ:AEP",
+        "NASDAQ:AMAT",
+        "NASDAQ:AMD",
+        "NASDAQ:AMGN",
+        "NASDAQ:AMZN",
+        "NASDAQ:AVGO",
+        "NASDAQ:BIIB",
+        "NASDAQ:BKNG",
+        "NASDAQ:BKR",
+        "NASDAQ:CDNS",
+        "NASDAQ:CDW",
+        "NASDAQ:CHTR",
+        "NASDAQ:CMCSA",
+        "NASDAQ:COST",
+        "NASDAQ:CPRT",
+        "NASDAQ:CSCO",
+        "NASDAQ:CSGP",
+        "NASDAQ:CSX",
+        "NASDAQ:CTAS",
+        "NASDAQ:CTSH",
+        "NASDAQ:DXCM",
+        "NASDAQ:EA",
+        "NASDAQ:EXC",
+        "NASDAQ:FANG",
+        "NASDAQ:FAST",
+        "NASDAQ:FTNT",
+        "NASDAQ:GILD",
+        "NASDAQ:GOOG",
+        "NASDAQ:GOOGL",
+        "NASDAQ:HON",
+        "NASDAQ:IDXX",
+        "NASDAQ:INTC",
+        "NASDAQ:INTU",
+        "NASDAQ:ISRG",
+        "NASDAQ:KDP",
+        "NASDAQ:KHC",
+        "NASDAQ:KLAC",
+        "NASDAQ:LIN",
+        "NASDAQ:LRCX",
+        "NASDAQ:LULU",
+        "NASDAQ:MAR",
+        "NASDAQ:MCHP",
+        "NASDAQ:MDLZ",
+        "NASDAQ:META",
+        "NASDAQ:MNST",
+        "NASDAQ:MSFT",
+        "NASDAQ:MU",
+        "NASDAQ:NFLX",
+        "NASDAQ:NVDA",
+        "NASDAQ:NXPI",
+        "NASDAQ:ODFL",
+        "NASDAQ:ON",
+        "NASDAQ:ORLY",
+        "NASDAQ:PANW",
+        "NASDAQ:PAYX",
+        "NASDAQ:PCAR",
+        "NASDAQ:PEP",
+        "NASDAQ:PYPL",
+        "NASDAQ:QCOM",
+        "NASDAQ:REGN",
+        "NASDAQ:ROP",
+        "NASDAQ:ROST",
+        "NASDAQ:SBUX",
+        "NASDAQ:SNPS",
+        "NASDAQ:TMUS",
+        "NASDAQ:TSLA",
+        "NASDAQ:TTD",
+        "NASDAQ:TTWO",
+        "NASDAQ:TXN",
+        "NASDAQ:VRSK",
+        "NASDAQ:VRTX",
+        "NASDAQ:WBD",
+        "NASDAQ:WDAY",
+        "NASDAQ:XEL",
+        "NYSE:A",
+        "NYSE:ABBV",
+        "NYSE:ABT",
+        "NYSE:ACGL",
+        "NYSE:ACN",
+        "NYSE:ADM",
+        "NYSE:AEE",
+        "NYSE:AES",
+        "NYSE:AFL",
+        "NYSE:AIG",
+        "NYSE:AIZ",
+        "NYSE:AJG",
+        "NYSE:AKAM",
+        "NYSE:ALB",
+        "NYSE:ALGN",
+        "NYSE:ALL",
+        "NYSE:ALLE",
+        "NYSE:AMCR",
+        "NYSE:AME",
+        "NYSE:AMP",
+        "NYSE:AMT",
+        "NYSE:ANET",
+        "NYSE:AON",
+        "NYSE:AOS",
+        "NYSE:APA",
+        "NYSE:APD",
+        "NYSE:APH",
+        "NYSE:APO",
+        "NYSE:APTV",
+        "NYSE:ARE",
+        "NYSE:ARES",
+        "NYSE:ATO",
+        "NYSE:AVB",
+        "NYSE:AVY",
+        "NYSE:AWK",
+        "NYSE:AXON",
+        "NYSE:AXP",
+        "NYSE:AZO",
+        "NYSE:BA",
+        "NYSE:BAC",
+        "NYSE:BALL",
+        "NYSE:BAX",
+        "NYSE:BBY",
+        "NYSE:BDX",
+        "NYSE:BEN",
+        "NYSE:BF-B",
+        "NYSE:BG",
+        "NYSE:BLDR",
+        "NYSE:BLK",
+        "NYSE:BMY",
+        "NYSE:BNY",
+        "NYSE:BR",
+        "NYSE:BRK-B",
+        "NYSE:BRO",
+        "NYSE:BSX",
+        "NYSE:BX",
+        "NYSE:BXP",
+        "NYSE:C",
+        "NYSE:CAG",
+        "NYSE:CAH",
+        "NYSE:CASY",
+        "NYSE:CAT",
+        "NYSE:CB",
+        "NYSE:CBOE",
+        "NYSE:CBRE",
+        "NYSE:CCI",
+        "NYSE:CCL",
+        "NYSE:CF",
+        "NYSE:CFG",
+        "NYSE:CHD",
+        "NYSE:CHRW",
+        "NYSE:CI",
+        "NYSE:CIEN",
+        "NYSE:CINF",
+        "NYSE:CL",
+        "NYSE:CLX",
+        "NYSE:CME",
+        "NYSE:CMG",
+        "NYSE:CMI",
+        "NYSE:CMS",
+        "NYSE:CNC",
+        "NYSE:CNP",
+        "NYSE:COF",
+        "NYSE:COHR",
+        "NYSE:COO",
+        "NYSE:COP",
+        "NYSE:COR",
+        "NYSE:CPAY",
+        "NYSE:CPB",
+        "NYSE:CPT",
+        "NYSE:CRH",
+        "NYSE:CRL",
+        "NYSE:CRM",
+        "NYSE:CVNA",
+        "NYSE:CVS",
+        "NYSE:CVX",
+        "NYSE:D",
+        "NYSE:DAL",
+        "NYSE:DD",
+        "NYSE:DE",
+        "NYSE:DECK",
+        "NYSE:DELL",
+        "NYSE:DG",
+        "NYSE:DGX",
+        "NYSE:DHI",
+        "NYSE:DHR",
+        "NYSE:DIS",
+        "NYSE:DLR",
+        "NYSE:DLTR",
+        "NYSE:DOC",
+        "NYSE:DOV",
+        "NYSE:DPZ",
+        "NYSE:DRI",
+        "NYSE:DTE",
+        "NYSE:DUK",
+        "NYSE:DVA",
+        "NYSE:DVN",
+        "NYSE:EBAY",
+        "NYSE:ECL",
+        "NYSE:ED",
+        "NYSE:EFX",
+        "NYSE:EG",
+        "NYSE:EIX",
+        "NYSE:EL",
+        "NYSE:ELV",
+        "NYSE:EME",
+        "NYSE:EMR",
+        "NYSE:EOG",
+        "NYSE:EPAM",
+        "NYSE:EQIX",
+        "NYSE:EQR",
+        "NYSE:EQT",
+        "NYSE:ERIE",
+        "NYSE:ES",
+        "NYSE:ESS",
+        "NYSE:ETN",
+        "NYSE:ETR",
+        "NYSE:EVRG",
+        "NYSE:EW",
+        "NYSE:EXPD",
+        "NYSE:EXPE",
+        "NYSE:EXR",
+        "NYSE:F",
+        "NYSE:FCX",
+        "NYSE:FDS",
+        "NYSE:FDX",
+        "NYSE:FE",
+        "NYSE:FFIV",
+        "NYSE:FICO",
+        "NYSE:FIS",
+        "NYSE:FISV",
+        "NYSE:FITB",
+        "NYSE:FIX",
+        "NYSE:FRT",
+        "NYSE:FSLR",
+        "NYSE:FTV",
+        "NYSE:GD",
+        "NYSE:GDDY",
+        "NYSE:GE",
+        "NYSE:GEN",
+        "NYSE:GIS",
+        "NYSE:GL",
+        "NYSE:GLW",
+        "NYSE:GM",
+        "NYSE:GNRC",
+        "NYSE:GPC",
+        "NYSE:GPN",
+        "NYSE:GRMN",
+        "NYSE:GS",
+        "NYSE:GWW",
+        "NYSE:HAL",
+        "NYSE:HAS",
+        "NYSE:HBAN",
+        "NYSE:HCA",
+        "NYSE:HD",
+        "NYSE:HIG",
+        "NYSE:HII",
+        "NYSE:HLT",
+        "NYSE:HPE",
+        "NYSE:HPQ",
+        "NYSE:HRL",
+        "NYSE:HSIC",
+        "NYSE:HST",
+        "NYSE:HSY",
+        "NYSE:HUBB",
+        "NYSE:HUM",
+        "NYSE:HWM",
+        "NYSE:IBKR",
+        "NYSE:IBM",
+        "NYSE:ICE",
+        "NYSE:IEX",
+        "NYSE:IFF",
+        "NYSE:INCY",
+        "NYSE:INVH",
+        "NYSE:IP",
+        "NYSE:IQV",
+        "NYSE:IR",
+        "NYSE:IRM",
+        "NYSE:IT",
+        "NYSE:ITW",
+        "NYSE:IVZ",
+        "NYSE:J",
+        "NYSE:JBHT",
+        "NYSE:JBL",
+        "NYSE:JCI",
+        "NYSE:JKHY",
+        "NYSE:JNJ",
+        "NYSE:JPM",
+        "NYSE:KEY",
+        "NYSE:KEYS",
+        "NYSE:KIM",
+        "NYSE:KKR",
+        "NYSE:KMB",
+        "NYSE:KMI",
+        "NYSE:KO",
+        "NYSE:KR",
+        "NYSE:L",
+        "NYSE:LDOS",
+        "NYSE:LEN",
+        "NYSE:LH",
+        "NYSE:LHX",
+        "NYSE:LII",
+        "NYSE:LITE",
+        "NYSE:LLY",
+        "NYSE:LMT",
+        "NYSE:LNT",
+        "NYSE:LOW",
+        "NYSE:LUV",
+        "NYSE:LVS",
+        "NYSE:LYB",
+        "NYSE:LYV",
+        "NYSE:MA",
+        "NYSE:MAA",
+        "NYSE:MAS",
+        "NYSE:MCD",
+        "NYSE:MCK",
+        "NYSE:MCO",
+        "NYSE:MDT",
+        "NYSE:MET",
+        "NYSE:MGM",
+        "NYSE:MKC",
+        "NYSE:MLM",
+        "NYSE:MMM",
+        "NYSE:MO",
+        "NYSE:MOS",
+        "NYSE:MPC",
+        "NYSE:MPWR",
+        "NYSE:MRK",
+        "NYSE:MRSH",
+        "NYSE:MS",
+        "NYSE:MSCI",
+        "NYSE:MSI",
+        "NYSE:MTB",
+        "NYSE:MTD",
+        "NYSE:NCLH",
+        "NYSE:NDAQ",
+        "NYSE:NDSN",
+        "NYSE:NEE",
+        "NYSE:NEM",
+        "NYSE:NI",
+        "NYSE:NKE",
+        "NYSE:NOC",
+        "NYSE:NOW",
+        "NYSE:NRG",
+        "NYSE:NSC",
+        "NYSE:NTAP",
+        "NYSE:NTRS",
+        "NYSE:NUE",
+        "NYSE:NVR",
+        "NYSE:NWS",
+        "NYSE:NWSA",
+        "NYSE:O",
+        "NYSE:OKE",
+        "NYSE:OMC",
+        "NYSE:ORCL",
+        "NYSE:OXY",
+        "NYSE:PCG",
+        "NYSE:PEG",
+        "NYSE:PFE",
+        "NYSE:PFG",
+        "NYSE:PG",
+        "NYSE:PGR",
+        "NYSE:PH",
+        "NYSE:PHM",
+        "NYSE:PKG",
+        "NYSE:PLD",
+        "NYSE:PM",
+        "NYSE:PNC",
+        "NYSE:PNR",
+        "NYSE:PNW",
+        "NYSE:PODD",
+        "NYSE:POOL",
+        "NYSE:PPG",
+        "NYSE:PPL",
+        "NYSE:PRU",
+        "NYSE:PSA",
+        "NYSE:PSKY",
+        "NYSE:PSX",
+        "NYSE:PTC",
+        "NYSE:PWR",
+        "NYSE:RCL",
+        "NYSE:REG",
+        "NYSE:RF",
+        "NYSE:RJF",
+        "NYSE:RL",
+        "NYSE:RMD",
+        "NYSE:ROK",
+        "NYSE:ROL",
+        "NYSE:RSG",
+        "NYSE:RTX",
+        "NYSE:RVTY",
+        "NYSE:SATS",
+        "NYSE:SBAC",
+        "NYSE:SCHW",
+        "NYSE:SHW",
+        "NYSE:SJM",
+        "NYSE:SLB",
+        "NYSE:SMCI",
+        "NYSE:SNA",
+        "NYSE:SO",
+        "NYSE:SPG",
+        "NYSE:SPGI",
+        "NYSE:SRE",
+        "NYSE:STE",
+        "NYSE:STLD",
+        "NYSE:STT",
+        "NYSE:STX",
+        "NYSE:STZ",
+        "NYSE:SW",
+        "NYSE:SWK",
+        "NYSE:SWKS",
+        "NYSE:SYF",
+        "NYSE:SYK",
+        "NYSE:SYY",
+        "NYSE:T",
+        "NYSE:TAP",
+        "NYSE:TDG",
+        "NYSE:TDY",
+        "NYSE:TECH",
+        "NYSE:TEL",
+        "NYSE:TER",
+        "NYSE:TFC",
+        "NYSE:TGT",
+        "NYSE:TJX",
+        "NYSE:TKO",
+        "NYSE:TMO",
+        "NYSE:TPL",
+        "NYSE:TPR",
+        "NYSE:TRGP",
+        "NYSE:TRMB",
+        "NYSE:TROW",
+        "NYSE:TRV",
+        "NYSE:TSCO",
+        "NYSE:TSN",
+        "NYSE:TT",
+        "NYSE:TXT",
+        "NYSE:TYL",
+        "NYSE:UAL",
+        "NYSE:UDR",
+        "NYSE:UHS",
+        "NYSE:ULTA",
+        "NYSE:UNH",
+        "NYSE:UNP",
+        "NYSE:UPS",
+        "NYSE:URI",
+        "NYSE:USB",
+        "NYSE:V",
+        "NYSE:VEEV",
+        "NYSE:VICI",
+        "NYSE:VLO",
+        "NYSE:VMC",
+        "NYSE:VRSN",
+        "NYSE:VST",
+        "NYSE:VTR",
+        "NYSE:VTRS",
+        "NYSE:VZ",
+        "NYSE:WAB",
+        "NYSE:WAT",
+        "NYSE:WDC",
+        "NYSE:WEC",
+        "NYSE:WELL",
+        "NYSE:WFC",
+        "NYSE:WM",
+        "NYSE:WMB",
+        "NYSE:WMT",
+        "NYSE:WRB",
+        "NYSE:WSM",
+        "NYSE:WST",
+        "NYSE:WTW",
+        "NYSE:WY",
+        "NYSE:WYNN",
+        "NYSE:XOM",
+        "NYSE:XYL",
+        "NYSE:XYZ",
+        "NYSE:YUM",
+        "NYSE:ZBH",
+        "NYSE:ZBRA",
+        "NYSE:ZTS"
+      ],
+      "val": [
+        "NASDAQ:AAPL",
+        "NASDAQ:ADBE",
+        "NASDAQ:ADI",
+        "NASDAQ:ADP",
+        "NASDAQ:ADSK",
+        "NASDAQ:AEP",
+        "NASDAQ:AMAT",
+        "NASDAQ:AMD",
+        "NASDAQ:AMGN",
+        "NASDAQ:AMZN",
+        "NASDAQ:AVGO",
+        "NASDAQ:BIIB",
+        "NASDAQ:BKNG",
+        "NASDAQ:BKR",
+        "NASDAQ:CDNS",
+        "NASDAQ:CDW",
+        "NASDAQ:CHTR",
+        "NASDAQ:CMCSA",
+        "NASDAQ:COST",
+        "NASDAQ:CPRT",
+        "NASDAQ:CSCO",
+        "NASDAQ:CSGP",
+        "NASDAQ:CSX",
+        "NASDAQ:CTAS",
+        "NASDAQ:CTSH",
+        "NASDAQ:DXCM",
+        "NASDAQ:EA",
+        "NASDAQ:EXC",
+        "NASDAQ:FANG",
+        "NASDAQ:FAST",
+        "NASDAQ:FTNT",
+        "NASDAQ:GILD",
+        "NASDAQ:GOOG",
+        "NASDAQ:GOOGL",
+        "NASDAQ:HON",
+        "NASDAQ:IDXX",
+        "NASDAQ:INTC",
+        "NASDAQ:INTU",
+        "NASDAQ:ISRG",
+        "NASDAQ:KDP",
+        "NASDAQ:KHC",
+        "NASDAQ:KLAC",
+        "NASDAQ:LIN",
+        "NASDAQ:LRCX",
+        "NASDAQ:LULU",
+        "NASDAQ:MAR",
+        "NASDAQ:MCHP",
+        "NASDAQ:MDLZ",
+        "NASDAQ:META",
+        "NASDAQ:MNST",
+        "NASDAQ:MSFT",
+        "NASDAQ:MU",
+        "NASDAQ:NFLX",
+        "NASDAQ:NVDA",
+        "NASDAQ:NXPI",
+        "NASDAQ:ODFL",
+        "NASDAQ:ON",
+        "NASDAQ:ORLY",
+        "NASDAQ:PANW",
+        "NASDAQ:PAYX",
+        "NASDAQ:PCAR",
+        "NASDAQ:PEP",
+        "NASDAQ:PYPL",
+        "NASDAQ:QCOM",
+        "NASDAQ:REGN",
+        "NASDAQ:ROP",
+        "NASDAQ:ROST",
+        "NASDAQ:SBUX",
+        "NASDAQ:SNPS",
+        "NASDAQ:TMUS",
+        "NASDAQ:TSLA",
+        "NASDAQ:TTD",
+        "NASDAQ:TTWO",
+        "NASDAQ:TXN",
+        "NASDAQ:VRSK",
+        "NASDAQ:VRTX",
+        "NASDAQ:WBD",
+        "NASDAQ:WDAY",
+        "NASDAQ:XEL",
+        "NYSE:A",
+        "NYSE:ABBV",
+        "NYSE:ABT",
+        "NYSE:ACGL",
+        "NYSE:ACN",
+        "NYSE:ADM",
+        "NYSE:AEE",
+        "NYSE:AES",
+        "NYSE:AFL",
+        "NYSE:AIG",
+        "NYSE:AIZ",
+        "NYSE:AJG",
+        "NYSE:AKAM",
+        "NYSE:ALB",
+        "NYSE:ALGN",
+        "NYSE:ALL",
+        "NYSE:ALLE",
+        "NYSE:AMCR",
+        "NYSE:AME",
+        "NYSE:AMP",
+        "NYSE:AMT",
+        "NYSE:ANET",
+        "NYSE:AON",
+        "NYSE:AOS",
+        "NYSE:APA",
+        "NYSE:APD",
+        "NYSE:APH",
+        "NYSE:APO",
+        "NYSE:APTV",
+        "NYSE:ARE",
+        "NYSE:ARES",
+        "NYSE:ATO",
+        "NYSE:AVB",
+        "NYSE:AVY",
+        "NYSE:AWK",
+        "NYSE:AXON",
+        "NYSE:AXP",
+        "NYSE:AZO",
+        "NYSE:BA",
+        "NYSE:BAC",
+        "NYSE:BALL",
+        "NYSE:BAX",
+        "NYSE:BBY",
+        "NYSE:BDX",
+        "NYSE:BEN",
+        "NYSE:BF-B",
+        "NYSE:BG",
+        "NYSE:BLDR",
+        "NYSE:BLK",
+        "NYSE:BMY",
+        "NYSE:BNY",
+        "NYSE:BR",
+        "NYSE:BRK-B",
+        "NYSE:BRO",
+        "NYSE:BSX",
+        "NYSE:BX",
+        "NYSE:BXP",
+        "NYSE:C",
+        "NYSE:CAG",
+        "NYSE:CAH",
+        "NYSE:CASY",
+        "NYSE:CAT",
+        "NYSE:CB",
+        "NYSE:CBOE",
+        "NYSE:CBRE",
+        "NYSE:CCI",
+        "NYSE:CCL",
+        "NYSE:CF",
+        "NYSE:CFG",
+        "NYSE:CHD",
+        "NYSE:CHRW",
+        "NYSE:CI",
+        "NYSE:CIEN",
+        "NYSE:CINF",
+        "NYSE:CL",
+        "NYSE:CLX",
+        "NYSE:CME",
+        "NYSE:CMG",
+        "NYSE:CMI",
+        "NYSE:CMS",
+        "NYSE:CNC",
+        "NYSE:CNP",
+        "NYSE:COF",
+        "NYSE:COHR",
+        "NYSE:COO",
+        "NYSE:COP",
+        "NYSE:COR",
+        "NYSE:CPAY",
+        "NYSE:CPB",
+        "NYSE:CPT",
+        "NYSE:CRH",
+        "NYSE:CRL",
+        "NYSE:CRM",
+        "NYSE:CVNA",
+        "NYSE:CVS",
+        "NYSE:CVX",
+        "NYSE:D",
+        "NYSE:DAL",
+        "NYSE:DD",
+        "NYSE:DE",
+        "NYSE:DECK",
+        "NYSE:DELL",
+        "NYSE:DG",
+        "NYSE:DGX",
+        "NYSE:DHI",
+        "NYSE:DHR",
+        "NYSE:DIS",
+        "NYSE:DLR",
+        "NYSE:DLTR",
+        "NYSE:DOC",
+        "NYSE:DOV",
+        "NYSE:DPZ",
+        "NYSE:DRI",
+        "NYSE:DTE",
+        "NYSE:DUK",
+        "NYSE:DVA",
+        "NYSE:DVN",
+        "NYSE:EBAY",
+        "NYSE:ECL",
+        "NYSE:ED",
+        "NYSE:EFX",
+        "NYSE:EG",
+        "NYSE:EIX",
+        "NYSE:EL",
+        "NYSE:ELV",
+        "NYSE:EME",
+        "NYSE:EMR",
+        "NYSE:EOG",
+        "NYSE:EPAM",
+        "NYSE:EQIX",
+        "NYSE:EQR",
+        "NYSE:EQT",
+        "NYSE:ERIE",
+        "NYSE:ES",
+        "NYSE:ESS",
+        "NYSE:ETN",
+        "NYSE:ETR",
+        "NYSE:EVRG",
+        "NYSE:EW",
+        "NYSE:EXPD",
+        "NYSE:EXPE",
+        "NYSE:EXR",
+        "NYSE:F",
+        "NYSE:FCX",
+        "NYSE:FDS",
+        "NYSE:FDX",
+        "NYSE:FE",
+        "NYSE:FFIV",
+        "NYSE:FICO",
+        "NYSE:FIS",
+        "NYSE:FISV",
+        "NYSE:FITB",
+        "NYSE:FIX",
+        "NYSE:FRT",
+        "NYSE:FSLR",
+        "NYSE:FTV",
+        "NYSE:GD",
+        "NYSE:GDDY",
+        "NYSE:GE",
+        "NYSE:GEN",
+        "NYSE:GIS",
+        "NYSE:GL",
+        "NYSE:GLW",
+        "NYSE:GM",
+        "NYSE:GNRC",
+        "NYSE:GPC",
+        "NYSE:GPN",
+        "NYSE:GRMN",
+        "NYSE:GS",
+        "NYSE:GWW",
+        "NYSE:HAL",
+        "NYSE:HAS",
+        "NYSE:HBAN",
+        "NYSE:HCA",
+        "NYSE:HD",
+        "NYSE:HIG",
+        "NYSE:HII",
+        "NYSE:HLT",
+        "NYSE:HPE",
+        "NYSE:HPQ",
+        "NYSE:HRL",
+        "NYSE:HSIC",
+        "NYSE:HST",
+        "NYSE:HSY",
+        "NYSE:HUBB",
+        "NYSE:HUM",
+        "NYSE:HWM",
+        "NYSE:IBKR",
+        "NYSE:IBM",
+        "NYSE:ICE",
+        "NYSE:IEX",
+        "NYSE:IFF",
+        "NYSE:INCY",
+        "NYSE:INVH",
+        "NYSE:IP",
+        "NYSE:IQV",
+        "NYSE:IR",
+        "NYSE:IRM",
+        "NYSE:IT",
+        "NYSE:ITW",
+        "NYSE:IVZ",
+        "NYSE:J",
+        "NYSE:JBHT",
+        "NYSE:JBL",
+        "NYSE:JCI",
+        "NYSE:JKHY",
+        "NYSE:JNJ",
+        "NYSE:JPM",
+        "NYSE:KEY",
+        "NYSE:KEYS",
+        "NYSE:KIM",
+        "NYSE:KKR",
+        "NYSE:KMB",
+        "NYSE:KMI",
+        "NYSE:KO",
+        "NYSE:KR",
+        "NYSE:L",
+        "NYSE:LDOS",
+        "NYSE:LEN",
+        "NYSE:LH",
+        "NYSE:LHX",
+        "NYSE:LII",
+        "NYSE:LITE",
+        "NYSE:LLY",
+        "NYSE:LMT",
+        "NYSE:LNT",
+        "NYSE:LOW",
+        "NYSE:LUV",
+        "NYSE:LVS",
+        "NYSE:LYB",
+        "NYSE:LYV",
+        "NYSE:MA",
+        "NYSE:MAA",
+        "NYSE:MAS",
+        "NYSE:MCD",
+        "NYSE:MCK",
+        "NYSE:MCO",
+        "NYSE:MDT",
+        "NYSE:MET",
+        "NYSE:MGM",
+        "NYSE:MKC",
+        "NYSE:MLM",
+        "NYSE:MMM",
+        "NYSE:MO",
+        "NYSE:MOS",
+        "NYSE:MPC",
+        "NYSE:MPWR",
+        "NYSE:MRK",
+        "NYSE:MRSH",
+        "NYSE:MS",
+        "NYSE:MSCI",
+        "NYSE:MSI",
+        "NYSE:MTB",
+        "NYSE:MTD",
+        "NYSE:NCLH",
+        "NYSE:NDAQ",
+        "NYSE:NDSN",
+        "NYSE:NEE",
+        "NYSE:NEM",
+        "NYSE:NI",
+        "NYSE:NKE",
+        "NYSE:NOC",
+        "NYSE:NOW",
+        "NYSE:NRG",
+        "NYSE:NSC",
+        "NYSE:NTAP",
+        "NYSE:NTRS",
+        "NYSE:NUE",
+        "NYSE:NVR",
+        "NYSE:NWS",
+        "NYSE:NWSA",
+        "NYSE:O",
+        "NYSE:OKE",
+        "NYSE:OMC",
+        "NYSE:ORCL",
+        "NYSE:OXY",
+        "NYSE:PCG",
+        "NYSE:PEG",
+        "NYSE:PFE",
+        "NYSE:PFG",
+        "NYSE:PG",
+        "NYSE:PGR",
+        "NYSE:PH",
+        "NYSE:PHM",
+        "NYSE:PKG",
+        "NYSE:PLD",
+        "NYSE:PM",
+        "NYSE:PNC",
+        "NYSE:PNR",
+        "NYSE:PNW",
+        "NYSE:PODD",
+        "NYSE:POOL",
+        "NYSE:PPG",
+        "NYSE:PPL",
+        "NYSE:PRU",
+        "NYSE:PSA",
+        "NYSE:PSKY",
+        "NYSE:PSX",
+        "NYSE:PTC",
+        "NYSE:PWR",
+        "NYSE:RCL",
+        "NYSE:REG",
+        "NYSE:RF",
+        "NYSE:RJF",
+        "NYSE:RL",
+        "NYSE:RMD",
+        "NYSE:ROK",
+        "NYSE:ROL",
+        "NYSE:RSG",
+        "NYSE:RTX",
+        "NYSE:RVTY",
+        "NYSE:SATS",
+        "NYSE:SBAC",
+        "NYSE:SCHW",
+        "NYSE:SHW",
+        "NYSE:SJM",
+        "NYSE:SLB",
+        "NYSE:SMCI",
+        "NYSE:SNA",
+        "NYSE:SO",
+        "NYSE:SPG",
+        "NYSE:SPGI",
+        "NYSE:SRE",
+        "NYSE:STE",
+        "NYSE:STLD",
+        "NYSE:STT",
+        "NYSE:STX",
+        "NYSE:STZ",
+        "NYSE:SW",
+        "NYSE:SWK",
+        "NYSE:SWKS",
+        "NYSE:SYF",
+        "NYSE:SYK",
+        "NYSE:SYY",
+        "NYSE:T",
+        "NYSE:TAP",
+        "NYSE:TDG",
+        "NYSE:TDY",
+        "NYSE:TECH",
+        "NYSE:TEL",
+        "NYSE:TER",
+        "NYSE:TFC",
+        "NYSE:TGT",
+        "NYSE:TJX",
+        "NYSE:TKO",
+        "NYSE:TMO",
+        "NYSE:TPL",
+        "NYSE:TPR",
+        "NYSE:TRGP",
+        "NYSE:TRMB",
+        "NYSE:TROW",
+        "NYSE:TRV",
+        "NYSE:TSCO",
+        "NYSE:TSN",
+        "NYSE:TT",
+        "NYSE:TXT",
+        "NYSE:TYL",
+        "NYSE:UAL",
+        "NYSE:UDR",
+        "NYSE:UHS",
+        "NYSE:ULTA",
+        "NYSE:UNH",
+        "NYSE:UNP",
+        "NYSE:UPS",
+        "NYSE:URI",
+        "NYSE:USB",
+        "NYSE:V",
+        "NYSE:VEEV",
+        "NYSE:VICI",
+        "NYSE:VLO",
+        "NYSE:VMC",
+        "NYSE:VRSN",
+        "NYSE:VST",
+        "NYSE:VTR",
+        "NYSE:VTRS",
+        "NYSE:VZ",
+        "NYSE:WAB",
+        "NYSE:WAT",
+        "NYSE:WDC",
+        "NYSE:WEC",
+        "NYSE:WELL",
+        "NYSE:WFC",
+        "NYSE:WM",
+        "NYSE:WMB",
+        "NYSE:WMT",
+        "NYSE:WRB",
+        "NYSE:WSM",
+        "NYSE:WST",
+        "NYSE:WTW",
+        "NYSE:WY",
+        "NYSE:WYNN",
+        "NYSE:XOM",
+        "NYSE:XYL",
+        "NYSE:XYZ",
+        "NYSE:YUM",
+        "NYSE:ZBH",
+        "NYSE:ZBRA",
+        "NYSE:ZTS"
+      ],
+      "eval": [
+        "NASDAQ:AAPL",
+        "NASDAQ:ADBE",
+        "NASDAQ:ADI",
+        "NASDAQ:ADP",
+        "NASDAQ:ADSK",
+        "NASDAQ:AEP",
+        "NASDAQ:AMAT",
+        "NASDAQ:AMD",
+        "NASDAQ:AMGN",
+        "NASDAQ:AMZN",
+        "NASDAQ:AVGO",
+        "NASDAQ:BIIB",
+        "NASDAQ:BKNG",
+        "NASDAQ:BKR",
+        "NASDAQ:CDNS",
+        "NASDAQ:CDW",
+        "NASDAQ:CHTR",
+        "NASDAQ:CMCSA",
+        "NASDAQ:COST",
+        "NASDAQ:CPRT",
+        "NASDAQ:CSCO",
+        "NASDAQ:CSGP",
+        "NASDAQ:CSX",
+        "NASDAQ:CTAS",
+        "NASDAQ:CTSH",
+        "NASDAQ:DXCM",
+        "NASDAQ:EA",
+        "NASDAQ:EXC",
+        "NASDAQ:FANG",
+        "NASDAQ:FAST",
+        "NASDAQ:FTNT",
+        "NASDAQ:GILD",
+        "NASDAQ:GOOG",
+        "NASDAQ:GOOGL",
+        "NASDAQ:HON",
+        "NASDAQ:IDXX",
+        "NASDAQ:INTC",
+        "NASDAQ:INTU",
+        "NASDAQ:ISRG",
+        "NASDAQ:KDP",
+        "NASDAQ:KHC",
+        "NASDAQ:KLAC",
+        "NASDAQ:LIN",
+        "NASDAQ:LRCX",
+        "NASDAQ:LULU",
+        "NASDAQ:MAR",
+        "NASDAQ:MCHP",
+        "NASDAQ:MDLZ",
+        "NASDAQ:META",
+        "NASDAQ:MNST",
+        "NASDAQ:MSFT",
+        "NASDAQ:MU",
+        "NASDAQ:NFLX",
+        "NASDAQ:NVDA",
+        "NASDAQ:NXPI",
+        "NASDAQ:ODFL",
+        "NASDAQ:ON",
+        "NASDAQ:ORLY",
+        "NASDAQ:PANW",
+        "NASDAQ:PAYX",
+        "NASDAQ:PCAR",
+        "NASDAQ:PEP",
+        "NASDAQ:PYPL",
+        "NASDAQ:QCOM",
+        "NASDAQ:REGN",
+        "NASDAQ:ROP",
+        "NASDAQ:ROST",
+        "NASDAQ:SBUX",
+        "NASDAQ:SNPS",
+        "NASDAQ:TMUS",
+        "NASDAQ:TSLA",
+        "NASDAQ:TTD",
+        "NASDAQ:TTWO",
+        "NASDAQ:TXN",
+        "NASDAQ:VRSK",
+        "NASDAQ:VRTX",
+        "NASDAQ:WBD",
+        "NASDAQ:WDAY",
+        "NASDAQ:XEL",
+        "NYSE:A",
+        "NYSE:ABBV",
+        "NYSE:ABT",
+        "NYSE:ACGL",
+        "NYSE:ACN",
+        "NYSE:ADM",
+        "NYSE:AEE",
+        "NYSE:AES",
+        "NYSE:AFL",
+        "NYSE:AIG",
+        "NYSE:AIZ",
+        "NYSE:AJG",
+        "NYSE:AKAM",
+        "NYSE:ALB",
+        "NYSE:ALGN",
+        "NYSE:ALL",
+        "NYSE:ALLE",
+        "NYSE:AMCR",
+        "NYSE:AME",
+        "NYSE:AMP",
+        "NYSE:AMT",
+        "NYSE:ANET",
+        "NYSE:AON",
+        "NYSE:AOS",
+        "NYSE:APA",
+        "NYSE:APD",
+        "NYSE:APH",
+        "NYSE:APO",
+        "NYSE:APTV",
+        "NYSE:ARE",
+        "NYSE:ARES",
+        "NYSE:ATO",
+        "NYSE:AVB",
+        "NYSE:AVY",
+        "NYSE:AWK",
+        "NYSE:AXON",
+        "NYSE:AXP",
+        "NYSE:AZO",
+        "NYSE:BA",
+        "NYSE:BAC",
+        "NYSE:BALL",
+        "NYSE:BAX",
+        "NYSE:BBY",
+        "NYSE:BDX",
+        "NYSE:BEN",
+        "NYSE:BF-B",
+        "NYSE:BG",
+        "NYSE:BLDR",
+        "NYSE:BLK",
+        "NYSE:BMY",
+        "NYSE:BNY",
+        "NYSE:BR",
+        "NYSE:BRK-B",
+        "NYSE:BRO",
+        "NYSE:BSX",
+        "NYSE:BX",
+        "NYSE:BXP",
+        "NYSE:C",
+        "NYSE:CAG",
+        "NYSE:CAH",
+        "NYSE:CASY",
+        "NYSE:CAT",
+        "NYSE:CB",
+        "NYSE:CBOE",
+        "NYSE:CBRE",
+        "NYSE:CCI",
+        "NYSE:CCL",
+        "NYSE:CF",
+        "NYSE:CFG",
+        "NYSE:CHD",
+        "NYSE:CHRW",
+        "NYSE:CI",
+        "NYSE:CIEN",
+        "NYSE:CINF",
+        "NYSE:CL",
+        "NYSE:CLX",
+        "NYSE:CME",
+        "NYSE:CMG",
+        "NYSE:CMI",
+        "NYSE:CMS",
+        "NYSE:CNC",
+        "NYSE:CNP",
+        "NYSE:COF",
+        "NYSE:COHR",
+        "NYSE:COO",
+        "NYSE:COP",
+        "NYSE:COR",
+        "NYSE:CPAY",
+        "NYSE:CPB",
+        "NYSE:CPT",
+        "NYSE:CRH",
+        "NYSE:CRL",
+        "NYSE:CRM",
+        "NYSE:CVNA",
+        "NYSE:CVS",
+        "NYSE:CVX",
+        "NYSE:D",
+        "NYSE:DAL",
+        "NYSE:DD",
+        "NYSE:DE",
+        "NYSE:DECK",
+        "NYSE:DELL",
+        "NYSE:DG",
+        "NYSE:DGX",
+        "NYSE:DHI",
+        "NYSE:DHR",
+        "NYSE:DIS",
+        "NYSE:DLR",
+        "NYSE:DLTR",
+        "NYSE:DOC",
+        "NYSE:DOV",
+        "NYSE:DPZ",
+        "NYSE:DRI",
+        "NYSE:DTE",
+        "NYSE:DUK",
+        "NYSE:DVA",
+        "NYSE:DVN",
+        "NYSE:EBAY",
+        "NYSE:ECL",
+        "NYSE:ED",
+        "NYSE:EFX",
+        "NYSE:EG",
+        "NYSE:EIX",
+        "NYSE:EL",
+        "NYSE:ELV",
+        "NYSE:EME",
+        "NYSE:EMR",
+        "NYSE:EOG",
+        "NYSE:EPAM",
+        "NYSE:EQIX",
+        "NYSE:EQR",
+        "NYSE:EQT",
+        "NYSE:ERIE",
+        "NYSE:ES",
+        "NYSE:ESS",
+        "NYSE:ETN",
+        "NYSE:ETR",
+        "NYSE:EVRG",
+        "NYSE:EW",
+        "NYSE:EXPD",
+        "NYSE:EXPE",
+        "NYSE:EXR",
+        "NYSE:F",
+        "NYSE:FCX",
+        "NYSE:FDS",
+        "NYSE:FDX",
+        "NYSE:FE",
+        "NYSE:FFIV",
+        "NYSE:FICO",
+        "NYSE:FIS",
+        "NYSE:FISV",
+        "NYSE:FITB",
+        "NYSE:FIX",
+        "NYSE:FRT",
+        "NYSE:FSLR",
+        "NYSE:FTV",
+        "NYSE:GD",
+        "NYSE:GDDY",
+        "NYSE:GE",
+        "NYSE:GEN",
+        "NYSE:GIS",
+        "NYSE:GL",
+        "NYSE:GLW",
+        "NYSE:GM",
+        "NYSE:GNRC",
+        "NYSE:GPC",
+        "NYSE:GPN",
+        "NYSE:GRMN",
+        "NYSE:GS",
+        "NYSE:GWW",
+        "NYSE:HAL",
+        "NYSE:HAS",
+        "NYSE:HBAN",
+        "NYSE:HCA",
+        "NYSE:HD",
+        "NYSE:HIG",
+        "NYSE:HII",
+        "NYSE:HLT",
+        "NYSE:HPE",
+        "NYSE:HPQ",
+        "NYSE:HRL",
+        "NYSE:HSIC",
+        "NYSE:HST",
+        "NYSE:HSY",
+        "NYSE:HUBB",
+        "NYSE:HUM",
+        "NYSE:HWM",
+        "NYSE:IBKR",
+        "NYSE:IBM",
+        "NYSE:ICE",
+        "NYSE:IEX",
+        "NYSE:IFF",
+        "NYSE:INCY",
+        "NYSE:INVH",
+        "NYSE:IP",
+        "NYSE:IQV",
+        "NYSE:IR",
+        "NYSE:IRM",
+        "NYSE:IT",
+        "NYSE:ITW",
+        "NYSE:IVZ",
+        "NYSE:J",
+        "NYSE:JBHT",
+        "NYSE:JBL",
+        "NYSE:JCI",
+        "NYSE:JKHY",
+        "NYSE:JNJ",
+        "NYSE:JPM",
+        "NYSE:KEY",
+        "NYSE:KEYS",
+        "NYSE:KIM",
+        "NYSE:KKR",
+        "NYSE:KMB",
+        "NYSE:KMI",
+        "NYSE:KO",
+        "NYSE:KR",
+        "NYSE:L",
+        "NYSE:LDOS",
+        "NYSE:LEN",
+        "NYSE:LH",
+        "NYSE:LHX",
+        "NYSE:LII",
+        "NYSE:LITE",
+        "NYSE:LLY",
+        "NYSE:LMT",
+        "NYSE:LNT",
+        "NYSE:LOW",
+        "NYSE:LUV",
+        "NYSE:LVS",
+        "NYSE:LYB",
+        "NYSE:LYV",
+        "NYSE:MA",
+        "NYSE:MAA",
+        "NYSE:MAS",
+        "NYSE:MCD",
+        "NYSE:MCK",
+        "NYSE:MCO",
+        "NYSE:MDT",
+        "NYSE:MET",
+        "NYSE:MGM",
+        "NYSE:MKC",
+        "NYSE:MLM",
+        "NYSE:MMM",
+        "NYSE:MO",
+        "NYSE:MOS",
+        "NYSE:MPC",
+        "NYSE:MPWR",
+        "NYSE:MRK",
+        "NYSE:MRSH",
+        "NYSE:MS",
+        "NYSE:MSCI",
+        "NYSE:MSI",
+        "NYSE:MTB",
+        "NYSE:MTD",
+        "NYSE:NCLH",
+        "NYSE:NDAQ",
+        "NYSE:NDSN",
+        "NYSE:NEE",
+        "NYSE:NEM",
+        "NYSE:NI",
+        "NYSE:NKE",
+        "NYSE:NOC",
+        "NYSE:NOW",
+        "NYSE:NRG",
+        "NYSE:NSC",
+        "NYSE:NTAP",
+        "NYSE:NTRS",
+        "NYSE:NUE",
+        "NYSE:NVR",
+        "NYSE:NWS",
+        "NYSE:NWSA",
+        "NYSE:O",
+        "NYSE:OKE",
+        "NYSE:OMC",
+        "NYSE:ORCL",
+        "NYSE:OXY",
+        "NYSE:PCG",
+        "NYSE:PEG",
+        "NYSE:PFE",
+        "NYSE:PFG",
+        "NYSE:PG",
+        "NYSE:PGR",
+        "NYSE:PH",
+        "NYSE:PHM",
+        "NYSE:PKG",
+        "NYSE:PLD",
+        "NYSE:PM",
+        "NYSE:PNC",
+        "NYSE:PNR",
+        "NYSE:PNW",
+        "NYSE:PODD",
+        "NYSE:POOL",
+        "NYSE:PPG",
+        "NYSE:PPL",
+        "NYSE:PRU",
+        "NYSE:PSA",
+        "NYSE:PSKY",
+        "NYSE:PSX",
+        "NYSE:PTC",
+        "NYSE:PWR",
+        "NYSE:RCL",
+        "NYSE:REG",
+        "NYSE:RF",
+        "NYSE:RJF",
+        "NYSE:RL",
+        "NYSE:RMD",
+        "NYSE:ROK",
+        "NYSE:ROL",
+        "NYSE:RSG",
+        "NYSE:RTX",
+        "NYSE:RVTY",
+        "NYSE:SATS",
+        "NYSE:SBAC",
+        "NYSE:SCHW",
+        "NYSE:SHW",
+        "NYSE:SJM",
+        "NYSE:SLB",
+        "NYSE:SMCI",
+        "NYSE:SNA",
+        "NYSE:SO",
+        "NYSE:SPG",
+        "NYSE:SPGI",
+        "NYSE:SRE",
+        "NYSE:STE",
+        "NYSE:STLD",
+        "NYSE:STT",
+        "NYSE:STX",
+        "NYSE:STZ",
+        "NYSE:SW",
+        "NYSE:SWK",
+        "NYSE:SWKS",
+        "NYSE:SYF",
+        "NYSE:SYK",
+        "NYSE:SYY",
+        "NYSE:T",
+        "NYSE:TAP",
+        "NYSE:TDG",
+        "NYSE:TDY",
+        "NYSE:TECH",
+        "NYSE:TEL",
+        "NYSE:TER",
+        "NYSE:TFC",
+        "NYSE:TGT",
+        "NYSE:TJX",
+        "NYSE:TKO",
+        "NYSE:TMO",
+        "NYSE:TPL",
+        "NYSE:TPR",
+        "NYSE:TRGP",
+        "NYSE:TRMB",
+        "NYSE:TROW",
+        "NYSE:TRV",
+        "NYSE:TSCO",
+        "NYSE:TSN",
+        "NYSE:TT",
+        "NYSE:TXT",
+        "NYSE:TYL",
+        "NYSE:UAL",
+        "NYSE:UDR",
+        "NYSE:UHS",
+        "NYSE:ULTA",
+        "NYSE:UNH",
+        "NYSE:UNP",
+        "NYSE:UPS",
+        "NYSE:URI",
+        "NYSE:USB",
+        "NYSE:V",
+        "NYSE:VEEV",
+        "NYSE:VICI",
+        "NYSE:VLO",
+        "NYSE:VMC",
+        "NYSE:VRSN",
+        "NYSE:VST",
+        "NYSE:VTR",
+        "NYSE:VTRS",
+        "NYSE:VZ",
+        "NYSE:WAB",
+        "NYSE:WAT",
+        "NYSE:WDC",
+        "NYSE:WEC",
+        "NYSE:WELL",
+        "NYSE:WFC",
+        "NYSE:WM",
+        "NYSE:WMB",
+        "NYSE:WMT",
+        "NYSE:WRB",
+        "NYSE:WSM",
+        "NYSE:WST",
+        "NYSE:WTW",
+        "NYSE:WY",
+        "NYSE:WYNN",
+        "NYSE:XOM",
+        "NYSE:XYL",
+        "NYSE:XYZ",
+        "NYSE:YUM",
+        "NYSE:ZBH",
+        "NYSE:ZBRA",
+        "NYSE:ZTS"
+      ],
+      "test": [
+        "NASDAQ:AAPL",
+        "NASDAQ:ADBE",
+        "NASDAQ:ADI",
+        "NASDAQ:ADP",
+        "NASDAQ:ADSK",
+        "NASDAQ:AEP",
+        "NASDAQ:AMAT",
+        "NASDAQ:AMD",
+        "NASDAQ:AMGN",
+        "NASDAQ:AMZN",
+        "NASDAQ:AVGO",
+        "NASDAQ:BIIB",
+        "NASDAQ:BKNG",
+        "NASDAQ:BKR",
+        "NASDAQ:CDNS",
+        "NASDAQ:CDW",
+        "NASDAQ:CHTR",
+        "NASDAQ:CMCSA",
+        "NASDAQ:COST",
+        "NASDAQ:CPRT",
+        "NASDAQ:CSCO",
+        "NASDAQ:CSGP",
+        "NASDAQ:CSX",
+        "NASDAQ:CTAS",
+        "NASDAQ:CTSH",
+        "NASDAQ:DXCM",
+        "NASDAQ:EA",
+        "NASDAQ:EXC",
+        "NASDAQ:FANG",
+        "NASDAQ:FAST",
+        "NASDAQ:FTNT",
+        "NASDAQ:GILD",
+        "NASDAQ:GOOG",
+        "NASDAQ:GOOGL",
+        "NASDAQ:HON",
+        "NASDAQ:IDXX",
+        "NASDAQ:INTC",
+        "NASDAQ:INTU",
+        "NASDAQ:ISRG",
+        "NASDAQ:KDP",
+        "NASDAQ:KHC",
+        "NASDAQ:KLAC",
+        "NASDAQ:LIN",
+        "NASDAQ:LRCX",
+        "NASDAQ:LULU",
+        "NASDAQ:MAR",
+        "NASDAQ:MCHP",
+        "NASDAQ:MDLZ",
+        "NASDAQ:META",
+        "NASDAQ:MNST",
+        "NASDAQ:MSFT",
+        "NASDAQ:MU",
+        "NASDAQ:NFLX",
+        "NASDAQ:NVDA",
+        "NASDAQ:NXPI",
+        "NASDAQ:ODFL",
+        "NASDAQ:ON",
+        "NASDAQ:ORLY",
+        "NASDAQ:PANW",
+        "NASDAQ:PAYX",
+        "NASDAQ:PCAR",
+        "NASDAQ:PEP",
+        "NASDAQ:PYPL",
+        "NASDAQ:QCOM",
+        "NASDAQ:REGN",
+        "NASDAQ:ROP",
+        "NASDAQ:ROST",
+        "NASDAQ:SBUX",
+        "NASDAQ:SNPS",
+        "NASDAQ:TMUS",
+        "NASDAQ:TSLA",
+        "NASDAQ:TTD",
+        "NASDAQ:TTWO",
+        "NASDAQ:TXN",
+        "NASDAQ:VRSK",
+        "NASDAQ:VRTX",
+        "NASDAQ:WBD",
+        "NASDAQ:WDAY",
+        "NASDAQ:XEL",
+        "NYSE:A",
+        "NYSE:ABBV",
+        "NYSE:ABT",
+        "NYSE:ACGL",
+        "NYSE:ACN",
+        "NYSE:ADM",
+        "NYSE:AEE",
+        "NYSE:AES",
+        "NYSE:AFL",
+        "NYSE:AIG",
+        "NYSE:AIZ",
+        "NYSE:AJG",
+        "NYSE:AKAM",
+        "NYSE:ALB",
+        "NYSE:ALGN",
+        "NYSE:ALL",
+        "NYSE:ALLE",
+        "NYSE:AMCR",
+        "NYSE:AME",
+        "NYSE:AMP",
+        "NYSE:AMT",
+        "NYSE:ANET",
+        "NYSE:AON",
+        "NYSE:AOS",
+        "NYSE:APA",
+        "NYSE:APD",
+        "NYSE:APH",
+        "NYSE:APO",
+        "NYSE:APTV",
+        "NYSE:ARE",
+        "NYSE:ARES",
+        "NYSE:ATO",
+        "NYSE:AVB",
+        "NYSE:AVY",
+        "NYSE:AWK",
+        "NYSE:AXON",
+        "NYSE:AXP",
+        "NYSE:AZO",
+        "NYSE:BA",
+        "NYSE:BAC",
+        "NYSE:BALL",
+        "NYSE:BAX",
+        "NYSE:BBY",
+        "NYSE:BDX",
+        "NYSE:BEN",
+        "NYSE:BF-B",
+        "NYSE:BG",
+        "NYSE:BLDR",
+        "NYSE:BLK",
+        "NYSE:BMY",
+        "NYSE:BNY",
+        "NYSE:BR",
+        "NYSE:BRK-B",
+        "NYSE:BRO",
+        "NYSE:BSX",
+        "NYSE:BX",
+        "NYSE:BXP",
+        "NYSE:C",
+        "NYSE:CAG",
+        "NYSE:CAH",
+        "NYSE:CASY",
+        "NYSE:CAT",
+        "NYSE:CB",
+        "NYSE:CBOE",
+        "NYSE:CBRE",
+        "NYSE:CCI",
+        "NYSE:CCL",
+        "NYSE:CF",
+        "NYSE:CFG",
+        "NYSE:CHD",
+        "NYSE:CHRW",
+        "NYSE:CI",
+        "NYSE:CIEN",
+        "NYSE:CINF",
+        "NYSE:CL",
+        "NYSE:CLX",
+        "NYSE:CME",
+        "NYSE:CMG",
+        "NYSE:CMI",
+        "NYSE:CMS",
+        "NYSE:CNC",
+        "NYSE:CNP",
+        "NYSE:COF",
+        "NYSE:COHR",
+        "NYSE:COO",
+        "NYSE:COP",
+        "NYSE:COR",
+        "NYSE:CPAY",
+        "NYSE:CPB",
+        "NYSE:CPT",
+        "NYSE:CRH",
+        "NYSE:CRL",
+        "NYSE:CRM",
+        "NYSE:CVNA",
+        "NYSE:CVS",
+        "NYSE:CVX",
+        "NYSE:D",
+        "NYSE:DAL",
+        "NYSE:DD",
+        "NYSE:DE",
+        "NYSE:DECK",
+        "NYSE:DELL",
+        "NYSE:DG",
+        "NYSE:DGX",
+        "NYSE:DHI",
+        "NYSE:DHR",
+        "NYSE:DIS",
+        "NYSE:DLR",
+        "NYSE:DLTR",
+        "NYSE:DOC",
+        "NYSE:DOV",
+        "NYSE:DPZ",
+        "NYSE:DRI",
+        "NYSE:DTE",
+        "NYSE:DUK",
+        "NYSE:DVA",
+        "NYSE:DVN",
+        "NYSE:EBAY",
+        "NYSE:ECL",
+        "NYSE:ED",
+        "NYSE:EFX",
+        "NYSE:EG",
+        "NYSE:EIX",
+        "NYSE:EL",
+        "NYSE:ELV",
+        "NYSE:EME",
+        "NYSE:EMR",
+        "NYSE:EOG",
+        "NYSE:EPAM",
+        "NYSE:EQIX",
+        "NYSE:EQR",
+        "NYSE:EQT",
+        "NYSE:ERIE",
+        "NYSE:ES",
+        "NYSE:ESS",
+        "NYSE:ETN",
+        "NYSE:ETR",
+        "NYSE:EVRG",
+        "NYSE:EW",
+        "NYSE:EXPD",
+        "NYSE:EXPE",
+        "NYSE:EXR",
+        "NYSE:F",
+        "NYSE:FCX",
+        "NYSE:FDS",
+        "NYSE:FDX",
+        "NYSE:FE",
+        "NYSE:FFIV",
+        "NYSE:FICO",
+        "NYSE:FIS",
+        "NYSE:FISV",
+        "NYSE:FITB",
+        "NYSE:FIX",
+        "NYSE:FRT",
+        "NYSE:FSLR",
+        "NYSE:FTV",
+        "NYSE:GD",
+        "NYSE:GDDY",
+        "NYSE:GE",
+        "NYSE:GEN",
+        "NYSE:GIS",
+        "NYSE:GL",
+        "NYSE:GLW",
+        "NYSE:GM",
+        "NYSE:GNRC",
+        "NYSE:GPC",
+        "NYSE:GPN",
+        "NYSE:GRMN",
+        "NYSE:GS",
+        "NYSE:GWW",
+        "NYSE:HAL",
+        "NYSE:HAS",
+        "NYSE:HBAN",
+        "NYSE:HCA",
+        "NYSE:HD",
+        "NYSE:HIG",
+        "NYSE:HII",
+        "NYSE:HLT",
+        "NYSE:HPE",
+        "NYSE:HPQ",
+        "NYSE:HRL",
+        "NYSE:HSIC",
+        "NYSE:HST",
+        "NYSE:HSY",
+        "NYSE:HUBB",
+        "NYSE:HUM",
+        "NYSE:HWM",
+        "NYSE:IBKR",
+        "NYSE:IBM",
+        "NYSE:ICE",
+        "NYSE:IEX",
+        "NYSE:IFF",
+        "NYSE:INCY",
+        "NYSE:INVH",
+        "NYSE:IP",
+        "NYSE:IQV",
+        "NYSE:IR",
+        "NYSE:IRM",
+        "NYSE:IT",
+        "NYSE:ITW",
+        "NYSE:IVZ",
+        "NYSE:J",
+        "NYSE:JBHT",
+        "NYSE:JBL",
+        "NYSE:JCI",
+        "NYSE:JKHY",
+        "NYSE:JNJ",
+        "NYSE:JPM",
+        "NYSE:KEY",
+        "NYSE:KEYS",
+        "NYSE:KIM",
+        "NYSE:KKR",
+        "NYSE:KMB",
+        "NYSE:KMI",
+        "NYSE:KO",
+        "NYSE:KR",
+        "NYSE:L",
+        "NYSE:LDOS",
+        "NYSE:LEN",
+        "NYSE:LH",
+        "NYSE:LHX",
+        "NYSE:LII",
+        "NYSE:LITE",
+        "NYSE:LLY",
+        "NYSE:LMT",
+        "NYSE:LNT",
+        "NYSE:LOW",
+        "NYSE:LUV",
+        "NYSE:LVS",
+        "NYSE:LYB",
+        "NYSE:LYV",
+        "NYSE:MA",
+        "NYSE:MAA",
+        "NYSE:MAS",
+        "NYSE:MCD",
+        "NYSE:MCK",
+        "NYSE:MCO",
+        "NYSE:MDT",
+        "NYSE:MET",
+        "NYSE:MGM",
+        "NYSE:MKC",
+        "NYSE:MLM",
+        "NYSE:MMM",
+        "NYSE:MO",
+        "NYSE:MOS",
+        "NYSE:MPC",
+        "NYSE:MPWR",
+        "NYSE:MRK",
+        "NYSE:MRSH",
+        "NYSE:MS",
+        "NYSE:MSCI",
+        "NYSE:MSI",
+        "NYSE:MTB",
+        "NYSE:MTD",
+        "NYSE:NCLH",
+        "NYSE:NDAQ",
+        "NYSE:NDSN",
+        "NYSE:NEE",
+        "NYSE:NEM",
+        "NYSE:NI",
+        "NYSE:NKE",
+        "NYSE:NOC",
+        "NYSE:NOW",
+        "NYSE:NRG",
+        "NYSE:NSC",
+        "NYSE:NTAP",
+        "NYSE:NTRS",
+        "NYSE:NUE",
+        "NYSE:NVR",
+        "NYSE:NWS",
+        "NYSE:NWSA",
+        "NYSE:O",
+        "NYSE:OKE",
+        "NYSE:OMC",
+        "NYSE:ORCL",
+        "NYSE:OXY",
+        "NYSE:PCG",
+        "NYSE:PEG",
+        "NYSE:PFE",
+        "NYSE:PFG",
+        "NYSE:PG",
+        "NYSE:PGR",
+        "NYSE:PH",
+        "NYSE:PHM",
+        "NYSE:PKG",
+        "NYSE:PLD",
+        "NYSE:PM",
+        "NYSE:PNC",
+        "NYSE:PNR",
+        "NYSE:PNW",
+        "NYSE:PODD",
+        "NYSE:POOL",
+        "NYSE:PPG",
+        "NYSE:PPL",
+        "NYSE:PRU",
+        "NYSE:PSA",
+        "NYSE:PSKY",
+        "NYSE:PSX",
+        "NYSE:PTC",
+        "NYSE:PWR",
+        "NYSE:RCL",
+        "NYSE:REG",
+        "NYSE:RF",
+        "NYSE:RJF",
+        "NYSE:RL",
+        "NYSE:RMD",
+        "NYSE:ROK",
+        "NYSE:ROL",
+        "NYSE:RSG",
+        "NYSE:RTX",
+        "NYSE:RVTY",
+        "NYSE:SATS",
+        "NYSE:SBAC",
+        "NYSE:SCHW",
+        "NYSE:SHW",
+        "NYSE:SJM",
+        "NYSE:SLB",
+        "NYSE:SMCI",
+        "NYSE:SNA",
+        "NYSE:SO",
+        "NYSE:SPG",
+        "NYSE:SPGI",
+        "NYSE:SRE",
+        "NYSE:STE",
+        "NYSE:STLD",
+        "NYSE:STT",
+        "NYSE:STX",
+        "NYSE:STZ",
+        "NYSE:SW",
+        "NYSE:SWK",
+        "NYSE:SWKS",
+        "NYSE:SYF",
+        "NYSE:SYK",
+        "NYSE:SYY",
+        "NYSE:T",
+        "NYSE:TAP",
+        "NYSE:TDG",
+        "NYSE:TDY",
+        "NYSE:TECH",
+        "NYSE:TEL",
+        "NYSE:TER",
+        "NYSE:TFC",
+        "NYSE:TGT",
+        "NYSE:TJX",
+        "NYSE:TKO",
+        "NYSE:TMO",
+        "NYSE:TPL",
+        "NYSE:TPR",
+        "NYSE:TRGP",
+        "NYSE:TRMB",
+        "NYSE:TROW",
+        "NYSE:TRV",
+        "NYSE:TSCO",
+        "NYSE:TSN",
+        "NYSE:TT",
+        "NYSE:TXT",
+        "NYSE:TYL",
+        "NYSE:UAL",
+        "NYSE:UDR",
+        "NYSE:UHS",
+        "NYSE:ULTA",
+        "NYSE:UNH",
+        "NYSE:UNP",
+        "NYSE:UPS",
+        "NYSE:URI",
+        "NYSE:USB",
+        "NYSE:V",
+        "NYSE:VEEV",
+        "NYSE:VICI",
+        "NYSE:VLO",
+        "NYSE:VMC",
+        "NYSE:VRSN",
+        "NYSE:VST",
+        "NYSE:VTR",
+        "NYSE:VTRS",
+        "NYSE:VZ",
+        "NYSE:WAB",
+        "NYSE:WAT",
+        "NYSE:WDC",
+        "NYSE:WEC",
+        "NYSE:WELL",
+        "NYSE:WFC",
+        "NYSE:WM",
+        "NYSE:WMB",
+        "NYSE:WMT",
+        "NYSE:WRB",
+        "NYSE:WSM",
+        "NYSE:WST",
+        "NYSE:WTW",
+        "NYSE:WY",
+        "NYSE:WYNN",
+        "NYSE:XOM",
+        "NYSE:XYL",
+        "NYSE:XYZ",
+        "NYSE:YUM",
+        "NYSE:ZBH",
+        "NYSE:ZBRA",
+        "NYSE:ZTS"
+      ]
+    },
+    "row_counts_per_segment_per_ticker": {
+      "NASDAQ:AAPL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ADBE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ADI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ADP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ADSK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AEP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AMAT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AMD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AMGN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AMZN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:AVGO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:BIIB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:BKNG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:BKR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CDNS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CDW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CHTR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CMCSA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:COST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CPRT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CSCO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CSGP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CSX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CTAS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:CTSH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:DXCM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:EA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:EXC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:FANG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:FAST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:FTNT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:GILD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:GOOG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:GOOGL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:HON": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:IDXX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:INTC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:INTU": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ISRG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:KDP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:KHC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:KLAC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:LIN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:LRCX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:LULU": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MAR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MCHP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MDLZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:META": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MNST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MSFT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:MU": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:NFLX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:NVDA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:NXPI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ODFL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ON": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ORLY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:PANW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:PAYX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:PCAR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:PEP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:PYPL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:QCOM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:REGN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ROP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:ROST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:SBUX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:SNPS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:TMUS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:TSLA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:TTD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:TTWO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:TXN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:VRSK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:VRTX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:WBD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:WDAY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NASDAQ:XEL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:A": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ABBV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ABT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ACGL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ACN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ADM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AEE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AES": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AFL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AIG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AIZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AJG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AKAM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ALB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ALGN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ALL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ALLE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AMCR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AME": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AMP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AMT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ANET": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AON": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AOS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:APA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:APD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:APH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:APO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:APTV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ARE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ARES": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ATO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AVB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AVY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AWK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AXON": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AXP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:AZO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BAC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BALL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BAX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BBY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BDX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BEN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BF-B": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BLDR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BLK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BMY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BNY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BRK-B": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BRO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BSX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:BXP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:C": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CAG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CAH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CASY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CAT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CBOE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CBRE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CCI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CCL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CFG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CHD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CHRW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CIEN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CINF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CLX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CME": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CMG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CMI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CMS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CNC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CNP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:COF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:COHR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:COO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:COP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:COR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CPAY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CPB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CPT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CRH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CRL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CRM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CVNA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CVS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:CVX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:D": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DAL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DECK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DELL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DGX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DHI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DHR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DIS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DLR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DLTR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DOC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DOV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DPZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DRI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DTE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DUK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DVA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:DVN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EBAY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ECL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ED": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EFX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EIX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ELV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EME": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EMR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EOG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EPAM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EQIX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EQR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EQT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ERIE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ES": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ESS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ETN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ETR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EVRG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EXPD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EXPE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:EXR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:F": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FCX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FDS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FDX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FFIV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FICO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FIS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FISV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FITB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FIX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FRT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FSLR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:FTV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GDDY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GEN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GIS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GLW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GNRC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GPC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GPN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GRMN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:GWW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HAL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HAS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HBAN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HCA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HIG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HII": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HLT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HPE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HPQ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HRL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HSIC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HSY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HUBB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HUM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:HWM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IBKR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IBM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ICE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IEX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IFF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:INCY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:INVH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IQV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IRM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ITW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:IVZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:J": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JBHT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JBL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JCI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JKHY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JNJ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:JPM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KEY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KEYS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KIM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KKR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KMB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KMI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:KR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:L": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LDOS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LEN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LHX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LII": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LITE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LLY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LMT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LNT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LOW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LUV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LVS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LYB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:LYV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MAA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MAS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MCD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MCK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MCO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MDT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MET": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MGM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MKC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MLM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MMM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MOS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MPC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MPWR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MRK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MRSH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MSCI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MSI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MTB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:MTD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NCLH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NDAQ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NDSN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NEE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NEM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NKE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NOC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NOW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NRG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NSC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NTAP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NTRS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NUE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NVR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NWS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:NWSA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:O": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:OKE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:OMC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ORCL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:OXY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PCG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PEG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PFE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PFG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PGR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PHM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PKG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PLD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PNC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PNR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PNW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PODD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:POOL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PPG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PPL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PRU": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PSA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PSKY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PSX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PTC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:PWR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RCL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:REG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RJF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RMD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ROK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ROL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RSG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RTX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:RVTY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SATS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SBAC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SCHW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SHW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SJM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SLB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SMCI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SNA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SPG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SPGI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SRE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:STE": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:STLD": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:STT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:STX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:STZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SWK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SWKS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SYF": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SYK": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:SYY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:T": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TAP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TDG": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TDY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TECH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TEL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TER": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TFC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TGT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TJX": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TKO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TMO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TPL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TPR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TRGP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TRMB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TROW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TRV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TSCO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TSN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TXT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:TYL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UAL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UDR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UHS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ULTA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UNH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UNP": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:UPS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:URI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:USB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:V": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VEEV": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VICI": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VLO": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VMC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VRSN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VTR": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VTRS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:VZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WAB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WAT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WDC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WEC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WELL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WFC": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WMB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WMT": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WRB": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WSM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WST": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WTW": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WY": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:WYNN": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:XOM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:XYL": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:XYZ": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:YUM": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ZBH": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ZBRA": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      },
+      "NYSE:ZTS": {
+        "train": 800,
+        "val": 400,
+        "eval": 200,
+        "test": 300
+      }
+    }
+  },
+  "loop": {
+    "n_iterations_run": 3,
+    "best_iteration": 1,
+    "best_val_brier": 0.07217562761187474,
+    "inner_stop_signal": "degradation",
+    "tiebreak_path": "v14_val_flat_eval_rp1",
+    "hp_search_active": false,
+    "hp_search_iter_threshold": 5,
+    "max_iterations": 3
+  },
+  "calibration": {
+    "method": "conditional_isotonic",
+    "decision": "isotonic",
+    "spiegelhalter_z": -55.07778894320577,
+    "spiegelhalter_p": 0.0
+  },
+  "sample_uniqueness": {
+    "uniqueness_weighting": true,
+    "horizon_days": 200,
+    "effective_sample_size_per_fold": {
+      "fold_0": {
+        "train": {
+          "ess_kish": 381554.48053511087,
+          "sum_weights": 956.5917790156103,
+          "n_rows": 381600,
+          "overlap_inflation_ratio": 398.9162444953155
+        },
+        "val": {
+          "ess_kish": 190800.00000000003,
+          "sum_weights": 478.1954887218045,
+          "n_rows": 190800,
+          "overlap_inflation_ratio": 399.0
+        },
+        "eval": {
+          "ess_kish": 95400.00000000001,
+          "sum_weights": 239.09774436090225,
+          "n_rows": 95400,
+          "overlap_inflation_ratio": 399.0
+        },
+        "test": {
+          "ess_kish": 143100.00000000006,
+          "sum_weights": 358.6466165413534,
+          "n_rows": 143100,
+          "overlap_inflation_ratio": 398.99999999999994
+        }
+      }
+    }
+  },
+  "cache": {
+    "matrix_key": "f070b9a3882d9b2b080a9b504a09f2daf1bc4c330a2cc054e76e920643a00340",
+    "universe_key": "0272db7ad9a49fb45869221787f69a205f07ed977041d1d64d0505355ab33889",
+    "matrix_hit": false,
+    "universe_hit": true,
+    "panel_signature": {
+      "panel_rows": 3629725,
+      "panel_n_tickers": 477,
+      "panel_date_min": "1990-01-02 00:00:00",
+      "panel_date_max": "2026-06-18 00:00:00",
+      "panel_index_hash": "a00602f93acb8033d1bc8b084f97a449a2c8e68cc02115543fd5329b1a250dac",
+      "index_series_rows": 9180,
+      "index_series_date_min": "1990-01-02 00:00:00",
+      "index_series_date_max": "2026-06-18 00:00:00"
+    }
+  },
+  "headline_eval": {
+    "brier": 0.09079862737074312,
+    "brier_baseline_baserate": 0.09561855236035846,
+    "brier_improvement_vs_baseline": 0.004819924989615337,
+    "log_loss": 0.32882511205740667,
+    "brier_unweighted": 0.09079862737074315,
+    "brier_baseline_baserate_unweighted": 0.09561855236035847,
+    "brier_improvement_vs_baseline_unweighted": 0.0048199249896153235,
+    "effective_sample_size_kish": 95400.00000000001,
+    "sum_weights": 239.09774436090225,
+    "n_rows": 95400,
+    "weighted_prevalence": 0.1070859538784067,
+    "roc_auc": 0.7345004792148933
+  },
+  "headline_test": {
+    "brier": 0.12161395231622929,
+    "brier_baseline_baserate": 0.11679285404888558,
+    "brier_improvement_vs_baseline": -0.0048210982673437125,
+    "log_loss": 0.5212115785521795,
+    "brier_unweighted": 0.12161395231622932,
+    "brier_baseline_baserate_unweighted": 0.1167928540488856,
+    "brier_improvement_vs_baseline_unweighted": -0.0048210982673437125,
+    "effective_sample_size_kish": 143100.00000000006,
+    "sum_weights": 358.6466165413534,
+    "n_rows": 143100,
+    "weighted_prevalence": 0.1350244584206848,
+    "roc_auc": 0.7001191454304667
+  },
+  "segment_diagnostics": {
+    "eval": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.1070859538784067,
+        "n_rows": 95400,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.755,
+            "n_picks_total": 200,
+            "n_positives_in_picks": 151,
+            "n_denom": 200,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 7.050411119812059
+          },
+          "5": {
+            "p_at_k": 0.478,
+            "n_picks_total": 1000,
+            "n_positives_in_picks": 478,
+            "n_denom": 1000,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 4.463703993735317
+          },
+          "10": {
+            "p_at_k": 0.4125,
+            "n_picks_total": 2000,
+            "n_positives_in_picks": 825,
+            "n_denom": 2000,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 200,
+            "n_days_total": 200,
+            "lift": 3.8520458104933435
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 1.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 1,
+            "n_denom": 1,
+            "lift": 9.338292873923258
+          },
+          "5": {
+            "p_at_k": 1.0,
+            "n_picks": 5,
+            "n_positives_in_picks": 5,
+            "n_denom": 5,
+            "lift": 9.338292873923258
+          },
+          "10": {
+            "p_at_k": 1.0,
+            "n_picks": 10,
+            "n_positives_in_picks": 10,
+            "n_denom": 10,
+            "lift": 9.338292873923258
+          }
+        }
+      },
+      "r_precision_at_k": {
+        "formula_version": "macro_per_day_fixed_k",
+        "tie_break": "(p_calibrated desc, ticker asc) mergesort",
+        "base_rate": 0.1070859538784067,
+        "n_rows": 95400,
+        "Q_days": 200,
+        "by_k": {
+          "1": {
+            "r_precision_at_k": 0.755,
+            "n_qualifying_days": 200
+          },
+          "3": {
+            "r_precision_at_k": 0.5783333333333333,
+            "n_qualifying_days": 200
+          },
+          "5": {
+            "r_precision_at_k": 0.47800000000000004,
+            "n_qualifying_days": 200
+          },
+          "10": {
+            "r_precision_at_k": 0.4125,
+            "n_qualifying_days": 200
+          },
+          "20": {
+            "r_precision_at_k": 0.39531578947368423,
+            "n_qualifying_days": 200
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NASDAQ:TTD",
+            "n_picks": 123,
+            "n_positives": 76,
+            "hit_rate": 0.6178861788617886
+          },
+          {
+            "ticker": "NASDAQ:WBD",
+            "n_picks": 118,
+            "n_positives": 14,
+            "hit_rate": 0.11864406779661017
+          },
+          {
+            "ticker": "NYSE:CCL",
+            "n_picks": 103,
+            "n_positives": 74,
+            "hit_rate": 0.7184466019417476
+          },
+          {
+            "ticker": "NASDAQ:TSLA",
+            "n_picks": 86,
+            "n_positives": 44,
+            "hit_rate": 0.5116279069767442
+          },
+          {
+            "ticker": "NYSE:CVNA",
+            "n_picks": 71,
+            "n_positives": 55,
+            "hit_rate": 0.7746478873239436
+          },
+          {
+            "ticker": "NYSE:NOW",
+            "n_picks": 54,
+            "n_positives": 40,
+            "hit_rate": 0.7407407407407407
+          },
+          {
+            "ticker": "NASDAQ:AMD",
+            "n_picks": 44,
+            "n_positives": 44,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:AXON",
+            "n_picks": 40,
+            "n_positives": 1,
+            "hit_rate": 0.025
+          },
+          {
+            "ticker": "NYSE:RCL",
+            "n_picks": 38,
+            "n_positives": 33,
+            "hit_rate": 0.868421052631579
+          },
+          {
+            "ticker": "NASDAQ:PYPL",
+            "n_picks": 35,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:NFLX",
+            "n_picks": 32,
+            "n_positives": 27,
+            "hit_rate": 0.84375
+          },
+          {
+            "ticker": "NYSE:XYZ",
+            "n_picks": 32,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:NVDA",
+            "n_picks": 31,
+            "n_positives": 31,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:EPAM",
+            "n_picks": 25,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:NCLH",
+            "n_picks": 25,
+            "n_positives": 17,
+            "hit_rate": 0.68
+          },
+          {
+            "ticker": "NASDAQ:AMZN",
+            "n_picks": 21,
+            "n_positives": 3,
+            "hit_rate": 0.14285714285714285
+          },
+          {
+            "ticker": "NYSE:FCX",
+            "n_picks": 21,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:LVS",
+            "n_picks": 10,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:META",
+            "n_picks": 9,
+            "n_positives": 7,
+            "hit_rate": 0.7777777777777778
+          },
+          {
+            "ticker": "NYSE:HAL",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:ALGN",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:EQT",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:PSKY",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:UAL",
+            "n_picks": 8,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:PODD",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:TPL",
+            "n_picks": 7,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:ON",
+            "n_picks": 5,
+            "n_positives": 5,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:APA",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:SMCI",
+            "n_picks": 4,
+            "n_positives": 4,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NASDAQ:AMAT",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:COHR",
+            "n_picks": 2,
+            "n_positives": 1,
+            "hit_rate": 0.5
+          },
+          {
+            "ticker": "NYSE:F",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:FSLR",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:MPWR",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:WYNN",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:MOS",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:STLD",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2022Q4",
+            "n_picks": 295,
+            "n_positives": 153,
+            "p_at_k": 0.5186440677966102,
+            "base_rate": 0.1070859538784067,
+            "lift": 4.843250202407656
+          },
+          {
+            "quarter": "2023Q1",
+            "n_picks": 310,
+            "n_positives": 138,
+            "p_at_k": 0.44516129032258067,
+            "base_rate": 0.1070859538784067,
+            "lift": 4.157046505165837
+          },
+          {
+            "quarter": "2023Q2",
+            "n_picks": 310,
+            "n_positives": 180,
+            "p_at_k": 0.5806451612903226,
+            "base_rate": 0.1070859538784067,
+            "lift": 5.422234571955441
+          },
+          {
+            "quarter": "2023Q3",
+            "n_picks": 85,
+            "n_positives": 7,
+            "p_at_k": 0.08235294117647059,
+            "base_rate": 0.1070859538784067,
+            "lift": 0.7690358837348565
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.27922704815864563,
+        "mean": 0.05821540380108907,
+        "std": 0.06379443406303514,
+        "n_rows": 95400,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": false
+      }
+    },
+    "test": {
+      "top_k_metrics": {
+        "formula_version": "v2_min_R_d_k",
+        "base_rate": 0.13502445842068483,
+        "n_rows": 143100,
+        "per_day": {
+          "1": {
+            "p_at_k": 0.2966666666666667,
+            "n_picks_total": 300,
+            "n_positives_in_picks": 89,
+            "n_denom": 300,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 300,
+            "n_days_total": 300,
+            "lift": 2.197132801987372
+          },
+          "5": {
+            "p_at_k": 0.38133333333333336,
+            "n_picks_total": 1500,
+            "n_positives_in_picks": 572,
+            "n_denom": 1500,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 300,
+            "n_days_total": 300,
+            "lift": 2.8241796915433186
+          },
+          "10": {
+            "p_at_k": 0.414,
+            "n_picks_total": 3000,
+            "n_positives_in_picks": 1242,
+            "n_denom": 3000,
+            "n_days_R_lt_k": 0,
+            "n_days_full_k": 300,
+            "n_days_total": 300,
+            "lift": 3.0661111686160853
+          }
+        },
+        "global": {
+          "1": {
+            "p_at_k": 0.0,
+            "n_picks": 1,
+            "n_positives_in_picks": 0,
+            "n_denom": 1,
+            "lift": 0.0
+          },
+          "5": {
+            "p_at_k": 0.0,
+            "n_picks": 5,
+            "n_positives_in_picks": 0,
+            "n_denom": 5,
+            "lift": 0.0
+          },
+          "10": {
+            "p_at_k": 0.0,
+            "n_picks": 10,
+            "n_positives_in_picks": 0,
+            "n_denom": 10,
+            "lift": 0.0
+          }
+        }
+      },
+      "r_precision_at_k": {
+        "formula_version": "macro_per_day_fixed_k",
+        "tie_break": "(p_calibrated desc, ticker asc) mergesort",
+        "base_rate": 0.13502445842068483,
+        "n_rows": 143100,
+        "Q_days": 300,
+        "by_k": {
+          "1": {
+            "r_precision_at_k": 0.2966666666666667,
+            "n_qualifying_days": 300
+          },
+          "3": {
+            "r_precision_at_k": 0.3688888888888889,
+            "n_qualifying_days": 300
+          },
+          "5": {
+            "r_precision_at_k": 0.38133333333333336,
+            "n_qualifying_days": 300
+          },
+          "10": {
+            "r_precision_at_k": 0.414,
+            "n_qualifying_days": 300
+          },
+          "20": {
+            "r_precision_at_k": 0.3976666666666667,
+            "n_qualifying_days": 300
+          }
+        }
+      },
+      "per_ticker_hit_rate": {
+        "k": 5,
+        "rows": [
+          {
+            "ticker": "NYSE:PSKY",
+            "n_picks": 214,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:SMCI",
+            "n_picks": 158,
+            "n_positives": 62,
+            "hit_rate": 0.3924050632911392
+          },
+          {
+            "ticker": "NYSE:CVNA",
+            "n_picks": 153,
+            "n_positives": 124,
+            "hit_rate": 0.8104575163398693
+          },
+          {
+            "ticker": "NASDAQ:TSLA",
+            "n_picks": 118,
+            "n_positives": 42,
+            "hit_rate": 0.3559322033898305
+          },
+          {
+            "ticker": "NYSE:COHR",
+            "n_picks": 93,
+            "n_positives": 82,
+            "hit_rate": 0.8817204301075269
+          },
+          {
+            "ticker": "NYSE:NCLH",
+            "n_picks": 82,
+            "n_positives": 16,
+            "hit_rate": 0.1951219512195122
+          },
+          {
+            "ticker": "NYSE:CCL",
+            "n_picks": 75,
+            "n_positives": 37,
+            "hit_rate": 0.49333333333333335
+          },
+          {
+            "ticker": "NYSE:SATS",
+            "n_picks": 73,
+            "n_positives": 55,
+            "hit_rate": 0.7534246575342466
+          },
+          {
+            "ticker": "NYSE:FSLR",
+            "n_picks": 61,
+            "n_positives": 18,
+            "hit_rate": 0.29508196721311475
+          },
+          {
+            "ticker": "NYSE:HAL",
+            "n_picks": 55,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:XYZ",
+            "n_picks": 43,
+            "n_positives": 24,
+            "hit_rate": 0.5581395348837209
+          },
+          {
+            "ticker": "NASDAQ:TTD",
+            "n_picks": 40,
+            "n_positives": 17,
+            "hit_rate": 0.425
+          },
+          {
+            "ticker": "NYSE:DELL",
+            "n_picks": 38,
+            "n_positives": 5,
+            "hit_rate": 0.13157894736842105
+          },
+          {
+            "ticker": "NYSE:ALGN",
+            "n_picks": 35,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:GNRC",
+            "n_picks": 33,
+            "n_positives": 10,
+            "hit_rate": 0.30303030303030304
+          },
+          {
+            "ticker": "NASDAQ:MU",
+            "n_picks": 26,
+            "n_positives": 2,
+            "hit_rate": 0.07692307692307693
+          },
+          {
+            "ticker": "NASDAQ:WBD",
+            "n_picks": 24,
+            "n_positives": 2,
+            "hit_rate": 0.08333333333333333
+          },
+          {
+            "ticker": "NYSE:ALB",
+            "n_picks": 24,
+            "n_positives": 1,
+            "hit_rate": 0.041666666666666664
+          },
+          {
+            "ticker": "NASDAQ:LRCX",
+            "n_picks": 18,
+            "n_positives": 18,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NASDAQ:META",
+            "n_picks": 18,
+            "n_positives": 18,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:F",
+            "n_picks": 16,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:NFLX",
+            "n_picks": 15,
+            "n_positives": 13,
+            "hit_rate": 0.8666666666666667
+          },
+          {
+            "ticker": "NYSE:KEY",
+            "n_picks": 11,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:APA",
+            "n_picks": 10,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:STLD",
+            "n_picks": 9,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:PODD",
+            "n_picks": 8,
+            "n_positives": 2,
+            "hit_rate": 0.25
+          },
+          {
+            "ticker": "NASDAQ:NVDA",
+            "n_picks": 7,
+            "n_positives": 7,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:NOW",
+            "n_picks": 6,
+            "n_positives": 1,
+            "hit_rate": 0.16666666666666666
+          },
+          {
+            "ticker": "NASDAQ:AMD",
+            "n_picks": 5,
+            "n_positives": 5,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:NUE",
+            "n_picks": 5,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:UAL",
+            "n_picks": 5,
+            "n_positives": 5,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:MGM",
+            "n_picks": 4,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:LITE",
+            "n_picks": 3,
+            "n_positives": 3,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:TPL",
+            "n_picks": 3,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:DVN",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:FITB",
+            "n_picks": 2,
+            "n_positives": 2,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:SWKS",
+            "n_picks": 2,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NASDAQ:AMZN",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:DLTR",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:GM",
+            "n_picks": 1,
+            "n_positives": 1,
+            "hit_rate": 1.0
+          },
+          {
+            "ticker": "NYSE:SLB",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:USB",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "ticker": "NYSE:WDC",
+            "n_picks": 1,
+            "n_positives": 0,
+            "hit_rate": 0.0
+          }
+        ]
+      },
+      "per_quarter_p_k": {
+        "k": 5,
+        "rows": [
+          {
+            "quarter": "2023Q3",
+            "n_picks": 230,
+            "n_positives": 46,
+            "p_at_k": 0.2,
+            "base_rate": 0.13502445842068483,
+            "lift": 1.481213124935307
+          },
+          {
+            "quarter": "2023Q4",
+            "n_picks": 315,
+            "n_positives": 145,
+            "p_at_k": 0.4603174603174603,
+            "base_rate": 0.13502445842068483,
+            "lift": 3.4091413192955473
+          },
+          {
+            "quarter": "2024Q1",
+            "n_picks": 305,
+            "n_positives": 148,
+            "p_at_k": 0.4852459016393443,
+            "base_rate": 0.13502445842068483,
+            "lift": 3.5937629916463187
+          },
+          {
+            "quarter": "2024Q2",
+            "n_picks": 315,
+            "n_positives": 147,
+            "p_at_k": 0.4666666666666667,
+            "base_rate": 0.13502445842068483,
+            "lift": 3.456163958182383
+          },
+          {
+            "quarter": "2024Q3",
+            "n_picks": 320,
+            "n_positives": 82,
+            "p_at_k": 0.25625,
+            "base_rate": 0.13502445842068483,
+            "lift": 1.8978043163233618
+          },
+          {
+            "quarter": "2024Q4",
+            "n_picks": 15,
+            "n_positives": 4,
+            "p_at_k": 0.26666666666666666,
+            "base_rate": 0.13502445842068483,
+            "lift": 1.9749508332470758
+          }
+        ]
+      },
+      "prediction_range": {
+        "min": 0.0,
+        "max": 0.27922704815864563,
+        "mean": 0.033069209458146086,
+        "std": 0.04239997874274506,
+        "n_rows": 143100,
+        "low_separation_threshold": 0.05,
+        "flag_low_separation": true
+      }
+    }
+  },
+  "wall_time_total_sec": 226.6452353000641
+}
