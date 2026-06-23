@@ -1,0 +1,7 @@
+{
+  "iter": 1,
+  "prune_features": [],
+  "hp_changes": {},
+  "should_stop": true,
+  "rationale": "STOP. min_data_in_leaf 1->20 was a byte-identical no-op (val/train/eval/early_stop all unchanged) => with depth=4 on a 6M-row panel leaves are already well-populated; the leaf-population/anti-decay lever has no headroom and the prediction tail is structurally stable. The scout+combine already swept depth{2-8} x lr{0.01-0.3} x rsm{0.3-1.0} x l2{0-1} x mcw{1-25} x spw; the chosen broad composite (lr=0.01, depth=4, rsm=0.4, l2=1) is the broadest profile of all 18 combine configs (eval @1=0.900 @3=0.687 @5=0.698 @10=0.570 @20=0.460, base 0.152) with a clean -0.015 train/val gap (no overfit, no degenerate sink). Per _269, further reg/capacity moves would chase the eval window (invisible eval->test decay risk) for no diagnostic-supported gain. Finalize on the broad anchor."
+}
