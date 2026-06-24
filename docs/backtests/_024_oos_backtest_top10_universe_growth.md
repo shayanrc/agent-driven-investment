@@ -5,12 +5,12 @@ on its true out-of-sample window — `test_end+1 → 2026-06-01` — under the c
 (`TopKDailyKellyLabelExit`, rank / equal-weight / **K=3**), benchmarked against the index. How do the
 leaderboard models actually trade forward?
 
-**Answer:** of the 10, **7 scored and 3 OOM'd** (the russell XGBoost-agent variants — a memory limit on the
-full-history build, not a model/data problem). **5 of the 7 beat SPX**; the CatBoost-agent beat its XGBoost-
-agent sibling in **every** head-to-head; the only losers are the two **sp500 +40%** cells. Getting here first
-required fixing a self-check that wrongly treated **universe growth** as feature corruption.
+**Answer:** all **10 scored, 7 beat SPX**. The standout is the H=100 cell (russell +40%/100d, +86.8% on a
+shorter window); russell cells dominate the top, the two **sp500 +40%** cells are the soft spot. Getting here
+took two tooling fixes — a self-check that wrongly treated **universe growth** as corruption, and a
+**chunked predict** to keep the full-history russell builds inside RAM.
 
-## The blocker, and the fix (the bulk of the work)
+## Fix 1 — `--allow-universe-growth` (the bulk of the work)
 
 Fresh OOS inference runs a faithfulness self-check (`infer_fresh_predictions`): rebuild the test-window
 features, reproduce the saved `test.csv` predictions, abort if `max_abs_diff > 1e-4` (the `_007` backfill-
@@ -29,69 +29,69 @@ build to OOS end (2026-06-01):    +9 tickers in the cross-section; drift is 100%
                                   features (path/vol features Δ = 0); max|Δp| 0.057, mean 1e-4
 ```
 
-So it is a **panel-extent-dependent cross-sectional eligibility set** — a legitimate universe change, not
-corruption. **The fix** (`--allow-universe-growth`, `infer_fresh_predictions`): the self-check now
-distinguishes a divergence with **changed membership** (tickers added/removed → warn + proceed) from one with
-**unchanged membership** (→ still abort — real `_007`-style corruption). Default is unchanged (strict), so the
-`/daily-predictions` cadence is byte-identical. A backtest should depend only on `(model, universe,
-date-range)`; the universe legitimately grows over that range. The discriminator validated cleanly: sp500
-cbagents *warn + proceed* (+9 tickers); russell cbagents *reproduce exactly* (9.7e-17 — russell membership
-didn't move).
+A legitimate universe change, not corruption. The self-check now distinguishes a divergence with **changed
+membership** (tickers added/removed → warn + proceed) from one with **unchanged membership** (→ still abort,
+real `_007` corruption). Default is unchanged (strict), so the `/daily-predictions` cadence is byte-identical.
+A backtest should depend only on `(model, universe, date-range)`; the universe legitimately grows over that
+range. Validated: sp500 cbagents *warn + proceed* (+9 tickers); russell cbagents *reproduce exactly* (9.7e-17).
+
+## Fix 2 — chunked `predict_proba` (completed the last 3 cells)
+
+The 3 russell **XGBoost-agent** cells survived `--allow-universe-growth` but were **OOM-killed (exit 137)**
+right after the feature build: the full-history russell panel (~858 tickers × 36y ≈ 7M rows × 279 features
+≈ 16 GB for `X`) plus a 143-feature `Xc` plus XGBoost materializing a float32 prediction copy on top exceeds
+the ~39 GB box. (The russell *cbagents* survived — CatBoost predict is lighter, FS'd 53-feature `Xc` is ~⅓.)
+Predicting in **500k-row chunks** (`_predict_proba_chunked`) bounds that copy; output is identical (predict is
+row-wise). All 3 then scored — and their self-checks **PASS at 2.98e-08**, confirming the failures were
+**purely a memory limit, not feature corruption**.
 
 ## Results — OOS `test_end+1 → 2026-06-01` (mark-to-market at data end 2026-06-23), rank/equal/K=3
 
-| cell | backend | strategy ret | max_dd | entries/tickers | exit triggers (tgt/DD/hzn) | beat SPX |
-|---|---|--:|--:|--:|---|:--:|
-| russell1000 +40%/200d cbagent | catboost | **+50.4%** | −29.0% | 69/29 | 28/29/4 | ✓ |
-| russell1000 +40%/200d agent | xgboost | +42.8% | −26.3% | 60/27 | 22/21/8 | ✓ |
-| russell1000 +50%/200d cbagent | catboost | +38.2% | −32.7% | 54/28 | 20/20/7 | ✓ |
-| sp500 +50%/200d cbagent | catboost | +38.1% | −29.2% | 51/25 | 18/17/8 | ✓ |
-| sp500 +50%/200d agent | xgboost | +31.0% | −30.2% | 52/28 | 17/19/7 | ✓ |
-| sp500 +40%/200d cbagent | catboost | +22.2% | −26.0% | 56/25 | 19/24/5 | ✗ |
-| sp500 +40%/200d agent | xgboost | +20.7% | −30.1% | 57/27 | 19/26/3 | ✗ |
-| russell1000 +50%/200d v14p1 | xgboost | — OOM — | | | | — |
-| russell1000 +50%/200d agent | xgboost | — OOM — | | | | — |
-| russell1000 +40%/100d v14p1 | xgboost | — OOM — | | | | — |
+| cell | backend | strategy ret | max_dd | vs index | entries/tk | exits tgt/DD/hzn | beat index |
+|---|---|--:|--:|--:|--:|---|:--:|
+| russell1000 +40%/100d v14p1 | xgboost | **+86.8%** | −10.9% | +61.5 | 60/29 | 26/16/7 | ✓ |
+| russell1000 +40%/200d cbagent | catboost | +50.4% | −29.0% | +22.0 | 69/29 | 28/29/4 | ✓ |
+| russell1000 +50%/200d agent | xgboost | +46.1% | −27.1% | +17.7 | 46/30 | 12/11/12 | ✓ |
+| russell1000 +40%/200d agent | xgboost | +42.8% | −26.3% | +14.4 | 60/27 | 22/21/8 | ✓ |
+| russell1000 +50%/200d cbagent | catboost | +38.2% | −32.7% | +9.7 | 54/28 | 20/20/7 | ✓ |
+| sp500 +50%/200d cbagent | catboost | +38.1% | −29.2% | +9.6 | 51/25 | 18/17/8 | ✓ |
+| sp500 +50%/200d agent | xgboost | +31.0% | −30.2% | +2.6 | 52/28 | 17/19/7 | ✓ |
+| russell1000 +50%/200d v14p1 | xgboost | +24.9% | −30.5% | −3.6 | 53/31 | 14/19/8 | ✗ |
+| sp500 +40%/200d cbagent | catboost | +22.2% | −26.0% | −6.2 | 56/25 | 19/24/5 | ✗ |
+| sp500 +40%/200d agent | xgboost | +20.7% | −30.1% | −7.7 | 57/27 | 19/26/3 | ✗ |
 
-Benchmarks (same window): **SPX +28.4%, DD −18.9%**; EW basket +29% (sp500) / +19% (russell1000).
-russell1000 is benched against **SPX as a proxy** (`^RUI` uncached). The H=100 cell (`russell +40%/100d`,
-test_end 2025-05-13, a shorter ~1yr window) is among the OOM'd.
-
-## The 3 OOM'd cells
-
-All three are russell **XGBoost-agent** variants. The feature build *completed* (F16) then the process was
-**SIGKILL'd (exit 137)** during the post-build model-load/predict step. The russell full-history panel
-(~858 tickers × 36y ≈ 7M rows × 279 features ≈ 16 GB for `X`) plus a 143-feature `Xc` plus XGBoost
-materializing a prediction DMatrix on top exceeds the ~39 GB box. The russell **cbagents** survived the same
-panel — CatBoost's predict is lighter and the FS'd 53-feature `Xc` is ~⅓ the size. It is a **resource limit,
-not a faithfulness or data issue**. A chunked-predict (or a `min_rows`-aware bounded warmup) would complete
-them on the full universe — left as a follow-up; the xgb-agent variants are the R-p-leaderboard-losing
-siblings of cells already scored here.
+Benchmark: **SPX**, the 200d cells over `2024-10-04→2026-06-01` = **+28.4% (DD −18.9%)**; the H=100 cell
+(`russell +40%/100d`, test_end 2025-05-13) over its shorter `2025-05-14→2026-06-01` window = **+25.3% (DD
+−9.1%)** — its `vs index` and shallow DD reflect that shorter window. EW basket +29% (sp500) / +19%
+(russell1000). russell1000 is benched against **SPX as a proxy** (`^RUI` uncached).
 
 ## Reading
 
-- **5 of 7 beat SPX** (+28.4%). The two losers are the **sp500 +40%** cells (~+21%); every **+50%** cell and
-  both **russell +40%** cells beat — the +40%/sp500 corner is the soft spot.
-- **CatBoost-agent ≥ its XGBoost-agent sibling in all 3 head-to-heads** (sp500/50 +38.1 vs +31.0; sp500/40
-  +22.2 vs +20.7; russell/40 +50.4 vs +42.8). The R-Precision@3 leaderboard edge carries into realized OOS
-  return, not just ranking.
-- **russell/40 cbagent +50.4%** leads — and beats its own EW basket (+19%) by 31 pts, so it is selection, not
-  beta.
-- **Every strategy runs a deeper drawdown than SPX** (−26% to −33% vs −19%). This is the **ungated** strategy;
-  the `_017` SMA200 regime overlay (a harness-level gate, not in `run_backtest_cell`) is the known drawdown-
-  cap and would tighten these — an add-on, not part of this run.
-- Single window, small trade counts (51–69 entries), overlapping horizons — directional, not a Sharpe claim
-  (same caveats as `_008`).
+- **7 of 10 beat SPX.** The 3 misses are both **sp500 +40%** cells (~+21%) and **russell/50 v14p1**. Excess
+  spans −7.7 to +61.5 pts.
+- **CatBoost-agent ≥ its plain XGBoost-agent sibling in 3 of 4** matchups (sp500/50 +38.1 vs +31.0; sp500/40
+  +22.2 vs +20.7; russell/40 +50.4 vs +42.8) — **but russell/50 is the exception**: the plain agent (+46.1)
+  beats the cbagent (+38.2). So the R-p@3 cbagent edge mostly carries into realized PnL, not universally.
+- **`v14p1` is the high-variance variant**: best overall (russell +40%/100d +86.8%) *and* a clear loss
+  (russell +50%/200d +24.9%, the worst russell cell).
+- **russell cells dominate** (4 of the top 5; +42% to +87%) and beat their own EW basket (+19%) by wide
+  margins — selection, not beta. **sp500 +40% is the weak corner** (both losses).
+- **Every strategy except the H=100 cell runs a deeper drawdown than SPX** (−26% to −33% vs −19%). This is the
+  **ungated** strategy; the `_017` SMA200 regime overlay (harness-level, not in `run_backtest_cell`) is the
+  known drawdown-cap and would tighten these.
+- Single window, small trade counts (46–69 entries), overlapping horizons — directional, not a Sharpe claim
+  (same caveats as `_008`). The H=100 standout especially: shorter window, fewer independent bets.
 
 ## Verdict / recommendation
 
-The date-aligned agent leaderboard is **tradeable OOS** — the top cells beat SPX on realized return, and the
-CatBoost-agent edge is real in PnL, not just R-p. Deployment would pair these with the **SMA200 gate**
-(`_017`) for the drawdown. Two follow-ups: (1) a memory-bounded inference path (chunked predict) to complete
-the 3 russell xgb-agent cells; (2) rolling validation (`_008`-style) before any alpha claim.
+The date-aligned agent leaderboard is **tradeable OOS** — 7/10 beat SPX on realized return and the CatBoost-
+agent edge mostly carries from R-p@3 into PnL (russell/50 the lone reversal). Deployment would pair these with
+the **SMA200 gate** (`_017`) for the drawdown. Follow-up: **rolling validation** (`_008`-style) before any
+alpha claim — single-window results, and the +86.8% H=100 number rests on a short window.
 
 ## Artifacts
 
-- Fix: `scripts/backtests/infer_fresh_predictions.py` `--allow-universe-growth` (commit `c16c6a7`).
+- Fix 1: `scripts/backtests/infer_fresh_predictions.py` `--allow-universe-growth` (commit `c16c6a7`, PR #218).
+- Fix 2: `scripts/backtests/infer_fresh_predictions.py` `_predict_proba_chunked` (commit `27a68bf`).
 - Sidecar: `results/backtests/data/_024_oos_backtest_top10_data.json`. Per-cell summaries: `/tmp/bt_<cell>/`
   (regenerable; gitignored).
