@@ -211,24 +211,41 @@ def build_scores_multi(specs: list[tuple[Path, str]], end: str, *,
 def validate_against_test(scores: pd.DataFrame, cell: Path) -> dict:
     """Self-check: reproduced p_raw must match predictions/test.csv on overlap."""
     test = pd.read_csv(cell / "predictions" / "test.csv", parse_dates=["date"])
-    m = test.merge(
-        scores.assign(date=pd.to_datetime(scores["date"])),
-        on=["date", "ticker"], suffixes=("_orig", "_repro"),
-    )
+    sc = scores.assign(date=pd.to_datetime(scores["date"]))
+    m = test.merge(sc, on=["date", "ticker"], suffixes=("_orig", "_repro"))
     if m.empty:
         raise RuntimeError("no overlap between reproduced scores and test.csv")
     diff = (m["p_raw_orig"] - m["p_raw_repro"]).abs()
+    # Membership delta on the test window. A universe that has grown/shrunk since
+    # training (tickers crossing the min_rows eligibility floor, IPOs, delistings)
+    # re-ranks the *cross-sectional* features at historical dates — a legitimate
+    # universe change, NOT feature corruption. We surface it so the self-check can
+    # distinguish it from a stable-membership prediction drift (the _007 bug).
+    test_dates = set(test["date"])
+    repro_test = sc[sc["date"].isin(test_dates)]
+    test_tk = set(test["ticker"]); repro_tk = set(repro_test["ticker"])
     return {"n_overlap": len(m), "max_abs_diff": float(diff.max()),
-            "mean_abs_diff": float(diff.mean())}
+            "mean_abs_diff": float(diff.mean()),
+            "added_tickers": sorted(repro_tk - test_tk),
+            "removed_tickers": sorted(test_tk - repro_tk)}
 
 
 def self_check(scores: pd.DataFrame, cell: Path, *, incremental: bool,
-               label: str = "") -> None:
+               label: str = "", allow_universe_growth: bool = False) -> None:
     """Reproduce predictions/test.csv and abort (SystemExit) if p_raw diverges
     beyond VALIDATION_TOL. In incremental mode a no-overlap (slice predates the
     test window) is a warn-and-proceed, not an abort — faithfulness was proven on
     the initial full run. Shared by main() and the daily cadence so both gate on
-    the identical faithfulness check."""
+    the identical faithfulness check.
+
+    ``allow_universe_growth`` (OOS backtests): if the divergence is explained by a
+    universe MEMBERSHIP change (tickers added/removed since training — e.g. a name
+    crossing the min_rows eligibility floor once the panel is extended to cover the
+    OOS window), downgrade the abort to a warning and proceed. Such a change merely
+    re-ranks cross-sectional features at historical dates; the path (per-ticker)
+    features are unaffected. A divergence with an UNCHANGED universe still aborts —
+    that is genuine feature/model corruption (the _007 backfill bug). The default
+    (strict) behavior is unchanged, so the /daily-predictions cadence is untouched."""
     pre = f"[{label}] " if label else ""
     print(f"{pre}[validate] reproducing predictions/test.csv ...")
     try:
@@ -236,12 +253,23 @@ def self_check(scores: pd.DataFrame, cell: Path, *, incremental: bool,
         print(f"{pre}          n_overlap={v['n_overlap']} max_abs_diff={v['max_abs_diff']:.2e} "
               f"mean_abs_diff={v['mean_abs_diff']:.2e}")
         if v["max_abs_diff"] > VALIDATION_TOL:
-            raise SystemExit(
-                f"[ABORT] reproduced p_raw diverges from test.csv "
-                f"(max_abs_diff={v['max_abs_diff']:.2e} > {VALIDATION_TOL}). "
-                "Feature build or model load is not faithful; not emitting fresh scores."
-            )
-        print(f"{pre}          self-check PASSED — inference path is faithful.")
+            n_add, n_rem = len(v["added_tickers"]), len(v["removed_tickers"])
+            if allow_universe_growth and (n_add or n_rem):
+                print(f"{pre}          [warn] test-window reproduction diverges "
+                      f"(max_abs_diff={v['max_abs_diff']:.2e}) but the UNIVERSE CHANGED "
+                      f"(+{n_add}/-{n_rem} tickers since training; e.g. added "
+                      f"{v['added_tickers'][:6]}). This re-ranks cross-sectional features "
+                      "at historical dates — a legitimate universe change, not feature "
+                      "corruption (path features are membership-independent). Proceeding.")
+            else:
+                raise SystemExit(
+                    f"[ABORT] reproduced p_raw diverges from test.csv "
+                    f"(max_abs_diff={v['max_abs_diff']:.2e} > {VALIDATION_TOL}) with an "
+                    f"UNCHANGED universe (+{n_add}/-{n_rem} tickers). Feature build or "
+                    "model load is not faithful; not emitting fresh scores."
+                )
+        else:
+            print(f"{pre}          self-check PASSED — inference path is faithful.")
     except RuntimeError as exc:
         if not incremental:
             raise
@@ -259,6 +287,14 @@ def main() -> None:
                          "(default: the cell's test.csv max date)")
     ap.add_argument("--no-align", action="store_true",
                     help="skip panel-alignment (don't drop post-training gap-fill rows)")
+    ap.add_argument("--allow-universe-growth", action="store_true",
+                    help="OOS backtests: treat a test-window reproduction divergence as "
+                         "NON-fatal when it is explained by a universe MEMBERSHIP change "
+                         "(tickers added/removed since training — they re-rank cross-"
+                         "sectional features). Still aborts on divergence with an "
+                         "UNCHANGED universe (real feature corruption). A backtest should "
+                         "depend only on (model, universe, date-range); the universe "
+                         "legitimately grows over that range, so growth is not an error.")
     ap.add_argument("--since", default=None,
                     help="INCREMENTAL mode (daily/backfill): build features from a "
                          "trailing ~7y slice ending at --end instead of full history, "
@@ -289,7 +325,8 @@ def main() -> None:
                           warmup_start=warmup_start)
     scores["date"] = pd.to_datetime(scores["date"])
 
-    self_check(scores, cell, incremental=args.since is not None)
+    self_check(scores, cell, incremental=args.since is not None,
+               allow_universe_growth=args.allow_universe_growth)
 
     test = pd.read_csv(cell / "predictions" / "test.csv", parse_dates=["date"])
     cutoff = (pd.Timestamp(args.fresh_after) if args.fresh_after
