@@ -107,6 +107,24 @@ def _align_panel(panel: pd.DataFrame, cell: Path, universe: str) -> pd.DataFrame
     return panel
 
 
+# XGBoost/CatBoost predict_proba materializes a (float32) copy of the feature frame.
+# On the full-history russell panel (~7M rows × 143 feats) that transient copy, on top
+# of the already-large in-memory build (X + Xc), pushes peak RAM over the box and the
+# process is OOM-killed (exit 137) right after the build completes. Predicting in row-
+# chunks bounds that copy to CHUNK rows; the result is identical (predict is row-wise).
+_PREDICT_CHUNK_ROWS = 500_000
+
+
+def _predict_proba_chunked(model, Xc: pd.DataFrame) -> np.ndarray:
+    """Row-chunked predict_proba — byte-identical to a single call, bounded peak RAM."""
+    n = len(Xc)
+    if n <= _PREDICT_CHUNK_ROWS:
+        return np.asarray(model.predict_proba(Xc)).ravel()
+    parts = [np.asarray(model.predict_proba(Xc.iloc[i:i + _PREDICT_CHUNK_ROWS])).ravel()
+             for i in range(0, n, _PREDICT_CHUNK_ROWS)]
+    return np.concatenate(parts)
+
+
 def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
                panel_cache: dict, feat_cache: dict) -> pd.DataFrame:
     """Score one cell, reusing a shared panel-load + feature-build across cells.
@@ -156,7 +174,7 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
         model = CatBoostModel.load(cell / "model.cbm", hp=hp, feature_names=feats)
     else:
         raise RuntimeError(f"no model.ubj / model.cbm in {cell}")
-    p_raw = model.predict_proba(Xc)
+    p_raw = _predict_proba_chunked(model, Xc)
 
     out = Xc.index.to_frame(index=False)  # date, ticker
     out["p_raw"] = np.asarray(p_raw).ravel()
