@@ -1,27 +1,33 @@
 {
   "experiment": "_024_oos_backtest_top10_universe_growth",
-  "description": "OOS backtest of the date-aligned agent-tuned top-10 cells (by test R-Precision@3) over each cell's test_end+1 -> 2026-06-01 window, marked-to-market at data_end 2026-06-23. Champion strategy TopKDailyKellyLabelExit, selection=rank, sizing=equal, K=3, c=0.25. Ungated (no SMA200 overlay). Required the --allow-universe-growth inference fix.",
+  "description": "OOS backtest of the date-aligned agent-tuned top-10 cells (by test R-Precision@3) over each cell's test_end+1 -> 2026-06-01 window, marked-to-market at data_end 2026-06-23. Champion strategy TopKDailyKellyLabelExit, selection=rank, sizing=equal, K=3, c=0.25. Ungated (no SMA200 overlay). Required two inference fixes: --allow-universe-growth and chunked predict_proba.",
   "strategy": {"selection_mode": "rank", "sizing_mode": "equal", "K": 3, "c": 0.25, "regime_gate": "none (ungated; _017 SMA200 overlay is a separate add-on)"},
   "window": {"oos_start": "test_end+1", "oos_end": "2026-06-01", "mark_to_market_end": "2026-06-23"},
-  "benchmark": {"index": "SPX", "total_return": 0.284, "max_dd": -0.189, "note": "russell1000 benched vs SPX (^RUI uncached, proxy); EW basket +29% sp500 / +19% russell1000"},
-  "fix": {
-    "flag": "--allow-universe-growth (scripts/backtests/infer_fresh_predictions.py, commit c16c6a7)",
-    "cause": "min_rows_per_ticker=2000 eligibility is computed over the full loaded panel [1990,end]; extending the panel to the OOS end (2026) pulls 9 recent sp500 listings (CRWD,DDOG,UBER,MRNA,CTVA,DOW,FOX,FOXA,VRT) over the 2000-row floor, so they enter the cross-section at historical test dates and re-rank rank/zscore features. Path features Delta=0; 100% of drift is cross-sectional. Build-to-test_end reproduces exactly (0.000); build-to-OOS-end diverges 0.057.",
-    "behavior": "membership change (tickers added/removed) -> warn+proceed; unchanged-membership divergence -> still abort (real _007 corruption). Default strict; /daily-predictions byte-unchanged.",
-    "validation": "sp500 cbagents warn+proceed (+9 tickers); russell cbagents reproduce 9.7e-17 (no membership change)"
+  "benchmark": {"index": "SPX", "total_return_200d_cells": 0.284, "max_dd_200d_cells": -0.189, "total_return_h100_cell": 0.253, "max_dd_h100_cell": -0.091, "note": "200d cells benched over 2024-10-04..2026-06-01 (SPX +28.4%); the H=100 cell (russell +40%/100d, test_end 2025-05-13) over its shorter 2025-05-14..2026-06-01 window (SPX +25.3%). russell1000 benched vs SPX (^RUI uncached, proxy); EW basket +29% sp500 / +19% russell1000"},
+  "fixes": {
+    "allow_universe_growth": {
+      "flag": "--allow-universe-growth (scripts/backtests/infer_fresh_predictions.py, commit c16c6a7, PR #218)",
+      "cause": "min_rows_per_ticker=2000 eligibility is computed over the full loaded panel [1990,end]; extending the panel to the OOS end (2026) pulls 9 recent sp500 listings (CRWD,DDOG,UBER,MRNA,CTVA,DOW,FOX,FOXA,VRT) over the 2000-row floor, so they enter the cross-section at historical test dates and re-rank rank/zscore features. Path features Delta=0; 100% of drift is cross-sectional. Build-to-test_end reproduces exactly (0.000); build-to-OOS-end diverges 0.057.",
+      "behavior": "membership change (tickers added/removed) -> warn+proceed; unchanged-membership divergence -> still abort (real _007 corruption). Default strict; /daily-predictions byte-unchanged."
+    },
+    "chunked_predict": {
+      "change": "_predict_proba_chunked (500k-row chunks) in infer_fresh_predictions.py, commit 27a68bf",
+      "cause": "the 3 russell xgb-agent cells were OOM-killed (exit 137) right after the feature build: full-history russell panel (~7M rows x 279 feats ~16GB X) + 143-feat Xc + XGBoost float32 predict copy exceeds the ~39GB box. CatBoost cbagents survived (lighter predict, 53-feat Xc).",
+      "result": "all 3 now score; self-checks PASS at 2.98e-08 -> the failures were purely a memory limit, NOT feature corruption. Output identical (predict is row-wise)."
+    }
   },
   "cells": [
+    {"cell": "russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1", "backend": "xgboost", "strategy_return": 0.868, "max_dd": -0.109, "entries": 60, "tickers": 29, "beat_spx": true, "note": "H=100, shorter window 2025-05-14..2026-06-01, SPX +25.3%"},
     {"cell": "russell1000_up_40pct_200d_dd20pct_aligned_cbagent", "backend": "catboost", "strategy_return": 0.504, "max_dd": -0.290, "entries": 69, "tickers": 29, "beat_spx": true},
+    {"cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent", "backend": "xgboost", "strategy_return": 0.461, "max_dd": -0.271, "entries": 46, "tickers": 30, "beat_spx": true},
     {"cell": "russell1000_up_40pct_200d_dd20pct_aligned_agent", "backend": "xgboost", "strategy_return": 0.428, "max_dd": -0.263, "entries": 60, "tickers": 27, "beat_spx": true},
     {"cell": "russell1000_up_50pct_200d_dd25pct_aligned_cbagent", "backend": "catboost", "strategy_return": 0.382, "max_dd": -0.327, "entries": 54, "tickers": 28, "beat_spx": true},
     {"cell": "sp500_up_50pct_200d_dd25pct_aligned_cbagent", "backend": "catboost", "strategy_return": 0.381, "max_dd": -0.292, "entries": 51, "tickers": 25, "beat_spx": true},
     {"cell": "sp500_up_50pct_200d_dd25pct_aligned_agent", "backend": "xgboost", "strategy_return": 0.310, "max_dd": -0.302, "entries": 52, "tickers": 28, "beat_spx": true},
+    {"cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1", "backend": "xgboost", "strategy_return": 0.249, "max_dd": -0.305, "entries": 53, "tickers": 31, "beat_spx": false},
     {"cell": "sp500_up_40pct_200d_dd20pct_aligned_cbagent", "backend": "catboost", "strategy_return": 0.222, "max_dd": -0.260, "entries": 56, "tickers": 25, "beat_spx": false},
-    {"cell": "sp500_up_40pct_200d_dd20pct_aligned_agent", "backend": "xgboost", "strategy_return": 0.207, "max_dd": -0.301, "entries": 57, "tickers": 27, "beat_spx": false},
-    {"cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1", "backend": "xgboost", "status": "OOM (exit 137) on full-history build+predict — resource limit, not faithfulness"},
-    {"cell": "russell1000_up_50pct_200d_dd25pct_aligned_agent", "backend": "xgboost", "status": "OOM (exit 137) on full-history build+predict"},
-    {"cell": "russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1", "backend": "xgboost", "status": "OOM (exit 137) on full-history build+predict"}
+    {"cell": "sp500_up_40pct_200d_dd20pct_aligned_agent", "backend": "xgboost", "strategy_return": 0.207, "max_dd": -0.301, "entries": 57, "tickers": 27, "beat_spx": false}
   ],
-  "summary": "7/10 scored, 3 russell xgb-agent variants OOM'd. 5/7 beat SPX (+28.4%). Losers are both sp500 +40% cells. CatBoost-agent >= its XGBoost-agent sibling in all 3 head-to-heads (the R-p@3 leaderboard edge carries into realized OOS return). russell/40 cbagent leads +50.4%. All deeper DD than SPX (ungated; _017 SMA200 caps).",
-  "followups": ["chunked-predict / bounded-warmup inference to complete the 3 OOM'd russell xgb cells on the full universe", "rolling validation (_008-style) before any alpha claim", "pair with SMA200 gate (_017) for drawdown"]
+  "summary": "10/10 scored, 7 beat SPX. Standout russell/40-100d v14p1 +86.8% (shorter H=100 window, SPX +25.3%). russell cells dominate (4 of top 5); the 3 losses are both sp500 +40% cells + russell/50 v14p1. CatBoost-agent >= its plain XGBoost-agent sibling in 3 of 4 matchups (russell/50 the exception: agent +46.1 beats cbagent +38.2). v14p1 is high-variance (best AND worst russell). All deeper DD than SPX except the short-window H=100 cell (ungated; _017 SMA200 caps).",
+  "followups": ["rolling validation (_008-style) before any alpha claim (single window; the +86.8% H=100 rests on a short window)", "pair with SMA200 gate (_017) for drawdown"]
 }
