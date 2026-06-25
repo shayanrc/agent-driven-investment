@@ -1,0 +1,78 @@
+{
+  "cell": "russell1000_up_40pct_200d_dd20pct_aligned_cbagent",
+  "config": {
+    "fractional_c": 0.25,
+    "selection_bound": "mean",
+    "K": 3,
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "rank_kelly_p": null,
+    "rank_by": "calibrated",
+    "vol_window": null,
+    "prob_weight_alpha": null
+  },
+  "geometry": {
+    "universe": "russell1000",
+    "win": 0.4,
+    "loss": 0.2,
+    "horizon": 200,
+    "breakeven_p": 0.3333333333333333,
+    "index": "SPX (proxy: ^RUI uncached)"
+  },
+  "window": {
+    "test_start": "2024-10-04",
+    "test_end": "2026-06-01",
+    "comparison_end": "2026-06-23",
+    "data_end": "2026-06-23"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 150417.70975350036,
+    "total_return": 0.5041770975350035,
+    "cagr": 0.2668089661260118,
+    "max_dd": -0.29015407597054554,
+    "n_trades": 731,
+    "gross_exposure_avg": 0.8379555068827075
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 100000.00000000001,
+      "end": 128434.18823824475,
+      "total_return": 0.2843418823824473,
+      "cagr": 0.15955127852900786,
+      "max_dd": -0.18902206184283998,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.00000000138,
+      "end": 118630.31053704592,
+      "total_return": 0.18630310537044292,
+      "cagr": 0.10634453448246739,
+      "max_dd": -0.21244339205378204,
+      "n_trades": 858,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 69,
+    "exits": 61,
+    "trims": 601,
+    "unique_tickers": 29,
+    "open_at_end": 8
+  },
+  "exit_triggers": {
+    "target": 28,
+    "DD": 29,
+    "horizon": 4
+  }
+}
