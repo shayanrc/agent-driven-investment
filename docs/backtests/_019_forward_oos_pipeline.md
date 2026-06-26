@@ -86,6 +86,16 @@ that outrank them** on back-test total return (`backtest_summary.csv`), tracked
   shifts long-lookback / cross-sectional features and `self_check` aborts (caught + fixed
   during this backfill). russell1000 now warms from ~2016-03 — a heavier daily build, shared
   across both russell cells.
+- **2026-06-26 refresh** — seeded all three universes → 06-26 and extended the log to the
+  latest settled day (**2026-06-25**; 06-26 is an in-progress partial, excluded by the #182
+  guard). The first candidate backfill had run cache-only while russell1000 (~50%) / nasdaq100
+  were stale at 05-22, so the candidates were re-seeded (back to 05-20) and re-scored fresh.
+  Two residual data quirks on the candidate (russell/nasdaq) columns, both **outside the
+  deployed champions** (which are clean): (a) the candidates drop **2026-05-26/27/28** — a
+  scoring-path/panel gap that persists even though the cache holds those bars; (b) **06-01→06-05**
+  russell coverage is thin (~470 of ~890 eligible) from forward-fill rows being dropped after
+  that gap, which can reshuffle lower ranks but not the top-3 character (consistent with the
+  full-coverage 06-08+ days). Deferred as a candidate-only refinement.
 
 ## Verification
 
