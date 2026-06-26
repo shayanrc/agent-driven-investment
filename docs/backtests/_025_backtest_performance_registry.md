@@ -71,13 +71,17 @@ the test-R-p link is the join key.
   `benchmark_index` + `excess_return_total` + `calmar` + parsed config; run-level columns
   (risk/exposure/turnover/faithfulness) are NaN (the curated CSV never stored them, and the
   177 surviving `summary.json` don't map 1:1 to the 107 curated rows).
-- **Legacy index drawdown back-filled** — the curated CSV stored the index *return* but not
-  its max drawdown, so `idx_bh_max_dd` was NaN for 98/117 rows. The regenerator now recomputes
-  any null `idx_bh_*` via index buy-and-hold over `[test_start, test_end + horizon bdays]`
-  (clipped to cache data-end) — the same window `run_backtest_cell` benchmarks on. Fills nulls
-  only (authoritative values byte-unchanged, max|Δ|=0); method validated against a `_024` row
-  (Δ=8e-17). Best-effort: legacy rows lack `comparison_end`, so the window is reconstructed
-  from the cell's horizon (clip can differ slightly from the original run if the cache grew).
+- **Legacy index drawdown back-filled + frozen** — the curated CSV stored the index *return*
+  but not its max drawdown, so `idx_bh_max_dd` was NaN for 98/117 rows. The regenerator
+  recomputes any null `idx_bh_*` via index buy-and-hold over `[test_start, test_end + horizon
+  bdays]` (clipped to cache data-end) — the same window `run_backtest_cell` benchmarks on — and
+  **stores the reconstructed `comparison_end`**, pinning the window so re-runs reproduce the
+  values byte-for-byte (no cache-vintage drift; verified idempotent). Fills `idx_bh_*` only
+  where null (authoritative values byte-unchanged, max|Δ|=0); the stored window reproduces each
+  value (Δ=8e-17). The **9 authoritative legacy rows** (ids 1–9, whose `idx_bh_*` are carried
+  from the original curated CSV) keep their values and are deliberately left without a
+  reconstructed `comparison_end` — a recompute matches them only to ~2e-5 (the curated values
+  are 4-dp-rounded), so we don't claim a window we can't reproduce exactly.
 - **`universe_n` is NaN for `_024`** (the scored-universe count wasn't retained in the copied
   artifacts); `sp500_50_cbagent`'s exact self-check diff wasn't logged (status known: WARN).
 - **Two deferred runner patches** would let future runs auto-populate the last gaps: persist
