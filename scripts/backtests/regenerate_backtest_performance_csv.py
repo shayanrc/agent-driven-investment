@@ -108,6 +108,8 @@ NEW_COLS = [
     "universe_n", "selfcheck_status", "selfcheck_max_abs_diff", "universe_delta",
     # quality
     "caveat",
+    # deployment status
+    "daily_preds", "comment",
 ]
 COLUMN_ORDER = LEGACY_COLS + NEW_COLS
 
@@ -129,6 +131,17 @@ _BENCH_TICKER = {"NDX": "INDEX:^NDX", "SPX": "INDEX:^SPX",
 # curated values are 4-dp-rounded). All OTHER legacy rows' `idx_bh_*` are
 # reconstruction-based and get a pinned `comparison_end` (frozen → reproducible).
 _AUTHORITATIVE_LEGACY_IDS = frozenset(range(1, 10))
+
+# Cells deployed to the /daily-predictions forward-OOS cadence (the two validated
+# sp500 champions, scored daily with the SMA200 regime gate). Sets the `daily_preds`
+# flag (per model — all of a cell's rows) + seeds the `comment` column. See
+# docs/backtests/_019_forward_oos_pipeline.md.
+_DEPLOYED_CELLS = frozenset({
+    "sp500_up_50pct_50d_dd25pct_agentloop",
+    "sp500_up_20pct_25d_dd10pct_agentloop",
+})
+_DEPLOY_COMMENT = "Deployed to /daily-predictions (SMA200 regime gate)"
+_UNDEPLOYED_COMMENT = "Not deployed to /daily-predictions"
 
 
 def _universe_of(cell_or_preset: str) -> str:
@@ -462,6 +475,14 @@ def main() -> None:
 
     out = pd.concat([legacy, pd.DataFrame(run_rows)], ignore_index=True)
     out = out.reindex(columns=COLUMN_ORDER)
+    # Deployment status: daily_preds is derived (per model); comment is seeded with
+    # the deployment status where empty and otherwise preserved (manual comments survive).
+    out["daily_preds"] = out["experiment"].isin(_DEPLOYED_CELLS)
+    out["comment"] = [
+        c if isinstance(c, str) and c.strip()
+        else (_DEPLOY_COMMENT if dp else _UNDEPLOYED_COMMENT)
+        for c, dp in zip(out["comment"], out["daily_preds"])
+    ]
     out = out.sort_values(["run_timestamp", "id"], kind="stable").reset_index(drop=True)
 
     print(f"legacy rows: {len(legacy)} | _024 run rows: {len(run_rows)} | total: {len(out)}")
