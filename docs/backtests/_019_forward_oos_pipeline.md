@@ -90,12 +90,22 @@ that outrank them** on back-test total return (`backtest_summary.csv`), tracked
   latest settled day (**2026-06-25**; 06-26 is an in-progress partial, excluded by the #182
   guard). The first candidate backfill had run cache-only while russell1000 (~50%) / nasdaq100
   were stale at 05-22, so the candidates were re-seeded (back to 05-20) and re-scored fresh.
-  Two residual data quirks on the candidate (russell/nasdaq) columns, both **outside the
-  deployed champions** (which are clean): (a) the candidates drop **2026-05-26/27/28** — a
-  scoring-path/panel gap that persists even though the cache holds those bars; (b) **06-01→06-05**
-  russell coverage is thin (~470 of ~890 eligible) from forward-fill rows being dropped after
-  that gap, which can reshuffle lower ranks but not the top-3 character (consistent with the
-  full-coverage 06-08+ days). Deferred as a candidate-only refinement.
+  Two candidate-only coverage quirks surfaced here — the candidates dropped **2026-05-26/27/28**
+  entirely and scored only ~470 of ~890 eligible tickers on **06-01→06-08** — and were then
+  **root-caused and fixed** (below).
+- **`_align_panel` forward-row fix (2026-06-26)** — the coverage quirks above were a bug in the
+  inference path's training-panel alignment, NOT missing data. `_align_panel` drops historical
+  provider gap-fill rows the model never trained on, using `snap` = the matched cached
+  feature-matrix's **max date** as the cutoff. But `_training_panel_index` had matched a
+  **forward-extending regen** (a russell1000 matrix ending **2026-06-18**, built while ~half the
+  universe was stale at 05-22), so `snap` sat in the OOS period and `_align_panel` pruned every
+  freshly-seeded forward row `≤ 06-18` not in that stale row-set — collapsing 05-26→06-18 to
+  ~471/890 (and 05-26/27/28 to 0, since the regen skipped them). Fix: **cap the cutoff at the
+  cell's `test_end`** (`snap = min(snap, test_end)`) so alignment only prunes historical rows and
+  **never drops genuine OOS rows**. After the fix the candidates score the full universe across
+  the whole forward window with no date gaps (890 on every day incl. 05-26). The deployed sp500
+  champions were unaffected (sp500 was never stale, so its regen carried full coverage) and their
+  self-check still passes — the cap can't change the `≤ test_end` reproduction window.
 
 ## Verification
 
