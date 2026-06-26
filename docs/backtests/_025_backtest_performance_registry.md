@@ -71,6 +71,13 @@ the test-R-p link is the join key.
   `benchmark_index` + `excess_return_total` + `calmar` + parsed config; run-level columns
   (risk/exposure/turnover/faithfulness) are NaN (the curated CSV never stored them, and the
   177 surviving `summary.json` don't map 1:1 to the 107 curated rows).
+- **Legacy index drawdown back-filled** — the curated CSV stored the index *return* but not
+  its max drawdown, so `idx_bh_max_dd` was NaN for 98/117 rows. The regenerator now recomputes
+  any null `idx_bh_*` via index buy-and-hold over `[test_start, test_end + horizon bdays]`
+  (clipped to cache data-end) — the same window `run_backtest_cell` benchmarks on. Fills nulls
+  only (authoritative values byte-unchanged, max|Δ|=0); method validated against a `_024` row
+  (Δ=8e-17). Best-effort: legacy rows lack `comparison_end`, so the window is reconstructed
+  from the cell's horizon (clip can differ slightly from the original run if the cache grew).
 - **`universe_n` is NaN for `_024`** (the scored-universe count wasn't retained in the copied
   artifacts); `sp500_50_cbagent`'s exact self-check diff wasn't logged (status known: WARN).
 - **Two deferred runner patches** would let future runs auto-populate the last gaps: persist
