@@ -5,14 +5,19 @@ user timer) OR on demand via the `/daily-predictions` skill, on a machine that
 is NOT always on. Because it backfills, a multi-day gap (machine asleep over a
 weekend / holiday / vacation) just catches up on the next run.
 
+Tracks the two deployed sp500 champions (``deployed=True``) plus higher-ranked
+registry candidates (``deployed=False``) across sp500/russell1000/nasdaq100 —
+one unified, model-keyed forward log with universe-aware gate columns.
+
 Pipeline (in order):
   1. disk pre-flight (>= 10 G free, per the FS-wedge guard)
-  2. seed the sp500 universe to ``--end`` (idempotent; warm-cache tail fetch)
+  2. seed each tracked universe to ``--end`` (idempotent; warm-cache tail fetch).
+     ``--no-seed`` skips this and scores cache-only (backfills / offline).
   3. find the last snapshot already in the forward log (per model)
   4. self-gate: if the cache has not advanced past the last log, exit as a no-op
-  5. INCREMENTAL inference (``infer_fresh_predictions --since``, ~5x cheaper)
-     for each sp500 cell → fresh CSV (gitignored, regenerable scratch)
-  6. regime gate (SMA200 on the universe index) per new date
+  5. INCREMENTAL inference (``infer_fresh_predictions --since``, ~5x cheaper),
+     one shared feature build per universe → fresh CSV (gitignored scratch)
+  6. regime gate (SMA200 on the cell's universe index — ^SPX / ^NDX) per new date
   7. append the top-K per (date, model) to the committed forward log
      (idempotent: a (snapshot_date, model) already present is never re-appended)
   8. optionally ``git`` commit the log (``--commit``)
@@ -44,16 +49,35 @@ TOP_K = 10            # rows logged per (date, model)
 MIN_FREE_GB = 10.0
 REGIME_MA = 200       # SMA window for the deployment gate
 
-# The two validated sp500 champions (the only cells this cadence tracks).
+# Cells tracked by the cadence. ``deployed=True`` are the two validated sp500
+# champions wired into /daily-predictions (the signal record). ``deployed=False``
+# are higher-ranked registry candidates tracked for forward comparison — NOT
+# deployed (their registry ``daily_preds`` stays False); a later promotion is a
+# separate decision. ``backfill_from`` floors a cell's FIRST-run backfill: the
+# candidates' gbdt test windows end in 2024-10/2026-03/2025-05, so the default
+# ``since = test_end`` would reach further back than the April comparison window.
 CELLS = {
-    "sp500_50": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop",
-    "sp500_20": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
+    "sp500_50":       {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop",
+                       "deployed": True,  "backfill_from": None},
+    "sp500_20":       {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
+                       "deployed": True,  "backfill_from": None},
+    "russell_50_200": {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
+                       "deployed": False, "backfill_from": "2026-04-01"},
+    "nasdaq_40_50":   {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
+                       "deployed": False, "backfill_from": "2026-04-01"},
+    "russell_40_100": {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
+                       "deployed": False, "backfill_from": "2026-04-01"},
 }
 
+# Unified v2 schema. Gate columns are universe-aware (``gate_index`` names the
+# index the regime gate uses — ^SPX for sp500/russell1000, ^NDX for nasdaq100);
+# ``p_calibrated`` carries the model's native probability (the inference path
+# returns p_raw; isotonic recalibration is monotonic so top-K ranks are identical).
 LOG_COLUMNS = [
-    "snapshot_date", "model", "threshold_pct", "horizon_days", "rank",
-    "ticker", "p_calibrated", "base_rate", "regime_on", "spx_close", "spx_sma200",
-    "logged_at",
+    "snapshot_date", "cell", "model", "universe", "threshold_pct", "horizon_days",
+    "rank", "ticker", "p_calibrated", "base_rate",
+    "gate_index", "gate_close", "gate_sma200", "regime_on",
+    "deployed", "logged_at",
 ]
 
 
@@ -65,17 +89,18 @@ def _preflight_disk() -> None:
     print(f"[preflight] disk OK: {free_gb:.0f} G free")
 
 
-def _seed(end: str) -> None:
-    print(f"[seed] refreshing sp500 universe → {end} ...")
-    r = subprocess.run(
-        [sys.executable, "-m", "data_pipelines", "seed", "--domain", "us_equities",
-         "--universe", "sp500", "--start",
-         str((pd.Timestamp(end) - pd.Timedelta(days=20)).date()), "--end", end],
-        cwd=REPO, capture_output=True, text=True)
-    tail = r.stdout.strip().splitlines()[-1:] or [r.stderr.strip()[-200:]]
-    print(f"[seed] {tail[0]}")
-    if r.returncode != 0:
-        sys.exit(f"[ABORT] seed failed (rc={r.returncode}).")
+def _seed(universes: list[str], end: str) -> None:
+    for uni in universes:
+        print(f"[seed] refreshing {uni} universe → {end} ...")
+        r = subprocess.run(
+            [sys.executable, "-m", "data_pipelines", "seed", "--domain", "us_equities",
+             "--universe", uni, "--start",
+             str((pd.Timestamp(end) - pd.Timedelta(days=20)).date()), "--end", end],
+            cwd=REPO, capture_output=True, text=True)
+        tail = r.stdout.strip().splitlines()[-1:] or [r.stderr.strip()[-200:]]
+        print(f"[seed] {uni}: {tail[0]}")
+        if r.returncode != 0:
+            sys.exit(f"[ABORT] seed failed for {uni} (rc={r.returncode}).")
 
 
 def _last_logged(model: str) -> pd.Timestamp | None:
@@ -138,28 +163,51 @@ def _regime_series(universe: str, lo: pd.Timestamp, hi: pd.Timestamp) -> pd.Seri
     return s, on
 
 
-def run(end: str, commit: bool) -> int:
+def run(end: str, commit: bool, no_seed: bool = False) -> int:
     _preflight_disk()
-    _seed(end)
+    metas = {model: _cell_meta(REPO / m["cell"]) for model, m in CELLS.items()}
+    universes = sorted({metas[model][0] for model in CELLS})
+    if no_seed:
+        print(f"[seed] skipped (--no-seed); scoring cache-only for {', '.join(universes)}.")
+    else:
+        _seed(universes, end)
+
+    # Per-universe warmup anchor: the warmup slice must be deep enough to faithfully
+    # rebuild the OLDEST tracked test window in that universe (self_check reproduces
+    # predictions/test.csv). We anchor to the earliest test_start among the universe's
+    # cells — NOT to `since`, which for a candidate can sit years after its test window
+    # (a too-shallow warmup shifts long-lookback/cross-sectional features and the
+    # reproduction diverges → abort). One anchor per universe also keeps the shared
+    # per-universe feature build (same warmup ⇒ one build).
+    test_dates = {model: pd.read_csv(REPO / m["cell"] / "predictions" / "test.csv",
+                                     usecols=["date"], parse_dates=["date"])["date"]
+                  for model, m in CELLS.items()}
+    uni_anchor: dict[str, pd.Timestamp] = {}
+    for model in CELLS:
+        u, ts = metas[model][0], test_dates[model].min()
+        uni_anchor[u] = min(uni_anchor.get(u, ts), ts)
+    uni_warmup = {u: _warmup_start(a) for u, a in uni_anchor.items()}
 
     # Pass 1 — cheap pre-gate: decide which cells actually advanced past their last
     # logged snapshot, so the shared build below covers exactly those cells.
     todo: list[dict] = []
-    for model, cell_rel in CELLS.items():
-        cell_dir = REPO / cell_rel
-        universe, thr, hor, base_rate = _cell_meta(cell_dir)
+    for model, m in CELLS.items():
+        cell_dir = REPO / m["cell"]
+        universe, thr, hor, base_rate = metas[model]
         since = _last_logged(model)
         if since is None:  # first ever run for this model → start after its test window
-            test = pd.read_csv(cell_dir / "predictions" / "test.csv", parse_dates=["date"])
-            since = test["date"].max()
+            since = test_dates[model].max()
+            bf = m.get("backfill_from")
+            if bf is not None:  # floor the first-run backfill (candidates → April)
+                since = max(since, pd.Timestamp(bf) - pd.Timedelta(days=1))
         cache_max = _cache_max_date(universe)
         if cache_max is not None and cache_max <= since:
             print(f"[{model}] cache latest {cache_max.date()} not past last log "
                   f"{since.date()} — no-op (skipping inference).")
             continue
         todo.append(dict(model=model, cell_dir=cell_dir, since=since, universe=universe,
-                         thr=thr, hor=hor, base_rate=base_rate,
-                         warmup=_warmup_start(since)))
+                         thr=thr, hor=hor, base_rate=base_rate, deployed=m["deployed"],
+                         warmup=uni_warmup[universe]))
 
     if not todo:
         print("[done] no new snapshots — log unchanged (no-op).")
@@ -185,6 +233,7 @@ def run(end: str, commit: bool) -> int:
     for t in todo:
         model, cell_dir, since = t["model"], t["cell_dir"], t["since"]
         universe, thr, hor, base_rate = t["universe"], t["thr"], t["hor"], t["base_rate"]
+        deployed = t["deployed"]
         scores = scores_by_cell[str(cell_dir)].copy()
         scores["date"] = pd.to_datetime(scores["date"])
         self_check(scores, cell_dir, incremental=True, label=model)
@@ -204,24 +253,28 @@ def run(end: str, commit: bool) -> int:
                   f"(today's bar, if any, is excluded as in-progress) — nothing to log.")
             continue
 
-        spx, regime = _regime_series(universe, fresh["date"].min(), fresh["date"].max())
+        gate_idx_tk = INDEX_BY_UNIVERSE[universe][0]
+        gate, regime = _regime_series(universe, fresh["date"].min(), fresh["date"].max())
         reg_map = regime.reindex(sorted(set(regime.index) | set(fresh["date"]))).ffill().to_dict()
-        spx_map = spx.reindex(sorted(set(spx.index) | set(fresh["date"]))).ffill().to_dict()
-        sma_map = spx.rolling(REGIME_MA).mean().reindex(
-            sorted(set(spx.index) | set(fresh["date"]))).ffill().to_dict()
+        gate_map = gate.reindex(sorted(set(gate.index) | set(fresh["date"]))).ffill().to_dict()
+        gma_map = gate.rolling(REGIME_MA).mean().reindex(
+            sorted(set(gate.index) | set(fresh["date"]))).ffill().to_dict()
 
         for d, day in fresh.groupby("date"):
             top = day.sort_values("p_calibrated", ascending=False).head(TOP_K)
             ro = reg_map.get(pd.Timestamp(d))
             for rank, r in enumerate(top.itertuples(), 1):
                 new_rows.append({
-                    "snapshot_date": str(pd.Timestamp(d).date()), "model": model,
+                    "snapshot_date": str(pd.Timestamp(d).date()), "cell": cell_dir.name,
+                    "model": model, "universe": universe,
                     "threshold_pct": thr, "horizon_days": hor, "rank": rank,
                     "ticker": r.ticker, "p_calibrated": round(float(r.p_calibrated), 6),
                     "base_rate": round(base_rate, 6),
+                    "gate_index": gate_idx_tk,
+                    "gate_close": round(float(gate_map.get(pd.Timestamp(d), float("nan"))), 2),
+                    "gate_sma200": round(float(gma_map.get(pd.Timestamp(d), float("nan"))), 2),
                     "regime_on": bool(ro) if ro == ro else True,  # NaN→risk-on
-                    "spx_close": round(float(spx_map.get(pd.Timestamp(d), float("nan"))), 2),
-                    "spx_sma200": round(float(sma_map.get(pd.Timestamp(d), float("nan"))), 2),
+                    "deployed": deployed,
                     "logged_at": logged_at,
                 })
         print(f"[{model}] logged {fresh['date'].nunique()} new day(s) "
@@ -266,8 +319,11 @@ def main() -> None:
                          "available trading day ≤ end is used.")
     ap.add_argument("--commit", action="store_true",
                     help="git-commit the appended forward log locally (no push).")
+    ap.add_argument("--no-seed", action="store_true",
+                    help="skip the data-refresh seed and score cache-only — for "
+                         "backfilling over already-cached history, or running offline.")
     args = ap.parse_args()
-    sys.exit(run(args.end, args.commit))
+    sys.exit(run(args.end, args.commit, args.no_seed))
 
 
 if __name__ == "__main__":
