@@ -93,6 +93,16 @@ def _align_panel(panel: pd.DataFrame, cell: Path, universe: str) -> pd.DataFrame
               "(strict self-check still guards faithfulness)")
         return panel
     train_idx, snap = found
+    # The matched cache may be a FORWARD-EXTENDING regen (snap > the cell's test
+    # window) built on a then-current — possibly stale — panel. Aligning to its
+    # max date would drop genuine OOS rows (> test_end) that aren't in that older
+    # row-set: e.g. a russell1000 regen ending 2026-06-18 (built while ~half the
+    # universe was stale at 05-22) silently pruned the freshly-seeded tickers on
+    # 2026-05-26→06-18, collapsing forward coverage to ~471/890. Cap the gap-fill
+    # cutoff at the training boundary (test_end): only HISTORICAL rows are pruned
+    # (for faithful test reproduction); every forward row passes through at full
+    # universe coverage. The self-check (≤ test_end) is unaffected by the cap.
+    snap = min(snap, test["date"].max())
     train_keys = set(zip(pd.to_datetime(train_idx.get_level_values("date")),
                          train_idx.get_level_values("ticker")))
     pdates = panel.index.get_level_values("date")
