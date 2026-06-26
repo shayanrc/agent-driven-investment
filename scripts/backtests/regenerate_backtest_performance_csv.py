@@ -122,6 +122,14 @@ _NDX_RENAME = {
 _BENCH_TICKER = {"NDX": "INDEX:^NDX", "SPX": "INDEX:^SPX",
                  "NIFTY500": "NIFTY:500", "NIFTY50": "NIFTY:50"}
 
+# Legacy rows whose `idx_bh_*` are authoritative — carried from the original curated
+# CSV, computed by the original run over its exact (now-unrecorded) `comparison_end`.
+# They are never recomputed and get no reconstructed `comparison_end` (we won't claim
+# a window we can't reproduce exactly — a recompute matches only to ~2e-5, since the
+# curated values are 4-dp-rounded). All OTHER legacy rows' `idx_bh_*` are
+# reconstruction-based and get a pinned `comparison_end` (frozen → reproducible).
+_AUTHORITATIVE_LEGACY_IDS = frozenset(range(1, 10))
+
 
 def _universe_of(cell_or_preset: str) -> str:
     s = str(cell_or_preset)
@@ -365,14 +373,19 @@ def migrate_legacy_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _backfill_index_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
-    """Recompute `idx_bh_*` for legacy rows missing `idx_bh_max_dd` via index
-    buy-and-hold over `[test_start, test_end + horizon bdays]` (clipped to the
-    cache's data-end) — the same window `run_backtest_cell` benchmarks on. Fills
-    only NULL fields, never overwrites authoritative values. Best-effort: legacy
-    rows lack `comparison_end`, so the window is reconstructed from the cell's
-    horizon (the `_<N>d_` token); rows without a resolvable index/horizon stay
-    NULL. Cache-only (`_cache_read`) — no network."""
-    mask = (df["idx_bh_max_dd"].isna() & df["benchmark_index"].isin(_BENCH_TICKER)
+    """Pin + freeze legacy index benchmark metrics. For each legacy row with no
+    stored `comparison_end` (and not an authoritative original), reconstruct the
+    benchmark window `comparison_end = min(test_end + horizon bdays, cache data-end)`
+    — the same window `run_backtest_cell` benchmarks on — and STORE it, so later
+    regens read the pinned window and reproduce the values byte-for-byte (no
+    cache-vintage drift). `idx_bh_*` fields are filled only where NULL (existing
+    values, incl. authoritative index returns, are never overwritten); for the
+    already-backfilled rows that just means `comparison_end` is now persisted next
+    to its values. Rows in `_AUTHORITATIVE_LEGACY_IDS`, rows already carrying a
+    `comparison_end`, and rows without a resolvable index/horizon are left untouched.
+    Cache-only (`_cache_read`) — no network."""
+    mask = (df["comparison_end"].isna() & ~df["id"].isin(_AUTHORITATIVE_LEGACY_IDS)
+            & df["benchmark_index"].isin(_BENCH_TICKER)
             & df["oos_start"].notna() & df["oos_end"].notna())
     if not mask.any():
         return df, 0
@@ -403,6 +416,7 @@ def _backfill_index_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
             _, mm, _ = bm.buy_and_hold(s, ts, ce, INITIAL_CASH)
         except Exception:
             continue
+        df.at[i, "comparison_end"] = str(ce.date())  # pin the window
         for col, key in (("idx_bh_final_equity", "end"), ("idx_bh_total_return", "total_return"),
                          ("idx_bh_cagr", "cagr"), ("idx_bh_max_dd", "max_dd")):
             if pd.isna(df.at[i, col]):
@@ -433,7 +447,7 @@ def main() -> None:
     legacy = legacy[legacy.get("runner", pd.Series([""] * len(legacy))) != "run_backtest_cell"]
     legacy, n_bf = _backfill_index_metrics(legacy)
     if n_bf:
-        print(f"backfilled idx_bh_* (index buy-hold recompute) for {n_bf} legacy rows")
+        print(f"pinned comparison_end (froze the index benchmark window) for {n_bf} legacy rows")
 
     next_id = int(legacy["id"].max()) + 1
     run_rows = []
