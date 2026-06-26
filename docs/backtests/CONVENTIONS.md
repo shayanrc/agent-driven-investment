@@ -255,6 +255,10 @@ r_precision_at_1_realized r_precision_at_3_realized r_precision_at_5_realized
 
 # quality
 caveat                            # True if n_days < 120 or avg_gross_exposure < 0.4 (thin/low-exposure)
+
+# deployment status
+daily_preds                       # bool — the cell is deployed to the /daily-predictions cadence (per model: all of a deployed cell's rows are flagged). Only the two sp500 champions today.
+comment                           # free-form curation/deployment note; seeded with deployment status ("Deployed to /daily-predictions (SMA200 regime gate)" / "Not deployed to /daily-predictions") and PRESERVED across regen (manual comments survive). Distinct from `notes` (per-run provenance).
 ```
 
 **Default sort: chronological** (`run_timestamp`, then `id`).

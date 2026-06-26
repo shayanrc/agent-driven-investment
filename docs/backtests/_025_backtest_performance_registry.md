@@ -82,6 +82,13 @@ the test-R-p link is the join key.
   from the original curated CSV) keep their values and are deliberately left without a
   reconstructed `comparison_end` — a recompute matches them only to ~2e-5 (the curated values
   are 4-dp-rounded), so we don't claim a window we can't reproduce exactly.
+- **Deployment status columns** — `daily_preds` (bool) flags the cells deployed to the
+  `/daily-predictions` cadence (per model: all of a deployed cell's rows; today only the two
+  sp500 champions `sp500_up_50pct_50d_dd25pct_agentloop` + `sp500_up_20pct_25d_dd10pct_agentloop`
+  → 35 rows). `comment` is a free-form curation/deployment note, seeded with the deployment
+  status (so undeployed models are explicitly logged, not blank) and preserved across regen —
+  distinct from `notes` (per-run provenance). Deployed cells are defined in the regenerator's
+  `_DEPLOYED_CELLS` constant.
 - **`universe_n` is NaN for `_024`** (the scored-universe count wasn't retained in the copied
   artifacts); `sp500_50_cbagent`'s exact self-check diff wasn't logged (status known: WARN).
 - **Two deferred runner patches** would let future runs auto-populate the last gaps: persist
