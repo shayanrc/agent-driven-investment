@@ -118,6 +118,10 @@ _NDX_RENAME = {
     "max_dd_ndx_bh": "idx_bh_max_dd",
 }
 
+# benchmark_index → cache ticker (mirrors run_backtest_cell.INDEX_BY_UNIVERSE).
+_BENCH_TICKER = {"NDX": "INDEX:^NDX", "SPX": "INDEX:^SPX",
+                 "NIFTY500": "NIFTY:500", "NIFTY50": "NIFTY:50"}
+
 
 def _universe_of(cell_or_preset: str) -> str:
     s = str(cell_or_preset)
@@ -360,6 +364,56 @@ def migrate_legacy_df(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _backfill_index_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Recompute `idx_bh_*` for legacy rows missing `idx_bh_max_dd` via index
+    buy-and-hold over `[test_start, test_end + horizon bdays]` (clipped to the
+    cache's data-end) — the same window `run_backtest_cell` benchmarks on. Fills
+    only NULL fields, never overwrites authoritative values. Best-effort: legacy
+    rows lack `comparison_end`, so the window is reconstructed from the cell's
+    horizon (the `_<N>d_` token); rows without a resolvable index/horizon stay
+    NULL. Cache-only (`_cache_read`) — no network."""
+    mask = (df["idx_bh_max_dd"].isna() & df["benchmark_index"].isin(_BENCH_TICKER)
+            & df["oos_start"].notna() & df["oos_end"].notna())
+    if not mask.any():
+        return df, 0
+    try:
+        from scripts.backtests import benchmarks as bm
+        from scripts.backtests.run_cell5_bayesian_kelly import INITIAL_CASH, _load_closes
+    except Exception:
+        return df, 0
+    need = df[mask]
+    lo = pd.to_datetime(need.oos_start).min() - pd.Timedelta(days=20)
+    hi = pd.to_datetime(need.oos_end).max() + pd.Timedelta(days=600)
+    closes = {}
+    for bidx in need.benchmark_index.unique():
+        s = _load_closes([_BENCH_TICKER[bidx]], lo, hi).get(_BENCH_TICKER[bidx])
+        if s is not None and len(s):
+            closes[bidx] = s.sort_index()
+    n = 0
+    for i, r in need.iterrows():
+        s = closes.get(r.benchmark_index)
+        m = re.search(r"_(\d+)d_", f"_{r.experiment}_")
+        if s is None or not m:
+            continue
+        H = int(m.group(1))
+        ts, te = pd.Timestamp(r.oos_start), pd.Timestamp(r.oos_end)
+        after = s.index[s.index > te]
+        ce = min(after[H - 1] if len(after) >= H else s.index.max(), s.index.max())
+        try:
+            _, mm, _ = bm.buy_and_hold(s, ts, ce, INITIAL_CASH)
+        except Exception:
+            continue
+        for col, key in (("idx_bh_final_equity", "end"), ("idx_bh_total_return", "total_return"),
+                         ("idx_bh_cagr", "cagr"), ("idx_bh_max_dd", "max_dd")):
+            if pd.isna(df.at[i, col]):
+                df.at[i, col] = mm[key]
+        if pd.isna(df.at[i, "excess_return_total"]) and pd.notna(df.at[i, "total_return_strategy"]):
+            df.at[i, "excess_return_total"] = (df.at[i, "total_return_strategy"]
+                                               - df.at[i, "idx_bh_total_return"])
+        n += 1
+    return df, n
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(REGISTRY))
@@ -377,6 +431,9 @@ def main() -> None:
     legacy = migrate_legacy_df(pd.read_csv(args.out))
     # Drop any prior _024 run rows (idempotent rebuild from artifacts).
     legacy = legacy[legacy.get("runner", pd.Series([""] * len(legacy))) != "run_backtest_cell"]
+    legacy, n_bf = _backfill_index_metrics(legacy)
+    if n_bf:
+        print(f"backfilled idx_bh_* (index buy-hold recompute) for {n_bf} legacy rows")
 
     next_id = int(legacy["id"].max()) + 1
     run_rows = []
