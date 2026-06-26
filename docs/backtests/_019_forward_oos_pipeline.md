@@ -36,8 +36,18 @@ Three pieces, each verified:
 | **Forward log** (top-10/day/model + regime state) | `results/backtests/data/forward_predictions_log.csv` | **yes** (force-added) | small, append-only, the durable record to score against realized outcomes |
 | Full per-(date,ticker) CSVs | `results/backtests/_019_fwd_oos/*_fresh.csv` | no (gitignored) | large, **exactly** regenerable via the same `--since` command |
 
-Log schema: `snapshot_date, model, threshold_pct, horizon_days, rank, ticker,
-p_calibrated, base_rate, regime_on, spx_close, spx_sma200, logged_at`.
+Log schema (**v2, unified — 16 cols**): `snapshot_date, cell, model, universe,
+threshold_pct, horizon_days, rank, ticker, p_calibrated, base_rate, gate_index,
+gate_close, gate_sma200, regime_on, deployed, logged_at`. The gate columns are
+**universe-aware** (`gate_index` = `^SPX` for sp500/russell1000, `^NDX` for
+nasdaq100; renamed from the sp500-only `spx_close`/`spx_sma200`). `cell` is the full
+gbdt experiment name (join key → `backtest_summary.csv` / `r_precision_at_k.csv`).
+`deployed`=True marks the two champions wired into `/daily-predictions`; `deployed`=False
+marks higher-ranked registry cells tracked **for comparison only** (mirrors the registry
+`daily_preds` flag). `p_calibrated` is the model's **native** probability (the inference
+path returns `p_raw`; isotonic recalibration is monotonic, so top-K ranks are unaffected).
+Migrated in place by `scripts/backtests/migrate_forward_log_v2.py` (value-preserving for
+the champion rows).
 
 ## Initial log (backfilled from each cell's OOS start → latest settled day)
 
@@ -50,6 +60,32 @@ p_calibrated, base_rate, regime_on, spx_close, spx_sma200, logged_at`.
 - Latest equal-weight top-3 (the champion's positions, 2026-06-15) — **WDC tops both**:
   sp500_50 = **WDC 0.278, GLW 0.225, INTC 0.188**; sp500_20 = **WDC 0.398, CIEN 0.367,
   COHR 0.354** (a tight semis / optical / storage cluster).
+
+## Candidate cells tracked for comparison (v2, added 2026-06-26)
+
+Beyond the two deployed champions, the cadence now also scores the **three registry cells
+that outrank them** on back-test total return (`backtest_summary.csv`), tracked
+**`deployed=False`** (NOT promoted — a champion swap is a separate decision):
+
+| model | cell | universe | gate | target |
+|---|---|---|---|---|
+| `russell_50_200` | `russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1` | russell1000 | ^SPX (proxy) | +50% / 200d |
+| `nasdaq_40_50` | `nasdaq100_up_40pct_50d_dd20pct_agentloop_mix` | nasdaq100 | ^NDX | +40% / 50d |
+| `russell_40_100` | `russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1` | russell1000 | ^SPX (proxy) | +40% / 100d |
+
+- **Backfilled from 2026-04-01** (the `backfill_from` floor) → 54 settled days each through
+  2026-06-23 (540 rows/cell), matching the champions' visible window for a clean side-by-side.
+  April is **genuinely OOS** for all three — their gbdt `test_end`s are 2024-10 / 2026-03 /
+  2025-05, all before April (the registry's `oos_*` columns are the *back-test* window, NOT
+  the model's test boundary — don't confuse them).
+- **Leaderboard caveat**: "outrank the champions" is partly a window artifact — those
+  back-test returns span 1–3 years vs the champions' ~6 months. This forward log is the
+  apples-to-apples record that will settle it as OOS history accrues.
+- **Warmup fix**: faithfully reproducing an *old* test window needs the warmup anchored to
+  the **earliest test_start per universe** (not to `since`) — a too-shallow trailing slice
+  shifts long-lookback / cross-sectional features and `self_check` aborts (caught + fixed
+  during this backfill). russell1000 now warms from ~2016-03 — a heavier daily build, shared
+  across both russell cells.
 
 ## Verification
 
