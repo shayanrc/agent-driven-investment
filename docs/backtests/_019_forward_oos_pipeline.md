@@ -175,3 +175,65 @@ uv run python -m scripts.backtests.daily_forward_predictions [--commit]
   `infer_fresh_predictions.py` `--since` incremental mode, `.claude/skills/daily-predictions/`,
   `scripts/backtests/systemd/`. Forward log under `results/backtests/data/`; full CSVs
   gitignored. Graph + `docs/gbdt/V1.4_TBD.md` (GBDTPERF) updated.
+
+## Predicted-probability / early-calibration readout (2026-06-27)
+
+After the January backfill the log holds enough OOS history to ask the first real question of
+the predictions themselves: **do the predicted probabilities separate realized winners from
+losers?** This is an *interim shape* read, NOT a settled calibration verdict — the long
+horizons are mostly unresolved and the window is a strong bull. Script (regenerable as horizons
+mature): `scripts/backtests/analyze_forward_prob.py`. Figures: `results/backtests/_019_fwd_oos/figs/_019_prob_*.png`.
+
+**Method.** Replicate the trained triple-barrier label exactly (`gbdt.targets.build_target`,
+path-honesty / CLOSE-based: target = first close ≥ `+threshold%`; stop = close ≤ `−max_drawdown%`;
+first-touch wins) and bucket every logged pick by realized outcome: **TARGET** / **STOP** (locked
+barriers), **ENDED_POS/NEG** (full horizon elapsed, no barrier), **CURRENT_POS/NEG** (horizon not
+yet elapsed — open, marked to last close). `max_drawdown` parsed from the cell name; the cache
+`close` is the same series the label sees, so the classification is faithful by construction.
+
+**Findings.**
+1. **The log persists top-10/day** (the "top 3" is only the daily on-screen readout); this analysis uses all ten.
+2. **Absolute `p` tracks the horizon, not skill** — `russell_50_200` (+50%/200d) sits ~0.63 vs
+   `sp500_50` (+50%/50d) ~0.12 for the *same* +50% target. Compare elevation over base rate only:
+   top-1 lift is sp500_50 ≈7.6×, russell_50_200 ≈5.1×, nasdaq ≈3.9×, russell_40_100 ≈3.8×, sp500_20 ≈3.2×.
+3. **TGT-vs-STOP separation** (rank-AUC = P(a random target pick has higher `p` than a random
+   stop pick); 0.5 = none, >0.5 = correct, <0.5 = inverted):
+
+   | model | top-10 AUC | MW p | top-3 AUC | MW p |
+   |---|--:|--:|--:|--:|
+   | sp500_50 | **0.76** | <0.001 | 0.39 | 0.418 |
+   | sp500_20 | 0.41 | 0.008 | 0.21 | <0.001 |
+   | russell_50_200 | 0.36 | <0.001 | 0.40 | 0.022 |
+   | russell_40_100 | 0.49 | 0.665 | 0.47 | 0.540 |
+   | nasdaq_40_50 | 0.38 | <0.001 | 0.59 | 0.066 |
+
+   On **top-10, `sp500_50` is the only clear separator** (AUC 0.76); the others are significantly
+   **inverted** (sp500_20 / russell_50_200 / nasdaq, AUC 0.36–0.41) or **flat** (russell_40_100, n.s.).
+4. **…but it is rank-driven and collapses at top-3.** `sp500_50`'s separation vanishes among its
+   three highest-conviction picks (AUC 0.39, n.s., only **5** stop-outs). At the top-3 tier **no model**
+   cleanly separates target from stop (nasdaq is weakly positive but not significant). The top-10
+   edge is a rank-spread effect (lower-ranked = lower-`p` picks stop more), not a property of the sharpest picks.
+5. **Volatility confound.** Where `p` co-moves with outcome it does so *inverted* — higher `p` →
+   more stops — because `p` tracks momentum/volatility and high-vol names tag both barriers / overshoot
+   the floor. `sp500_20` is monotonically inverted (TGT 0.171 < STOP 0.194 < CUR± ≈ 0.27).
+6. **`russell_40_100` is non-discriminative** — `p` is compressed (~0.28, std 0.015 across the full
+   top-10) and flat across all six buckets at every tier.
+
+**Caveats (these bound the read hard).** CURRENT± (open, marked-to-last) dominate; `russell_50_200`'s
+200d horizon has **zero** settled ENDED±. Settled barrier samples are tiny at top-3 (STOP=5 for sp500_50).
+The strong-bull window inflates target-hits far above training base rates (sp500_50 realized 72% vs
+base 2.6%), leaving `p` little room to discriminate; fast movers also resolve first (early-resolution
+bias). True calibration (do `p≈0.15` picks hit ~15%?) is **not yet assessable** — re-run as horizons
+mature across a mixed (non-bull) regime.
+
+**Verdict.** In this immature, bull-dominated, mostly-still-open window the predicted probabilities
+do **not** rank realized success at the conviction tier that matters (top-3); `sp500_50`'s top-10
+separation is a rank-spread artifact that does not survive at top-3. **No promotion/demotion implication
+yet** — this is a baseline to re-measure as the horizons settle.
+
+Figures: [overview](../../results/backtests/_019_fwd_oos/figs/_019_prob_dist_overview.png) ·
+top-10 [box](../../results/backtests/_019_fwd_oos/figs/_019_prob_outcome6_top10_box.png) /
+[violin](../../results/backtests/_019_fwd_oos/figs/_019_prob_outcome6_top10_violin.png) ·
+top-3 [box](../../results/backtests/_019_fwd_oos/figs/_019_prob_outcome6_top3_box.png) /
+[violin](../../results/backtests/_019_fwd_oos/figs/_019_prob_outcome6_top3_violin.png).
+Reproduce: `uv run python -m scripts.backtests.analyze_forward_prob --as-of 2026-06-27`.
