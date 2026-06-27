@@ -89,6 +89,16 @@ def main() -> None:
                          "p) or 'raw' (the model's p_raw — finer resolution, recovers the "
                          "within-plateau ordering the quantized calibrated p loses; see _020). "
                          "Sizing + breakeven gate stay on the calibrated p either way.")
+    ap.add_argument("--min-entry-p", type=float, default=0.0,
+                    help="entry-p threshold: only candidates whose selection-bound p (p_mean, "
+                         "or p_low with --selection-bound low) is >= this may be entered. "
+                         "0.0 = off (champion). NOTE per _021 the calibrated p is quantized "
+                         "into wide isotonic plateaus, so this acts as a DAY-LEVEL filter — "
+                         "days whose top plateau sits below the threshold trade nothing.")
+    ap.add_argument("--min-entry-p-raw", type=float, default=0.0,
+                    help="entry threshold on the model's RAW p_raw (pre-calibration, the "
+                         "0.04–0.39 scale) — the substantive variant since calibrated p is "
+                         "plateaued. Pair with --rank-by raw. 0.0 = off.")
     ap.add_argument("--predictions", default=None,
                     help="default: <cell>/predictions/test.csv")
     args = ap.parse_args()
@@ -129,7 +139,31 @@ def main() -> None:
 
     pred_csv = Path(args.predictions) if args.predictions else cell / "predictions" / "test.csv"
     test = pd.read_csv(pred_csv, parse_dates=["date"])
+    # Raw-p entry threshold (_026): gate on the model's finest-resolution p_raw
+    # (the 0.04–0.39 scale), filtered BEFORE calibration — the substantive variant,
+    # since the calibrated p is plateaued (_021). Pair with --rank-by raw to also
+    # select the highest-raw survivors. Filters the prediction rows directly.
+    if args.min_entry_p_raw > 0.0:
+        if "p_raw" not in test.columns:
+            raise ValueError("--min-entry-p-raw needs a 'p_raw' column in the predictions CSV")
+        b = len(test)
+        test = test[test["p_raw"] >= args.min_entry_p_raw].copy()
+        print(f"[min-entry-p-raw] >= {args.min_entry_p_raw}: kept {len(test)}/{b} rows, "
+              f"{test.date.nunique()} days with >=1 tradable candidate")
     preds = _predictions_dict(test, cal)
+    # Entry-p threshold (_026): gate candidates on the same bound the strategy selects on
+    # (p_mean default; p_low if selection_bound="low"). Empty days are kept as empty lists
+    # (no new entries) so the engine timeline is unchanged.
+    n_cand_days = sum(bool(v) for v in preds.values())
+    if args.min_entry_p > 0.0:
+        bound_idx = 2 if args.selection_bound == "low" else 1  # tuple = (ticker, mean, low, high)
+        before = sum(len(v) for v in preds.values())
+        preds = {d: [t for t in lst if t[bound_idx] >= args.min_entry_p]
+                 for d, lst in preds.items()}
+        after = sum(len(v) for v in preds.values())
+        n_cand_days = sum(bool(v) for v in preds.values())
+        print(f"[min-entry-p] >= {args.min_entry_p}: kept {after}/{before} candidate rows, "
+              f"{n_cand_days}/{len(preds)} days with >=1 tradable candidate")
     # rank_by="raw": rank the entry top-K on the model's finest-resolution raw
     # score instead of the quantized calibrated p (which ties wide plateaus and
     # degenerates to the alphabetical tie-break). Sizing/breakeven stay calibrated.
@@ -226,6 +260,8 @@ def main() -> None:
         "cell": cell.name,
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound, "K": K,
                    "selection_mode": args.selection_mode, "sizing_mode": args.sizing_mode,
+                   "min_entry_p": args.min_entry_p, "min_entry_p_raw": args.min_entry_p_raw,
+                   "n_candidate_days": n_cand_days,
                    "rank_kelly_p": rank_kelly_p, "rank_by": args.rank_by,
                    "vol_window": args.vol_window if args.sizing_mode == "inverse_vol" else None,
                    "prob_weight_alpha": args.prob_weight_alpha if args.sizing_mode == "prob_weight" else None},
