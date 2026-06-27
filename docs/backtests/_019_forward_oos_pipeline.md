@@ -78,6 +78,12 @@ that outrank them** on back-test total return (`backtest_summary.csv`), tracked
   April is **genuinely OOS** for all three — their gbdt `test_end`s are 2024-10 / 2026-03 /
   2025-05, all before April (the registry's `oos_*` columns are the *back-test* window, NOT
   the model's test boundary — don't confuse them).
+- **Extended to 2026-01-01 (2026-06-27)** — the `backfill_from` floor moved April → January.
+  January is genuine OOS for the two **russell** cells (test_ends 2024-10 / 2025-05), which now
+  span **2026-01-01→06-25**. `nasdaq_40_50` (test_end **2026-03-12**) has January *inside* its
+  test window, so its floor clamps to its **2026-03-13** OOS start (the runner caps
+  `since = max(test_end, backfill_from − 1d)`, never logging in-sample dates). The two sp500
+  champions likewise stay at their test_ends (2026-03-13 / 04-18) — January is in-sample for them.
 - **Leaderboard caveat**: "outrank the champions" is partly a window artifact — those
   back-test returns span 1–3 years vs the champions' ~6 months. This forward log is the
   apples-to-apples record that will settle it as OOS history accrues.
