@@ -53,20 +53,24 @@ REGIME_MA = 200       # SMA window for the deployment gate
 # champions wired into /daily-predictions (the signal record). ``deployed=False``
 # are higher-ranked registry candidates tracked for forward comparison — NOT
 # deployed (their registry ``daily_preds`` stays False); a later promotion is a
-# separate decision. ``backfill_from`` floors a cell's FIRST-run backfill: the
-# candidates' gbdt test windows end in 2024-10/2026-03/2025-05, so the default
-# ``since = test_end`` would reach further back than the April comparison window.
+# separate decision. ``backfill_from`` floors a cell's FIRST-run backfill, clamped
+# to >= the cell's gbdt test_end (pre-test_end dates are in-sample, NOT forward-OOS).
+# Candidate test windows end 2024-10 (russell_50_200), 2026-03 (nasdaq_40_50),
+# 2025-05 (russell_40_100): January 2026 is genuine OOS for the two russell cells
+# (backfilled from 2026-01-01), but IN-sample for nasdaq_40_50 — its backfill_from
+# of 2026-01-01 therefore clamps to its 2026-03-13 OOS start. Champions (test_end
+# 2026-03/04) stay ``None`` -> test_end (their OOS legitimately begins then).
 CELLS = {
     "sp500_50":       {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop",
                        "deployed": True,  "backfill_from": None},
     "sp500_20":       {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
                        "deployed": True,  "backfill_from": None},
     "russell_50_200": {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
-                       "deployed": False, "backfill_from": "2026-04-01"},
+                       "deployed": False, "backfill_from": "2026-01-01"},
     "nasdaq_40_50":   {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
-                       "deployed": False, "backfill_from": "2026-04-01"},
+                       "deployed": False, "backfill_from": "2026-01-01"},
     "russell_40_100": {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
-                       "deployed": False, "backfill_from": "2026-04-01"},
+                       "deployed": False, "backfill_from": "2026-01-01"},
 }
 
 # Unified v2 schema. Gate columns are universe-aware (``gate_index`` names the
