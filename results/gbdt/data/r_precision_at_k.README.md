@@ -37,7 +37,7 @@ Aggregation is **macro**: mean of per-day ratios, equal weight per day. This mat
 | `mode` | Training regime: `sweep` / `default_full_loop` / `agent_file_protocol` / `agentloop_legacy` (added 2026-06-05) |
 | `n_iterations_run` | Realized FS+HP iteration count from `<artifact>/iterations.jsonl` (or sidecar JSON for pruned `_agentloop*` cells; blank when neither carries it) |
 | `backend` | `xgboost` / `catboost` — read from `<artifact>/spec.yaml::backend.library`, defaulting to `catboost` when omitted (matches the runner's default) |
-| `train_start`, `train_end`, `val_start`, `val_end`, `eval_start`, `eval_end`, `test_start`, `test_end` | V1.4 P3 calendar-date columns — universe-anchored segment bounds |
+| `train_start`, `train_end`, `val_start`, `val_end`, `eval_start`, `eval_end`, `test_start`, `test_end` | V1.4 P3 calendar-date columns — universe-anchored segment bounds. Trailing rows: dense MIN/MAX across tickers — sparse out-of-segment outlier dates (e.g. a delisted ticker's offset trailing window) are dropped via `_dense_date_bounds` so a single delisted name can't drag a start back (the `nasdaq_40_50` `test_start` artifact). |
 
 Rows are sorted by AUC descending for readability — re-sort as needed.
 

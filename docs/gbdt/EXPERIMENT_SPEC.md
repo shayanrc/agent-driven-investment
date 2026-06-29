@@ -151,7 +151,7 @@ split:
   eval_rows: 400
 ```
 
-For trailing-mode rows in the canonical `r_precision_at_k.csv`, the 8 calendar-date columns (`train_start, train_end, val_start, val_end, eval_start, eval_end, test_start, test_end`) carry the **calendar UNION across tickers** — MIN(start) and MAX(end) of `predictions/<seg>.csv['date']` across all tickers in the segment. For date-aligned rows they're the universe-calendar window directly.
+For trailing-mode rows in the canonical `r_precision_at_k.csv`, the 8 calendar-date columns (`train_start, train_end, val_start, val_end, eval_start, eval_end, test_start, test_end`) carry the **calendar bounds across tickers** — MIN(start) and MAX(end) of `predictions/<seg>.csv['date']` over the segment's **dense dates only** (those carrying ≥ half the segment's *peak* daily row-count). Sparse out-of-segment outlier dates — e.g. a **delisted** ticker whose trailing-split window ends months before the cohort's, which would otherwise drag MIN(date) back (the `nasdaq_40_50` `test_start=2025-06-05` artifact; true cohort start 2025-12-30) — are dropped via `_dense_date_bounds` (in `scripts/gbdt/backfill_csv_segment_dates.py` + `regenerate_r_precision_at_k_csv.py`). For date-aligned rows they're the universe-calendar window directly.
 
 Tickers with fewer than `min_rows_per_ticker` rows are dropped from the panel and listed in the artifact's `metrics.json::data.tickers_excluded`. Tickers excluded only from the train segment (via `min_train_rows_per_ticker`) still appear in val/eval/test and are listed in `metrics.json::data.tickers_per_segment`.
 
