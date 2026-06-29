@@ -287,9 +287,36 @@ def find_test_csvs(roots: list[Path]) -> dict[str, Path]:
     return freshest
 
 
+# Dense-region date bounds — keep in sync with the twin in
+# backfill_csv_segment_dates.py (identical logic).
+DENSE_FRAC = 0.5  # a date is "dense" if it carries >= this fraction of the segment's PEAK daily row-count
+
+
+def _dense_date_bounds(dts: pd.Series) -> tuple[str | None, str | None]:
+    """(start, end) ISO dates of a segment's DENSE region, dropping sparse outliers.
+
+    A trailing (row-based) split gives each ticker its own last-N-rows window, so a
+    DELISTED ticker (whose history ends months before the cohort) lands segment rows
+    dated well before the cohort's block — dragging a naive MIN(date) back (the
+    nasdaq_40_50 ``test_start=2025-06-05`` artifact; true cohort start 2025-12-30). We
+    count rows per calendar date and keep only dates carrying >= ``DENSE_FRAC`` × the
+    PEAK daily count, then take MIN/MAX over those. Peak (not median) is the robust
+    reference — strays sit far below it however many stray dates there are. No-op for
+    clean segments; MAX is rarely affected (delisted tickers end early, not late).
+    """
+    daily = dts.dt.normalize().value_counts()
+    if daily.empty:
+        return None, None
+    keep = daily[daily >= DENSE_FRAC * daily.max()].index
+    if len(keep) == 0:
+        keep = daily.index
+    return min(keep).date().isoformat(), max(keep).date().isoformat()
+
+
 def _segment_dates_for_artifact(art_dir: Path) -> dict[str, dict[str, str | None]]:
-    """V1.4: prefer metrics.json::segment_dates; fall back to calendar UNION
-    across predictions/{train,val,eval,test}.csv (MIN start, MAX end).
+    """V1.4: prefer metrics.json::segment_dates; fall back to the per-segment DENSE
+    date bounds across predictions/{train,val,eval,test}.csv (sparse delisted-ticker
+    outliers dropped; see _dense_date_bounds).
     """
     metrics_path = art_dir / "metrics.json"
     if metrics_path.is_file():
@@ -325,10 +352,8 @@ def _segment_dates_for_artifact(art_dir: Path) -> dict[str, dict[str, str | None
         if len(dts) == 0:
             out[seg] = {"start": None, "end": None}
             continue
-        out[seg] = {
-            "start": dts.min().date().isoformat(),
-            "end":   dts.max().date().isoformat(),
-        }
+        start, end = _dense_date_bounds(dts)
+        out[seg] = {"start": start, "end": end}
     return out
 
 
