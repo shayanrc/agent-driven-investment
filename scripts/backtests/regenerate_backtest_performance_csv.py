@@ -73,6 +73,30 @@ _024_RUNS = [
 _024_COMMIT = "3d27c380c1d4f33d50bb9033800b61b52bea78ca"  # origin/main tip where _024 landed
 _024_RUN_TS = "2026-06-24"
 
+# --- _029 K-sweep manifest: top-10-by-AUC cells × K∈{2,3,4,5}, champion strategy
+# (rank/equal/c=1.0) on each cell's committed predictions/test.csv. Run dirs at
+# RUN_DIR_029/<cell>__k<K>/ (produced by scripts/backtests/k_sweep_run_artifacts.py).
+# No re-inference → faithfulness N/A (reuses published predictions). See docs/backtests/
+# _029_k_sweep_top_auc.md. Cells pinned (r_precision_at_k.csv AUC desc, 2026-06-30).
+RUN_DIR_029 = REPO / "results/backtests/_029_k_sweep"
+_029_RUN_TS = "2026-06-30"
+_029_KS = (2, 3, 4, 5)
+_029_CELLS = [
+    "nasdaq100_up_40pct_50d_dd20pct_aligned_mixmatch",
+    "sp500_up_50pct_25d_dd25pct_daswmacro",
+    "sp500_up_50pct_50d_dd25pct_macroreal",
+    "sp500_up_50pct_50d_dd25pct_base_v2",
+    "sp500_up_40pct_25d_dd20pct_daswbase",
+    "sp500_up_50pct_50d_dd25pct_macroproxy",
+    "sp500_up_50pct_100d_dd25pct_aligned",
+    "sp500_up_50pct_25d_dd25pct_daswbase",
+    "sp500_up_50pct_50d_dd25pct_agentloop",
+    "sp500_up_20pct_5d_dd10pct_daswmacro",
+]
+_029_NOTE = ("K-sweep (top-2/4/5 vs champion top-3) on a top-10-by-AUC cell; champion strategy "
+             "(rank/equal/c=1.0) on the committed test.csv; _029. No re-inference — faithfulness "
+             "N/A (reuses published predictions).")
+
 # Canonical column order. The first 39 (with the 4 *_ndx_bh → idx_bh_* renames) are
 # the legacy schema; the rest are the leaderboard extension, grouped by purpose.
 LEGACY_COLS = [
@@ -260,8 +284,9 @@ def _mtm_truncated(test_end: pd.Timestamp, comparison_end: pd.Timestamp,
 
 
 def row_from_run(run_dir: Path, *, id: int, name: str, selfcheck_status: str,
-                 max_abs_diff: float, universe_delta: str,
-                 rp_lookup: dict) -> dict:
+                 max_abs_diff: float, universe_delta: str, rp_lookup: dict,
+                 commit_sha: str = _024_COMMIT, run_timestamp: str = _024_RUN_TS,
+                 note: str | None = None) -> dict:
     """Build a full-schema row from a run dir's artifacts (summary.json +
     equity_curve.csv + picks.csv)."""
     s = json.loads((run_dir / "summary.json").read_text())
@@ -335,11 +360,12 @@ def row_from_run(run_dir: Path, *, id: int, name: str, selfcheck_status: str,
         "selfcheck_status": selfcheck_status, "selfcheck_max_abs_diff": max_abs_diff,
         "universe_delta": universe_delta,
         "caveat": bool(risk["n_days"] < 120 or (strat.get("gross_exposure_avg") or 0) < 0.4),
-        "commit_sha": _024_COMMIT, "run_timestamp": _024_RUN_TS,
-        "notes": ("OOS test_end+1→2026-06-01, mark-to-market@data_end (horizon-truncated → "
-                  "realized R-p NaN); _024 top-10."
-                  + (" exact self-check diff not retained (status known)."
-                     if max_abs_diff != max_abs_diff else "")),
+        "commit_sha": commit_sha, "run_timestamp": run_timestamp,
+        "notes": note if note is not None else (
+            "OOS test_end+1→2026-06-01, mark-to-market@data_end (horizon-truncated → "
+            "realized R-p NaN); _024 top-10."
+            + (" exact self-check diff not retained (status known)."
+               if max_abs_diff != max_abs_diff else "")),
     }
 
 
@@ -472,6 +498,19 @@ def main() -> None:
         run_rows.append(row_from_run(rd, id=next_id + i, name=name,
                                      selfcheck_status=status, max_abs_diff=diff,
                                      universe_delta=delta, rp_lookup=rp_lookup))
+    n_024 = len(run_rows)
+    # _029 K-sweep: 10 top-AUC cells × K∈{2,3,4,5} (test-window backtests on committed test.csv).
+    for cell in _029_CELLS:
+        for K in _029_KS:
+            rd = RUN_DIR_029 / f"{cell}__k{K}"
+            if not (rd / "summary.json").exists():
+                print(f"  WARN missing _029 artifacts for {cell} K={K}; skipping")
+                continue
+            run_rows.append(row_from_run(rd, id=next_id + len(run_rows), name=f"029_{cell}_k{K}",
+                                         selfcheck_status="N/A (committed test.csv)",
+                                         max_abs_diff=float("nan"), universe_delta="+0/-0",
+                                         rp_lookup=rp_lookup, commit_sha="",
+                                         run_timestamp=_029_RUN_TS, note=_029_NOTE))
 
     out = pd.concat([legacy, pd.DataFrame(run_rows)], ignore_index=True)
     out = out.reindex(columns=COLUMN_ORDER)
@@ -485,7 +524,8 @@ def main() -> None:
     ]
     out = out.sort_values(["run_timestamp", "id"], kind="stable").reset_index(drop=True)
 
-    print(f"legacy rows: {len(legacy)} | _024 run rows: {len(run_rows)} | total: {len(out)}")
+    print(f"legacy rows: {len(legacy)} | _024 run rows: {n_024} | "
+          f"_029 run rows: {len(run_rows) - n_024} | total: {len(out)}")
     print(f"columns: {len(out.columns)} (was 39)")
     if args.dry_run:
         print("\n[dry-run] _024 rows preview:")
