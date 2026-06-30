@@ -1,0 +1,81 @@
+{
+  "cell": "nasdaq100_up_40pct_50d_dd20pct_aligned_mixmatch",
+  "config": {
+    "fractional_c": 1.0,
+    "selection_bound": "mean",
+    "K": 5,
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "min_entry_p": 0.0,
+    "min_entry_p_raw": 0.0,
+    "n_candidate_days": 100,
+    "rank_kelly_p": null,
+    "rank_by": "calibrated",
+    "vol_window": null,
+    "prob_weight_alpha": null
+  },
+  "geometry": {
+    "universe": "nasdaq100",
+    "win": 0.4,
+    "loss": 0.2,
+    "horizon": 50,
+    "breakeven_p": 0.3333333333333333,
+    "index": "NDX"
+  },
+  "window": {
+    "test_start": "2024-07-26",
+    "test_end": "2024-12-16",
+    "comparison_end": "2025-03-03",
+    "data_end": "2025-05-05"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 95636.1858601303,
+    "total_return": -0.04363814139869704,
+    "cagr": -0.06827426726854191,
+    "max_dd": -0.10565522820027573,
+    "n_trades": 77,
+    "gross_exposure_avg": 0.5142967025706168
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 100000.0,
+      "end": 107369.34906511361,
+      "total_return": 0.07369349065113617,
+      "cagr": 0.12688328713273833,
+      "max_dd": -0.0789164469992576,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.00000000012,
+      "end": 106126.12075520426,
+      "total_return": 0.06126120755204134,
+      "cagr": 0.10504877295645176,
+      "max_dd": -0.0671956825991078,
+      "n_trades": 92,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 13,
+    "exits": 12,
+    "trims": 52,
+    "unique_tickers": 11,
+    "open_at_end": 1
+  },
+  "exit_triggers": {
+    "DD": 3,
+    "horizon": 8,
+    "target": 1
+  }
+}

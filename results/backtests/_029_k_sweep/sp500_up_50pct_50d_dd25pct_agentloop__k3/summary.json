@@ -1,0 +1,80 @@
+{
+  "cell": "sp500_up_50pct_50d_dd25pct_agentloop",
+  "config": {
+    "fractional_c": 1.0,
+    "selection_bound": "mean",
+    "K": 3,
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "min_entry_p": 0.0,
+    "min_entry_p_raw": 0.0,
+    "n_candidate_days": 50,
+    "rank_kelly_p": null,
+    "rank_by": "calibrated",
+    "vol_window": null,
+    "prob_weight_alpha": null
+  },
+  "geometry": {
+    "universe": "sp500",
+    "win": 0.5,
+    "loss": 0.25,
+    "horizon": 50,
+    "breakeven_p": 0.3333333333333333,
+    "index": "SPX"
+  },
+  "window": {
+    "test_start": "2025-12-30",
+    "test_end": "2026-03-12",
+    "comparison_end": "2026-05-22",
+    "data_end": "2026-06-29"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 112463.47499999999,
+    "total_return": 0.12463475000000002,
+    "cagr": 0.31530608741574917,
+    "max_dd": -0.09274487737484027,
+    "n_trades": 32,
+    "gross_exposure_avg": 0.44116095655281
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 100000.0,
+      "end": 108370.21276595745,
+      "total_return": 0.08370212765957441,
+      "cagr": 0.22454010582358475,
+      "max_dd": -0.09097524918009325,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 100000.00000000097,
+      "end": 107362.42316999187,
+      "total_return": 0.07362423169990828,
+      "cagr": 0.19604579493773366,
+      "max_dd": -0.07765529037542296,
+      "n_trades": 486,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 4,
+    "exits": 4,
+    "trims": 24,
+    "unique_tickers": 4,
+    "open_at_end": 0
+  },
+  "exit_triggers": {
+    "target": 1,
+    "horizon": 3
+  }
+}
