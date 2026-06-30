@@ -85,3 +85,24 @@ The bull ranking **inverts**: A/C (bull winners) are the worst (−53%/−58%); 
 ## Verdict (mandatory)
 
 **The cross-model consensus is a bull-regime momentum amplifier, not an all-weather strategy.** When the target is tight it is the best *risk-adjusted* selector in a bull — it beats every constituent and the index (C +46.5% on the matched 48d, +142% on the 1-year clean OOS, Sharpe ~2.1) via genuine **loser-avoidance**. But on the **only genuinely-out-of-sample bear** it **fails catastrophically** (A −52.9% / C −57.5% vs SPX −20.5%, Sharpe ≈ −2, ~11% win-rate), the tight-target config that won the bull being the *worst*, and the consensus underperforming even sp500_50 solo. This is the same bull-only / regime-fragility pattern as `_016`/`_026`; the consensus does not change it. **NOT promoted; documented as a negative robustness result.** Any future deployment would require the SMA200 regime gate (a risk-reducer that in 2022 sat ~80% in cash, `_017`/`_018`) plus transaction-cost accounting — and even then the consensus shows no demonstrated advantage over the gated single-model champions. The harness (`consensus_backtest.py` + june/bear sidecars) is retained as reusable infra; **no rows added to the backtest registry** (prototype windows, vintage- and regime-specific).
+
+## Follow-up (2026-06-30): ≥50%-of-panel vote gate
+
+A reviewer question — *was anything traded unless ≥50% of the models voted for it?* — exposed that every run above trades the **plurality** winner (`argmax` votes, tie → Σ`p`), with **no minimum-vote floor**. Audit over the forward-log inputs (122 trading days): the traded winner had **≥3 of 5 votes on only 68/122 days (56%)**; on the other 54 days (44%) it had just **2/5** — a plurality, not a majority. It was always ≥50% of the models *present* that day, and the strict 48-day all-5 window happened to be ≥3/5 throughout, but that was emergent, not enforced.
+
+Added an explicit `--min-votes N` floor to `consensus_june_check.py`: a day trades only if its most-voted name clears **N of the 5 models**, else no entry (hold). Re-ran A & C on a clean same-window comparison (**2025-06-02→2026-06-01, 251d, SPX +28.0%**), ungated (`min_vote 1`) vs gated **≥3** (≥50% of the panel), masked + leaky:
+
+| version | variant | total | CAGR | Sharpe | max DD | win-rate | entries (tgt/stop) |
+|---|---|--:|--:|--:|--:|--:|--:|
+| clean · ungated | A 25/30/15 | +89.6% | +90% | 1.98 | −15.0% | 54% | 29 (14/12) |
+| clean · ungated | C 33/30/15 | +104.7% | +105% | 1.85 | −19.5% | 56% | 28 (14/11) |
+| clean · gate ≥3 | A 25/30/15 | +40.6% | +41% | 2.12 | −5.7% | 100% | 7 (4/0) |
+| clean · gate ≥3 | C 33/30/15 | +53.7% | +54% | 2.43 | −7.1% | 100% | 7 (4/0) |
+| leaky · ungated | A 25/30/15 | +225.1% | +227% | 3.36 | −15.4% | 67% | 39 (24/12) |
+| leaky · ungated | C 33/30/15 | +275.9% | +278% | 3.12 | −19.6% | 65% | 34 (20/11) |
+| leaky · gate ≥3 | A 25/30/15 | +203.0% | +204% | 3.41 | −15.4% | 66% | 32 (19/10) |
+| leaky · gate ≥3 | C 33/30/15 | +228.6% | +230% | 2.94 | −24.0% | 64% | 31 (18/10) |
+
+**Reading.** (1) **Masked + gate is not a fairer strategy — it is a much shorter one.** Trade-days collapse 251→48, entries 28→7: because only 2 russell models are OOS before 2026-03-13, a 3-vote majority is *impossible* until then, so the gated masked arm sits in cash ~9 months and trades only Mar→Jun 2026 — a clean bull stretch (4/4 targets, 0 stops, 100% win, DD −6/7%). The pristine risk stats are a 7-trade single-quarter artifact; return roughly halves (mostly out of market). (2) **Leaky is the only arm where the gate is active all year** (235/251 days clear ≥3 votes); there it barely moves anything (A 225%→203%, C 276%→229%), and C's max DD actually *worsens* (−19.6%→−24.0%) from name concentration (12→10 names). (3) **The gate reduces participation; it does not add edge.** On the honest (masked) arm it merely defers all trading to the final bull quarter — the same bull-only fragility the verdict above already flagged. The real risk control remains the SMA200 regime gate, not a vote threshold.
+
+Tooling: `consensus_june_check.py --min-votes 1,3 --start 2025-06-01 --end 2026-06-01` (one shared inference pass across both gates; all 5 self-checks PASSED ~1e-8). Results: `results/backtests/_028_consensus_backtest/june_minvote_1and3_2025-06-01_2026-06-01.csv`.
