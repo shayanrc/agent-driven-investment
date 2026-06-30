@@ -1,5 +1,5 @@
 """June-window consensus CHECK (_028 sidecar) — re-infer + OOS-clean vs leaky, with an
-optional ``--min-vote`` floor (a day trades only if the most-voted name clears the floor).
+optional ``--min-votes`` floor (a day trades only if the most-voted name clears the floor).
 
 The committed forward log only starts 2026-01-02, so a longer (e.g. June→June) consensus needs
 the five cells' predictions RE-INFERRED over the window via the faithful inference path
@@ -11,7 +11,7 @@ C), two ways:
   * **clean**  — each model votes ONLY on dates >= its OOS-valid start (test_end+1); breadth ramps.
   * **leaky**  — all five vote every day (sp500/nasdaq score in-sample pre-OOS) — sensitivity only.
 
-``--min-vote N`` requires the most-voted name to have >= N votes, else **no trade that day** (the
+``--min-votes N`` requires the most-voted name to have >= N votes, else **no trade that day** (the
 strategy holds existing positions). Default 1 = ungated (the original _028 behaviour). N=3 is
 "≥50% of the 5-model panel" (a true majority); under masking + N=3 the arm cannot trade until ≥3
 models are OOS. The sim runs over the full requested window (cash before the first cleared day),
