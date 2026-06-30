@@ -106,3 +106,68 @@ Added an explicit `--min-votes N` floor to `consensus_june_check.py`: a day trad
 **Reading.** (1) **Masked + gate is not a fairer strategy — it is a much shorter one.** Trade-days collapse 251→48, entries 28→7: because only 2 russell models are OOS before 2026-03-13, a 3-vote majority is *impossible* until then, so the gated masked arm sits in cash ~9 months and trades only Mar→Jun 2026 — a clean bull stretch (4/4 targets, 0 stops, 100% win, DD −6/7%). The pristine risk stats are a 7-trade single-quarter artifact; return roughly halves (mostly out of market). (2) **Leaky is the only arm where the gate is active all year** (235/251 days clear ≥3 votes); there it barely moves anything (A 225%→203%, C 276%→229%), and C's max DD actually *worsens* (−19.6%→−24.0%) from name concentration (12→10 names). (3) **The gate reduces participation; it does not add edge.** On the honest (masked) arm it merely defers all trading to the final bull quarter — the same bull-only fragility the verdict above already flagged. The real risk control remains the SMA200 regime gate, not a vote threshold.
 
 Tooling: `consensus_june_check.py --min-votes 1,3 --start 2025-06-01 --end 2026-06-01` (one shared inference pass across both gates; all 5 self-checks PASSED ~1e-8). Results: `results/backtests/_028_consensus_backtest/june_minvote_1and3_2025-06-01_2026-06-01.csv`.
+
+## Follow-up (2026-06-30): allocation × band variant sweep + constituent-champion baselines
+
+The A/B/C/D 2×2 was one corner of a wider grid. Swept **allocation {20, 25, 33, 50, 100}%** × **+target/−stop {20/10, 30/15, 40/20, 50/25}** = 20 variants (named **V1–V20**, alloc-asc then barrier-asc; legacy **A=V6, B=V11, C=V10, D=V7**) on two windows, plus each constituent's **deployed champion** (`TopKDailyKellyLabelExit` rank/equal/K=3/c=1.0) as a baseline.
+
+### Forward-log window (2026-01-02→2026-06-29, 122d, SPX +8.5%, ungated)
+
+Returns are non-monotonic in **both** knobs, and the knobs separate cleanly:
+
+| by band (avg over alloc) | total | Sharpe | maxDD | · | by alloc (avg over band) | total | Sharpe | maxDD |
+|---|--:|--:|--:|---|---|--:|--:|--:|
+| +20/−10 | +55.8% | 2.1 | −17.9% | · | 20% | +43.0% | 2.3 | −8.7% |
+| +30/−15 | +31.5% | 1.4 | −19.1% | · | 25% | +52.6% | 2.2 | −10.7% |
+| +40/−20 | +55.2% | 2.1 | −18.7% | · | 33% | +60.1% | 2.2 | −13.6% |
+| +50/−25 | +74.8% | 2.4 | −21.1% | · | 50% | +77.0% | 2.1 | −19.6% |
+|  |  |  |  | · | 100% | +38.9% | 1.1 | −43.5% |
+
+- **Band → U-shaped return, and band does NOT drive DD.** +30/−15 is the worst (+31.5%) — "no man's land" (cuts winners at +30% yet still eats −15% losers); the tight (+20/−10) and wide (+50/−25) ends both beat it. DD is flat across bands.
+- **Allocation → inverted-U, and allocation IS the DD dial.** Return peaks at 50% (+77%) then collapses to +38.9% at 100% (over-concentration, Sharpe 1.1); DD scales ~linearly −8.7%→−43.5%.
+- Best raw **V16 (50%/+50−25) +110.5%** (Sharpe 2.52, DD −21.4%); best risk-adjusted **V8 (25%/+50−25) Sharpe 2.88** (+76.9%, DD −11.8%); worst **V18 (100%/+30−15) +15.8%** (DD −43%). Box plot: `figs/_028_variant_return_boxplot.png`.
+
+**Holding duration** (trading days) is governed by the band, not allocation:
+
+| band | mean hold | entries | target-exit | stop-exit |
+|---|--:|--:|--:|--:|
+| +20/−10 | 9.3 | 22 | 12.5 | 5.0 |
+| +30/−15 | 15.4 | 13 | 19.0 | 11.4 |
+| +40/−20 | 23.9 | 10 | 27.7 | 18.3 |
+| +50/−25 | 54.0 | 7 | 55.2 | 11.0 |
+
+Wider band → ~6× longer holds (9→54d) and fewer entries (tight = fast churn; wide = ride-the-winner). Per-trade duration is flat across 20–50% allocation; only **100%** distorts it (single-name concurrency bottleneck → +50/−25 holds ~99d on ~2 trades). Targets take longer to reach than stops (bull grind-up vs abrupt drawdown).
+
+### June→June window (2025-06-02→2026-06-01, 251d, SPX +28.0%) — clean vs leaky
+
+Full 40-row grid in `consensus_variant_grid_cleanleaky.csv`. Cross-check: **clean V6/V10 = +89.6%/+104.7%** reproduce the prior A/C exactly.
+
+- **Leakage inflates ~2–2.5× at low/mid allocation** (clean V6 +89.6% → leaky +225%; V10 +104.7% → +276%) — in-sample sp500/nasdaq scoring, not skill. The clean column is the honest read.
+- **At 100% allocation, leaky is a coin flip, not a free lunch:** V17 (100/+20−10) moonshots +424% but V18/V19/V20 collapse (+43%/+69%/−11%, DD −53→−68%); clean 100% is comparatively orderly (V20 +307%, DD −48%). Leakage + concentration = variance.
+
+### Constituent-champion baselines (`TopKDailyKellyLabelExit` rank/equal/K=3/c=1.0)
+
+Each cell under its deployed champion over the same window (`champion_baselines_june.csv`):
+
+| version | model | window (n_days) | total | Sharpe | maxDD | entries (tgt/dd/hzn) |
+|---|---|---|--:|--:|--:|--:|
+| clean | sp500_50 | 2026-03-13 (83d) | +64.8% | 4.24 | −10.1% | 6 (2/0/2) |
+| clean | sp500_20 | 2026-04-20 (57d) | +7.8% | 1.65 | −10.5% | 7 (2/3/2) |
+| clean | russell_50_200 | 2025-06-02 (278d) | +82.2% | 1.93 | −15.2% | 9 (5/1/0) |
+| clean | russell_40_100 | 2025-06-02 (278d) | **+190.9%** | 2.88 | −17.3% | 18 (11/4/2) |
+| clean | nasdaq_40_50 | 2026-03-13 (83d) | +38.4% | 3.77 | −9.2% | 6 (2/1/1) |
+| leaky | sp500_50 | 2025-06-02 (278d) | +83.7% | 2.35 | −8.7% | 16 (1/0/14) |
+| leaky | sp500_20 | 2025-06-02 (278d) | +131.6% | 3.10 | −10.4% | 40 (14/8/18) |
+| leaky | russell_50_200 | 2025-06-02 (278d) | +82.2% | 1.93 | −15.2% | 9 (5/1/0) |
+| leaky | russell_40_100 | 2025-06-02 (278d) | +190.9% | 2.88 | −17.3% | 18 (11/4/2) |
+| leaky | nasdaq_40_50 | 2025-06-02 (278d) | +80.9% | 2.15 | −13.1% | 19 (2/3/12) |
+
+- **russell_50_200 & russell_40_100: clean == leaky** (OOS the whole window → masking removes nothing) — the honest, leakage-free baselines.
+- **sp500/nasdaq clean windows are short** (57–83d, Mar/Apr-2026 OOS); their leaky rows are in-sample-inflated pre-OOS.
+- **Win-rate caveat:** the short-horizon champions mostly exit at **horizon** (sp500_50-leaky 14/16; nasdaq-leaky 12/19), so target/(target+DD) rests on tiny subsamples — read the (tgt/dd/hzn) split, not win-rate.
+
+**Key finding — the consensus's edge over its strongest constituent is a *sizing* effect, not pooling.** russell_40_100 alone returns **+190.9%** (Sharpe 2.88, fully OOS, no leakage caveat) — a high bar. The moderate consensus variants (incl. the original A/C: clean V6 +89.6% / V10 +104.7%, and everything through ~33% alloc) land *below* it; only the aggressive corner (clean V15 +262%, V16 +231%, V20 +307% — 50–100% alloc + wide band) clears it. So against the *actual deployed champion* (not the barrier-strategy proxy the original 48d comparison used), pooling alone does not beat the best single model — the consensus only out-earns it by taking on more concentration/DD.
+
+### Net read (sizing addendum to the verdict)
+
+The two knobs are orthogonal: **band governs return-shape + turnover + holding duration** (U-shaped return; tight = fast churn, wide = ride winners), **allocation governs drawdown** (≈linear) **and the inverted-U return** (peaks ~50%; 100% over-concentrates). All of this is on a **single 2026 bull** (SPX +8.5%/+28%); the high-return leaders (wide band, 50–100% alloc, loose −25% stop) are precisely the profile the genuinely-OOS 2022-bear test above showed *inverts*. **Verdict unchanged: a bull-regime amplifier; not promoted; no registry rows.** Reproduce: `scripts/backtests/consensus_variant_grid.py` (122d + duration + box plot), `consensus_grid_cleanleaky.py` (251d clean/leaky), champion baselines via `run_backtest_cell --predictions` on `build_scores_multi` re-inference.
