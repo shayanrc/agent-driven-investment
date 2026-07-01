@@ -34,6 +34,7 @@ uv run python -m scripts.backtests.daily_forward_predictions [--commit] [--end Y
 When invoked in a session (not the silent timer), after the run finishes summarize for the user:
 - the **regime gate** state (risk-ON ⇒ strategy deploys; risk-OFF ⇒ hold cash — this is the gating verdict, `_016`–`_018`);
 - the **picks as a table** — columns **Ticker | Model/Rank | p**, **top 3 per model**; lead with the two **deployed** champions (6 rows — the gating read), then the three **candidate** cells (9 rows) in a clearly-separated block marked `deployed=False`. `Model/Rank` is one combined column, e.g. `sp500_50 / 1`; raw `p`, not lift. See `[[feedback-predictions-table-format]]`. Note cross-model overlap in prose.
+- the **cross-model consensus** for the same snapshot (standing user request): pool all five models' **top-5** picks for that date, tally votes per stock (tie → highest summed `p`), and show a **vote table** — columns **Stock | # models | Σp | voting models** — plus the **consensus winner** (the strategy's single daily pick). Flag which names clear the **≥50%-of-panel (≥3/5)** majority. Compute from the committed `forward_predictions_log.csv` (logged top-K per model — no re-inference). Keep the `_028` framing (bull-only amplifier, 1 stock/day, not promoted). See `[[feedback-daily-predictions-consensus]]`.
 - the honest caveats (modest absolute p / lift-not-certainty; bull-only edge; small effective-N; not investment advice — size as the forward-test it is).
 
 ## Notes
