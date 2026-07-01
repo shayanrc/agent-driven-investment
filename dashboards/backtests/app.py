@@ -373,7 +373,7 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dar
         y=alt.Y("value:Q", title="portfolio value ($)", scale=alt.Scale(zero=False)),
         color=alt.Color("series:N", title=None,
                         scale=alt.Scale(domain=[s_lab, b_lab], range=[t["strat"], t["idx"]]),
-                        legend=alt.Legend(orient="top-left")),
+                        legend=alt.Legend(orient="bottom")),
         strokeDash=alt.StrokeDash("series:N", legend=None,
                                   scale=alt.Scale(domain=[s_lab, b_lab], range=[[1, 0], [6, 3]])),
         tooltip=[alt.Tooltip("date:T"), alt.Tooltip("series:N", title=""),
@@ -395,7 +395,7 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dar
         dom = ["buy", "target", "stop", "horizon"]
         cscale = alt.Scale(domain=dom, range=[t["buy"], t["target"], t["stop"], t["horizon"]])
         sscale = alt.Scale(domain=dom, range=["triangle-up", "triangle-down", "triangle-down", "triangle-down"])
-        leg = alt.Legend(title="trade", orient="top-right")
+        leg = alt.Legend(title="trade", orient="bottom", direction="horizontal")
         tips = [alt.Tooltip("date:T"), alt.Tooltip("sym:N", title="ticker"),
                 alt.Tooltip("action:N"), alt.Tooltip("price:Q", format=",.2f"),
                 alt.Tooltip("ret_str:N", title="return")]
