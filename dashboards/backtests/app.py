@@ -28,7 +28,8 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / "results/backtests/data/forward_predictions_log.csv"
-DB = ROOT / "data/processed.db"  # us_equities price cache (read-only) — for entry/target/stoploss
+DB = ROOT / "data/processed.db"  # us_equities price cache (read-only) — for target/stoploss
+NAMES = ROOT / "results/backtests/data/ticker_names.csv"  # committed ticker → company-name map
 
 # Display order (deployed champions first, then comparison candidates) + descriptive labels.
 MODEL_ORDER = ["sp500_50", "sp500_20", "russell_50_200", "russell_40_100", "nasdaq_40_50"]
@@ -50,6 +51,15 @@ def _load(mtime: float) -> pd.DataFrame:  # mtime arg busts the cache when the l
 
 def load_log() -> pd.DataFrame:
     return _load(LOG.stat().st_mtime)
+
+
+@st.cache_data(show_spinner=False)
+def _names(_mtime: float) -> dict:
+    """ticker → company name from the committed map (empty until built by fetch_ticker_names.py)."""
+    if not NAMES.exists():
+        return {}
+    n = pd.read_csv(NAMES).fillna("")
+    return dict(zip(n.ticker, n.name))
 
 
 def consensus(day: pd.DataFrame, pool_k: int) -> pd.DataFrame:
@@ -123,15 +133,17 @@ def _lift_color(lift: float) -> str:
     return "#16a34a" if lift >= 4 else "#e08e0b" if lift >= 2 else "#6b7280"
 
 
-def _card_html(sym: str, rank: int, p: float, lift: float, levels: str) -> str:
-    """A big ticker card: symbol large + colour-coded by lift; rank/prob/lift + levels below."""
+def _card_html(sym: str, name: str, rank: int, p: float, lift: float, levels: str) -> str:
+    """A big ticker card: symbol large + colour-coded by lift; company name, rank/prob, levels below."""
+    nm = (name[:22] + "…") if len(name) > 23 else name
     return (f'<div style="text-align:center;padding:6px 0">'
-            f'<div style="font-size:34px;font-weight:800;color:{_lift_color(lift)};line-height:1.15">{sym}</div>'
-            f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">#{rank} · {p:.1%} · {lift:.1f}× base</div>'
+            f'<div style="font-size:34px;font-weight:800;color:{_lift_color(lift)};line-height:1.1">{sym}</div>'
+            f'<div style="font-size:11px;color:#9aa0a6;line-height:1.15;min-height:15px">{nm}</div>'
+            f'<div style="font-size:13px;color:#9aa0a6;margin-top:2px">#{rank} · {p:.1%}</div>'
             f'<div style="font-size:14px;margin-top:3px">{levels}</div></div>')
 
 
-def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict) -> None:
+def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict, names: dict) -> None:
     """One bordered panel per model: header (label + deployed/candidate + target event) and a row
     of big cards — the ticker large + colour-coded by probability, with 🎯 target / 🛑 stoploss."""
     for m in models:
@@ -149,8 +161,8 @@ def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict) -
                 levels = (f"🎯 {e * (1 + gg):.2f}  🛑 {e * (1 - dd):.2f}"
                           if (e and dd is not None) else "🎯 —  🛑 —")
                 lift = float(r.p_calibrated) / float(r.base_rate) if r.base_rate else float("nan")
-                col.markdown(_card_html(r.sym, int(r["rank"]), float(r.p_calibrated), lift, levels),
-                             unsafe_allow_html=True)
+                col.markdown(_card_html(r.sym, names.get(r.ticker, ""), int(r["rank"]),
+                                        float(r.p_calibrated), lift, levels), unsafe_allow_html=True)
 
 
 def _votes_color(n: int) -> str:
@@ -195,11 +207,12 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     shown = tuple(sorted(day[day["rank"] <= k].ticker.unique()))
     closes = _closes_on(str(date), shown, DB.stat().st_mtime if DB.exists() else 0.0)
     models = [m for m in MODEL_ORDER if m in set(day.model)]  # deployed champions first, then candidates
+    names = _names(NAMES.stat().st_mtime if NAMES.exists() else 0.0)
 
     st.markdown("### Predictions by model")
     st.caption("card colour = lift (p ÷ base rate) — 🟢 ≥4× · 🟠 2–4× · ⚪ <2×  "
                "(skill-comparable across models; the ×-figure under each ticker is the lift)")
-    _render_panels(day, models, k, closes)
+    _render_panels(day, models, k, closes, names)
 
     st.markdown("#### All picks — table")
     st.dataframe(_picks(day, models, k, closes), hide_index=True, width="stretch")
@@ -284,7 +297,7 @@ def main() -> None:
         st.divider()
         st.caption("**models**  \n" + "  \n".join(f"`{m}` — {MODEL_LABEL[m]}" for m in MODEL_ORDER))
 
-    snap, hist = st.tabs(["📅 Snapshot", "📊 History"])
+    snap, hist = st.tabs(["📈 Predictions", "📊 Backtests"])
     with snap:
         render_snapshot(df, date, k, pool_k)
     with hist:
