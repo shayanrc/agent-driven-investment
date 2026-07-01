@@ -117,16 +117,17 @@ def _picks(day: pd.DataFrame, models: list[str], k: int, closes: dict) -> pd.Dat
     return pd.DataFrame(rows)
 
 
-def _prob_color(p: float) -> str:
-    """Heat colour for a probability card — 🟢 green (strong) / 🟠 amber (mid) / ⚪ grey (low)."""
-    return "#16a34a" if p >= 0.5 else "#e08e0b" if p >= 0.3 else "#6b7280"
+def _lift_color(lift: float) -> str:
+    """Heat colour by lift (p ÷ base rate) — 🟢 ≥4× / 🟠 2–4× / ⚪ <2×. Skill-comparable across
+    models, unlike absolute p (which base-rate differences make incomparable)."""
+    return "#16a34a" if lift >= 4 else "#e08e0b" if lift >= 2 else "#6b7280"
 
 
-def _card_html(sym: str, rank: int, p: float, levels: str) -> str:
-    """A big ticker card: symbol large + colour-coded by probability, prob/rank + levels below."""
+def _card_html(sym: str, rank: int, p: float, lift: float, levels: str) -> str:
+    """A big ticker card: symbol large + colour-coded by lift; rank/prob/lift + levels below."""
     return (f'<div style="text-align:center;padding:6px 0">'
-            f'<div style="font-size:34px;font-weight:800;color:{_prob_color(p)};line-height:1.15">{sym}</div>'
-            f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">#{rank} · {p:.1%}</div>'
+            f'<div style="font-size:34px;font-weight:800;color:{_lift_color(lift)};line-height:1.15">{sym}</div>'
+            f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">#{rank} · {p:.1%} · {lift:.1f}× base</div>'
             f'<div style="font-size:14px;margin-top:3px">{levels}</div></div>')
 
 
@@ -147,7 +148,8 @@ def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict) -
                 e = closes.get(r.ticker)
                 levels = (f"🎯 {e * (1 + gg):.2f}  🛑 {e * (1 - dd):.2f}"
                           if (e and dd is not None) else "🎯 —  🛑 —")
-                col.markdown(_card_html(r.sym, int(r["rank"]), float(r.p_calibrated), levels),
+                lift = float(r.p_calibrated) / float(r.base_rate) if r.base_rate else float("nan")
+                col.markdown(_card_html(r.sym, int(r["rank"]), float(r.p_calibrated), lift, levels),
                              unsafe_allow_html=True)
 
 
@@ -195,8 +197,8 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     models = [m for m in MODEL_ORDER if m in set(day.model)]  # deployed champions first, then candidates
 
     st.markdown("### Predictions by model")
-    st.caption("card colour = probability strength — 🟢 ≥50% · 🟠 30–50% · ⚪ <30% "
-               "(absolute `p`; not comparable across models — base rates differ)")
+    st.caption("card colour = lift (p ÷ base rate) — 🟢 ≥4× · 🟠 2–4× · ⚪ <2×  "
+               "(skill-comparable across models; the ×-figure under each ticker is the lift)")
     _render_panels(day, models, k, closes)
 
     st.markdown("#### All picks — table")
