@@ -68,7 +68,7 @@ def _picks(day: pd.DataFrame, models: list[str], k: int) -> pd.DataFrame:
     for m in models:
         for _, r in day[(day.model == m) & (day["rank"] <= k)].sort_values("rank").iterrows():
             rows.append({"Ticker": r.sym, "Model / Rank": f"{m} / {int(r['rank'])}",
-                         "p": round(float(r.p_calibrated), 3), "base rate": round(float(r.base_rate), 4)})
+                         "probability": round(float(r.p_calibrated), 3)})
     return pd.DataFrame(rows)
 
 
