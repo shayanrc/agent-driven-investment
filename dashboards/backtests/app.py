@@ -19,6 +19,8 @@ small effective-N, a forward test — not investment advice.
 """
 from __future__ import annotations
 
+import re
+import sqlite3
 from pathlib import Path
 
 import pandas as pd
@@ -26,6 +28,7 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / "results/backtests/data/forward_predictions_log.csv"
+DB = ROOT / "data/processed.db"  # us_equities price cache (read-only) — for entry/target/stoploss
 
 # Display order (deployed champions first, then comparison candidates) + descriptive labels.
 MODEL_ORDER = ["sp500_50", "sp500_20", "russell_50_200", "russell_40_100", "nasdaq_40_50"]
@@ -63,12 +66,54 @@ def consensus(day: pd.DataFrame, pool_k: int) -> pd.DataFrame:
     return g
 
 
-def _picks(day: pd.DataFrame, models: list[str], k: int) -> pd.DataFrame:
+_DD_RE = re.compile(r"dd(\d+)pct")
+
+
+def _gain_dd(r) -> tuple[float, float | None]:
+    """(+gain fraction, −max-drawdown fraction) — gain from the log's threshold_pct,
+    max drawdown parsed from the cell's ``ddNpct`` token."""
+    m = _DD_RE.search(str(r.cell))
+    return float(r.threshold_pct) / 100.0, (int(m.group(1)) / 100.0 if m else None)
+
+
+def _target_desc(r) -> str:
+    """What the probability predicts, e.g. '20% gain in 25d, max drawdown 10%'."""
+    g, dd = _gain_dd(r)
+    return f"{int(g * 100)}% gain in {int(r.horizon_days)}d, max drawdown {int(dd * 100) if dd is not None else '?'}%"
+
+
+@st.cache_data(show_spinner=False)
+def _closes_on(date_str: str, tickers: tuple[str, ...], _mtime: float) -> dict:
+    """Close per ticker on ``date_str`` (half-open day interval, per the cache's time-suffixed
+    ``date``), read-only from the us_equities cache. Cache-only — never hits the network."""
+    if not tickers or not DB.exists():
+        return {}
+    nxt = str((pd.Timestamp(date_str) + pd.Timedelta(days=1)).date())
+    ph = ",".join("?" * len(tickers))
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        rows = con.execute(
+            f"SELECT ticker, close FROM us_equities_data "
+            f"WHERE ticker IN ({ph}) AND date >= ? AND date < ?",
+            (*tickers, date_str, nxt)).fetchall()
+    finally:
+        con.close()
+    return {t: c for t, c in rows}
+
+
+def _picks(day: pd.DataFrame, models: list[str], k: int, closes: dict) -> pd.DataFrame:
     rows = []
     for m in models:
         for _, r in day[(day.model == m) & (day["rank"] <= k)].sort_values("rank").iterrows():
-            rows.append({"Ticker": r.sym, "Model / Rank": f"{m} / {int(r['rank'])}",
-                         "probability": round(float(r.p_calibrated), 3)})
+            g, dd = _gain_dd(r)
+            entry = closes.get(r.ticker)
+            rows.append({
+                "live": "✓" if bool(r.deployed) else "",
+                "Ticker": r.sym, "Model / Rank": f"{m} / {int(r['rank'])}",
+                "probability": round(float(r.p_calibrated), 3), "predicting": _target_desc(r),
+                "target": round(entry * (1 + g), 2) if entry else None,
+                "stoploss": round(entry * (1 - dd), 2) if (entry and dd is not None) else None,
+            })
     return pd.DataFrame(rows)
 
 
@@ -86,16 +131,14 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
                    f"{pct:+.1%} vs SMA200", delta_color="normal" if g.on else "inverse")
     st.caption("regime ON ⇒ strategies deploy · OFF ⇒ hold cash (`_016`–`_018`)")
 
-    deployed = [m for m in MODEL_ORDER if m in set(day[day.deployed].model)]
-    cand = [m for m in MODEL_ORDER if m in set(day[~day.deployed].model)]
+    # Per-pick close on the snapshot date (cache-only) → target / stoploss levels.
+    shown = tuple(sorted(day[day["rank"] <= k].ticker.unique()))
+    closes = _closes_on(str(date), shown, DB.stat().st_mtime if DB.exists() else 0.0)
+    models = [m for m in MODEL_ORDER if m in set(day.model)]  # deployed champions first, then candidates
 
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Deployed champions** — the live signal")
-        st.dataframe(_picks(day, deployed, k), hide_index=True, width="stretch")
-    with right:
-        st.markdown("**Candidates** — tracked for comparison, not live")
-        st.dataframe(_picks(day, cand, k), hide_index=True, width="stretch")
+    st.markdown("**Picks** — top-K per model · ✓ = deployed (live signal), blank = candidate")
+    st.dataframe(_picks(day, models, k, closes), hide_index=True, width="stretch")
+    st.caption("target = close × (1 + gain%) · stoploss = close × (1 − max-DD%), on the snapshot date")
 
     st.markdown("### 🗳️ Cross-model consensus")
     c = consensus(day, pool_k)
