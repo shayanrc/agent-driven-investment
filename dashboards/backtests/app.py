@@ -343,10 +343,21 @@ def _simulate(winners: dict, prices: dict, index_tk: str, target: float, stop: f
 _TRIG = {"target": "t", "stop": "s", "horizon": "h"}  # exit-label suffix, matching plot_actions.py
 
 
-def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str):
+def _bt_theme(dark: bool) -> dict:
+    """Chart colour palette — white background by default; dark when the toggle is on."""
+    if dark:
+        return {"bg": "#0e1117", "fg": "#d0d0d0", "grid": "#333333", "strat": "#5b9bd5",
+                "idx": "#9aa0a6", "buy": "#3ecf6a", "sell": "#ff6b6b", "buy_txt": "#7ee39b", "sell_txt": "#ff9a9a"}
+    return {"bg": "white", "fg": "#333333", "grid": "#e6e6e6", "strat": "#1f4e79",
+            "idx": "#888888", "buy": "#1a9850", "sell": "#d73027", "buy_txt": "#1a7a3a", "sell_txt": "#b2182b"}
+
+
+def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dark: bool = False):
     """Interactive Altair version of the actions chart — strategy equity + index buy-hold (dashed)
     + init-cash rule, with ▲ buy / ▼ sell points (ticker-labelled, entries up / exits down; exit
-    suffix ·t/·s/·h) and hover tooltips. Return % + DD are baked into the series legend labels."""
+    suffix ·t/·s/·h) and hover tooltips. Return % + DD baked into the series legend labels. The
+    background is forced (white by default, dark when ``dark``) so it never inherits Streamlit's theme."""
+    t = _bt_theme(dark)
     tot = equity.iloc[-1] / INIT_CASH - 1
     dd = float((equity / equity.cummax() - 1).min())
     bmk = bench.iloc[-1] / bench.iloc[0] - 1
@@ -360,14 +371,14 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str):
         x=alt.X("date:T", title=None),
         y=alt.Y("value:Q", title="portfolio value ($)", scale=alt.Scale(zero=False)),
         color=alt.Color("series:N", title=None,
-                        scale=alt.Scale(domain=[s_lab, b_lab], range=["#1f4e79", "#888888"]),
+                        scale=alt.Scale(domain=[s_lab, b_lab], range=[t["strat"], t["idx"]]),
                         legend=alt.Legend(orient="top-left")),
         strokeDash=alt.StrokeDash("series:N", legend=None,
                                   scale=alt.Scale(domain=[s_lab, b_lab], range=[[1, 0], [6, 3]])),
         tooltip=[alt.Tooltip("date:T"), alt.Tooltip("series:N", title=""),
                  alt.Tooltip("value:Q", title="value", format="$,.0f")])
     rule = alt.Chart(pd.DataFrame({"y": [INIT_CASH]})).mark_rule(
-        color="gray", strokeDash=[2, 2], size=0.6, opacity=0.7).encode(y="y:Q")
+        color=t["idx"], strokeDash=[2, 2], size=0.6, opacity=0.7).encode(y="y:Q")
     layers = [rule, lines]
 
     if len(trades):
@@ -380,7 +391,7 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str):
                        for s, k, a in zip(pk["sym"], pk["kind"], pk["action"])]
         pk["ret_str"] = pk.ret.map(lambda x: f"{x:+.1%}" if pd.notna(x) else "—")
         kcolor = alt.Color("kind:N", legend=None,
-                           scale=alt.Scale(domain=["buy", "exit"], range=["#1a9850", "#d73027"]))
+                           scale=alt.Scale(domain=["buy", "exit"], range=[t["buy"], t["sell"]]))
         tips = [alt.Tooltip("date:T"), alt.Tooltip("sym:N", title="ticker"),
                 alt.Tooltip("action:N"), alt.Tooltip("price:Q", format=",.2f"),
                 alt.Tooltip("ret_str:N", title="return")]
@@ -390,12 +401,17 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str):
             shape=alt.Shape("kind:N", legend=None,
                             scale=alt.Scale(domain=["buy", "exit"], range=["triangle-up", "triangle-down"])))
         buy_txt = base.transform_filter(alt.datum.kind == "buy").mark_text(
-            dy=-13, fontSize=8, color="#1a7a3a").encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+            dy=-13, fontSize=8, color=t["buy_txt"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
         exit_txt = base.transform_filter(alt.datum.kind == "exit").mark_text(
-            dy=13, fontSize=8, color="#b2182b").encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+            dy=13, fontSize=8, color=t["sell_txt"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
         layers += [pts, buy_txt, exit_txt]
 
-    return alt.layer(*layers).properties(width="container", height=440).interactive()
+    return (alt.layer(*layers).properties(width="container", height=440).interactive()
+            .configure(background=t["bg"])
+            .configure_view(stroke=None)
+            .configure_axis(labelColor=t["fg"], titleColor=t["fg"], gridColor=t["grid"],
+                            domainColor=t["fg"], tickColor=t["fg"])
+            .configure_legend(labelColor=t["fg"], titleColor=t["fg"]))
 
 
 def render_backtests(df: pd.DataFrame) -> None:
@@ -406,12 +422,13 @@ def render_backtests(df: pd.DataFrame) -> None:
                "**filled at the next trading day's open**, then exits at the first of +target / −stop / "
                "horizon (close-based); equal max-alloc sizing, gross of costs.")
 
-    c1, c2, c3 = st.columns([2, 2, 1])
+    c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
     strat = c1.selectbox("strategy", ["consensus", *MODEL_ORDER],
                          format_func=lambda s: "consensus (top-5 vote)" if s == "consensus"
                          else MODEL_LABEL.get(s, s))
     start = c2.date_input("start date", value=dates[0], min_value=dates[0], max_value=dates[-1])
     regime_only = c3.checkbox("regime-ON only", value=True)
+    dark = c4.toggle("🌙 dark chart", value=False)
     e1, e2, e3, e4 = st.columns(4)
     target = e1.slider("target %", 5, 100, 30) / 100
     stop = e2.slider("stop %", 5, 50, 15) / 100
@@ -445,7 +462,8 @@ def render_backtests(df: pd.DataFrame) -> None:
     m[4].metric("win rate", f"{wr:.0%}" if wr == wr else "—")
 
     st.altair_chart(_altair_chart(equity, trades, bench,
-                                  "consensus" if strat == "consensus" else MODEL_LABEL.get(strat, strat), idx_lbl))
+                                  "consensus" if strat == "consensus" else MODEL_LABEL.get(strat, strat),
+                                  idx_lbl, dark))
 
     with st.expander("📋 trades — table", expanded=False):
         if len(trades):
