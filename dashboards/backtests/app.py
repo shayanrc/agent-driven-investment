@@ -7,11 +7,12 @@ Run with::
 A **read-only viewer** over the committed ``results/backtests/data/forward_predictions_log.csv``
 — the durable forward-OOS signal record. Two tabs:
 
-  * **Snapshot** — one day's read: SMA200 regime gate, deployed-champion picks, comparison
-    candidates, and the cross-model **consensus** (pool the models' top-N, most-voted wins,
-    tie → highest Σp; ≥3/5 = panel majority).
-  * **History** — consensus-winner timeline + frequency, per-model rank-1 picks, most-picked
-    names, and the regime-gate timeline.
+  * **Predictions** — one day's read: per-model big-card panels (ticker colour-coded by lift,
+    company name, target/stop levels) and the cross-model **consensus** panel (most-voted,
+    ≥3/5 majority), with collapsible detail tables. The SMA200 regime gate lives in the sidebar.
+  * **Backtests** — replay the logged picks on the price cache, independent of the backtest
+    engine: pick a strategy (consensus or a model) + start date → equity vs index buy-hold with
+    buy/sell trade markers, summary stats, and a trades table.
 
 No inference — it only reads the log (refreshed by the ``/daily-predictions`` cadence). All the
 usual caveats apply: raw ``p`` (calibrated probability, not certainty), bull-only edge (``_028``),
@@ -23,6 +24,10 @@ import re
 import sqlite3
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
@@ -38,6 +43,8 @@ MODEL_LABEL = {
     "nasdaq_40_50": "nasdaq100 +40% / 50d",
 }
 MAJORITY = 3  # ≥3 of 5 models = panel majority (≥50%)
+INIT_CASH = 100_000.0
+_INDEX_TK = {"nasdaq_40_50": "INDEX:^NDX"}  # buy-hold benchmark index per strategy (default ^SPX)
 
 
 @st.cache_data(show_spinner=False)
@@ -249,41 +256,194 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
                "Bull-only amplifier (`_028`) — 1 stock/day, not promoted.")
 
 
-def render_history(df: pd.DataFrame, pool_k: int) -> None:
+def _bt_winners(df: pd.DataFrame, selector: str, start, regime_only: bool) -> dict:
+    """{Timestamp → full ticker} the strategy buys: 'consensus' (most-voted top-5, tie → Σp) or a
+    model's rank-1. Restricted to snapshot dates ≥ start; regime-ON days only if regime_only."""
+    d = df[df.date >= start]
+    if regime_only:
+        d = d[d.regime_on]
+    if selector == "consensus":
+        wmap = {}
+        for day, g in d[d["rank"] <= 5].groupby("date"):
+            a = (g.groupby("ticker").agg(votes=("model", "nunique"), psum=("p_calibrated", "sum"))
+                 .sort_values(["votes", "psum"], ascending=False))
+            wmap[pd.Timestamp(day)] = a.index[0]
+        return wmap
+    g = d[(d.model == selector) & (d["rank"] == 1)]
+    return {pd.Timestamp(r.date): r.ticker for r in g.itertuples()}
+
+
+@st.cache_data(show_spinner=False)
+def _bt_prices(tickers: tuple, start_iso: str, end_iso: str, _mtime: float) -> dict:
+    """{ticker → DataFrame[open, close]} from us_equities_data — read-only, cache-only, normalized."""
+    if not tickers or not DB.exists():
+        return {}
+    qs = ",".join("?" * len(tickers))
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        px = pd.read_sql(
+            f"SELECT date, ticker, open, close FROM us_equities_data WHERE ticker IN ({qs}) "
+            "AND date >= ? AND date < (date(?, '+1 day'))", con, params=[*tickers, start_iso, end_iso])
+    finally:
+        con.close()
+    px["date"] = pd.to_datetime(px.date).dt.normalize()
+    return {t: g.set_index("date")[["open", "close"]].sort_index() for t, g in px.groupby("ticker")}
+
+
+def _simulate(winners: dict, prices: dict, index_tk: str, target: float, stop: float,
+              max_alloc: float, horizon: int, start_ts):
+    """Replay the picks — signals are EOD, so an EOD signal on day t is filled at the NEXT trading
+    day's OPEN (no same-day look-ahead); positions exit at the first of +target / −stop / horizon
+    on the CLOSE (first-touch). 1 stock/day, equal max-alloc sizing, $100k init, gross of costs.
+    The window (and the benchmark's normalization anchor) starts at ``start_ts`` — the same for every
+    strategy so the index buy-hold is identical across SPX strategies; the strategy sits in cash until
+    its first signal fires. Returns (equity, trades, benchmark) or None if prices are missing."""
+    if not winners or index_tk not in prices:
+        return None
+    cal = [d for d in prices[index_tk].index if d >= start_ts]
+    cash, pos, eq, trades, pending = INIT_CASH, {}, [], [], None
+
+    def px(tk, d, col):
+        s = prices.get(tk)
+        if s is None or d not in s.index:
+            return None
+        v = float(s.loc[d, col])
+        return v if v == v else None  # NaN → None
+
+    for d in cal:
+        if pending and pending not in pos:                      # yesterday's EOD signal → fill at today's OPEN
+            o = px(pending, d, "open")
+            if o:
+                equity = cash + sum(pp["shares"] * (px(t, d, "close") or pp["anchor"]) for t, pp in pos.items())
+                notional = min(max_alloc * equity, cash)
+                if notional > 1.0:
+                    pos[pending] = {"shares": notional / o, "anchor": o, "entry": d}
+                    cash -= notional
+                    trades.append({"date": d, "ticker": pending, "action": "BUY", "price": o, "ret": None})
+        pending = None
+        for tk in list(pos):                                    # exits at today's CLOSE (first-touch)
+            c = px(tk, d, "close")
+            if c is None:
+                continue
+            p = pos[tk]
+            trig = ("target" if c >= p["anchor"] * (1 + target)
+                    else "stop" if c <= p["anchor"] * (1 - stop)
+                    else "horizon" if horizon and (d - p["entry"]).days >= horizon else None)
+            if trig:
+                cash += p["shares"] * c
+                trades.append({"date": d, "ticker": tk, "action": trig, "price": c,
+                               "ret": c / p["anchor"] - 1})
+                del pos[tk]
+        if d in winners:                                        # today's EOD signal → fill next OPEN
+            pending = winners[d]
+        eq.append(cash + sum(pp["shares"] * (px(t, d, "close") or pp["anchor"]) for t, pp in pos.items()))
+    equity = pd.Series(eq, index=cal)
+    bench = prices[index_tk]["close"].reindex(cal).ffill()
+    bench = bench / bench.iloc[0] * INIT_CASH
+    return equity, pd.DataFrame(trades), bench
+
+
+_TRIG = {"target": "t", "stop": "s", "horizon": "h"}  # exit-label suffix, matching plot_actions.py
+
+
+def _plot_actions(equity, trades, bench, strat_label: str, bench_label: str):
+    """The `plot_actions.py` `actions.png` style — strategy equity (dark blue) + index buy-hold
+    (grey dashed) + init-cash line, every trade marked (▲ buy / ▼ sell) and labelled with its
+    ticker (entries stack upward, exits stack downward; exit suffix ·t target / ·s stop / ·h horizon)."""
+    tot = equity.iloc[-1] / INIT_CASH - 1
+    dd = float((equity / equity.cummax() - 1).min())
+    bmk = bench.iloc[-1] / bench.iloc[0] - 1
+    fig, ax = plt.subplots(figsize=(13, 6))
+    ax.plot(equity.index, equity.values, lw=2, color="#1f4e79",
+            label=f"{strat_label}  {tot * 100:+.0f}%  (DD {dd * 100:.0f}%)")
+    ax.plot(bench.index, bench.values, lw=1.3, color="#888", ls="--",
+            label=f"{bench_label} buy-hold  {bmk * 100:+.0f}%")
+    ax.axhline(INIT_CASH, color="gray", lw=0.6, ls=":")
+    if len(trades):
+        pk = trades.copy()
+        eqd = equity.reindex(equity.index.union(pk["date"].unique())).ffill().bfill()
+        pk["y"] = pk["date"].map(eqd)
+        ent, ex = pk[pk.action == "BUY"], pk[pk.action != "BUY"]
+        ax.scatter(ent["date"], ent["y"], marker="^", s=46, color="#1a9850", zorder=5, edgecolor="white", lw=0.5)
+        ax.scatter(ex["date"], ex["y"], marker="v", s=46, color="#d73027", zorder=5, edgecolor="white", lw=0.5)
+        fs = 6 if len(pk) > 40 else 7.5
+        step = fs + 2.5
+        for is_entry, d_, sgn, col in [(True, ent, 1, "#1a7a3a"), (False, ex, -1, "#b2182b")]:
+            for _, grp in d_.groupby("date"):
+                for i, (_, r) in enumerate(grp.iterrows()):
+                    tk = str(r["ticker"]).split(":")[-1]
+                    lab = tk if is_entry else f"{tk}·{_TRIG.get(r['action'], '')}"
+                    ax.annotate(lab, (r["date"], r["y"]),
+                                xytext=(0, sgn * (9 + i * step)), textcoords="offset points",
+                                ha="center", va="bottom" if sgn > 0 else "top", fontsize=fs, color=col)
+    ax.set_ylabel("portfolio value ($)")
+    ax.grid(alpha=0.25)
+    ax.legend(loc="upper left", fontsize=9)
+    ax.set_title(f"{strat_label}  ·  from {equity.index[0].date()}\n"
+                 "▲ buy   ▼ sell  (·t target  ·s stop  ·h horizon)", fontsize=10, loc="left")
+    fig.tight_layout()
+    return fig
+
+
+def render_backtests(df: pd.DataFrame) -> None:
     dates = sorted(df.date.unique())
-    n = st.slider("show last N snapshots", 5, len(dates), min(30, len(dates)))
-    sel = dates[-n:]
-    sub = df[df.date.isin(sel)]
+    st.markdown("### Backtest — returns of the predicted trades")
+    st.caption("Independent of the backtest engine — replays the logged picks on the price cache: "
+               "1 stock/day (consensus winner, or the model's rank-1); signals are EOD so each is "
+               "**filled at the next trading day's open**, then exits at the first of +target / −stop / "
+               "horizon (close-based); equal max-alloc sizing, gross of costs.")
 
-    ch = []
-    for d in sel:
-        c = consensus(sub[sub.date == d], pool_k)
-        if not c.empty:
-            w = c.iloc[0]
-            ch.append({"date": d, "winner": w.sym, "# votes": int(w.models), "Σp": round(w.psum, 3)})
-    chdf = pd.DataFrame(ch)
+    c1, c2, c3 = st.columns([2, 2, 1])
+    strat = c1.selectbox("strategy", ["consensus", *MODEL_ORDER],
+                         format_func=lambda s: "consensus (top-5 vote)" if s == "consensus"
+                         else MODEL_LABEL.get(s, s))
+    start = c2.date_input("start date", value=dates[0], min_value=dates[0], max_value=dates[-1])
+    regime_only = c3.checkbox("regime-ON only", value=True)
+    e1, e2, e3, e4 = st.columns(4)
+    target = e1.slider("target %", 5, 100, 30) / 100
+    stop = e2.slider("stop %", 5, 50, 15) / 100
+    max_alloc = e3.slider("max alloc %", 5, 100, 25) / 100
+    horizon = e4.slider("horizon (days, 0 = off)", 0, 250, 60)
 
-    st.markdown("**🗳️ Consensus winner — history**")
-    a, b = st.columns([2, 1])
-    a.dataframe(chdf.iloc[::-1], hide_index=True, width="stretch", height=300)
-    b.caption("winner frequency")
-    b.bar_chart(chdf.winner.value_counts())
+    winners = _bt_winners(df, strat, start, regime_only)
+    if not winners:
+        st.info("no trades for this strategy / window.")
+        return
+    index_tk = _INDEX_TK.get(strat, "INDEX:^SPX")
+    tickers = tuple(sorted(set(winners.values()) | {index_tk}))
+    prices = _bt_prices(tickers, str(start), str(max(dates)), DB.stat().st_mtime if DB.exists() else 0.0)
+    res = _simulate(winners, prices, index_tk, target, stop, max_alloc, horizon, pd.Timestamp(start))
+    if res is None:
+        st.warning("price data unavailable for this window (is the cache seeded?).")
+        return
+    equity, trades, bench = res
 
-    st.markdown("**🏅 Rank-1 pick per model**")
-    r1 = (sub[sub["rank"] == 1].pivot_table(index="date", columns="model", values="sym", aggfunc="first")
-          .reindex(columns=[m for m in MODEL_ORDER if m in set(sub.model)]))
-    st.dataframe(r1.iloc[::-1], width="stretch", height=300)
+    tot = equity.iloc[-1] / INIT_CASH - 1
+    bmk = bench.iloc[-1] / bench.iloc[0] - 1
+    dd = float((equity / equity.cummax() - 1).min())
+    closed = trades[trades.action != "BUY"] if len(trades) else trades
+    wr = float((closed.ret > 0).mean()) if len(closed) else float("nan")
+    idx_lbl = index_tk.split(":")[-1].lstrip("^")
+    m = st.columns(5)
+    m[0].metric("strategy return", f"{tot:+.1%}")
+    m[1].metric(f"{idx_lbl} buy-hold", f"{bmk:+.1%}")
+    m[2].metric("max drawdown", f"{dd:.1%}")
+    m[3].metric("closed trades", f"{len(closed)}")
+    m[4].metric("win rate", f"{wr:.0%}" if wr == wr else "—")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**🔁 Most-picked names** (top-3 appearances, all models)")
-        st.bar_chart(sub[sub["rank"] <= 3].sym.value_counts().head(15))
-    with c2:
-        st.markdown("**🚦 Regime gate (SMA200)**")
-        reg = sub.groupby(["date", "gate_index"]).regime_on.first().unstack().astype(int)
-        reg.columns = [c.split(":")[-1] for c in reg.columns]
-        st.line_chart(reg)
-        st.caption("1 = risk-ON (deploy) · 0 = risk-OFF (cash)")
+    st.pyplot(_plot_actions(equity, trades, bench,
+                            "consensus" if strat == "consensus" else MODEL_LABEL.get(strat, strat), idx_lbl))
+
+    with st.expander("📋 trades — table", expanded=False):
+        if len(trades):
+            tt = trades.copy()
+            tt["date"] = pd.to_datetime(tt.date).dt.date
+            tt["ticker"] = tt.ticker.str.split(":").str[-1]
+            tt["price"] = tt.price.round(2)
+            tt["ret"] = tt.ret.map(lambda x: f"{x:+.1%}" if pd.notna(x) else "")
+            st.dataframe(tt[["date", "ticker", "action", "price", "ret"]], hide_index=True, width="stretch")
+        else:
+            st.write("no closed trades in this window")
 
 
 def main() -> None:
@@ -317,7 +477,7 @@ def main() -> None:
     with snap:
         render_snapshot(df, date, k, pool_k)
     with hist:
-        render_history(df, pool_k)
+        render_backtests(df)
 
 
 if __name__ == "__main__":
