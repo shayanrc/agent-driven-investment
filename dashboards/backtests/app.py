@@ -222,9 +222,9 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
                "(skill-comparable across models; the ×-figure under each ticker is the lift)")
     _render_panels(day, models, k, closes, names)
 
-    st.markdown("#### All picks — table")
-    st.dataframe(_picks(day, models, k, closes), hide_index=True, width="stretch")
-    st.caption("✓ = deployed (live) · target = close × (1 + gain%) · stoploss = close × (1 − max-DD%)")
+    with st.expander("📋 All picks — table", expanded=False):
+        st.dataframe(_picks(day, models, k, closes), hide_index=True, width="stretch")
+        st.caption("✓ = deployed (live) · target = close × (1 + gain%) · stoploss = close × (1 − max-DD%)")
 
     st.markdown("### 🗳️ Cross-model consensus")
     c = consensus(day, pool_k)
@@ -236,9 +236,9 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     disp["majority"] = disp.models.map(lambda n: "✓" if n >= MAJORITY else "")
     disp = disp.rename(columns={"sym": "Stock", "models": "# models", "psum": "Σp", "voters": "voting models"})
     disp["Σp"] = disp["Σp"].round(3)
-    st.markdown("**vote detail**")
-    st.dataframe(disp[["Stock", "# models", "Σp", "majority", "voting models"]],
-                 hide_index=True, width="stretch")
+    with st.expander("🗳️ vote detail — table", expanded=False):
+        st.dataframe(disp[["Stock", "# models", "Σp", "majority", "voting models"]],
+                     hide_index=True, width="stretch")
     st.caption(f"pool = each model's top-{pool_k}; tie → highest Σp; ✓ = ≥{MAJORITY}/5 panel majority. "
                "Bull-only amplifier (`_028`) — 1 stock/day, not promoted.")
 
