@@ -441,19 +441,21 @@ def render_backtests(df: pd.DataFrame) -> None:
     strat = c1.selectbox("strategy", ["consensus", *MODEL_ORDER],
                          format_func=lambda s: "consensus (top-5 vote)" if s == "consensus"
                          else MODEL_LABEL.get(s, s))
-    start = c2.date_input("start date", value=dates[0], min_value=dates[0], max_value=dates[-1])
+    # per-strategy defaults — reset when the strategy changes; seed BEFORE the widgets below read them
+    tgt_d, stop_d, hz_d = _champion_params(df, strat)  # champion cell for models; generic for consensus
+    start_d = df.date.min() if strat == "consensus" else df[df.model == strat].date.min()  # model's first logged date
+    if st.session_state.get("bt_last_strat") != strat:
+        st.session_state.update(bt_tgt=tgt_d, bt_stop=stop_d, bt_hz=hz_d, bt_start=start_d, bt_last_strat=strat)
+    start = c2.date_input("start date", min_value=dates[0], max_value=dates[-1], key="bt_start")
     regime_only = c3.checkbox("regime-ON only", value=True)
     dark = c4.toggle("🌙 dark chart", value=False)
-    tgt_d, stop_d, hz_d = _champion_params(df, strat)  # champion cell for models; generic for consensus
-    if st.session_state.get("bt_last_strat") != strat:   # strategy changed → reset exit sliders to its defaults
-        st.session_state.update(bt_tgt=tgt_d, bt_stop=stop_d, bt_hz=hz_d, bt_last_strat=strat)
     e1, e2, e3, e4 = st.columns(4)
     target = e1.slider("target %", 5, 100, key="bt_tgt") / 100
     stop = e2.slider("stop %", 5, 50, key="bt_stop") / 100
     max_alloc = e3.slider("max alloc %", 5, 100, 25, key="bt_alloc") / 100
     horizon = e4.slider("horizon (days, 0 = off)", 0, 250, key="bt_hz")
-    st.caption("consensus uses generic 30 / 15 / 60 defaults; each model defaults to its champion "
-               "cell (gain / max-DD / horizon) — adjust any slider to explore.")
+    st.caption("defaults per strategy — consensus: generic 30 / 15 / 60 over the full log; each model: "
+               "its champion cell (gain / max-DD / horizon) and its own first logged date. Adjust to explore.")
 
     winners = _bt_winners(df, strat, start, regime_only)
     if not winners:
