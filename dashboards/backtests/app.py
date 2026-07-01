@@ -24,10 +24,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -346,43 +343,59 @@ def _simulate(winners: dict, prices: dict, index_tk: str, target: float, stop: f
 _TRIG = {"target": "t", "stop": "s", "horizon": "h"}  # exit-label suffix, matching plot_actions.py
 
 
-def _plot_actions(equity, trades, bench, strat_label: str, bench_label: str):
-    """The `plot_actions.py` `actions.png` style — strategy equity (dark blue) + index buy-hold
-    (grey dashed) + init-cash line, every trade marked (▲ buy / ▼ sell) and labelled with its
-    ticker (entries stack upward, exits stack downward; exit suffix ·t target / ·s stop / ·h horizon)."""
+def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str):
+    """Interactive Altair version of the actions chart — strategy equity + index buy-hold (dashed)
+    + init-cash rule, with ▲ buy / ▼ sell points (ticker-labelled, entries up / exits down; exit
+    suffix ·t/·s/·h) and hover tooltips. Return % + DD are baked into the series legend labels."""
     tot = equity.iloc[-1] / INIT_CASH - 1
     dd = float((equity / equity.cummax() - 1).min())
     bmk = bench.iloc[-1] / bench.iloc[0] - 1
-    fig, ax = plt.subplots(figsize=(13, 6))
-    ax.plot(equity.index, equity.values, lw=2, color="#1f4e79",
-            label=f"{strat_label}  {tot * 100:+.0f}%  (DD {dd * 100:.0f}%)")
-    ax.plot(bench.index, bench.values, lw=1.3, color="#888", ls="--",
-            label=f"{bench_label} buy-hold  {bmk * 100:+.0f}%")
-    ax.axhline(INIT_CASH, color="gray", lw=0.6, ls=":")
+    s_lab, b_lab = f"{strat_label}  {tot:+.0%} (DD {dd:.0%})", f"{bench_label} buy-hold  {bmk:+.0%}"
+
+    line_df = pd.concat([
+        pd.DataFrame({"date": equity.index, "value": equity.values, "series": s_lab}),
+        pd.DataFrame({"date": bench.index, "value": bench.values, "series": b_lab}),
+    ], ignore_index=True)
+    lines = alt.Chart(line_df).mark_line().encode(
+        x=alt.X("date:T", title=None),
+        y=alt.Y("value:Q", title="portfolio value ($)", scale=alt.Scale(zero=False)),
+        color=alt.Color("series:N", title=None,
+                        scale=alt.Scale(domain=[s_lab, b_lab], range=["#1f4e79", "#888888"]),
+                        legend=alt.Legend(orient="top-left")),
+        strokeDash=alt.StrokeDash("series:N", legend=None,
+                                  scale=alt.Scale(domain=[s_lab, b_lab], range=[[1, 0], [6, 3]])),
+        tooltip=[alt.Tooltip("date:T"), alt.Tooltip("series:N", title=""),
+                 alt.Tooltip("value:Q", title="value", format="$,.0f")])
+    rule = alt.Chart(pd.DataFrame({"y": [INIT_CASH]})).mark_rule(
+        color="gray", strokeDash=[2, 2], size=0.6, opacity=0.7).encode(y="y:Q")
+    layers = [rule, lines]
+
     if len(trades):
         pk = trades.copy()
-        eqd = equity.reindex(equity.index.union(pk["date"].unique())).ffill().bfill()
-        pk["y"] = pk["date"].map(eqd)
-        ent, ex = pk[pk.action == "BUY"], pk[pk.action != "BUY"]
-        ax.scatter(ent["date"], ent["y"], marker="^", s=46, color="#1a9850", zorder=5, edgecolor="white", lw=0.5)
-        ax.scatter(ex["date"], ex["y"], marker="v", s=46, color="#d73027", zorder=5, edgecolor="white", lw=0.5)
-        fs = 6 if len(pk) > 40 else 7.5
-        step = fs + 2.5
-        for is_entry, d_, sgn, col in [(True, ent, 1, "#1a7a3a"), (False, ex, -1, "#b2182b")]:
-            for _, grp in d_.groupby("date"):
-                for i, (_, r) in enumerate(grp.iterrows()):
-                    tk = str(r["ticker"]).split(":")[-1]
-                    lab = tk if is_entry else f"{tk}·{_TRIG.get(r['action'], '')}"
-                    ax.annotate(lab, (r["date"], r["y"]),
-                                xytext=(0, sgn * (9 + i * step)), textcoords="offset points",
-                                ha="center", va="bottom" if sgn > 0 else "top", fontsize=fs, color=col)
-    ax.set_ylabel("portfolio value ($)")
-    ax.grid(alpha=0.25)
-    ax.legend(loc="upper left", fontsize=9)
-    ax.set_title(f"{strat_label}  ·  from {equity.index[0].date()}\n"
-                 "▲ buy   ▼ sell  (·t target  ·s stop  ·h horizon)", fontsize=10, loc="left")
-    fig.tight_layout()
-    return fig
+        eqd = equity.reindex(equity.index.union(pd.DatetimeIndex(pk.date.unique()))).ffill().bfill()
+        pk["y"] = pk.date.map(eqd)
+        pk["kind"] = pk.action.map(lambda a: "buy" if a == "BUY" else "exit")
+        pk["sym"] = pk.ticker.str.split(":").str[-1]
+        pk["label"] = [s if k == "buy" else f"{s}·{_TRIG.get(a, '')}"
+                       for s, k, a in zip(pk["sym"], pk["kind"], pk["action"])]
+        pk["ret_str"] = pk.ret.map(lambda x: f"{x:+.1%}" if pd.notna(x) else "—")
+        kcolor = alt.Color("kind:N", legend=None,
+                           scale=alt.Scale(domain=["buy", "exit"], range=["#1a9850", "#d73027"]))
+        tips = [alt.Tooltip("date:T"), alt.Tooltip("sym:N", title="ticker"),
+                alt.Tooltip("action:N"), alt.Tooltip("price:Q", format=",.2f"),
+                alt.Tooltip("ret_str:N", title="return")]
+        base = alt.Chart(pk)
+        pts = base.mark_point(filled=True, size=75, opacity=0.95).encode(
+            x="date:T", y="y:Q", color=kcolor, tooltip=tips,
+            shape=alt.Shape("kind:N", legend=None,
+                            scale=alt.Scale(domain=["buy", "exit"], range=["triangle-up", "triangle-down"])))
+        buy_txt = base.transform_filter(alt.datum.kind == "buy").mark_text(
+            dy=-13, fontSize=8, color="#1a7a3a").encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+        exit_txt = base.transform_filter(alt.datum.kind == "exit").mark_text(
+            dy=13, fontSize=8, color="#b2182b").encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+        layers += [pts, buy_txt, exit_txt]
+
+    return alt.layer(*layers).properties(width="container", height=440).interactive()
 
 
 def render_backtests(df: pd.DataFrame) -> None:
@@ -431,8 +444,8 @@ def render_backtests(df: pd.DataFrame) -> None:
     m[3].metric("closed trades", f"{len(closed)}")
     m[4].metric("win rate", f"{wr:.0%}" if wr == wr else "—")
 
-    st.pyplot(_plot_actions(equity, trades, bench,
-                            "consensus" if strat == "consensus" else MODEL_LABEL.get(strat, strat), idx_lbl))
+    st.altair_chart(_altair_chart(equity, trades, bench,
+                                  "consensus" if strat == "consensus" else MODEL_LABEL.get(strat, strat), idx_lbl))
 
     with st.expander("📋 trades — table", expanded=False):
         if len(trades):
