@@ -403,7 +403,7 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dar
         pts = base.mark_point(filled=True, size=85, stroke=t["bg"], strokeWidth=0.6).encode(
             x="date:T", y="y:Q", tooltip=tips,
             color=alt.Color("event:N", scale=cscale, sort=dom, legend=leg),
-            shape=alt.Shape("event:N", scale=sscale, sort=dom, legend=leg))
+            shape=alt.Shape("event:N", scale=sscale, sort=dom, legend=None))
         buy_txt = base.transform_filter(alt.datum.kind == "buy").mark_text(
             dy=-13, fontSize=8, color=t["buy"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
         exit_txt = base.transform_filter(alt.datum.kind == "exit").mark_text(dy=13, fontSize=8).encode(
