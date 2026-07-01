@@ -151,7 +151,7 @@ def _card_html(sym: str, name: str, rank: int, p: float, lift: float, levels: st
 
 def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict, names: dict) -> None:
     """One bordered panel per model: header (label + deployed/candidate + target event) and a row
-    of big cards — the ticker large + colour-coded by probability, with 🎯 target / 🛑 stoploss."""
+    of big cards — the ticker large + colour-coded by lift, with target / stoploss levels below."""
     for m in models:
         g = day[(day.model == m) & (day["rank"] <= k)].sort_values("rank")
         if g.empty:
@@ -164,8 +164,10 @@ def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict, n
             for col, (_, r) in zip(st.columns(len(g)), g.iterrows()):
                 gg, dd = _gain_dd(r)
                 e = closes.get(r.ticker)
-                levels = (f"🎯 {e * (1 + gg):.2f}  🛑 {e * (1 - dd):.2f}"
-                          if (e and dd is not None) else "🎯 —  🛑 —")
+                t = f"{e * (1 + gg):.2f}" if e else "—"
+                s = f"{e * (1 - dd):.2f}" if (e and dd is not None) else "—"
+                levels = (f'<span style="color:#16a34a">target</span> {t}'
+                          f'&nbsp;&nbsp;&nbsp;<span style="color:#dc2626">stop</span> {s}')
                 lift = float(r.p_calibrated) / float(r.base_rate) if r.base_rate else float("nan")
                 col.markdown(_card_html(r.sym, names.get(r.ticker, ""), int(r["rank"]),
                                         float(r.p_calibrated), lift, levels), unsafe_allow_html=True)
