@@ -28,8 +28,7 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / "results/backtests/data/forward_predictions_log.csv"
-DB = ROOT / "data/processed.db"  # us_equities price cache (read-only) — for target/stoploss
-NAMES = ROOT / "results/backtests/data/ticker_names.csv"  # committed ticker → company-name map
+DB = ROOT / "data/processed.db"  # us_equities cache (read-only) — prices + the us_equities_names table
 
 # Display order (deployed champions first, then comparison candidates) + descriptive labels.
 MODEL_ORDER = ["sp500_50", "sp500_20", "russell_50_200", "russell_40_100", "nasdaq_40_50"]
@@ -55,11 +54,18 @@ def load_log() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def _names(_mtime: float) -> dict:
-    """ticker → company name from the committed map (empty until built by fetch_ticker_names.py)."""
-    if not NAMES.exists():
+    """ticker → company name from the us_equities_names DB table (empty until
+    fetch_ticker_names.py has populated it); read-only, cache-only, no network."""
+    if not DB.exists():
         return {}
-    n = pd.read_csv(NAMES).fillna("")
-    return dict(zip(n.ticker, n.name))
+    con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        rows = con.execute("SELECT ticker, name FROM us_equities_names").fetchall()
+    except sqlite3.OperationalError:  # table not created yet
+        return {}
+    finally:
+        con.close()
+    return {t: n for t, n in rows}
 
 
 def consensus(day: pd.DataFrame, pool_k: int) -> pd.DataFrame:
@@ -207,7 +213,7 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     shown = tuple(sorted(day[day["rank"] <= k].ticker.unique()))
     closes = _closes_on(str(date), shown, DB.stat().st_mtime if DB.exists() else 0.0)
     models = [m for m in MODEL_ORDER if m in set(day.model)]  # deployed champions first, then candidates
-    names = _names(NAMES.stat().st_mtime if NAMES.exists() else 0.0)
+    names = _names(DB.stat().st_mtime if DB.exists() else 0.0)
 
     st.markdown("### Predictions by model")
     st.caption("card colour = lift (p ÷ base rate) — 🟢 ≥4× · 🟠 2–4× · ⚪ <2×  "
