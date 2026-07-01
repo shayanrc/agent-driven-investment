@@ -137,6 +137,8 @@ uv run python -m scripts.backtests.daily_forward_predictions [--commit]
 # unattended (not-always-on): systemd user timer — see scripts/backtests/systemd/README.md
 ```
 
+**View the log** — `streamlit run dashboards/backtests/app.py`: a read-only dashboard over the forward log. **Snapshot** tab = one day's regime gate + deployed-champion / candidate picks + the cross-model **consensus** (top-N vote, winner, ≥3/5 majority); **History** tab = consensus-winner timeline + frequency, per-model rank-1 picks, most-picked names, and the regime-gate timeline. No inference — reads the committed log only.
+
 ## Caveats / scope
 
 - **~6 min/cell** even for a 1-day increment (the slice rebuild is fixed-cost). The further
