@@ -201,19 +201,21 @@ def _render_consensus_panel(c: pd.DataFrame, names: dict) -> None:
                 unsafe_allow_html=True)
 
 
+def _render_regime(day: pd.DataFrame) -> None:
+    """Per-universe SMA200 regime gate — stacked metrics for the sidebar."""
+    st.markdown("**regime gate**")
+    gates = (day.groupby("gate_index")
+             .agg(on=("regime_on", "first"), close=("gate_close", "first"), sma=("gate_sma200", "first")))
+    for idx, g in gates.iterrows():
+        pct = (g.close / g.sma - 1) if g.sma else float("nan")
+        st.metric(idx.split(":")[-1].lstrip("^"), "🟢 ON" if g.on else "🔴 OFF",
+                  f"{pct:+.1%} vs SMA200", delta_color="normal" if g.on else "inverse")
+    st.caption("ON ⇒ deploy · OFF ⇒ cash (`_016`–`_018`)")
+
+
 def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     day = df[df.date == date]
     st.subheader(f"📅 {date}")
-
-    # Regime gate — one metric per universe index (SMA200 overlay).
-    gates = (day.groupby("gate_index")
-             .agg(on=("regime_on", "first"), close=("gate_close", "first"), sma=("gate_sma200", "first")))
-    cols = st.columns(max(len(gates), 1))
-    for col, (idx, g) in zip(cols, gates.iterrows()):
-        pct = (g.close / g.sma - 1) if g.sma else float("nan")
-        col.metric(f"{idx.split(':')[-1]} regime", "🟢 ON" if g.on else "🔴 OFF",
-                   f"{pct:+.1%} vs SMA200", delta_color="normal" if g.on else "inverse")
-    st.caption("regime ON ⇒ strategies deploy · OFF ⇒ hold cash (`_016`–`_018`)")
 
     # Per-pick close on the snapshot date (cache-only) → target / stoploss levels.
     shown = tuple(sorted(day[day["rank"] <= k].ticker.unique()))
@@ -306,6 +308,8 @@ def main() -> None:
         k = st.slider("top-K per model", 1, 10, 3)
         pool_k = st.slider("consensus pool (top-N/model)", 3, 10, 5)
         st.caption(f"{len(dates)} snapshots · {dates[0]} → {dates[-1]}")
+        st.divider()
+        _render_regime(df[df.date == date])
         st.divider()
         st.caption("**models**  \n" + "  \n".join(f"`{m}` — {MODEL_LABEL[m]}" for m in MODEL_ORDER))
 
