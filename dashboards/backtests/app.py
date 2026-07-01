@@ -117,6 +117,64 @@ def _picks(day: pd.DataFrame, models: list[str], k: int, closes: dict) -> pd.Dat
     return pd.DataFrame(rows)
 
 
+def _prob_color(p: float) -> str:
+    """Heat colour for a probability card — 🟢 green (strong) / 🟠 amber (mid) / ⚪ grey (low)."""
+    return "#16a34a" if p >= 0.5 else "#e08e0b" if p >= 0.3 else "#6b7280"
+
+
+def _card_html(sym: str, rank: int, p: float, levels: str) -> str:
+    """A big ticker card: symbol large + colour-coded by probability, prob/rank + levels below."""
+    return (f'<div style="text-align:center;padding:6px 0">'
+            f'<div style="font-size:34px;font-weight:800;color:{_prob_color(p)};line-height:1.15">{sym}</div>'
+            f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">#{rank} · {p:.1%}</div>'
+            f'<div style="font-size:14px;margin-top:3px">{levels}</div></div>')
+
+
+def _render_panels(day: pd.DataFrame, models: list[str], k: int, closes: dict) -> None:
+    """One bordered panel per model: header (label + deployed/candidate + target event) and a row
+    of big cards — the ticker large + colour-coded by probability, with 🎯 target / 🛑 stoploss."""
+    for m in models:
+        g = day[(day.model == m) & (day["rank"] <= k)].sort_values("rank")
+        if g.empty:
+            continue
+        r0 = g.iloc[0]
+        with st.container(border=True):
+            tag = "✓ deployed (live)" if bool(r0.deployed) else "candidate"
+            st.markdown(f"##### {MODEL_LABEL.get(m, m)}  ·  {tag}")
+            st.caption(f"predicting **{_target_desc(r0)}**")
+            for col, (_, r) in zip(st.columns(len(g)), g.iterrows()):
+                gg, dd = _gain_dd(r)
+                e = closes.get(r.ticker)
+                levels = (f"🎯 {e * (1 + gg):.2f}  🛑 {e * (1 - dd):.2f}"
+                          if (e and dd is not None) else "🎯 —  🛑 —")
+                col.markdown(_card_html(r.sym, int(r["rank"]), float(r.p_calibrated), levels),
+                             unsafe_allow_html=True)
+
+
+def _votes_color(n: int) -> str:
+    """Colour a consensus card by breadth of agreement — 🟢 majority / 🟠 2 / ⚪ 1 vote."""
+    return "#16a34a" if n >= MAJORITY else "#e08e0b" if n >= 2 else "#6b7280"
+
+
+def _render_consensus_panel(c: pd.DataFrame) -> None:
+    """Bordered panel of big cards for the consensus winner(s) — the names clearing the
+    ≥MAJORITY/5 panel majority (or the single top plurality name if none do)."""
+    maj = c[c.models >= MAJORITY]
+    winners = maj if not maj.empty else c.head(1)
+    with st.container(border=True):
+        head = "🗳️ Consensus winner" + ("s" if len(winners) > 1 else "")
+        note = "" if not maj.empty else f" · plurality (no ≥{MAJORITY}/5 majority)"
+        st.markdown(f"##### {head}{note}")
+        for col, (_, r) in zip(st.columns(max(len(winners), 1)), winners.iterrows()):
+            col.markdown(
+                f'<div style="text-align:center;padding:6px 0">'
+                f'<div style="font-size:34px;font-weight:800;color:{_votes_color(int(r.models))};'
+                f'line-height:1.15">{r.sym}</div>'
+                f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">{int(r.models)}/5 votes · Σp {r.psum:.2f}</div>'
+                f'<div style="font-size:12px;color:#9aa0a6;margin-top:3px">{r.voters}</div></div>',
+                unsafe_allow_html=True)
+
+
 def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     day = df[df.date == date]
     st.subheader(f"📅 {date}")
@@ -136,23 +194,27 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     closes = _closes_on(str(date), shown, DB.stat().st_mtime if DB.exists() else 0.0)
     models = [m for m in MODEL_ORDER if m in set(day.model)]  # deployed champions first, then candidates
 
-    st.markdown("**Picks** — top-K per model · ✓ = deployed (live signal), blank = candidate")
+    st.markdown("### Predictions by model")
+    st.caption("card colour = probability strength — 🟢 ≥50% · 🟠 30–50% · ⚪ <30% "
+               "(absolute `p`; not comparable across models — base rates differ)")
+    _render_panels(day, models, k, closes)
+
+    st.markdown("#### All picks — table")
     st.dataframe(_picks(day, models, k, closes), hide_index=True, width="stretch")
-    st.caption("target = close × (1 + gain%) · stoploss = close × (1 − max-DD%), on the snapshot date")
+    st.caption("✓ = deployed (live) · target = close × (1 + gain%) · stoploss = close × (1 − max-DD%)")
 
     st.markdown("### 🗳️ Cross-model consensus")
     c = consensus(day, pool_k)
     if c.empty:
         st.info("no picks for this day")
         return
-    w = c.iloc[0]
-    m1, m2 = st.columns([1, 3])
-    m1.metric("Consensus winner", w.sym, f"{int(w.models)}/5 · Σp {w.psum:.3f}")
+    _render_consensus_panel(c)
     disp = c.copy()
     disp["majority"] = disp.models.map(lambda n: "✓" if n >= MAJORITY else "")
     disp = disp.rename(columns={"sym": "Stock", "models": "# models", "psum": "Σp", "voters": "voting models"})
     disp["Σp"] = disp["Σp"].round(3)
-    m2.dataframe(disp[["Stock", "# models", "Σp", "majority", "voting models"]],
+    st.markdown("**vote detail**")
+    st.dataframe(disp[["Stock", "# models", "Σp", "majority", "voting models"]],
                  hide_index=True, width="stretch")
     st.caption(f"pool = each model's top-{pool_k}; tie → highest Σp; ✓ = ≥{MAJORITY}/5 panel majority. "
                "Bull-only amplifier (`_028`) — 1 stock/day, not promoted.")
