@@ -178,9 +178,10 @@ def _votes_color(n: int) -> str:
     return "#16a34a" if n >= MAJORITY else "#e08e0b" if n >= 2 else "#6b7280"
 
 
-def _render_consensus_panel(c: pd.DataFrame) -> None:
+def _render_consensus_panel(c: pd.DataFrame, names: dict) -> None:
     """Bordered panel of big cards for the consensus winner(s) — the names clearing the
     ≥MAJORITY/5 panel majority (or the single top plurality name if none do)."""
+    sym_name = {t.split(":")[-1]: n for t, n in names.items()}
     maj = c[c.models >= MAJORITY]
     winners = maj if not maj.empty else c.head(1)
     with st.container(border=True):
@@ -188,11 +189,14 @@ def _render_consensus_panel(c: pd.DataFrame) -> None:
         note = "" if not maj.empty else f" · plurality (no ≥{MAJORITY}/5 majority)"
         st.markdown(f"##### {head}{note}")
         for col, (_, r) in zip(st.columns(max(len(winners), 1)), winners.iterrows()):
+            nm = sym_name.get(r.sym, "")
+            nm = (nm[:22] + "…") if len(nm) > 23 else nm
             col.markdown(
                 f'<div style="text-align:center;padding:6px 0">'
                 f'<div style="font-size:34px;font-weight:800;color:{_votes_color(int(r.models))};'
-                f'line-height:1.15">{r.sym}</div>'
-                f'<div style="font-size:13px;color:#9aa0a6;margin-top:-2px">{int(r.models)}/5 votes · Σp {r.psum:.2f}</div>'
+                f'line-height:1.1">{r.sym}</div>'
+                f'<div style="font-size:11px;color:#9aa0a6;line-height:1.15;min-height:15px">{nm}</div>'
+                f'<div style="font-size:13px;color:#9aa0a6;margin-top:2px">{int(r.models)}/5 votes · Σp {r.psum:.2f}</div>'
                 f'<div style="font-size:12px;color:#9aa0a6;margin-top:3px">{r.voters}</div></div>',
                 unsafe_allow_html=True)
 
@@ -231,7 +235,7 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     if c.empty:
         st.info("no picks for this day")
         return
-    _render_consensus_panel(c)
+    _render_consensus_panel(c, names)
     disp = c.copy()
     disp["majority"] = disp.models.map(lambda n: "✓" if n >= MAJORITY else "")
     disp = disp.rename(columns={"sym": "Stock", "models": "# models", "psum": "Σp", "voters": "voting models"})
