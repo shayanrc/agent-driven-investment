@@ -419,6 +419,16 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dar
             .configure_legend(labelColor=t["fg"], titleColor=t["fg"]))
 
 
+def _champion_params(df: pd.DataFrame, strat: str) -> tuple[int, int, int]:
+    """(target %, stop %, horizon days) slider defaults — the champion cell's own gain / max-DD /
+    horizon for a model; a generic 30 / 15 / 60 for consensus (not tied to a single cell)."""
+    if strat == "consensus":
+        return 30, 15, 60
+    r = df[df.model == strat].iloc[0]
+    m = _DD_RE.search(str(r.cell))
+    return int(r.threshold_pct), (int(m.group(1)) if m else 15), int(r.horizon_days)
+
+
 def render_backtests(df: pd.DataFrame) -> None:
     dates = sorted(df.date.unique())
     st.markdown("### Backtest — returns of the predicted trades")
@@ -434,11 +444,16 @@ def render_backtests(df: pd.DataFrame) -> None:
     start = c2.date_input("start date", value=dates[0], min_value=dates[0], max_value=dates[-1])
     regime_only = c3.checkbox("regime-ON only", value=True)
     dark = c4.toggle("🌙 dark chart", value=False)
+    tgt_d, stop_d, hz_d = _champion_params(df, strat)  # champion cell for models; generic for consensus
+    if st.session_state.get("bt_last_strat") != strat:   # strategy changed → reset exit sliders to its defaults
+        st.session_state.update(bt_tgt=tgt_d, bt_stop=stop_d, bt_hz=hz_d, bt_last_strat=strat)
     e1, e2, e3, e4 = st.columns(4)
-    target = e1.slider("target %", 5, 100, 30) / 100
-    stop = e2.slider("stop %", 5, 50, 15) / 100
-    max_alloc = e3.slider("max alloc %", 5, 100, 25) / 100
-    horizon = e4.slider("horizon (days, 0 = off)", 0, 250, 60)
+    target = e1.slider("target %", 5, 100, key="bt_tgt") / 100
+    stop = e2.slider("stop %", 5, 50, key="bt_stop") / 100
+    max_alloc = e3.slider("max alloc %", 5, 100, 25, key="bt_alloc") / 100
+    horizon = e4.slider("horizon (days, 0 = off)", 0, 250, key="bt_hz")
+    st.caption("consensus uses generic 30 / 15 / 60 defaults; each model defaults to its champion "
+               "cell (gain / max-DD / horizon) — adjust any slider to explore.")
 
     winners = _bt_winners(df, strat, start, regime_only)
     if not winners:
