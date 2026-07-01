@@ -344,12 +344,13 @@ _TRIG = {"target": "t", "stop": "s", "horizon": "h"}  # exit-label suffix, match
 
 
 def _bt_theme(dark: bool) -> dict:
-    """Chart colour palette — white background by default; dark when the toggle is on."""
+    """Chart colour palette — white background by default; dark when the toggle is on. Trade
+    markers get one colour each (buy / target / stop / horizon), surfaced in the chart legend."""
     if dark:
-        return {"bg": "#0e1117", "fg": "#d0d0d0", "grid": "#333333", "strat": "#5b9bd5",
-                "idx": "#9aa0a6", "buy": "#3ecf6a", "sell": "#ff6b6b", "buy_txt": "#7ee39b", "sell_txt": "#ff9a9a"}
-    return {"bg": "white", "fg": "#333333", "grid": "#e6e6e6", "strat": "#1f4e79",
-            "idx": "#888888", "buy": "#1a9850", "sell": "#d73027", "buy_txt": "#1a7a3a", "sell_txt": "#b2182b"}
+        return {"bg": "#0e1117", "fg": "#d0d0d0", "grid": "#333333", "strat": "#5b9bd5", "idx": "#9aa0a6",
+                "buy": "#4ade80", "target": "#22d3ee", "stop": "#f87171", "horizon": "#fbbf24"}
+    return {"bg": "white", "fg": "#333333", "grid": "#e6e6e6", "strat": "#1f4e79", "idx": "#888888",
+            "buy": "#16a34a", "target": "#0891b2", "stop": "#dc2626", "horizon": "#d97706"}
 
 
 def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dark: bool = False):
@@ -386,24 +387,28 @@ def _altair_chart(equity, trades, bench, strat_label: str, bench_label: str, dar
         eqd = equity.reindex(equity.index.union(pd.DatetimeIndex(pk.date.unique()))).ffill().bfill()
         pk["y"] = pk.date.map(eqd)
         pk["kind"] = pk.action.map(lambda a: "buy" if a == "BUY" else "exit")
+        pk["event"] = pk.action.map(lambda a: "buy" if a == "BUY" else a)  # buy / target / stop / horizon
         pk["sym"] = pk.ticker.str.split(":").str[-1]
         pk["label"] = [s if k == "buy" else f"{s}·{_TRIG.get(a, '')}"
                        for s, k, a in zip(pk["sym"], pk["kind"], pk["action"])]
         pk["ret_str"] = pk.ret.map(lambda x: f"{x:+.1%}" if pd.notna(x) else "—")
-        kcolor = alt.Color("kind:N", legend=None,
-                           scale=alt.Scale(domain=["buy", "exit"], range=[t["buy"], t["sell"]]))
+        dom = ["buy", "target", "stop", "horizon"]
+        cscale = alt.Scale(domain=dom, range=[t["buy"], t["target"], t["stop"], t["horizon"]])
+        sscale = alt.Scale(domain=dom, range=["triangle-up", "triangle-down", "triangle-down", "triangle-down"])
+        leg = alt.Legend(title="trade", orient="top-right")
         tips = [alt.Tooltip("date:T"), alt.Tooltip("sym:N", title="ticker"),
                 alt.Tooltip("action:N"), alt.Tooltip("price:Q", format=",.2f"),
                 alt.Tooltip("ret_str:N", title="return")]
         base = alt.Chart(pk)
-        pts = base.mark_point(filled=True, size=75, opacity=0.95).encode(
-            x="date:T", y="y:Q", color=kcolor, tooltip=tips,
-            shape=alt.Shape("kind:N", legend=None,
-                            scale=alt.Scale(domain=["buy", "exit"], range=["triangle-up", "triangle-down"])))
+        pts = base.mark_point(filled=True, size=85, stroke=t["bg"], strokeWidth=0.6).encode(
+            x="date:T", y="y:Q", tooltip=tips,
+            color=alt.Color("event:N", scale=cscale, sort=dom, legend=leg),
+            shape=alt.Shape("event:N", scale=sscale, sort=dom, legend=leg))
         buy_txt = base.transform_filter(alt.datum.kind == "buy").mark_text(
-            dy=-13, fontSize=8, color=t["buy_txt"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
-        exit_txt = base.transform_filter(alt.datum.kind == "exit").mark_text(
-            dy=13, fontSize=8, color=t["sell_txt"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+            dy=-13, fontSize=8, color=t["buy"]).encode(x="date:T", y="y:Q", text="label:N", tooltip=tips)
+        exit_txt = base.transform_filter(alt.datum.kind == "exit").mark_text(dy=13, fontSize=8).encode(
+            x="date:T", y="y:Q", text="label:N", tooltip=tips,
+            color=alt.Color("event:N", scale=cscale, sort=dom, legend=None))
         layers += [pts, buy_txt, exit_txt]
 
     return (alt.layer(*layers).properties(width="container", height=440).interactive()
