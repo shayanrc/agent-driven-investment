@@ -26,6 +26,7 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 ## Workflow feedback
 
 - [feedback-predictions-table-format.md](feedback-predictions-table-format.md) — ALWAYS present model predictions as a table (Ticker | Model/Rank | p), top 3 per model, raw p not lift; regime + caveats stay in prose. The `/daily-predictions` skill references it
+- [feedback-daily-predictions-consensus.md](feedback-daily-predictions-consensus.md) — When reporting the daily predictions, ALSO include the cross-model consensus (top-5 vote across the 5 models; winner = most-voted, tie → Σp; flag ≥3/5 majority). Standing request 2026-07-01
 - [feedback-branch-retention.md](feedback-branch-retention.md) — Don't propose deleting merged plan/feature branches; history is wanted
 - [feedback-experiment-agent-loop.md](feedback-experiment-agent-loop.md) — Bake loop-pattern guidance (background shell + Monitor filter + ScheduleWakeup + parallel-worker w/ per-item timeout) into sub-agent launch prompts up front; SendMessage isn't exposed
 - [feedback-track-agent-tasks.md](feedback-track-agent-tasks.md) — Every sub-agent launch → immediate TaskCreate + status=in_progress; mark completed only when the work is actually closed out
