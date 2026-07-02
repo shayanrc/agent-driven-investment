@@ -39,9 +39,14 @@ test (``tests/gbdt/test_incremental_feature_cache.py``) is the CI guard.
 
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
+from gbdt import feature_cache as _feature_cache
 from gbdt import features as gbdt_features
 
 # Bounded-lookback families safe to extend on a tail (everything except F16, whose
@@ -309,3 +314,115 @@ def extend_matrix_full(
 
     new_rows = pd.concat([new_nonband, new_band], axis=1).reindex(columns=cached_X.columns)
     return pd.concat([cached_X, new_rows])
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — on-disk persistence + build-or-extend orchestrator
+# ---------------------------------------------------------------------------
+#
+# The cache is keyed on (universe, warmup_start, min_rows, features.py source hash) —
+# NOT on the panel content or cached_max_date, which are exactly what the extend
+# advances. A features.py edit flips the code signature → cold rebuild (correct). A
+# changed alignment / a revised bar is caught by the seam check at extend time, not
+# the key. Stored one dir per key under ``<cache_root>/<key>/``.
+
+_CACHE_SCHEMA = "v1"
+_MATRIX_FILE = "matrix.parquet"
+_META_FILE = "meta.json"
+
+
+def cache_key(universe: str, warmup_start, *, min_rows: int = 1600) -> str:
+    """Deterministic cache key (SHA-256). Stable as the panel grows; invalidated by a
+    ``features.py`` edit (via ``feature_code_signature``), a different universe /
+    warmup anchor / eligibility floor."""
+    payload = {
+        "schema": _CACHE_SCHEMA,
+        "universe": universe,
+        "warmup_start": str(warmup_start),
+        "min_rows": int(min_rows),
+        "code_signature": _feature_cache.feature_code_signature(),
+    }
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _key_dir(cache_root, key: str) -> Path:
+    return Path(cache_root) / key
+
+
+def save(cache_root, key: str, X: pd.DataFrame, cached_max_date) -> Path:
+    """Persist the matrix + a sidecar (atomic temp-rename, per ``feature_cache``)."""
+    d = _key_dir(cache_root, key)
+    d.mkdir(parents=True, exist_ok=True)
+    mp = d / _MATRIX_FILE
+    tmp = mp.with_suffix(mp.suffix + ".tmp")
+    X.to_parquet(tmp)
+    tmp.replace(mp)
+    meta = {
+        "schema": _CACHE_SCHEMA, "key": key,
+        "cached_max_date": str(pd.Timestamp(cached_max_date).date()),
+        "n_rows": int(len(X)), "n_cols": int(X.shape[1]),
+    }
+    kp = d / _META_FILE
+    ktmp = kp.with_suffix(kp.suffix + ".tmp")
+    ktmp.write_text(json.dumps(meta, indent=2))
+    ktmp.replace(kp)
+    return mp
+
+
+def load(cache_root, key: str) -> tuple[pd.DataFrame, pd.Timestamp] | None:
+    """Load ``(matrix, cached_max_date)`` iff the sidecar key matches; else ``None``
+    (any corruption / mismatch → miss → the caller rebuilds)."""
+    d = _key_dir(cache_root, key)
+    mp, kp = d / _MATRIX_FILE, d / _META_FILE
+    if not mp.exists() or not kp.exists():
+        return None
+    try:
+        meta = json.loads(kp.read_text())
+    except (OSError, ValueError):
+        return None
+    if meta.get("schema") != _CACHE_SCHEMA or meta.get("key") != key:
+        return None
+    try:
+        X = pd.read_parquet(mp)
+    except Exception:
+        return None
+    if int(meta.get("n_rows", -1)) != len(X):
+        return None
+    return X, pd.Timestamp(meta["cached_max_date"])
+
+
+def build_or_extend(
+    cache_root,
+    universe: str,
+    warmup_start,
+    panel: pd.DataFrame,
+    index_df: pd.DataFrame,
+    *,
+    annualization: int,
+    min_rows: int = 1600,
+) -> pd.DataFrame:
+    """Return the full feature matrix for ``panel`` (all families incl F16), using
+    the on-disk incremental cache: load + ``extend_matrix_full`` when possible
+    (seam-checked; falls back to a full rebuild on ``SeamMismatch`` — a changed
+    alignment / revised bar / newly-eligible ticker), else a full build. Persists the
+    result. Matches a from-scratch build to the ~1e-4 contract."""
+    key = cache_key(universe, warmup_start, min_rows=min_rows)
+    panel_max = _panel_dates(panel).max()
+    hit = load(cache_root, key)
+    if hit is not None:
+        cached_X, cmd = hit
+        if cmd >= panel_max:
+            return cached_X  # nothing new to score
+        try:
+            X = extend_matrix_full(cached_X, panel, index_df,
+                                   annualization=annualization, cached_max_date=cmd)
+            save(cache_root, key, X, panel_max)
+            return X
+        except SeamMismatch:
+            pass  # fall through to a full rebuild + cache refresh
+    X = gbdt_features.build_feature_matrix(
+        panel, index_df, annualization=annualization,
+    ).dropna(axis=1, how="all")
+    save(cache_root, key, X, panel_max)
+    return X
