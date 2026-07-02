@@ -94,24 +94,49 @@ def _cmd_seed(args) -> int:
         print(f"seed: {e}", file=sys.stderr)
         return 2
 
+    jobs = max(1, int(getattr(args, "jobs", 1)))
     print(f"seeding {len(universe)} identifiers from domain={args.domain} "
-          f"universe={args.universe} ...")
+          f"universe={args.universe} (jobs={jobs}) ...")
+
+    start, end, data_root = _parse_date(args.start), _parse_date(args.end), Path(args.data_root)
+
+    def _fetch_one(ident: str):
+        # fetch_with_meta opens its own SQLite connections; concurrent writes
+        # serialize via the per-DB lock in cache.write_processed_atomic and WAL
+        # allows concurrent reads — so calling this from a thread pool is safe (the
+        # fetch is the network-bound part that parallelizes). Each ticker's rows are
+        # independent, so the cache is identical to the sequential path regardless of
+        # completion order (determinism per goal.md).
+        _, meta = fetch_with_meta(identifier=ident, start=start, end=end, data_root=data_root)
+        return meta
 
     ok, failed = 0, []
-    for ident in universe:
-        try:
-            _, meta = fetch_with_meta(
-                identifier=ident,
-                start=_parse_date(args.start),
-                end=_parse_date(args.end),
-                data_root=Path(args.data_root),
-            )
+
+    def _record(ident: str, meta=None, err: Exception | None = None) -> None:
+        nonlocal ok
+        if err is None:
             ok += 1
-            print(f"  ✓ {ident:18s} rows={meta.row_count} "
-                  f"cold={meta.cache_was_cold}")
-        except Exception as e:
-            failed.append({"identifier": ident, "error": str(e)})
-            print(f"  ✗ {ident:18s} {e}", file=sys.stderr)
+            print(f"  ✓ {ident:18s} rows={meta.row_count} cold={meta.cache_was_cold}")
+        else:
+            failed.append({"identifier": ident, "error": str(err)})
+            print(f"  ✗ {ident:18s} {err}", file=sys.stderr)
+
+    if jobs == 1:
+        for ident in universe:
+            try:
+                _record(ident, meta=_fetch_one(ident))
+            except Exception as e:  # noqa: BLE001 — per-ticker isolation; keep going
+                _record(ident, err=e)
+    else:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=jobs) as ex:
+            futures = {ex.submit(_fetch_one, ident): ident for ident in universe}
+            for fut in as_completed(futures):
+                ident = futures[fut]
+                try:
+                    _record(ident, meta=fut.result())
+                except Exception as e:  # noqa: BLE001
+                    _record(ident, err=e)
 
     print(f"\ndone: {ok}/{len(universe)} succeeded, {len(failed)} failed")
     return 0 if not failed else 1
@@ -320,6 +345,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--universe", default="sp500")
     s.add_argument("--start", required=True)
     s.add_argument("--end", required=True)
+    s.add_argument("--jobs", type=int, default=1,
+                   help="parallel fetch workers (default 1 = sequential). The fetch is "
+                        "network I/O-bound and SQLite writes serialize via the per-DB "
+                        "lock (WAL), so >1 is safe + deterministic in result. Mind "
+                        "provider rate limits (Tiingo free tier) when raising it.")
     s.set_defaults(func=_cmd_seed)
 
     r = sub.add_parser("reprocess", help="Re-derive processed from raw (no API)")
