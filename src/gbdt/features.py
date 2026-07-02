@@ -627,29 +627,32 @@ def signed_days_outside_band_meta(
 
     Input: a ``(date, ticker)``-indexed DataFrame of z-scored underlyings.
     Output column naming: ``<base>_outside_band_<sigma>``.
+
+    ONE per-ticker ``groupby.apply`` over the whole z-frame computes all
+    ``len(columns) × len(sigmas)`` outputs in a single split/apply/combine, rather
+    than that many separate ``_per_ticker`` passes (93 for the standard 31-col ×
+    3-σ layer). The per-ticker streak function is unchanged and runs on the same
+    per-ticker chronological z-series, so the output is bit-identical; this only
+    collapses the ~93 split/combine passes into one. V1.6 Phase 1a — measured 3.6×
+    on the sp500 daily slice (the split/combine overhead, not the streak math, is
+    ~54% of the build; see ``docs/gbdt/V1.6_incremental_feature_cache_plan.md``).
+    Column order (col-major: for col, for sigma) is preserved.
     """
-    out: dict[str, pd.Series] = {}
-    for col in z_columns.columns:
-        col_series = z_columns[col]
-        for sigma in sigmas:
-            # Per-ticker streak via the standard groupby helper, which preserves
-            # the (date, ticker) index natively. Replaces the prior manual
-            # per-ticker .xs + MultiIndex.from_product + concat/sort rebuild that
-            # dominated F16's wall-clock (GBDTPERF profile: ~160s of pure index
-            # overhead, 93 cols × ~500 tickers). Bit-identical: the same streak
-            # function runs on the same per-ticker chronological z-series.
-            stitched = _per_ticker(
-                col_series,
-                lambda s, sg=sigma: pd.Series(
-                    _signed_days_outside_band_one(s.values, sg), index=s.index
-                ),
-            )
-            label = (
-                str(int(sigma)) if sigma == int(sigma)
-                else str(sigma).replace(".", "p")
-            )
-            out[f"{col}_outside_band_{label}"] = stitched
-    return pd.DataFrame(out)
+    labels = [
+        (sg, str(int(sg)) if sg == int(sg) else str(sg).replace(".", "p"))
+        for sg in sigmas
+    ]
+    cols = list(z_columns.columns)
+
+    def _one_ticker(sub: pd.DataFrame) -> pd.DataFrame:
+        out: dict[str, np.ndarray] = {}
+        for col in cols:
+            v = sub[col].to_numpy()
+            for sg, label in labels:
+                out[f"{col}_outside_band_{label}"] = _signed_days_outside_band_one(v, sg)
+        return pd.DataFrame(out, index=sub.index)
+
+    return z_columns.groupby(level="ticker", group_keys=False).apply(_one_ticker)
 
 
 def f16_meta_underlying_columns(
