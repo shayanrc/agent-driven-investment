@@ -132,10 +132,14 @@ that outrank them** on back-test total return (`backtest_summary.csv`), tracked
 
 ```bash
 # manual / interactive (gives the regime read + picks):
-uv run python -m scripts.backtests.daily_forward_predictions [--commit]
+uv run python -m scripts.backtests.daily_forward_predictions [--deployed-only] [--commit]
 # or the skill:  /daily-predictions
-# unattended (not-always-on): systemd user timer — see scripts/backtests/systemd/README.md
+# unattended (not-always-on): TWO systemd user timers — a DAILY --deployed-only run
+#   (deployed sp500 champions only, ~14 min) + a WEEKLY full 5-cell run (candidate
+#   refresh). See scripts/backtests/systemd/README.md
 ```
+
+**Cadence tiering (V1.6 seed track, 2026-07-02):** the full 5-cell run is ~30–60 min — ~half of it the sequential ~1,006-ticker russell1000 seed + its two ~10-min builds, all for the non-deployed comparison candidates. `--deployed-only` runs just the two deployed sp500 champions (one sp500 build, sp500-only seed) → **~14 min daily**; a weekly systemd unit runs the full cadence to refresh the candidates (backfilled). Independently, the V1.6 feature-build refactor (F16-meta 93→1 pass + native `groupby.rolling`/`shift`, both bit-identical) cut the sp500 build 279 s → 209 s. See `docs/gbdt/V1.6_incremental_feature_cache_plan.md`.
 
 **View the log** — `streamlit run dashboards/backtests/app.py`: a read-only dashboard over the forward log. **Predictions** tab = one big-card panel per model (ticker large, colour-coded by **lift** = p ÷ base rate, with the company name + `target`/`stop` price levels beneath), then a cross-model **consensus** panel (names clearing the ≥3/5 majority), with the full all-picks and vote-detail tables collapsible below; the SMA200 **regime gate** lives in the **sidebar** (alongside the date / top-K / consensus-pool controls). **Backtests** tab = an **independent return simulation** of the logged picks (no backtest engine): a strategy selector (consensus vote, or a model's rank-1) + a start-date picker, with target / stop / max-alloc / horizon controls and a regime-ON toggle — each EOD signal is filled at the **next trading day's open** (no look-ahead), then exits at the first of +target / −stop / horizon (close-based, equal max-alloc sizing, gross of costs), rendered `plot_actions`-style (strategy equity vs the universe-index buy-hold with ticker-labelled buy/sell markers) with summary stats + a trades table; the benchmark is anchored to the chosen start date so it's identical across SPX strategies. No inference — reads the committed log; target/stoploss prices come from the `us_equities_data` cache and company names from the `us_equities_names` table (below), both cache-only. (Tabs were renamed from Snapshot / History.)
 
