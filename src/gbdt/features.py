@@ -70,6 +70,23 @@ def _per_ticker(series: pd.Series, fn) -> pd.Series:
     return series.groupby(level="ticker", group_keys=False).apply(fn)
 
 
+def _roll(series: pd.Series, n: int, op: str) -> pd.Series:
+    """Native per-ticker trailing rolling agg (``min_periods=n``), realigned to
+    ``series.index``. Bit-identical to
+    ``_per_ticker(series, lambda s: getattr(s.rolling(n, min_periods=n), op)())``
+    but runs one native Cython ``groupby.rolling`` pass instead of a Python
+    ``groupby.apply`` (V1.6 Phase 1b — ~2.4× per rolling call, no split/combine
+    overhead)."""
+    rolled = getattr(series.groupby(level="ticker").rolling(n, min_periods=n), op)()
+    return rolled.droplevel(0).reindex(series.index)
+
+
+def _shift(series: pd.Series, n: int) -> pd.Series:
+    """Native per-ticker shift — bit-identical to
+    ``_per_ticker(series, lambda s: s.shift(n))`` (V1.6 Phase 1b)."""
+    return series.groupby(level="ticker").shift(n)
+
+
 def _rolling_pct_rank(s: pd.Series, n: int) -> pd.Series:
     """Trailing percentile rank of the *current* value within its N-window:
     the fraction of the window ``<=`` the last value.
@@ -91,7 +108,7 @@ def _safe_log_returns(close: pd.Series) -> pd.Series:
     # which then propagates through .diff() and pollutes downstream
     # rolling-std / realized-vol / beta. Replace 0 → NaN so log → NaN and
     # the NaN flows through cleanly (zero-denom #182).
-    return _per_ticker(close, lambda s: np.log(s.replace(0, np.nan)).diff())
+    return np.log(close.replace(0, np.nan)).groupby(level="ticker").diff()
 
 
 def _close(panel: pd.DataFrame) -> pd.Series:
@@ -120,9 +137,7 @@ def stock_return_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     for N in lookbacks:
         # Guard: prior close of 0 (sparse/halted ticker) would emit ±inf; route
         # to NaN so the backend's missing-value path handles it (zero-denom #182).
-        out[f"stock_return_{N}"] = _per_ticker(
-            close, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
-        )
+        out[f"stock_return_{N}"] = close / _shift(close, N).replace(0, np.nan) - 1.0
     return pd.DataFrame(out).reindex(panel.index)
 
 
@@ -166,9 +181,7 @@ def realized_vol_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     sqrt_ann = float(np.sqrt(annualization))
     out = {}
     for N in lookbacks:
-        out[f"realized_vol_{N}"] = _per_ticker(
-            rets, lambda s, n=N: s.rolling(n, min_periods=n).std() * sqrt_ann,
-        )
+        out[f"realized_vol_{N}"] = _roll(rets, N, "std") * sqrt_ann
     return pd.DataFrame(out).reindex(panel.index)
 
 
@@ -196,7 +209,7 @@ def drawdown_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
     high = panel["high"]
     out = {}
     for N in lookbacks:
-        rolling_max = _per_ticker(high, lambda s, n=N: s.rolling(n, min_periods=n).max())
+        rolling_max = _roll(high, N, "max")
         # Guard: rolling high max of 0 (all-zero highs on a halted ticker) → NaN
         # not ±inf (zero-denom #182).
         out[f"drawdown_{N}"] = close / rolling_max.replace(0, np.nan) - 1.0
@@ -208,7 +221,7 @@ def runup_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS) -
     low = panel["low"]
     out = {}
     for N in lookbacks:
-        rolling_min = _per_ticker(low, lambda s, n=N: s.rolling(n, min_periods=n).min())
+        rolling_min = _roll(low, N, "min")
         # Guard: rolling low min of 0 (zero-low bar on a sparse / halted
         # ticker) → NaN, not ±inf (zero-denom #182).
         out[f"runup_{N}"] = close / rolling_min.replace(0, np.nan) - 1.0
@@ -248,7 +261,7 @@ def _volume_ratio_N(panel: pd.DataFrame, lookbacks):
     vol = panel["volume"].astype(float)
     out = {}
     for N in lookbacks:
-        avg = _per_ticker(vol, lambda s, n=N: s.rolling(n, min_periods=n).mean())
+        avg = _roll(vol, N, "mean")
         out[f"volume_ratio_{N}"] = vol / avg.replace(0, np.nan)
     return out
 
@@ -272,18 +285,17 @@ def _obv_N(panel: pd.DataFrame, lookbacks):
 
     out = {}
     for N in lookbacks:
-        diff = _per_ticker(obv, lambda s, n=N: s - s.shift(n))
-        avg_v = _per_ticker(vol, lambda s, n=N: s.rolling(n, min_periods=n).mean())
+        diff = obv - _shift(obv, N)
+        avg_v = _roll(vol, N, "mean")
         out[f"obv_{N}"] = diff / (avg_v.replace(0, np.nan) * N)
     return out
 
 
 def _vol_ret_corr_N(panel: pd.DataFrame, lookbacks):
     rets = _safe_log_returns(panel["close"])
-    vol_change = _per_ticker(
-        panel["volume"].astype(float),
-        lambda s: np.log(s.replace(0, np.nan)).diff(),
-    )
+    vol_change = np.log(
+        panel["volume"].astype(float).replace(0, np.nan)
+    ).groupby(level="ticker").diff()
     tickers = panel.index.get_level_values("ticker").unique()
     out = {}
     for N in lookbacks:
@@ -305,8 +317,8 @@ def _dollar_move_zscore_N(panel: pd.DataFrame, lookbacks):
     dm = close.diff().abs() * vol
     out = {}
     for N in lookbacks:
-        mean = _per_ticker(dm, lambda s, n=N: s.rolling(n, min_periods=n).mean())
-        std = _per_ticker(dm, lambda s, n=N: s.rolling(n, min_periods=n).std())
+        mean = _roll(dm, N, "mean")
+        std = _roll(dm, N, "std")
         out[f"dollar_move_zscore_{N}"] = (dm - mean) / std.replace(0, np.nan)
     return out
 
@@ -359,12 +371,8 @@ def higher_moments(panel: pd.DataFrame,
     rets = _safe_log_returns(_close(panel))
     out = {}
     for N in lookbacks:
-        out[f"returns_skew_{N}"] = _per_ticker(
-            rets, lambda s, n=N: s.rolling(n, min_periods=n).skew(),
-        )
-        out[f"returns_kurt_{N}"] = _per_ticker(
-            rets, lambda s, n=N: s.rolling(n, min_periods=n).kurt(),
-        )
+        out[f"returns_skew_{N}"] = _roll(rets, N, "skew")
+        out[f"returns_kurt_{N}"] = _roll(rets, N, "kurt")
     return pd.DataFrame(out, index=panel.index)
 
 
@@ -412,14 +420,14 @@ def range_vol(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS,
     ln_hl_sq = (np.log(h / l_safe)) ** 2
     out = {}
     for N in lookbacks:
-        park_var = _per_ticker(ln_hl_sq, lambda s, n=N: s.rolling(n, min_periods=n).mean())
+        park_var = _roll(ln_hl_sq, N, "mean")
         out[f"parkinson_{N}"] = np.sqrt(park_var.clip(lower=0.0) / (4.0 * np.log(2.0))) * sqrt_ann
 
     ln_hl = np.log(h / l_safe)
     ln_co = np.log(c / o.replace(0, np.nan))
     gk_term = 0.5 * (ln_hl ** 2) - (2 * np.log(2.0) - 1.0) * (ln_co ** 2)
     for N in lookbacks:
-        gk_var = _per_ticker(gk_term, lambda s, n=N: s.rolling(n, min_periods=n).mean())
+        gk_var = _roll(gk_term, N, "mean")
         out[f"garman_klass_{N}"] = np.sqrt(gk_var.clip(lower=0.0)) * sqrt_ann
     return pd.DataFrame(out, index=panel.index)
 
@@ -433,7 +441,7 @@ def sma_distance_N(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     close = _close(panel)
     out = {}
     for N in lookbacks:
-        sma = _per_ticker(close, lambda s, n=N: s.rolling(n, min_periods=n).mean())
+        sma = _roll(close, N, "mean")
         out[f"sma_distance_{N}"] = close / sma.replace(0, np.nan) - 1.0
     return pd.DataFrame(out, index=panel.index)
 
@@ -457,10 +465,8 @@ def vol_regime(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKBACKS
         v = rvol[f"realized_vol_{N}"]
         # Guard: prior realized_vol of 0 (e.g. a flat-price window with zero
         # log-return variance) → NaN, not ±inf (zero-denom #182).
-        out[f"vol_change_{N}"] = _per_ticker(
-            v, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
-        )
-        out[f"vol_of_vol_{N}"] = _per_ticker(v, lambda s, n=N: s.rolling(n, min_periods=n).std())
+        out[f"vol_change_{N}"] = v / _shift(v, N).replace(0, np.nan) - 1.0
+        out[f"vol_of_vol_{N}"] = _roll(v, N, "std")
         # Vectorized trailing percentile rank — see _rolling_pct_rank
         # (bit-identical to the prior rolling().apply, native Cython).
         out[f"vol_pct_{N}"] = _per_ticker(
@@ -555,16 +561,14 @@ def f16_underlying(panel: pd.DataFrame, lookbacks: Iterable[int] = DEFAULT_LOOKB
     out = {}
     for N in lookbacks:
         # Guard: prior close of 0 → NaN, mirroring stock_return_N (#182).
-        sr = _per_ticker(
-            close, lambda s, n=N: s / s.shift(n).replace(0, np.nan) - 1.0
-        )
-        mean = _per_ticker(sr, lambda s, n=N: s.rolling(n, min_periods=n).mean())
-        std = _per_ticker(sr, lambda s, n=N: s.rolling(n, min_periods=n).std())
+        sr = close / _shift(close, N).replace(0, np.nan) - 1.0
+        mean = _roll(sr, N, "mean")
+        std = _roll(sr, N, "std")
         out[f"stock_return_zscore_{N}"] = (sr - mean) / std.replace(0, np.nan)
 
         rv = rvol[f"realized_vol_{N}"]
-        rvmean = _per_ticker(rv, lambda s, n=N: s.rolling(n, min_periods=n).mean())
-        rvstd = _per_ticker(rv, lambda s, n=N: s.rolling(n, min_periods=n).std())
+        rvmean = _roll(rv, N, "mean")
+        rvstd = _roll(rv, N, "std")
         out[f"realized_vol_zscore_{N}"] = (rv - rvmean) / rvstd.replace(0, np.nan)
     return pd.DataFrame(out, index=panel.index)
 
