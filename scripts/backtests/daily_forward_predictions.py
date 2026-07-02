@@ -48,6 +48,7 @@ SCRATCH = REPO / "results/backtests/_019_fwd_oos"  # gitignored fresh CSVs
 TOP_K = 10            # rows logged per (date, model)
 MIN_FREE_GB = 10.0
 REGIME_MA = 200       # SMA window for the deployment gate
+SEED_JOBS = 8         # parallel fetch workers for the seed (network I/O-bound; V1.6 S2)
 
 # Cells tracked by the cadence. ``deployed=True`` are the two validated sp500
 # champions wired into /daily-predictions (the signal record). ``deployed=False``
@@ -99,7 +100,8 @@ def _seed(universes: list[str], end: str) -> None:
         r = subprocess.run(
             [sys.executable, "-m", "data_pipelines", "seed", "--domain", "us_equities",
              "--universe", uni, "--start",
-             str((pd.Timestamp(end) - pd.Timedelta(days=20)).date()), "--end", end],
+             str((pd.Timestamp(end) - pd.Timedelta(days=20)).date()), "--end", end,
+             "--jobs", str(SEED_JOBS)],
             cwd=REPO, capture_output=True, text=True)
         tail = r.stdout.strip().splitlines()[-1:] or [r.stderr.strip()[-200:]]
         print(f"[seed] {uni}: {tail[0]}")

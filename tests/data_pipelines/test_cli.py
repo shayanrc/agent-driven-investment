@@ -215,6 +215,28 @@ class TestSeedCmd:
         out = capsys.readouterr().out
         assert "3/3 succeeded" in out
 
+    def test_seed_parallel_writes_all_tickers(
+        self, us_equities_with_fake_adapters, tmp_path, capsys
+    ):
+        # --jobs > 1 fetches concurrently; the per-DB write lock must keep every
+        # ticker's rows intact (no clobber), so the cache is identical to the
+        # sequential path (goal.md determinism) and all 3 tickers land.
+        domain, root = us_equities_with_fake_adapters
+        with patch("data_pipelines.__main__.load_us_equities_universe",
+                   side_effect=lambda name: ["NYSE:JPM", "NASDAQ:AAPL", "NYSE:WMT"]
+                   if name == "mini" else []):
+            rc = main([
+                "--data-root", str(root),
+                "seed", "--universe", "mini", "--jobs", "3",
+                "--start", "2026-01-05", "--end", "2026-01-07",
+            ])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "jobs=3" in out and "3/3 succeeded" in out
+        from data_pipelines.cache import list_cached_identifiers
+        cached = set(list_cached_identifiers(root, domain))
+        assert {"NYSE:JPM", "NASDAQ:AAPL", "NYSE:WMT"} <= cached
+
 
 class TestListCachedCmd:
     def test_list_cached_after_fetch(
