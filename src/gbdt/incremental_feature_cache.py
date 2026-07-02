@@ -75,6 +75,45 @@ class SeamMismatch(RuntimeError):
     warmup was too short or a historical bar was revised. The caller must rebuild."""
 
 
+# ---------------------------------------------------------------------------
+# Phase 3 — F16 streak-state carry (class B)
+# ---------------------------------------------------------------------------
+#
+# ``signed_days_outside_band`` is an UNBOUNDED run-length: a persistent cross-
+# sectional outlier can sit outside its band for >500 td, so a fixed tail rebuild
+# truncates the streak (observed: max 975 on sp500). Instead of rebuilding the
+# streak, we CONTINUE it from the value at ``cached_max_date`` (which encodes
+# ``sign × run_length``) over the new dates' z-underlyings. On the SAME z-values the
+# continuation is bit-identical to a full rebuild; the only residual is the rare
+# boundary flip where a new z sits within ~1e-10 of ±σ (the tail's z differs from a
+# full build by that much) — the same tolerated instability as the current cadence's
+# 1e-4 p_raw self-check, bounded to ≤ (#new dates) since a flip can't propagate past
+# the next band re-entry.
+
+
+def _continue_streaks(prev: np.ndarray, z_new: np.ndarray, sigma: float) -> np.ndarray:
+    """Continue ``M`` signed-days-outside-band streaks over ``k`` new dates.
+
+    ``prev`` (M,) = the streak value at ``cached_max_date`` (``sign × run_length``,
+    0 = in band, NaN = last obs missing). ``z_new`` (M, k) = new z-values. Returns
+    (M, k). Mirrors :func:`gbdt.features._signed_days_outside_band_one` exactly (same
+    ±σ sides, in-band reset to 0, NaN → NaN + streak reset), seeded from ``prev``.
+    """
+    M, k = z_new.shape
+    out = np.empty((M, k), dtype=float)
+    p = prev.astype(float).copy()
+    for i in range(k):
+        z = z_new[:, i]
+        nan = np.isnan(z)
+        side = np.where(z >= sigma, 1.0, np.where(z <= -sigma, -1.0, 0.0))
+        extend = (~np.isnan(p)) & (p != 0.0) & (np.sign(p) == side) & (side != 0.0)
+        v = np.where(side == 0.0, 0.0, np.where(extend, p + side, side))
+        v = np.where(nan, np.nan, v)
+        out[:, i] = v
+        p = np.where(nan, np.nan, v)
+    return out
+
+
 def _panel_dates(obj: pd.DataFrame | pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(obj.index.get_level_values("date").unique()).sort_values()
 
@@ -161,4 +200,89 @@ def extend_matrix(
         raise SeamMismatch(f"incremental extend seam check failed: {why}")
     new_rows = tail_X[tail_X.index.get_level_values("date") > cached_max_date]
     new_rows = new_rows.reindex(columns=cached_X.columns)  # exact cached column set/order
+    return pd.concat([cached_X, new_rows])
+
+
+def _slice_tail(panel, index_df, cached_max_date, warmup_td):
+    dates = _panel_dates(panel)
+    ts = _tail_start(dates, pd.Timestamp(cached_max_date), warmup_td)
+    ptail = panel[panel.index.get_level_values("date") >= ts]
+    itail = index_df[index_df.index >= ts]
+    return ptail, itail
+
+
+def _extend_streak_meta(cached_X, underlyings, band_cols, cached_max_date, sigmas):
+    """New-date F16-meta (signed-days-outside-band) rows via streak-state carry.
+
+    ``underlyings`` = the 31 z-columns (``f16_meta_underlying_columns``) rebuilt on
+    the tail. For each ``<base>_outside_band_<σ>`` column we continue the per-ticker
+    streak from the cached value at ``cached_max_date`` over the new-date z of
+    ``<base>``. Returns a ``(date, ticker)``-indexed frame of the new-date meta cols.
+    """
+    cmd = pd.Timestamp(cached_max_date)
+    new_u = underlyings[underlyings.index.get_level_values("date") > cmd]
+    new_dates = _panel_dates(new_u)
+    lab2sig = {(str(int(s)) if s == int(s) else str(s).replace(".", "p")): s for s in sigmas}
+    out = {}
+    for band_col in band_cols:
+        base, label = band_col.rsplit("_outside_band_", 1)
+        sigma = lab2sig[label]
+        zwide = new_u[base].unstack("ticker").reindex(index=new_dates)
+        tickers = zwide.columns
+        prev = cached_X[band_col].xs(cmd, level="date").reindex(tickers).to_numpy(dtype=float)
+        cont = _continue_streaks(prev, zwide.to_numpy(dtype=float).T, sigma)
+        out[band_col] = pd.DataFrame(cont.T, index=new_dates, columns=tickers).stack(future_stack=True)
+    new_band = pd.DataFrame(out)
+    new_band.index = new_band.index.set_names(["date", "ticker"])
+    return new_band
+
+
+def extend_matrix_full(
+    cached_X: pd.DataFrame,
+    panel: pd.DataFrame,
+    index_df: pd.DataFrame,
+    *,
+    annualization: int,
+    cached_max_date: pd.Timestamp | str,
+    lookbacks=gbdt_features.DEFAULT_LOOKBACKS,
+    warmup_td: int = DEFAULT_WARMUP_TD,
+    check_td: int = DEFAULT_CHECK_TD,
+    sigmas: tuple[float, ...] = (1.0, 2.0, 3.0),
+) -> pd.DataFrame:
+    """Extend a FULL matrix (all families incl F16) by dates ``> cached_max_date``.
+
+    Bounded families (F1–F15 + F16-native) come from a tail rebuild + seam check;
+    the F16-meta streak (class B, unbounded) is CONTINUED from the cached state (a
+    tail can't capture a >warmup-length streak). Raises :class:`SeamMismatch` if the
+    bounded-family seam check fails. Matches a full build to the ~1e-4 FP contract on
+    bounded cols; F16-meta is exact except rare ±σ boundary flips (bounded to the
+    new-date span, tolerated by the downstream 1e-4 p_raw self-check).
+    """
+    cmd = pd.Timestamp(cached_max_date)
+    ptail, itail = _slice_tail(panel, index_df, cmd, warmup_td)
+    band_cols = [c for c in cached_X.columns if "outside_band" in c]
+    nonband = [c for c in cached_X.columns if "outside_band" not in c]
+
+    # Bounded tail: F1–F15 + F16-native (12 rolling-z), WITHOUT the 93-col F16-meta
+    # streak (a tail can't capture it — state-carried below). Skipping that build is
+    # the speedup; f16_nat is threaded into the meta-underlyings to avoid a recompute.
+    tail_stable = gbdt_features.build_feature_matrix(
+        ptail, itail, annualization=annualization, families=BOUNDED_FAMILIES,
+    ).dropna(axis=1, how="all")
+    f16nat = gbdt_features.f16_underlying(ptail, lookbacks, annualization)
+    tail_nonband = pd.concat([tail_stable, f16nat], axis=1).reindex(columns=nonband)
+
+    ok, why = seam_ok(cached_X[nonband], tail_nonband, cmd, check_td=check_td)
+    if not ok:
+        raise SeamMismatch(f"bounded-family seam check failed: {why}")
+
+    new_mask = tail_nonband.index.get_level_values("date") > cmd
+    new_nonband = tail_nonband[new_mask]
+
+    underlyings = gbdt_features.f16_meta_underlying_columns(
+        ptail, lookbacks, annualization, f16_nat=f16nat,
+    )
+    new_band = _extend_streak_meta(cached_X, underlyings, band_cols, cmd, sigmas).reindex(new_nonband.index)
+
+    new_rows = pd.concat([new_nonband, new_band], axis=1).reindex(columns=cached_X.columns)
     return pd.concat([cached_X, new_rows])

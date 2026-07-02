@@ -82,3 +82,45 @@ def test_seam_check_rejects_revised_history():
             cached, panel, index_df, annualization=250,
             families=inc.BOUNDED_FAMILIES, cached_max_date=T1,
         )
+
+
+def test_continue_streaks_matches_full_streak_bit_identical():
+    """Phase 3: continuing a streak from the carried state reproduces the full
+    signed-days-outside-band run bit-for-bit (same z-values), across NaN resets,
+    sign flips, in-band resets, and a run that straddles the split point."""
+    from gbdt.features import _signed_days_outside_band_one
+    rng = np.random.default_rng(3)
+    for sigma in (1.0, 2.0, 3.0):
+        for trial in range(25):
+            n = int(rng.integers(60, 200))
+            z = rng.standard_normal(n) * 1.8
+            z[rng.integers(0, n, size=3)] = np.nan   # NaN resets
+            z[10:40] = 2.5                            # a long +run to straddle the split
+            full = _signed_days_outside_band_one(z, sigma)
+            T = int(rng.integers(15, n - 5))          # split inside/after the run
+            prev = np.array([full[T]])
+            z_new = z[T + 1:].reshape(1, -1)
+            cont = inc._continue_streaks(prev, z_new, sigma)[0]
+            assert np.array_equal(cont, full[T + 1:], equal_nan=True), \
+                f"sigma={sigma} trial={trial} T={T}: continuation diverges from full streak"
+
+
+def test_extend_matrix_full_matches_full_build_incl_f16():
+    """Phase 3: extend_matrix_full (bounded tail + F16-native + F16-meta streak-state
+    carry) matches a full build INCLUDING the F16 streak, within FP tolerance
+    (state-carry is exact on the same z-values; stable cols ~1e-13 on synthetic)."""
+    panel, index_df = _synth(750, 5, seed=4)
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    T1 = dates[600]
+    famALL = list(F._ALL_FAMILIES)
+    cached = F.build_feature_matrix(
+        panel[panel.index.get_level_values("date") <= T1], index_df[index_df.index <= T1],
+        families=famALL, annualization=250,
+    ).dropna(axis=1, how="all")
+    full = F.build_feature_matrix(panel, index_df, families=famALL, annualization=250).dropna(axis=1, how="all")
+
+    ext = inc.extend_matrix_full(cached, panel, index_df, annualization=250, cached_max_date=T1)
+    assert list(ext.columns) == list(full.columns)
+    ext = ext.reindex(full.index)
+    assert np.allclose(ext.to_numpy(float), full.to_numpy(float), rtol=1e-6, atol=1e-9, equal_nan=True), \
+        "extend_matrix_full (incl F16 state-carry) diverges from the full build"
