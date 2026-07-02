@@ -19,15 +19,16 @@ One verb: **produce and log today's forward predictions** for the tracked cells 
 
 ## Usage
 
-This is a **foreground run under ~30 minutes** (five cells, one shared incremental build per universe — sp500/nasdaq ~2–3 min each; the russell1000 build is heavier because its candidate test windows force a ~2016 warmup anchor — plus the seed), so run it in the **foreground with a `timeout`** — do NOT background it (per `.claude/memories/feedback-sub-agent-foreground.md`; the ≥2 h background+Monitor+ScheduleWakeup pattern does not apply here):
+This is a **foreground run** — full 5-cell ~30–60 min, or ~14 min with `--deployed-only` (five cells, one shared incremental build per universe — sp500/nasdaq ~2–3 min each; the russell1000 build is heavier because its candidate test windows force a ~2016 warmup anchor — plus the seed), so run it in the **foreground with a `timeout`** — do NOT background it (per `.claude/memories/feedback-sub-agent-foreground.md`; the ≥2 h background+Monitor+ScheduleWakeup pattern does not apply here):
 
 ```bash
-uv run python -m scripts.backtests.daily_forward_predictions [--commit] [--end YYYY-MM-DD]
+uv run python -m scripts.backtests.daily_forward_predictions [--deployed-only] [--commit] [--end YYYY-MM-DD]
 # foreground with a guard timeout, e.g. 1800s
 ```
 
 - `--commit` — commit the appended log locally (recommended for the unattended timer path; omit for an interactive run you want to review before committing).
 - `--end` — as-of date (default: today). The pipeline uses data through the latest available trading day ≤ end.
+- `--deployed-only` — **daily fast path** (V1.6 seed track): seed + score ONLY the two deployed sp500 champions, skipping the three comparison candidates and their heavier russell1000/nasdaq100 universes (the ~1,006-ticker russell seed + its two ~10-min builds are the bulk of the full ~60-min cadence). Cuts the daily run to ~14 min; the candidates are refreshed by a separate **weekly** systemd unit (`daily-predictions-weekly`), their forward series weekly-sampled + backfilled. Omit for the full 5-cell run (interactive or weekly).
 
 ## After an interactive run, report the read
 
@@ -39,7 +40,7 @@ When invoked in a session (not the silent timer), after the run finishes summari
 
 ## Notes
 
-- **Unattended automation** (not-always-on machine): a **systemd *user* timer with `Persistent=true`** fires the missed run on next wake/login; the backfill logic makes that correct. Units: `scripts/backtests/systemd/`.
+- **Unattended automation** (not-always-on machine): **two systemd *user* timers with `Persistent=true`** — a **daily** one (`--deployed-only`, sp500 champions, ~14 min) + a **weekly** one (full 5-cell cadence, candidate refresh); the backfill makes missed runs correct. Units: `scripts/backtests/systemd/`.
 - The full per-(date,ticker) CSVs are **gitignored** (large, exactly regenerable via the same `--since` command); only the compact top-K **forward log** is checked in.
 - **View the log** — a read-only Streamlit dashboard: `streamlit run dashboards/backtests/app.py` (per-model + consensus big-card panels — ticker colour-coded by lift, company name, target/stop levels — regime gate in the sidebar, collapsible detail tables). Company names come from an **additive `us_equities_names` table** in `processed.db` (not `data_pipelines`-managed), refreshed by `scripts/backtests/fetch_ticker_names.py` (incremental; `--refresh-all`, `--stale-days N`). See `_019`.
 - Tracks **five cells**: the two deployed sp500 champions (`deployed=True`, `[[project-gbdt-tuning-playbook]]`) + three higher-ranked registry candidates (`deployed=False`) across sp500/russell1000/nasdaq100, backfilled from **2026-01-01 where OOS-valid** — the two russell candidates (test_ends 2024-10 / 2025-05) reach January; `nasdaq_40_50` (test_end 2026-03-12) clamps to its 2026-03-13 OOS start since January is in its test window — for comparison, NOT promoted (a champion swap is a separate decision; see `_019`). The `deployed` column distinguishes them in the log. Adding/removing cells is an edit to `CELLS` in the runner.
