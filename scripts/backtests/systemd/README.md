@@ -6,23 +6,33 @@ the most recent missed occurrence on the next boot/wake/login; the pipeline itse
 self-gates (no-op on non-trading days) and **backfills** every missed trading day,
 so a weekend / holiday / vacation gap is caught up correctly on the next run.
 
+**Two tiers (V1.6 seed track).** The **daily** timer runs `--deployed-only`: it
+seeds + scores only the two deployed sp500 champions (the signal record), skipping
+the heavier russell1000/nasdaq100 comparison candidates, so the daily run stays fast
+(one sp500 build; no ~1,006-ticker russell seed). A **weekly** timer
+(`daily-predictions-weekly`) runs the FULL cadence (all five cells) to refresh the
+candidates — the backfill logs every candidate day since the last full run. Both
+write the same forward log.
+
 On-demand alternative: just run `/daily-predictions` (or the runner directly) when
 you sit down — the backfill makes a manual cadence equally correct. The timer is
 only for "I don't want to remember to."
 
 ## Install (one time)
 
-1. Edit the two `/path/to/agent-driven-investment` placeholders in
-   `daily-predictions.service` to your repo root (and confirm the venv path
-   `.venv/bin/python` exists — `uv sync` creates it).
+1. Edit the `/path/to/agent-driven-investment` placeholders in **both**
+   `daily-predictions.service` and `daily-predictions-weekly.service` to your repo
+   root (and confirm the venv path `.venv/bin/python` exists — `uv sync` creates it).
 2. Link the units into the user systemd dir and enable the timer:
 
    ```bash
    mkdir -p ~/.config/systemd/user
-   ln -snf "$PWD/scripts/backtests/systemd/daily-predictions.service" ~/.config/systemd/user/
-   ln -snf "$PWD/scripts/backtests/systemd/daily-predictions.timer"   ~/.config/systemd/user/
+   for u in daily-predictions.service daily-predictions.timer \
+            daily-predictions-weekly.service daily-predictions-weekly.timer; do
+     ln -snf "$PWD/scripts/backtests/systemd/$u" ~/.config/systemd/user/
+   done
    systemctl --user daemon-reload
-   systemctl --user enable --now daily-predictions.timer
+   systemctl --user enable --now daily-predictions.timer daily-predictions-weekly.timer
    ```
 
 3. (Optional, so it runs while you're logged out too — otherwise it runs on login):
