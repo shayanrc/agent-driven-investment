@@ -114,6 +114,27 @@ def _continue_streaks(prev: np.ndarray, z_new: np.ndarray, sigma: float) -> np.n
     return out
 
 
+# ---------------------------------------------------------------------------
+# Phase 4 — cross-sectional eligibility boundary (class C)
+# ---------------------------------------------------------------------------
+
+
+def _require_stable_membership(cached_X: pd.DataFrame, panel: pd.DataFrame) -> None:
+    """A ticker that has crossed the 1,600-row eligibility floor since the cache
+    re-ranks the cross-sectional features (F14, F7-xs) at EVERY date — the extend
+    can't reproduce that from a tail, so fall back to a full rebuild. (The seam check
+    would also trip, since the new member shifts the overlap cross-sections; this
+    makes the intent explicit + cheap, *before* building.) A ticker present in the
+    cache but absent now (delisted) is fine — it simply gets no new rows.
+    """
+    newly = (set(panel.index.get_level_values("ticker").unique())
+             - set(cached_X.index.get_level_values("ticker").unique()))
+    if newly:
+        raise SeamMismatch(
+            f"{len(newly)} newly-eligible ticker(s) since the cache "
+            f"(e.g. {sorted(newly)[:3]}) — cross-sections changed; rebuild.")
+
+
 def _panel_dates(obj: pd.DataFrame | pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(obj.index.get_level_values("date").unique()).sort_values()
 
@@ -191,6 +212,7 @@ def extend_matrix(
     bit-identical to a full rebuild. Raises :class:`SeamMismatch` if the seam check
     fails (the caller falls back to a full rebuild + cache refresh)."""
     cached_max_date = pd.Timestamp(cached_max_date)
+    _require_stable_membership(cached_X, panel)
     tail_X = build_tail(
         panel, index_df, annualization=annualization, families=families,
         cached_max_date=cached_max_date, warmup_td=warmup_td,
@@ -259,6 +281,7 @@ def extend_matrix_full(
     new-date span, tolerated by the downstream 1e-4 p_raw self-check).
     """
     cmd = pd.Timestamp(cached_max_date)
+    _require_stable_membership(cached_X, panel)
     ptail, itail = _slice_tail(panel, index_df, cmd, warmup_td)
     band_cols = [c for c in cached_X.columns if "outside_band" in c]
     nonband = [c for c in cached_X.columns if "outside_band" not in c]

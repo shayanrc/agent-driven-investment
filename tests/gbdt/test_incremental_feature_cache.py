@@ -124,3 +124,22 @@ def test_extend_matrix_full_matches_full_build_incl_f16():
     ext = ext.reindex(full.index)
     assert np.allclose(ext.to_numpy(float), full.to_numpy(float), rtol=1e-6, atol=1e-9, equal_nan=True), \
         "extend_matrix_full (incl F16 state-carry) diverges from the full build"
+
+
+def test_extend_rejects_newly_eligible_ticker():
+    """Phase 4: a ticker present now but absent from the cache (crossed the 1,600-row
+    eligibility floor) re-ranks the cross-sections — the extend must refuse and fall
+    back (SeamMismatch), rather than emit an inconsistent partial ticker."""
+    panel, index_df = _synth(750, 5, seed=5)
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    T1 = dates[600]
+    tickers = sorted(panel.index.get_level_values("ticker").unique())
+    drop = tickers[-1]  # simulate: not yet eligible when the cache was built
+    cp = panel[panel.index.get_level_values("ticker") != drop]
+    cached = F.build_feature_matrix(
+        cp[cp.index.get_level_values("date") <= T1], index_df[index_df.index <= T1],
+        families=inc.BOUNDED_FAMILIES, annualization=250,
+    ).dropna(axis=1, how="all")
+    with pytest.raises(inc.SeamMismatch):
+        inc.extend_matrix(cached, panel, index_df, annualization=250,
+                          families=inc.BOUNDED_FAMILIES, cached_max_date=T1)
