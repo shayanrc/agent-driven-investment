@@ -29,14 +29,18 @@ import pandas as pd
 import yaml
 
 import glob
+import hashlib
 import json
 
 from gbdt import features as gbdt_features
+from gbdt import incremental_feature_cache as _ifc
 from gbdt.data import load_panel
 from gbdt.model import CatBoostModel, XGBoostModel
 
 VALIDATION_TOL = 1e-4
 CACHE_DIR = "data/gbdt_feature_cache"
+# V1.6 Phase 5 — on-disk incremental feature-matrix cache (extend, don't rebuild).
+INCREMENTAL_CACHE_DIR = "data/gbdt_incremental_cache"
 
 
 def _training_panel_index(universe: str, test_keys: set) -> tuple[pd.Index, pd.Timestamp] | None:
@@ -159,15 +163,28 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
         panel_cache[pk] = load_panel(universe, start=warmup_start, end=end, cache_only=True)
     panel_obj = panel_cache[pk]
     panel = panel_obj.panel
+    align_sig = "noalign"
     if align_panel:
-        panel = _align_panel(panel, cell, universe)
+        aligned = _align_panel(panel, cell, universe)
+        if len(aligned) != len(panel):
+            dropped = sorted(panel.index.difference(aligned.index).tolist())
+            align_sig = hashlib.sha256(
+                "|".join(f"{d}:{t}" for d, t in dropped).encode("utf-8")
+            ).hexdigest()[:16]
+        panel = aligned
 
-    # Feature build keyed by the ALIGNED row-set — identical alignment ⇒ one build.
+    # Feature build keyed by the ALIGNED row-set — identical alignment ⇒ one in-process
+    # build. The build itself goes through the on-disk INCREMENTAL cache (V1.6 Phase 5):
+    # load the cached matrix + extend only the new dates (seam-checked), else full
+    # rebuild. ``align_sig`` keys per-cell alignment so two cells never collide on one
+    # entry. Result matches a from-scratch build to the ~1e-4 contract (frozen historical
+    # rows incl the test window stay exact, so the self-check below is unaffected).
     fk = (universe, warmup_start, int(pd.util.hash_pandas_object(panel.index, index=False).sum()))
     if fk not in feat_cache:
-        feat_cache[fk] = gbdt_features.build_feature_matrix(
-            panel, panel_obj.index_series, annualization=panel_obj.annualization_factor,
-        ).dropna(axis=1, how="all")
+        feat_cache[fk] = _ifc.build_or_extend(
+            INCREMENTAL_CACHE_DIR, universe, warmup_start, panel, panel_obj.index_series,
+            annualization=panel_obj.annualization_factor, align_signature=align_sig,
+        )
     X = feat_cache[fk]
 
     missing = [f for f in feats if f not in X.columns]

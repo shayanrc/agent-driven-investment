@@ -331,15 +331,20 @@ _MATRIX_FILE = "matrix.parquet"
 _META_FILE = "meta.json"
 
 
-def cache_key(universe: str, warmup_start, *, min_rows: int = 1600) -> str:
+def cache_key(universe: str, warmup_start, *, min_rows: int = 1600,
+              align_signature: str = "noalign") -> str:
     """Deterministic cache key (SHA-256). Stable as the panel grows; invalidated by a
     ``features.py`` edit (via ``feature_code_signature``), a different universe /
-    warmup anchor / eligibility floor."""
+    warmup anchor / eligibility floor / panel ALIGNMENT. ``align_signature`` is a hash
+    of the gap-fill rows ``_align_panel`` drops — stable day-to-day (gap-fill is
+    historical, ≤ test_end) but distinct per cell when alignments differ, so two cells
+    never collide on one cache entry."""
     payload = {
         "schema": _CACHE_SCHEMA,
         "universe": universe,
         "warmup_start": str(warmup_start),
         "min_rows": int(min_rows),
+        "align_signature": align_signature,
         "code_signature": _feature_cache.feature_code_signature(),
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
@@ -401,13 +406,14 @@ def build_or_extend(
     *,
     annualization: int,
     min_rows: int = 1600,
+    align_signature: str = "noalign",
 ) -> pd.DataFrame:
     """Return the full feature matrix for ``panel`` (all families incl F16), using
     the on-disk incremental cache: load + ``extend_matrix_full`` when possible
     (seam-checked; falls back to a full rebuild on ``SeamMismatch`` — a changed
     alignment / revised bar / newly-eligible ticker), else a full build. Persists the
     result. Matches a from-scratch build to the ~1e-4 contract."""
-    key = cache_key(universe, warmup_start, min_rows=min_rows)
+    key = cache_key(universe, warmup_start, min_rows=min_rows, align_signature=align_signature)
     panel_max = _panel_dates(panel).max()
     hit = load(cache_root, key)
     if hit is not None:
