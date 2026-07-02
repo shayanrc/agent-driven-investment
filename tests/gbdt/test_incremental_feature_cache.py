@@ -143,3 +143,26 @@ def test_extend_rejects_newly_eligible_ticker():
     with pytest.raises(inc.SeamMismatch):
         inc.extend_matrix(cached, panel, index_df, annualization=250,
                           families=inc.BOUNDED_FAMILIES, cached_max_date=T1)
+
+
+def test_build_or_extend_roundtrip(tmp_path):
+    """Phase 5: build_or_extend caches on the first call, then loads + extends on the
+    second — matching a from-scratch full build (incl F16) within tolerance, and the
+    on-disk cache advances to the new panel max."""
+    panel, index_df = _synth(750, 5, seed=6)
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    T1 = dates[600]
+    ws = str(dates[0].date())  # fixed warmup_start (stable key)
+
+    p1 = panel[panel.index.get_level_values("date") <= T1]
+    i1 = index_df[index_df.index <= T1]
+    inc.build_or_extend(tmp_path, "synth", ws, p1, i1, annualization=250)   # cold build → cache
+    assert (tmp_path / inc.cache_key("synth", ws) / "matrix.parquet").exists()
+    assert inc.load(tmp_path, inc.cache_key("synth", ws))[1] == T1
+
+    X2 = inc.build_or_extend(tmp_path, "synth", ws, panel, index_df, annualization=250)  # load + extend
+    full = F.build_feature_matrix(panel, index_df, annualization=250).dropna(axis=1, how="all")
+    assert list(X2.columns) == list(full.columns)
+    X2 = X2.reindex(full.index)
+    assert np.allclose(X2.to_numpy(float), full.to_numpy(float), rtol=1e-6, atol=1e-9, equal_nan=True)
+    assert inc.load(tmp_path, inc.cache_key("synth", ws))[1] == dates.max()
