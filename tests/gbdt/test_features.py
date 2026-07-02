@@ -92,6 +92,40 @@ def test_signed_days_outside_band_streaks():
     assert list(out) == [0.0, 0.0, 1.0, 2.0, 3.0, 0.0, -1.0, -2.0, 0.0, 1.0]
 
 
+def test_signed_days_outside_band_meta_batched_matches_per_column_reference():
+    """V1.6 Phase 1a: the batched one-pass ``signed_days_outside_band_meta``
+    (single per-ticker ``groupby.apply`` over the frame) must be bit-identical to
+    the per-(column, sigma) ``_per_ticker`` reference it replaced — multi-ticker,
+    with NaN rows exercising the streak reset."""
+    rng = np.random.default_rng(7)
+    tickers = ["AAA", "BBB", "CCC"]
+    dates = pd.date_range("2020-01-01", periods=40, freq="D")
+    idx = pd.MultiIndex.from_product([dates, tickers], names=["date", "ticker"])
+    Z = pd.DataFrame(
+        rng.standard_normal((len(idx), 4)) * 1.5,
+        index=idx, columns=["za", "zb", "zc", "zd"],
+    ).sort_index()
+    Z.iloc[::37] = np.nan  # whole-row NaNs exercise the streak reset
+
+    sigmas = (1.0, 2.0, 3.0)
+    got = F.signed_days_outside_band_meta(Z, sigmas=sigmas)
+
+    # Reference = the pre-Phase-1a per-(column, sigma) implementation.
+    ref = {}
+    for col in Z.columns:
+        for sg in sigmas:
+            label = str(int(sg)) if sg == int(sg) else str(sg).replace(".", "p")
+            ref[f"{col}_outside_band_{label}"] = Z[col].groupby(
+                level="ticker", group_keys=False
+            ).apply(lambda s, g=sg: pd.Series(
+                F._signed_days_outside_band_one(s.to_numpy(), g), index=s.index))
+    ref = pd.DataFrame(ref)
+
+    assert list(got.columns) == list(ref.columns)
+    got2, ref2 = got.align(ref, axis=0)
+    assert np.array_equal(got2.to_numpy(), ref2.to_numpy(), equal_nan=True)
+
+
 # ---------------------------------------------------------------------------
 # Causality (leakage harness)
 # ---------------------------------------------------------------------------
