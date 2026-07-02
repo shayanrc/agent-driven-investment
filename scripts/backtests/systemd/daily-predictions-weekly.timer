@@ -1,0 +1,14 @@
+[Unit]
+Description=Fire the weekly FULL forward-prediction cadence (comparison-candidate refresh)
+
+[Timer]
+# Saturday morning — the full trading week is finalized, and the heavy
+# russell1000/nasdaq100 candidate refresh runs off-peak, out of the daily path.
+OnCalendar=Sat 09:00
+# Run the most recent missed occurrence on next boot/wake/login; the pipeline's
+# backfill then logs every missed candidate day.
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

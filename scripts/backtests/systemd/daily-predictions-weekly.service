@@ -1,0 +1,21 @@
+[Unit]
+Description=Weekly FULL forward-prediction cadence (all cells incl. comparison candidates)
+# Don't run if there's no network (the seed needs the data provider).
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# EDIT these two paths for your machine (the repo root + its venv python).
+WorkingDirectory=/path/to/agent-driven-investment
+# Full cadence: all 5 tracked cells (2 deployed sp500 champions + 3 comparison
+# candidates across russell1000/nasdaq100). Refreshes the candidates that the daily
+# --deployed-only run skips; the backfill logs every candidate day since the last
+# full run. The ~1,006-ticker russell seed + its two builds make this the heavy run,
+# deliberately kept off the daily critical path.
+ExecStart=/path/to/agent-driven-investment/.venv/bin/python -m scripts.backtests.daily_forward_predictions --commit
+TimeoutStartSec=7200
+Nice=10
+
+[Install]
+WantedBy=default.target

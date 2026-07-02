@@ -167,10 +167,20 @@ def _regime_series(universe: str, lo: pd.Timestamp, hi: pd.Timestamp) -> pd.Seri
     return s, on
 
 
-def run(end: str, commit: bool, no_seed: bool = False) -> int:
+def run(end: str, commit: bool, no_seed: bool = False, deployed_only: bool = False) -> int:
     _preflight_disk()
-    metas = {model: _cell_meta(REPO / m["cell"]) for model, m in CELLS.items()}
-    universes = sorted({metas[model][0] for model in CELLS})
+    # Daily fast path (--deployed-only): score ONLY the deployed sp500 champions
+    # and skip the 3 comparison candidates, so the daily seed + build stay on the
+    # sp500 universe (the ~1,006-ticker russell1000 seed + its two ~10-min builds
+    # are the bulk of the ~60-min full cadence). A separate weekly run refreshes the
+    # candidates; their forward series is weekly-sampled + backfilled, fine for
+    # comparison-tracking. See docs/gbdt/V1.6 § seed track + _019.
+    cells = {m: c for m, c in CELLS.items() if c["deployed"]} if deployed_only else CELLS
+    if deployed_only:
+        print(f"[tier] deployed-only: scoring {', '.join(cells)} "
+              "(candidates skipped — the weekly run refreshes them).")
+    metas = {model: _cell_meta(REPO / m["cell"]) for model, m in cells.items()}
+    universes = sorted({metas[model][0] for model in cells})
     if no_seed:
         print(f"[seed] skipped (--no-seed); scoring cache-only for {', '.join(universes)}.")
     else:
@@ -185,9 +195,9 @@ def run(end: str, commit: bool, no_seed: bool = False) -> int:
     # per-universe feature build (same warmup ⇒ one build).
     test_dates = {model: pd.read_csv(REPO / m["cell"] / "predictions" / "test.csv",
                                      usecols=["date"], parse_dates=["date"])["date"]
-                  for model, m in CELLS.items()}
+                  for model, m in cells.items()}
     uni_anchor: dict[str, pd.Timestamp] = {}
-    for model in CELLS:
+    for model in cells:
         u, ts = metas[model][0], test_dates[model].min()
         uni_anchor[u] = min(uni_anchor.get(u, ts), ts)
     uni_warmup = {u: _warmup_start(a) for u, a in uni_anchor.items()}
@@ -195,7 +205,7 @@ def run(end: str, commit: bool, no_seed: bool = False) -> int:
     # Pass 1 — cheap pre-gate: decide which cells actually advanced past their last
     # logged snapshot, so the shared build below covers exactly those cells.
     todo: list[dict] = []
-    for model, m in CELLS.items():
+    for model, m in cells.items():
         cell_dir = REPO / m["cell"]
         universe, thr, hor, base_rate = metas[model]
         since = _last_logged(model)
@@ -326,8 +336,14 @@ def main() -> None:
     ap.add_argument("--no-seed", action="store_true",
                     help="skip the data-refresh seed and score cache-only — for "
                          "backfilling over already-cached history, or running offline.")
+    ap.add_argument("--deployed-only", action="store_true",
+                    help="DAILY FAST PATH: seed + score ONLY the deployed sp500 "
+                         "champions, skipping the 3 comparison candidates and their "
+                         "heavier russell1000/nasdaq100 universes. A separate weekly run "
+                         "refreshes the candidates. Cuts the seed (no ~1,006-ticker "
+                         "russell fetch) and the build (no russell double-build).")
     args = ap.parse_args()
-    sys.exit(run(args.end, args.commit, args.no_seed))
+    sys.exit(run(args.end, args.commit, args.no_seed, args.deployed_only))
 
 
 if __name__ == "__main__":
