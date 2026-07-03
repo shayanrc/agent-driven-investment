@@ -51,11 +51,15 @@ class USFundamentalsDomain(Domain):
 
     def _register_adapters(self) -> None:
         """Instantiate the provider adapters that have landed (Phases 2-4)."""
+        from data_pipelines.domains.us_fundamentals.adapters.edgar import (
+            EdgarAdapter,
+        )
         from data_pipelines.domains.us_fundamentals.adapters.macrotrends import (
             MacrotrendsAdapter,
         )
 
         self._adapters["macrotrends"] = MacrotrendsAdapter(self._config)
+        self._adapters["edgar"] = EdgarAdapter(self._config)
 
     @property
     def name(self) -> str: return "us_fundamentals"
