@@ -150,4 +150,65 @@ tertiary — not a single scraper.
 
 ## Outcome
 
-_To be filled at completion (seed timings, coverage table, failure table)._
+**sp500 seed (2026-07-03, 15:37→17:23 IST, ~106 min): 503/503 succeeded, 0 failed.**
+
+- **Rate limit discovered live:** macrotrends 429s at sustained rates faster than
+  ~1 req/5-6 s. At the initial 1.5 s throttle every request burned ~3 retry
+  attempts (self-healing via backoff — pace settled at ~13 s/ticker); the default
+  was raised to 4.5 s + 1 s jitter for clean 200s at the same throughput. Exactly
+  ONE ticker exhausted retries mid-run (ACGL) and was served by EDGAR instead —
+  the chain fallthrough working as designed.
+- **Provider breakdown:** 486 pure-macrotrends · 15 mixed (macrotrends + edgar +
+  yfinance partial fills) · 2 edgar-only.
+- **Coverage:** 28,672 rows; median 59 quarters/ticker (macrotrends 2011→now),
+  max 68 (EDGAR-served, 2008→now), min 8 (recent IPOs). Earliest grid date
+  2009-06-30, latest 2026-06-30 (off-cycle fiscal quarters land ahead of the
+  demanded grid). The demanded grid starts at the gbdt canonical anchor
+  (2019-01-01); stored history is deeper because providers return full history
+  and the dispatcher's merge is unclipped.
+- **NULL rates:** revenue 0.5% · net_income 0.6% · ocf 0.03% · capex/fcf 0.8% ·
+  shares 0.6% · eps_diluted 0.01%. `filed_date` 98.6% NULL as designed (only
+  EDGAR-served rows carry it — uniform enrichment pass parked in `V3_TBD.md` §4;
+  do it before building causally-lagged model features).
+- **Spot checks:** AAPL 2026-03-31 revenue 111,184 / OCF 28,702 / capex 1,971 /
+  FCF 26,731 $M (all three providers agree independently); WMT fiscal Apr-30 →
+  Jun-30 grid with a plausible negative-FCF quarter; GOOGL and BRK-B internally
+  consistent (EPS ≈ NI/shares).
+- **Footprint:** raw audit trail ~147 M (macrotrends HTML envelopes 115 M +
+  EDGAR companyfacts 32 M) for sp500.
+- Validation is re-runnable:
+  `uv run python -m scripts.data_pipelines.validate_us_fundamentals`.
+
+**Full-union seed (sp500 ∪ russell1000 ∪ nasdaq100 = 1,015 tickers): 1,014
+cached, 1 genuine gap.** Run 17:35→19:12 IST at the 4.5 s throttle — **zero
+rate-limit exhaustions** (the bump held).
+
+- **53,659 rows.** Provider mix: 892 pure-macrotrends · 90 all-three (partial
+  fills) · 11 macrotrends+yfinance · 8 edgar+yfinance · 7 edgar+macrotrends · 6
+  edgar-only. So ~99% of tickers get macrotrends' deep history; EDGAR/yfinance
+  fill the primary's misses.
+- **Three raw seed "failures" triaged — two were adapter bugs, fixed:**
+  - `CWEN-A` (Clearway Class A): macrotrends spells it `CWENA` (dash removed,
+    not the `BRK.B` dot form). Added the dash-removed resolution variant →
+    served by macrotrends, 29 quarters.
+  - `CAI` (Caris): a corrupt slug-map entry (U+FFFD mojibake) crashed urllib's
+    ASCII request-line encode as a raw `UnicodeEncodeError`, bypassing the
+    chain. Non-URL-safe slugs are now rejected at resolution → clean
+    `EmptyPayload` → EDGAR served it (8 quarters — 2025 IPO).
+  - `ANSS` (Ansys): **genuine survivorship gap** — acquired by Synopsys and
+    delisted in 2025, so macrotrends dropped the page, EDGAR has no CIK, and
+    yfinance has no history. A delisted name still in the index YAML; nothing
+    to fetch. Left uncached (per-ticker isolation logged it and moved on).
+- **NULL rates** (union): revenue 1.4% · net_income 1.1% · ocf 0.2% ·
+  capex/fcf 1.2% · shares ~2% · eps_diluted 0.3% — slightly higher than sp500
+  (small/mid-caps miss more line items), all well within usable range.
+  `filed_date` 95.5% NULL (EDGAR-served rows only; enrichment pass = `V3_TBD` §4).
+- **History:** median 59 quarters/ticker, max 68 (EDGAR 2008+), min 4 (2025-26
+  IPOs); grid 2009-06-30 → 2026-06-30.
+- Spot checks unchanged from the sp500 pass (all three providers agree on AAPL;
+  WMT off-cycle fiscal; GOOGL/BRK-B internally consistent).
+
+**Bottom line:** 1,014/1,015 (99.9%) of the equity universe now has quarterly
+fundamentals cached with full audit trail; the single miss is a legitimately
+delisted ticker. Re-runnable via
+`uv run python -m scripts.data_pipelines.validate_us_fundamentals`.
