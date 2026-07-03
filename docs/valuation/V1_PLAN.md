@@ -66,3 +66,15 @@ the TTM values."
   pre-earnings day reflects the prior filing, flips on the filing date.
 - Split spot-check: AAPL PE across its 2020 4:1 split has no factor-of-4 jump.
 - Downstream (#77, separate): opt-in gbdt fundamentals feature family + A/B.
+
+## Outcome (2026-07-03) — DONE
+
+Panel built over the full universe: **1,902,642 rows · 971 tickers · 2018 →
+2026-07-02**. Validation (`docs/valuation/_V1_validation.md`): causal invariants
+proven (no-look-ahead, TTM-steps-on-filings), split-basis correct (AAPL 2020 4:1
+smooth), `eps_ttm` within ~1% of independently-reported Σ-4Q diluted EPS
+(GOOGL 6.5% outlier — multi-class), distributions textbook (PE median 24.8, PS
+2.8, P/FCF 20.5), 86% finite-PE / 99% finite-yield coverage, 117 loss-makers
+correctly NaN-PE/signed-yield. Artifact: `results/valuation/data/
+valuation_panel.parquet` (gitignored, regenerable) + `valuation_latest.csv`
+(checked in). 39 tests green.

@@ -60,3 +60,7 @@ tests/gbdt/tmp/
 results/backtests/_008_roll/*_fresh.csv
 results/backtests/_009_nifty/*_fresh.csv
 results/backtests/_019_fwd_oos/*_fresh.csv
+# valuation: large regenerable daily panel + split cache (rebuild via
+# scripts.valuation.build_valuation_panel); the latest-snapshot CSV is checked in
+results/valuation/data/valuation_panel.parquet
+results/valuation/data/split_factors.parquet
