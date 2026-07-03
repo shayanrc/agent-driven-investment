@@ -67,7 +67,7 @@ Future domains will declare their own chains — e.g., FRED macro will likely be
 - **Not a trading system** — no order routing, execution, broker APIs.
 - **Not real-time / intraday in v1** — daily-frequency historical data only. Intraday is a deferred concern; the schema-primitive design should not preclude it.
 - **Not a backtester** — produces data, doesn't run strategies on it.
-- **Not a fundamentals normalizer** — earnings, filings, balance sheets are a separate concern (would likely be a different domain in this module rather than a separate module, but deferred).
+- **Not a fundamentals normalizer** *(scope updated in v3)* — v1 deferred fundamentals as "would likely be a different domain in this module"; v3 shipped exactly that: the `us_fundamentals` domain (quarterly revenue/net-income/OCF/capex/FCF/shares/EPS, `FUND:<TICKER>`, macrotrends → SEC EDGAR → yfinance chain; see `V3_US_FUNDAMENTALS_PLAN.md`). Still out of scope: derived valuation ratios (PE/PS/P-FCF need a price join + point-in-time lag policy — a modeling concern), earnings-call/filings *text*, and balance-sheet items (deferred, `V3_TBD.md`).
 - **Not a forecaster** — doesn't predict anything. `analog_mc` and future forecasting modules consume from here.
 - **Not a pre-extracted framework.** v1 builds US equities with the right module boundaries (schema, adapters, universe, registry isolated per-domain), but does not crystallize a `core/` framework abstraction until domain #2 actually needs it. Three similar lines beat one premature abstraction; the right time to factor out shared code is when domain #2 is being added and the shape of the abstraction is informed by two real use cases, not one.
 
@@ -95,6 +95,7 @@ v1 = framework + exactly one domain.
 **Explicitly deferred to later domains / versions:**
 - NSE (India) — shipped in v1.7; LSE (UK), TSE (Japan), and other non-US equity domains still deferred.
 - FRED macroeconomic series — **shipped in v2** (`fred_macro` domain: daily/monthly/quarterly series — rates, curve, credit spreads, breakevens, inflation, labor, growth; see `V2_FRED_MACRO_PLAN.md`). Still deferred: US Treasury auction schedules, BEA series, and weekly-cadence FRED series (need a 4th calendar).
+- US company fundamentals — **shipped in v3** (`us_fundamentals` domain: quarterly income + cash-flow metrics on a calendar quarter-end grid, macrotrends → SEC EDGAR → yfinance chain; see `V3_US_FUNDAMENTALS_PLAN.md`). Still deferred: annual statements, balance-sheet metrics, NSE fundamentals (`V3_TBD.md`).
 - Commodity prices, FX rates, crypto.
 - Intraday bars (any domain).
 - Corporate actions as separate tables (splits, dividends, mergers — adj_close captures what consumers need for v1).
