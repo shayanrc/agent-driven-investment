@@ -59,6 +59,19 @@ carry NaN PE + a signed negative `earnings_yield`; `PS > 0` wherever defined.
 Coverage: **86%** of daily rows have a finite PE, **99%** a finite
 `earnings_yield`.
 
+**Post-ship artifact sweep (2026-07-04 review).** A panel-wide invariant sweep
+(all 1.9M rows, not just the latest snapshot) found **116 rows (0.006%) with
+non-positive PS** on two tickers: ASTS 2021 (a SPAC-transition quarter with
+`shares_diluted = 0` → PS = 0) and CACC 2023 (the EDGAR Q4-shares derivation
+`4×FY − ΣQ1..3` went negative on a buyback year → negative market cap,
+sign-flipped EPS). Root cause: upstream `shares ≤ 0` artifacts (10 quarters /
+6 tickers cache-wide) were not masked. Fixed by a `shares > 0` guard in
+`compute_ratios` (all ratio columns NaN on such rows) + regression tests; panel
+rebuilt — the three artifact gates (no-look-ahead, filing-order, PS>0) all pass
+at 0. Neither ticker is in the sp500, so the `_272` A/B was unaffected; the
+other four affected tickers (incl. CEG pre-spinoff) never entered a valid TTM
+window.
+
 ## Known limitations (carried into modeling)
 
 - **Absolute level vs relative signal.** `adj_close` is split *and dividend*

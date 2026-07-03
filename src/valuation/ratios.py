@@ -55,6 +55,13 @@ def compute_ratios(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     adj = pd.to_numeric(out["adj_close"], errors="coerce").astype("float64")
     sh = pd.to_numeric(out["shares"], errors="coerce").astype("float64")
+    # A share count <= 0 is never valid — it's an upstream artifact (SPAC
+    # transition quarters report 0 weighted shares; the EDGAR Q4 derivation
+    # 4×FY − ΣQ1..3 can go negative on buyback-heavy years). Unmasked, those
+    # rows emit PS=0 / negative market cap / sign-flipped EPS. Written back to
+    # the output so the panel's shares column never carries the artifact.
+    sh = sh.where(sh > 0.0)
+    out["shares"] = sh
     ni = pd.to_numeric(out["net_income_ttm"], errors="coerce").astype("float64")
     rev = pd.to_numeric(out["revenue_ttm"], errors="coerce").astype("float64")
     fcf = pd.to_numeric(out["fcf_ttm"], errors="coerce").astype("float64")
