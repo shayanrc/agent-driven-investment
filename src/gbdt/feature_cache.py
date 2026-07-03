@@ -179,6 +179,7 @@ def compute_key(
     random_seed: int,
     panel_sig: dict,
     macro_sig: Any = None,
+    fund_sig: Any = None,
 ) -> str:
     """Compute the deterministic cache key (a SHA-256 hex digest).
 
@@ -231,6 +232,8 @@ def compute_key(
     # 4-series proxy matrix and an 8-series real matrix collide on one key.
     if macro_sig:
         payload["features"]["macro_signature"] = macro_sig
+    if fund_sig:
+        payload["features"]["fundamentals_signature"] = fund_sig
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 

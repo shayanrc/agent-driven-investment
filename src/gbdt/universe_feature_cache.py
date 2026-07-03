@@ -140,6 +140,7 @@ def compute_key(
     random_seed: int,
     panel_sig: dict,
     macro_sig: Any = None,
+    fund_sig: Any = None,
 ) -> str:
     """Compute the deterministic universe-level cache key (SHA-256 hex).
 
@@ -192,6 +193,8 @@ def compute_key(
     # while non-macro keys stay byte-identical.
     if macro_sig:
         payload["features"]["macro_signature"] = macro_sig
+    if fund_sig:
+        payload["features"]["fundamentals_signature"] = fund_sig
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 

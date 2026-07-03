@@ -532,6 +532,65 @@ def load_macro_panel(
     return pd.DataFrame(cols).sort_index()
 
 
+VALUATION_PANEL_PATH = "results/valuation/data/valuation_panel.parquet"
+_FUND_FEATURE_COLS: tuple[str, ...] = (
+    "earnings_yield", "sales_yield", "fcf_yield", "revenue_ttm",
+)
+
+
+def load_fundamentals_panel(
+    start: str | date | None,
+    end: str | date | None,
+    *,
+    repo_root: Path | None = None,
+    path: str | None = None,
+) -> pd.DataFrame:
+    """(date, symbol)-indexed valuation panel for F18 (cache-only, from parquet).
+
+    Reads the point-in-time valuation panel artifact (built by
+    ``scripts.valuation.build_valuation_panel``), clips to ``[start, end]``,
+    maps ``FUND:<SYMBOL>`` → ``SYMBOL`` (to align with the gbdt panel's
+    exchange-prefixed tickers by symbol), and keeps the F18 input columns.
+    """
+    p = Path(repo_root if repo_root is not None else ".") / (
+        path or VALUATION_PANEL_PATH
+    )
+    if not p.is_file():
+        raise RuntimeError(
+            f"valuation panel not found at {p} — build it first: "
+            "`uv run python -m scripts.valuation.build_valuation_panel`"
+        )
+    df = pd.read_parquet(p, columns=["ticker", "date", *_FUND_FEATURE_COLS])
+    df["date"] = pd.to_datetime(df["date"]).dt.normalize()
+    if start is not None:
+        df = df[df["date"] >= pd.Timestamp(start).normalize()]
+    if end is not None:
+        df = df[df["date"] <= pd.Timestamp(end).normalize()]
+    df["symbol"] = df["ticker"].str.split(":").str[-1]
+    return (
+        df.set_index(["date", "symbol"])[list(_FUND_FEATURE_COLS)]
+        .sort_index()
+    )
+
+
+def fundamentals_panel_signature(
+    *,
+    repo_root: Path | None = None,
+    path: str | None = None,
+) -> dict:
+    """Cheap content signature of the valuation panel artifact for the cache
+    key — ``{valuation_panel: [size_bytes, mtime_ns]}`` — so a rebuilt panel
+    invalidates the feature cache. ``{}`` when the artifact is absent.
+    """
+    p = Path(repo_root if repo_root is not None else ".") / (
+        path or VALUATION_PANEL_PATH
+    )
+    if not p.is_file():
+        return {}
+    st = p.stat()
+    return {"valuation_panel": [int(st.st_size), int(st.st_mtime_ns)]}
+
+
 def macro_panel_signature(
     series: Iterable[str],
     *,
