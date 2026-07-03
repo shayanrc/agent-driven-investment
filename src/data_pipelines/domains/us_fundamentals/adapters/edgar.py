@@ -66,6 +66,12 @@ DOMAIN_NAME = "us_fundamentals"
 
 CIK_MAP_PATH = "/files/company_tickers.json"
 COMPANYFACTS_PATH = "/api/xbrl/companyfacts/CIK{cik:010d}.json"
+SUBMISSIONS_PATH = "/submissions/CIK{cik:010d}.json"
+SUBMISSIONS_FILE_PATH = "/submissions/{name}"
+
+# Periodic-report forms whose filing date is the "this quarter became public"
+# date. Amendments are included but lose to the original on earliest-filed.
+FILING_FORMS = frozenset({"10-K", "10-Q", "10-K/A", "10-Q/A"})
 
 # Ordered tag-priority lists per metric (first = preferred at equal filed).
 TAG_PRIORITY: dict[str, tuple[str, ...]] = {
@@ -186,6 +192,92 @@ class EdgarAdapter(Adapter):
             ext="json",
             timestamp=datetime.now(timezone.utc),
         )
+
+    # --- filing dates (SEC submissions API) ----------------------------------
+
+    def filing_dates(
+        self, identifier: str, *, data_root: Path,
+    ) -> dict[date, date]:
+        """Map each fiscal period end (``reportDate``) → the **earliest**
+        filing date of the 10-K/10-Q that reported it, from the SEC
+        submissions API.
+
+        This is the authoritative "when did this quarter's numbers become
+        public" date, and unlike the companyfacts-derived dates in ``parse()``
+        it is exact for derived-Q4 quarters: the fiscal-year 10-K's own
+        ``reportDate`` is the Q4 end, so its filing date lands on Q4 directly
+        (no differencing-max approximation).
+
+        Reads the ``recent`` block plus any older paginated files so full
+        history is covered. Returns ``{}`` for non-SEC filers (no CIK).
+        Raw submissions JSON is landed under the ``edgar_submissions`` provider
+        for the audit trail. Pure w.r.t. its inputs modulo the network fetch;
+        the returned mapping is deterministic for a given filing history.
+        """
+        _, symbol = parse_identifier(identifier)
+        cik = self._resolve_cik(symbol, data_root, identifier)
+        if cik is None:
+            return {}
+
+        main = self._get_submissions_doc(
+            self._config.edgar_base_url + SUBMISSIONS_PATH.format(cik=cik),
+            symbol, identifier, data_root,
+        )
+        blocks = [main.get("filings", {}).get("recent", {})]
+        for f in (main.get("filings", {}).get("files") or []):
+            name = f.get("name")
+            if not name:
+                continue
+            older = self._get_submissions_doc(
+                self._config.edgar_base_url
+                + SUBMISSIONS_FILE_PATH.format(name=name),
+                symbol, identifier, data_root,
+            )
+            # paginated files carry the arrays at the top level
+            blocks.append(older if "form" in older else older.get("recent", {}))
+
+        out: dict[date, date] = {}
+        for block in blocks:
+            forms = block.get("form", [])
+            fdates = block.get("filingDate", [])
+            rdates = block.get("reportDate", [])
+            for form, fd, rd in zip(forms, fdates, rdates):
+                if form not in FILING_FORMS or not fd or not rd:
+                    continue
+                try:
+                    r = date.fromisoformat(rd)
+                    f_date = date.fromisoformat(fd)
+                except (ValueError, TypeError):
+                    continue
+                if r not in out or f_date < out[r]:
+                    out[r] = f_date
+        return out
+
+    def _get_submissions_doc(
+        self, url: str, symbol: str, identifier: str, data_root: Path,
+    ) -> dict:
+        payload = self._get(url, identifier)
+        try:
+            write_raw_atomic(
+                data_root,
+                provider="edgar_submissions",
+                domain=DOMAIN_NAME,
+                exchange="-",
+                ticker=symbol,
+                payload=payload,
+                range_start=date(1990, 1, 1),
+                range_end=datetime.now(timezone.utc).date(),
+                ext="json",
+                timestamp=datetime.now(timezone.utc),
+            )
+        except FileExistsError:
+            pass  # same-second re-fetch; audit copy already present
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            raise ProviderError(
+                self.name, identifier, "submissions is not valid JSON"
+            ) from None
 
     # --- CIK map -------------------------------------------------------------
 
