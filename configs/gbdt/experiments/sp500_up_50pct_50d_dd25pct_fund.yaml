@@ -1,0 +1,33 @@
+# Experiment: sp500_up_50pct_50d_dd25pct_fund
+#
+# Fundamentals-augmented variant (F1–F16 + F18 valuation ratios) — A/B partner
+# of ..._base_v2. IDENTICAL config except features.candidates: all_fundamentals.
+# The only difference vs the baseline is the ~9 point-in-time valuation-ratio
+# columns (yields + cross-sectional ranks + TTM growth), so any test
+# R-Precision@K delta isolates the F18 fundamentals contribution. max_iterations:
+# 1 (single fit, no per-arm tuning) keeps the HP matched to base_v2 — the clean
+# A/B discipline (the _260 macro sign-flip lesson). Plan: V1.7. Memo: _265.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals   # F1–F16 + F18 (fundamentals); 'all' untouched
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
