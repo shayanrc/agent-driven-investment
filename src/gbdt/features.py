@@ -769,6 +769,75 @@ def fred_macro_features(
 
 
 # ---------------------------------------------------------------------------
+# F18 — fundamentals valuation ratios (per-(date,ticker); opt-in, NOT in "all")
+# ---------------------------------------------------------------------------
+
+# Inverse valuation yields (finite + signed, unlike raw PE) from the point-in-
+# time valuation panel. NOT date-broadcast — each varies per ticker, so F18
+# joins on the panel's (date, ticker) index (by symbol) rather than broadcasting.
+FUND_YIELDS: tuple[str, ...] = ("earnings_yield", "sales_yield", "fcf_yield")
+_FUND_GROWTH_LOOKBACK = 252   # ~1y TTM YoY
+_FUND_CHG_LOOKBACK = 63       # ~1 quarter re-rating
+
+
+def fundamentals_features(
+    fund_df: pd.DataFrame,
+    panel: pd.DataFrame,
+    *,
+    yields: Iterable[str] = FUND_YIELDS,
+    growth_lookback: int = _FUND_GROWTH_LOOKBACK,
+    chg_lookback: int = _FUND_CHG_LOOKBACK,
+) -> pd.DataFrame:
+    """F18 — point-in-time valuation ratios joined per (date, ticker).
+
+    ``fund_df`` is a ``(date, symbol)``-indexed frame from the ``valuation``
+    panel with the yield columns + ``revenue_ttm``. Panel tickers
+    (``NASDAQ:AAPL``) are mapped to their symbol (``AAPL``) to align. Emits:
+      - ``fund_<yield>``            the point-in-time yield level
+      - ``fund_<yield>_xs_rank``    its cross-sectional percentile across the
+                                    panel on that date (the F14 idiom)
+      - ``fund_rev_ttm_yoy``        log TTM-revenue growth vs ~1y ago (+ xs_rank)
+      - ``fund_earnings_yield_chg_63``  63-td change (cheapening / re-rating)
+
+    Already causal (C1): the valuation value at ``t`` uses only filings with
+    ``filed_date ≤ t`` and the close at ``t`` (same convention as the F2 price
+    features — no extra lag); the growth/change transforms are strictly
+    trailing, and the cross-sectional ranks are same-date. Verified by the
+    fundamentals-perturbation leakage test. Missing columns degrade gracefully.
+    """
+    dates = panel.index.get_level_values("date")
+    symbols = panel.index.get_level_values("ticker").str.split(":").str[-1]
+    join_idx = pd.MultiIndex.from_arrays([dates, symbols], names=["date", "symbol"])
+    aligned = fund_df.sort_index().reindex(join_idx)
+    aligned.index = panel.index  # relabel (date, symbol) → (date, ticker)
+
+    out: dict[str, pd.Series] = {}
+    for y in yields:
+        if y not in aligned.columns:
+            continue
+        s = aligned[y]
+        out[f"fund_{y}"] = s
+        out[f"fund_{y}_xs_rank"] = s.groupby(level="date").rank(pct=True)
+
+    if "revenue_ttm" in aligned.columns:
+        rev = aligned["revenue_ttm"]
+        rev_prev = rev.groupby(level="ticker").shift(growth_lookback)
+        # log YoY growth; guard non-positive so no -inf/NaN-of-log surprises
+        ratio = (rev / rev_prev).where((rev > 0) & (rev_prev > 0))
+        g = np.log(ratio)
+        out["fund_rev_ttm_yoy"] = g
+        out["fund_rev_ttm_yoy_xs_rank"] = g.groupby(level="date").rank(pct=True)
+
+    if "earnings_yield" in aligned.columns:
+        ey = aligned["earnings_yield"]
+        out["fund_earnings_yield_chg_63"] = (
+            ey - ey.groupby(level="ticker").shift(chg_lookback)
+        )
+
+    return pd.DataFrame(out, index=panel.index)
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -789,6 +858,7 @@ def build_feature_matrix(
     families: str | list[str] = "all",
     exclude: list[str] | None = None,
     macro_df: pd.DataFrame | None = None,
+    fund_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Build the candidate feature matrix.
 
@@ -812,6 +882,10 @@ def build_feature_matrix(
         # All baseline families PLUS the opt-in macro family. "all" is left
         # untouched above so existing specs/models are unaffected.
         sel = set(_ALL_FAMILIES) | {"F17"}
+    elif families == "all_fundamentals":
+        # Baseline families PLUS the opt-in fundamentals family (F18). "all"
+        # untouched — existing specs/models unaffected.
+        sel = set(_ALL_FAMILIES) | {"F18"}
     else:
         sel = set(families)
 
@@ -896,6 +970,14 @@ def build_feature_matrix(
                 "families='all_macro' or 'F17' is in the families list."
             )
         plan.append(("F17", lambda: fred_macro_features(macro_df, panel)))
+    if "F18" in sel:
+        if fund_df is None:
+            raise ValueError(
+                "F18 (fundamentals) selected but fund_df is None — the runner "
+                "must load the valuation panel and pass fund_df when "
+                "families='all_fundamentals' or 'F18' is in the families list."
+            )
+        plan.append(("F18", lambda: fundamentals_features(fund_df, panel)))
 
     total = len(plan)
     t_start = time.time()
