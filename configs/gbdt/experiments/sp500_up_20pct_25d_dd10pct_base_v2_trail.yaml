@@ -1,0 +1,27 @@
+# Experiment: sp500_up_20pct_25d_dd10pct_base_v2_trail
+#
+# TRAILING-window control for the F18 fundamentals SECOND-window validation
+# (memo _273). Identical to ..._base_v2 EXCEPT the split: no `split:` block ⇒
+# the default trailing-anchor mode (test = most recent labelable data), the
+# genuinely different period from _272's date-aligned 2024-H2 test window.
+# Pairs with ..._fund_trail; A/B isolates F18 within this window.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 25
+  max_drawdown: 0.10
+
+features:
+  candidates: all          # F1–F16 (279 cols)
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
