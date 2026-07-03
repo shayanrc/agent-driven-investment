@@ -38,6 +38,7 @@ extraction logic improves, reprocess re-derives from these bytes.
 from __future__ import annotations
 
 import json
+import logging
 import random
 import re
 import threading
@@ -60,6 +61,8 @@ from data_pipelines.domains.us_fundamentals.schema import (
 from data_pipelines.errors import EmptyPayload, ProviderError
 from data_pipelines.raw_store import write_raw_atomic
 from data_pipelines.retry import RetryPolicy, call_with_retry
+
+_log = logging.getLogger(__name__)
 
 DOMAIN_NAME = "us_fundamentals"
 
@@ -181,11 +184,27 @@ class MacrotrendsAdapter(Adapter):
         self, symbol: str, data_root: Path, identifier: str,
     ) -> str | None:
         slug_map = self._slug_map(data_root, identifier)
-        # Universe symbols are dash-normalized (BRK-B); macrotrends dot-spells
-        # class shares (BRK.B). Try as-is, then the dot variant.
-        for candidate in (symbol, symbol.replace("-", ".")):
-            if candidate in slug_map:
-                return slug_map[candidate]
+        # Universe symbols are dash-normalized (BRK-B); macrotrends spells
+        # class shares inconsistently — BRK.B (dot) but CWENA (dash removed).
+        # Try as-is, dot variant, then dash-removed.
+        for candidate in (
+            symbol, symbol.replace("-", "."), symbol.replace("-", ""),
+        ):
+            slug = slug_map.get(candidate)
+            if slug is None:
+                continue
+            if not slug.isascii():
+                # A few macrotrends map entries carry mojibake (a U+FFFD
+                # replacement char from mangled bytes, e.g. CAI, MURGY); the
+                # slug can't form a valid URL. Treat as unresolved so the
+                # chain falls through to EDGAR/yfinance rather than crashing
+                # on urllib's ASCII request-line encode.
+                _log.warning(
+                    "macrotrends: skipping non-URL-safe slug %r for %s; "
+                    "falling through the chain", slug, identifier,
+                )
+                return None
+            return slug
         return None
 
     def _slug_map(self, data_root: Path, identifier: str) -> dict[str, str]:
@@ -254,6 +273,12 @@ class MacrotrendsAdapter(Adapter):
                 ) from None
             except TimeoutError:
                 raise ProviderError(self.name, identifier, "timeout") from None
+            except UnicodeEncodeError:
+                # A non-ASCII char reached the request line (slugs are
+                # pre-filtered, but guard the transport too). Not retryable.
+                raise ProviderError(
+                    self.name, identifier, "non-ASCII URL"
+                ) from None
 
         return call_with_retry(
             _do, self._retry_policy(), provider=self.name, identifier=identifier

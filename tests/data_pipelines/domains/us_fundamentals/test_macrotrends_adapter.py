@@ -124,6 +124,30 @@ class TestFetchPlumbing:
         # raw lands under the dash (identifier) spelling
         assert "/BRK-B/" in str(raw)
 
+    def test_dash_removed_slug_variant_resolves(self, tmp_path):
+        # macrotrends spells Clearway Class A "CWENA" (dash removed), not
+        # CWEN-A or CWEN.A.
+        adapter = self._adapter_with_slug_map(
+            {"CWENA": "CWENA/clearway-energy,-inc"}
+        )
+        with patch.object(
+            adapter, "_get",
+            return_value=(b'<script>var originalData = [{"field_name": '
+                         b'"Revenue", "2025-12-31": "1.0"}];</script>'),
+        ):
+            raw = adapter.fetch("FUND:CWEN-A", data_root=tmp_path)
+        assert json.loads(raw.read_text())["slug"] == "CWENA/clearway-energy,-inc"
+
+    def test_non_ascii_slug_falls_through(self, tmp_path):
+        # A corrupt map entry (U+FFFD mojibake, e.g. real CAI) can't form a
+        # valid URL → treat as unresolved so the chain falls through, never
+        # crash on urllib's ASCII request-line encode.
+        adapter = self._adapter_with_slug_map(
+            {"CAI": "CAI/caris-life-sciences,�inc"}
+        )
+        with pytest.raises(EmptyPayload):
+            adapter.fetch("FUND:CAI", data_root=tmp_path)
+
     def test_page_without_original_data_raises_empty_payload(self, tmp_path):
         adapter = self._adapter_with_slug_map({"AAPL": "AAPL/apple"})
         with patch.object(
