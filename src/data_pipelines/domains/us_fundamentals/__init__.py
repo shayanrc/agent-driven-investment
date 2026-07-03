@@ -57,9 +57,13 @@ class USFundamentalsDomain(Domain):
         from data_pipelines.domains.us_fundamentals.adapters.macrotrends import (
             MacrotrendsAdapter,
         )
+        from data_pipelines.domains.us_fundamentals.adapters.yfinance_fund import (
+            YFinanceFundamentalsAdapter,
+        )
 
         self._adapters["macrotrends"] = MacrotrendsAdapter(self._config)
         self._adapters["edgar"] = EdgarAdapter(self._config)
+        self._adapters["yfinance"] = YFinanceFundamentalsAdapter(self._config)
 
     @property
     def name(self) -> str: return "us_fundamentals"
