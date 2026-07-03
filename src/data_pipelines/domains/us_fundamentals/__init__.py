@@ -23,6 +23,8 @@ phases land (Phases 2–4 of ``docs/data_pipelines/V3_US_FUNDAMENTALS_PLAN.md``)
 
 from __future__ import annotations
 
+import pandas as pd
+
 from data_pipelines.adapter import Adapter
 from data_pipelines.domain import Calendar, Domain, DomainRegistry
 from data_pipelines.domains.us_fundamentals.calendar import QuarterEndCalendar
@@ -95,6 +97,40 @@ class USFundamentalsDomain(Domain):
         return [
             self._adapters[k] for k in CHAIN_ORDER if k in self._adapters
         ]
+
+    def merge_overlap(
+        self,
+        existing: pd.DataFrame,
+        new: pd.DataFrame,
+        existing_sources: list[dict],
+        new_source: dict,
+    ) -> pd.DataFrame:
+        """Per-cell first-written-wins, new fills holes.
+
+        The default (new wins) is wrong here: every provider returns its
+        FULL history per request, so a fallback invoked for one sub-gap
+        would silently rewrite the primary's rows on every overlapping
+        date. Instead: values already in the cache are kept (point-in-time
+        posture, matching the EDGAR earliest-filed rule — history is never
+        silently rewritten by a later refresh), while NaN/NaT cells are
+        filled from the new frame (a late cash-flow statement completes the
+        row; EDGAR enriches ``filed_date`` into macrotrends-served rows).
+        ``fcf`` is recomputed after the cell-merge so a row mixing ocf and
+        capex from different providers stays internally consistent (every
+        adapter derives fcf = ocf − capex, so recomputation is idempotent).
+        Policy changes can always rebuild from raw via ``reprocess``.
+        """
+        merged = (
+            existing.set_index("date")
+            .combine_first(new.set_index("date"))
+            .reset_index()
+        )
+        merged["fcf"] = merged["ocf"] - merged["capex"]
+        return (
+            merged[self.schema.column_names]
+            .sort_values("date")
+            .reset_index(drop=True)
+        )
 
 
 # Side effect: register on import — importing data_pipelines.domains.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 from data_pipelines.domain import DomainRegistry
@@ -81,3 +82,52 @@ class TestCLIRouting:
             out = _load_universe_for_domain("us_fundamentals", "all")
         loader.assert_called_once_with("all")
         assert out == ["FUND:AAPL"]
+
+
+class TestMergeOverlap:
+    def _frame(self, rows):
+        import numpy as np
+        from data_pipelines.domains.us_fundamentals.schema import (
+            METRIC_COLUMNS, US_FUNDAMENTALS_SCHEMA,
+        )
+        df = pd.DataFrame(rows)
+        for c in ("date", "fiscal_period_end", "filed_date"):
+            df[c] = pd.to_datetime(df.get(c)).astype("datetime64[ns]")
+        for m in METRIC_COLUMNS:
+            df[m] = pd.Series(df.get(m, np.nan), dtype="float64")
+        return df[US_FUNDAMENTALS_SCHEMA.column_names]
+
+    def test_existing_values_win_new_fills_holes(self):
+        domain = USFundamentalsDomain()
+        existing = self._frame([{
+            "date": "2026-03-31", "fiscal_period_end": "2026-03-31",
+            "filed_date": None, "revenue": 100.0, "ocf": 50.0,
+        }])
+        new = self._frame([{
+            "date": "2026-03-31", "fiscal_period_end": "2026-03-28",
+            "filed_date": "2026-05-01", "revenue": 999.0, "ocf": 51.0,
+            "capex": 10.0,
+        }])
+        out = domain.merge_overlap(existing, new, [], {})
+        row = out.iloc[0]
+        assert row["revenue"] == 100.0          # existing value kept
+        assert row["ocf"] == 50.0               # existing value kept
+        assert row["capex"] == 10.0             # hole filled from new
+        assert row["filed_date"] == pd.Timestamp("2026-05-01")  # enriched
+        # fiscal_period_end: existing (first-written) wins too
+        assert row["fiscal_period_end"] == pd.Timestamp("2026-03-31")
+
+    def test_fcf_recomputed_consistently_on_mixed_rows(self):
+        domain = USFundamentalsDomain()
+        existing = self._frame([{
+            "date": "2026-03-31", "fiscal_period_end": "2026-03-31",
+            "filed_date": None, "ocf": 100.0,   # capex/fcf missing
+        }])
+        new = self._frame([{
+            "date": "2026-03-31", "fiscal_period_end": "2026-03-31",
+            "filed_date": None, "ocf": 102.0, "capex": 20.0, "fcf": 82.0,
+        }])
+        out = domain.merge_overlap(existing, new, [], {})
+        row = out.iloc[0]
+        # ocf existing (100) + capex new (20) → fcf must be 80, NOT new's 82
+        assert row["fcf"] == 80.0
