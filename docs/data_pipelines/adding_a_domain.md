@@ -264,3 +264,73 @@ fatten the Calendar protocol.
 `chain_for_gap` returning one adapter for every identifier worked cleanly — the
 dispatcher's chain machinery handles a length-1 chain with no special-casing.
 Confirms the chain abstraction degrades gracefully to the single-provider case.
+
+---
+
+## v3 follow-up — evidence from the us_fundamentals build (2026-07-03)
+
+Domain #4 (`us_fundamentals`) is now landed — the first **non-daily,
+non-single-value** domain: quarterly company fundamentals on a calendar
+quarter-end grid, wide 12-column schema (two required datetimes + one nullable
+datetime + nine nullable metrics), and the first **three-provider fallback
+chain since us_equities** (macrotrends → SEC EDGAR → yfinance). Plan:
+`docs/data_pipelines/V3_US_FUNDAMENTALS_PLAN.md`.
+
+### What plugged in unchanged
+
+- Everything v2 listed, again: `Adapter` ABC, cache DDL auto-derivation (the
+  12-column wide schema created `us_fundamentals_data` with a 13-column PK'd
+  table, zero DDL code), `Schema.normalize/validate`, dispatch's
+  cache-clip/partial-fill/soft-fail, `DomainRegistry`, the same 4-line CLI
+  patch, `retry.py`.
+- The v2 cache NaN fix carried the first **nullable datetime** column
+  (`filed_date`) with no further change — NaT → SQL NULL → NaT round-trips via
+  the same column-wise extraction. The v2 lesson (ship a round-trip test with
+  any new nullable column) was applied on day one.
+- The dispatcher's **unclipped merge** (providers return full history; the
+  cache keeps it all, only the returned frame is sliced) proved a feature: the
+  demanded grid can start at the modeling anchor (2019) while the stored
+  history goes as deep as each provider does (macrotrends 2011+, EDGAR 2008+).
+
+### New friction surfaced
+
+1. **First derived universe — no config file at all.** v2's open question
+   ("if a third config shape appears, generalize the lint") resolved
+   sideways: fundamentals coverage is *definitionally* the equity universes,
+   so `us_fundamentals/universe.py` derives FUND: identifiers from the
+   us_equities YAMLs at load time (union minus indices). No new YAML, no lint
+   pressure, no drift. Lesson: before inventing a config shape for a new
+   domain, check whether its universe is a *function of an existing one*.
+
+2. **First time-dependent calendar (reporting lag).** Quarter-ends are only
+   demanded once `today ≥ grid_date + 45d`, so unreported quarters don't
+   re-hit the provider chain daily between a quarter ending and 10-Qs
+   arriving. The `Calendar` protocol again did not change — a calendar is
+   free to consult the wall clock in `trading_days`. Determinism (D8) is
+   unaffected: the grid moves only what is *demanded*, never what is stored
+   or how raw reprocesses.
+
+3. **Full-history providers break the new-wins overlap default.** Every
+   fundamentals provider returns its complete history per request, so a
+   fallback invoked for one small sub-gap would overwrite the primary's rows
+   on *every* overlapping date under the default policy. Second-ever
+   `merge_overlap` override (after us_equities' adj_close rule): per-cell
+   first-written-wins with NaN/NaT fill — point-in-time posture (history is
+   never silently rewritten), self-healing for missing cells, and EDGAR
+   enriches `filed_date` into macrotrends-served rows. If a third domain
+   needs this, consider promoting "fill-holes" to a framework-provided
+   policy enum.
+
+4. **Multi-page fetches need an envelope.** The Adapter contract is one raw
+   Path per fetch; macrotrends needs two statement pages per ticker. A JSON
+   envelope bundling both as-downloaded HTML pages keeps raw immutability +
+   single-path reprocess. Same pattern reused for yfinance's two frames.
+
+5. **Cross-provider grid convergence is a real design constraint.**
+   Providers date the same quarter differently (macrotrends fiscal
+   month-ends, EDGAR exact fiscal ends, yfinance calendar-normalized); a
+   shared snap util (forward to next quarter-end, 7-day backward tolerance
+   for 52/53-week wobble) in the domain's `schema.py` is what makes rows from
+   different providers land on one grid and gap detection converge. Any
+   future multi-provider non-daily domain will need the same: normalize the
+   time axis in ONE place all adapters import.
