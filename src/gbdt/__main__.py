@@ -1832,6 +1832,18 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         )
         if _macro_selected else None
     )
+    # F18 fundamentals is opt-in the same way: "all_fundamentals" or an explicit
+    # "F18" triggers the (cache-only) valuation-panel read below; every existing
+    # spec uses "all" → no read, no behaviour change. The panel-artifact
+    # signature is folded into the cache key so a rebuilt panel invalidates.
+    _fund_selected = (
+        families == "all_fundamentals"
+        or (not isinstance(families, str) and "F18" in set(families))
+    )
+    _fund_sig = (
+        gbdt_data.fundamentals_panel_signature(repo_root=repo_root)
+        if _fund_selected else None
+    )
 
     panel_sig = gbdt_feature_cache.panel_signature(
         panel_obj.panel, panel_obj.index_series,
@@ -1853,6 +1865,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         random_seed=spec.get("random_seed", 42),
         panel_sig=panel_sig,
         macro_sig=_macro_sig,
+        fund_sig=_fund_sig,
     )
     universe_key = gbdt_universe_feature_cache.compute_key(
         universe=target["universe"],
@@ -1863,6 +1876,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         random_seed=spec.get("random_seed", 42),
         panel_sig=panel_sig,
         macro_sig=_macro_sig,
+        fund_sig=_fund_sig,
     )
     universe_cache_root = preflight.get("data_root") or str(Path("data").resolve())
 
@@ -1983,12 +1997,25 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
                     f"[features] macro panel: {macro_df.shape[1]} FRED series × "
                     f"{len(macro_df)} dates"
                 )
+            # F18: load the point-in-time valuation panel (cache-only) only when
+            # the spec opted into fundamentals features.
+            fund_df = None
+            if _fund_selected:
+                _pdates = panel_obj.panel.index.get_level_values("date")
+                fund_df = gbdt_data.load_fundamentals_panel(
+                    _pdates.min(), _pdates.max(), repo_root=repo_root,
+                )
+                _milestone(
+                    f"[features] fundamentals panel: {len(fund_df)} (date,symbol) "
+                    f"rows × {fund_df.shape[1]} cols"
+                )
             X = gbdt_features.build_feature_matrix(
                 panel_obj.panel, panel_obj.index_series,
                 lookbacks=lookbacks,
                 annualization=panel_obj.annualization_factor,
                 families=families, exclude=exclude,
                 macro_df=macro_df,
+                fund_df=fund_df,
             )
             # Drop all-NaN columns (some features may produce no values on a
             # short-history ticker). This is part of what the loop consumes,
