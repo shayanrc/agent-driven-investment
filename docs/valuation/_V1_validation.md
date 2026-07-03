@@ -67,8 +67,8 @@ non-positive PS** on two tickers: ASTS 2021 (a SPAC-transition quarter with
 sign-flipped EPS). Root cause: upstream `shares ≤ 0` artifacts (10 quarters /
 6 tickers cache-wide) were not masked. Fixed by a `shares > 0` guard in
 `compute_ratios` (all ratio columns NaN on such rows) + regression tests; panel
-rebuilt — the three artifact gates (no-look-ahead, filing-order, PS>0) all pass
-at 0. Neither ticker is in the sp500, so the `_272` A/B was unaffected; the
+rebuilt — the four artifact gates (no-look-ahead, filing-order, PS>0, shares>0)
+all pass at 0. Neither ticker is in the sp500, so the `_272` A/B was unaffected; the
 other four affected tickers (incl. CEG pre-spinoff) never entered a valid TTM
 window.
 
