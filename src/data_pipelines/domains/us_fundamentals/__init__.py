@@ -51,8 +51,11 @@ class USFundamentalsDomain(Domain):
 
     def _register_adapters(self) -> None:
         """Instantiate the provider adapters that have landed (Phases 2-4)."""
-        # Populated as adapter phases land; empty dict = unfillable gaps
-        # (dispatch raises AllProvidersFailed), which is correct until then.
+        from data_pipelines.domains.us_fundamentals.adapters.macrotrends import (
+            MacrotrendsAdapter,
+        )
+
+        self._adapters["macrotrends"] = MacrotrendsAdapter(self._config)
 
     @property
     def name(self) -> str: return "us_fundamentals"
