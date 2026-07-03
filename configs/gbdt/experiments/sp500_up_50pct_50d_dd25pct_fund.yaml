@@ -6,7 +6,7 @@
 # columns (yields + cross-sectional ranks + TTM growth), so any test
 # R-Precision@K delta isolates the F18 fundamentals contribution. max_iterations:
 # 1 (single fit, no per-arm tuning) keeps the HP matched to base_v2 — the clean
-# A/B discipline (the _260 macro sign-flip lesson). Plan: V1.7. Memo: _265.
+# A/B discipline (the _260 macro sign-flip lesson). Plan: V1.7. Memo: _272.
 target:
   universe: sp500
   direction: up

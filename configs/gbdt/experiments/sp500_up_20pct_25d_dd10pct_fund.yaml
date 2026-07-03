@@ -5,7 +5,7 @@
 # The only difference vs the baseline is the ~9 point-in-time valuation-ratio
 # columns, so any test R-Precision@K delta isolates the F18 contribution.
 # max_iterations: 1 (single fit) keeps HP matched to base_v2 — clean A/B
-# discipline. Plan: V1.7. Memo: _265.
+# discipline. Plan: V1.7. Memo: _272.
 target:
   universe: sp500
   direction: up
