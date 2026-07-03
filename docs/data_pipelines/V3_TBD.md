@@ -23,13 +23,22 @@ project, not a chore.
 
 ## Correctness / enrichment
 
-4. **filed_date enrichment for macrotrends-served rows.** Only EDGAR fills
-   `filed_date`; macrotrends-served rows carry NaT. The `merge_overlap` fill-holes
-   policy already enriches a row when EDGAR happens to serve its ticker, but a
-   deliberate one-shot enrichment pass (fetch EDGAR for ALL cached tickers, merge
-   filed dates only) would make the point-in-time lag policy uniform before modeling.
-   ~1,000 companyfacts requests ≈ 1-2 h polite. Do this BEFORE building
-   fundamentals-derived model features that need causal lags.
+4. **[DONE 2026-07-03] filed_date enrichment.** `scripts/data_pipelines/
+   enrich_fundamentals_filed_date.py` fills `filed_date` for every cached ticker
+   from the SEC **submissions** API — `EdgarAdapter.filing_dates()` maps each
+   `reportDate → earliest 10-K/10-Q filingDate`, the authoritative "became public"
+   date. Chosen over the companyfacts-derived date (the initial approach): exact
+   for derived-Q4 quarters (a 10-K's own filing date, no differencing-max that
+   read up to a *year* late — see the GOOGL before/after), ~25× smaller fetch
+   (~150 KB vs 3.7 MB), and no XBRL derivation. **Authoritative semantics:**
+   filed_date = the confirmed submissions date, else NaT (any stale/unconfirmed
+   value is cleared) with two guards — reportDate↔fiscal-end proximity AND the
+   causal invariant (filing after period end), which rejects the off-calendar
+   mis-snaps (CAVA's 13-week restaurant quarters, FERG's July fiscal year).
+   Outcome: 993/1014 tickers dated, 92.8% of rows, **0 rows with
+   filed_date ≤ fiscal_period_end**, filing lag median 36 d / p95 58 d. The 21
+   undated tickers are ADRs/foreign filers/delisted (no 10-K/Q). Pure matching
+   core `resolve_filed_dates()` + regression tests. Re-runnable + idempotent.
 
 5. **Macrotrends-vs-EDGAR cross-validation report.** Both providers now cover most
    tickers; a scripted diff (per metric, per quarter, relative error distribution)
