@@ -23,9 +23,13 @@ class USFundamentalsConfig:
     # --- macrotrends (primary) ---
     macrotrends_base_url: str = "https://www.macrotrends.net"
     # Minimum seconds between any two macrotrends requests, plus uniform
-    # jitter in [0, jitter_sec] — politeness for a scraped source.
-    macrotrends_min_interval_sec: float = 1.5
-    macrotrends_jitter_sec: float = 0.5
+    # jitter in [0, jitter_sec]. Live-measured (2026-07-03 sp500 seed):
+    # macrotrends 429s at a sustained rate faster than ~1 req/5-6 s; at
+    # 1.5 s the retry/backoff machinery absorbed the 429s (self-healing but
+    # ~3 attempts/request). 4.5 s + jitter clears the limit with clean 200s
+    # at the same effective throughput.
+    macrotrends_min_interval_sec: float = 4.5
+    macrotrends_jitter_sec: float = 1.0
     # A browser UA: macrotrends serves the same HTML to browsers; a bare
     # python UA invites blocking.
     browser_user_agent: str = (
