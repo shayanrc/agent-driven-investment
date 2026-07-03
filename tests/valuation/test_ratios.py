@@ -58,3 +58,18 @@ class TestRatios:
         out = compute_ratios(_df([[100.0, 1000.0, 40000.0, 8000.0, 5000.0]]))
         for c in RATIO_COLUMNS:
             assert c in out.columns
+
+
+class TestNonPositiveShares:
+    def test_zero_shares_all_nan(self):
+        # SPAC transition artifact (ASTS 2021): 0 weighted shares
+        out = compute_ratios(_df([[100.0, 0.0, 40000.0, 8000.0, 5000.0]])).iloc[0]
+        for c in ("shares", "market_cap", "eps_ttm", "rev_ps_ttm", "fcf_ps_ttm",
+                  "pe", "ps", "p_fcf", "earnings_yield", "sales_yield", "fcf_yield"):
+            assert np.isnan(out[c]), c
+
+    def test_negative_shares_all_nan(self):
+        # EDGAR Q4-shares derivation gone negative (CACC 2023): -0.54M
+        out = compute_ratios(_df([[100.0, -0.5415, 40000.0, 8000.0, 5000.0]])).iloc[0]
+        for c in ("shares", "market_cap", "eps_ttm", "pe", "ps", "p_fcf"):
+            assert np.isnan(out[c]), c
