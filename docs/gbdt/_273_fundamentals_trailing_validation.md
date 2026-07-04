@@ -46,30 +46,41 @@ than date-aligned's 3.0% / 2.3%); revenue-growth ranks lead on trailing
 
 | signal | +50%/50d date-aligned (`_272`) | +50%/50d trailing (`_273`) | +20%/25d date-aligned | +20%/25d trailing |
 |---|---|---|---|---|
-| AUC Δ | +0.0066 ✓ | +0.0035 ✓ | +0.0200 ✓ | +0.0001 ✗ |
+| AUC Δ | +0.0066 ✓ | +0.0035 ✓ | +0.0200 ✓ | +0.0001 ~ |
 | test Brier Δ | −0.00035 ✓ | −0.00035 ✓ | −0.00036 ✓ | −0.00043 ✓ |
 | R-p@1 | +0.011 ✓ | +0.240 ✓ | +0.150 ✓ | +0.051 ✓ |
+| R-p@3 | −0.011 ✗ | +0.147 ✓ | +0.083 ✓ | −0.030 ✗ |
+| R-p@5 | −0.008 ✗ | +0.116 ✓ | +0.042 ✓ | +0.028 ✓ |
 | R-p@10 | +0.087 ✓ | +0.110 ✓ | +0.023 ✓ | −0.005 ✗ |
 | R-p@20 | +0.092 ✓ | +0.069 ✓ | −0.031 ✗ | −0.022 ✗ |
 
+(✓ = fund better, ✗ = fund worse, ~ = flat/negligible. Full table — no K omitted.)
+
 ## Verdict — split
 
-- **+50%/50d: robust two-window fundamentals win.** AUC up, test Brier down, and
-  **every** R-p@K up — on *both* the date-aligned and the trailing window. The
-  trailing top-of-book gain is large (R-p@1 0.14 → 0.38). This is materially
-  stronger evidence than F17 macro ever had (macro failed its second window
-  outright). The gate **passes** for this cell.
-- **+20%/25d: NOT robust.** Only test Brier (−0.0004) and R-p@1 (+0.05) survive
-  both windows; the strong date-aligned mid-K gains (R-p@3 +0.083, R-p@5 +0.042)
-  **do not replicate** on trailing (R-p@3 −0.030), and the AUC gain evaporates
-  (+0.020 → +0.0001). The gate **does not pass** for this cell — its `_272` edge
-  was largely window-specific.
+- **+50%/50d: robust two-window fundamentals win** (net-positive across K on both
+  windows). AUC up + test Brier down + R-p@1/@10/@20 up on *both* windows; R-p@3/@5
+  dip slightly on the date-aligned window (−0.011 / −0.008) but recover **strongly**
+  on trailing (+0.147 / +0.116). So it is NOT "every-K-up on both windows" — the
+  honest statement is: the aggregate R-p curve and every robustly-measured signal
+  improve on both windows, with two small mid-K date-aligned dips that reverse into
+  large trailing gains. The trailing top-of-book gain is large (R-p@1 0.14 → 0.38).
+  This is materially stronger evidence than F17 macro ever had (macro failed its
+  second window outright). The gate **passes** for this cell.
+- **+20%/25d: NOT robust.** Only R-p@1 (+0.15/+0.05), R-p@5 (+0.042/+0.028) and test
+  Brier (−0.0004) stay positive on *both* windows; R-p@3 (+0.083 → −0.030), R-p@10,
+  R-p@20 and the AUC gain (+0.020 → +0.0001) **do not replicate**. The surviving
+  signals are top-of-book only and the K-pattern is inconsistent across windows — not
+  enough to act on. The gate **does not pass** for this cell — its `_272` edge was
+  largely window-specific.
 
 **Net read:** fundamentals are a real, replicating edge on the **long-horizon /
-high-threshold** champion (+50%/50d), and a marginal/top-1-only effect on the
+high-threshold** champion (+50%/50d), and a marginal/top-of-book-only effect on the
 short-horizon one (+20%/25d). Consistent with the mechanism — a 50-day-forward
 +50% move is a bigger fundamental-quality signal than a 25-day +20% move, which is
-more technical/momentum-driven.
+more technical/momentum-driven. **Caveat:** trailing windows are short (Q_days ≈ 60),
+so per-day R-p@1 rests on few observations and its *level* is noisy; the robust reads
+are the AUC + Brier deltas and the aggregate R-p curve, not any single K.
 
 ## Decision
 
