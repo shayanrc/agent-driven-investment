@@ -780,6 +780,15 @@ _FUND_GROWTH_LOOKBACK = 252   # ~1y TTM YoY
 _FUND_CHG_LOOKBACK = 63       # ~1 quarter re-rating
 
 
+def _xs_zscore(s: pd.Series) -> pd.Series:
+    """Cross-sectional z-score — standardize across tickers within each date
+    (sample std; a zero-std date → NaN). Same idiom as the F7/F14
+    ``_xs_zscore`` families. Unlike ``_xs_rank``, this keeps the *magnitude* of
+    the deviation (how many σ from the cross-section), not just the ordering."""
+    gd = s.groupby(level="date")
+    return (s - gd.transform("mean")) / gd.transform("std").replace(0, np.nan)
+
+
 def fundamentals_features(
     fund_df: pd.DataFrame,
     panel: pd.DataFrame,
@@ -796,7 +805,10 @@ def fundamentals_features(
       - ``fund_<yield>``            the point-in-time yield level
       - ``fund_<yield>_xs_rank``    its cross-sectional percentile across the
                                     panel on that date (the F14 idiom)
-      - ``fund_rev_ttm_yoy``        log TTM-revenue growth vs ~1y ago (+ xs_rank)
+      - ``fund_<yield>_xs_zscore``  its cross-sectional z-score on that date
+                                    (magnitude of cheapness, not just ordering)
+      - ``fund_rev_ttm_yoy``        log TTM-revenue growth vs ~1y ago
+                                    (+ xs_rank + xs_zscore)
       - ``fund_earnings_yield_chg_63``  63-td change (cheapening / re-rating)
 
     Already causal (C1): the valuation value at ``t`` uses only filings with
@@ -818,6 +830,7 @@ def fundamentals_features(
         s = aligned[y]
         out[f"fund_{y}"] = s
         out[f"fund_{y}_xs_rank"] = s.groupby(level="date").rank(pct=True)
+        out[f"fund_{y}_xs_zscore"] = _xs_zscore(s)
 
     if "revenue_ttm" in aligned.columns:
         rev = aligned["revenue_ttm"]
@@ -827,6 +840,7 @@ def fundamentals_features(
         g = np.log(ratio)
         out["fund_rev_ttm_yoy"] = g
         out["fund_rev_ttm_yoy_xs_rank"] = g.groupby(level="date").rank(pct=True)
+        out["fund_rev_ttm_yoy_xs_zscore"] = _xs_zscore(g)
 
     if "earnings_yield" in aligned.columns:
         ey = aligned["earnings_yield"]
