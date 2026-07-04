@@ -56,9 +56,29 @@ def test_emits_expected_columns():
     for y in ("earnings_yield", "sales_yield", "fcf_yield"):
         assert f"fund_{y}" in feat.columns
         assert f"fund_{y}_xs_rank" in feat.columns
+        assert f"fund_{y}_xs_zscore" in feat.columns
     assert "fund_rev_ttm_yoy" in feat.columns
     assert "fund_rev_ttm_yoy_xs_rank" in feat.columns
+    assert "fund_rev_ttm_yoy_xs_zscore" in feat.columns
     assert "fund_earnings_yield_chg_63" in feat.columns
+    # F18 now emits 13 columns (3 yields × {level, rank, zscore} + rev_yoy ×
+    # {level, rank, zscore} + earnings_yield_chg_63)
+    assert sum(c.startswith("fund_") for c in feat.columns) == 13
+
+
+def test_xs_zscore_is_cross_sectional_standardized():
+    panel = make_synthetic_panel(n_rows=200, n_tickers=5)
+    dates = panel.index.get_level_values("date").unique()
+    feat = F.fundamentals_features(_fund_df(dates, _tickers(panel)), panel)
+    d = dates[150]
+    z = feat.xs(d, level="date")["fund_earnings_yield_xs_zscore"].dropna()
+    assert len(z) == 5
+    # per-date z-scores are mean≈0 and (sample) std≈1 across the cross-section
+    assert abs(z.mean()) < 1e-9
+    assert abs(z.std(ddof=1) - 1.0) < 1e-9
+    # and they preserve the ordering of the underlying yield
+    y = feat.xs(d, level="date")["fund_earnings_yield"].dropna()
+    assert (z.rank().values == y.rank().values).all()
 
 
 def test_xs_rank_is_cross_sectional_percentile():
