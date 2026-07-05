@@ -23,10 +23,11 @@ the FS/HP decisions; every rationale is in `loop/iter_<N>_decision.json` +
 | +20%/100d | 3 | FS cliff-cut, L2 {0,4.5} on cut pool | **full-pool default (iter 0)** | agent |
 | +20%/50d | 4 | pure-HP on full pool: L2 {0,4.5,10}, depth 4 | 292c, d6, λ4.5 (iter 1) | agent |
 
-+40%/200d also got a follow-up 1-shot (`_ffundagent8`): the loop's **eval-book
-dominator** (155c, λ10, mcw 3 — eval R-p@1 0.815, @3–@20 all best-in-loop), which
-the val-argmin finalizer had passed over, re-emitted via a 2-iteration mini-run so
-the untouched test window could adjudicate the val-vs-eval disagreement.
++40%/200d also got a follow-up 1-shot (`_ffundagent8`): the loop's iter-8 config
+(155c, λ10, mcw 3 — best-in-loop eval R-p@1 0.815/@10/@20, and better than the
+val-argmin config at **every** K), which the val-argmin finalizer had passed over,
+re-emitted via a 2-iteration mini-run so the untouched test window could
+adjudicate the val-vs-eval disagreement.
 
 ## Results — test window, raw values (base_rate for reference)
 
@@ -40,9 +41,10 @@ the untouched test window could adjudicate the val-vs-eval disagreement.
 | ffundagent8 (λ10+mcw3) | 0.674 | 0.1019 | 0.250 | 0.203 | 0.276 | 0.259 | 0.277 |
 
 In-loop, the two agent configs dominated: λ10 held the val argmin (0.16129, vs
-0.16375 for the λ4.5 family) **and** eval R-p@1 0.795; λ10+mcw3 dominated the eval
-book at every K (@1 0.815, @3 0.638, @5 0.644, @10 0.626). On test both collapse
-below the untuned single-fit's book. The finalizer's re-fit is faithful (val
+0.16375 for the λ4.5 family) **and** eval R-p@1 0.795; λ10+mcw3 was best-in-loop
+at eval @1/@10/@20 (@1 0.815, @10 0.626, @20 0.567) and beat the val-argmin config
+at every K (@3 0.638 and @5 0.644 trail iter-0's 0.658 / iter-4's 0.651). On test
+both collapse below the untuned single-fit's book. The finalizer's re-fit is faithful (val
 0.16129 reproduced exactly) — the collapse is the configs', not an artifact.
 
 **+20%/100d** (base_rate 0.2311): every explored direction (cliff-cut, L2 on the cut
@@ -67,8 +69,9 @@ improve — yet the test book is worse at **every** K.
 Three cells, three instances of the same failure mode, under three different
 guises:
 
-1. **+40%/200d:** val argmin AND eval-book dominance both picked configs that
-   collapse on the test book (eval→test ordering at top-1 was nearly inverted).
+1. **+40%/200d:** the val argmin AND the eval top-book leader (@1/@10/@20) both
+   picked configs that collapse on the test book (eval→test ordering at top-1 was
+   nearly inverted).
 2. **+20%/100d:** the only cell where the loop *refused* to displace iter 0 — and
    the only cell whose test book was preserved.
 3. **+20%/50d:** a real val gain that transferred to test *bulk* metrics (AUC↑,
@@ -117,6 +120,7 @@ candidate, not a result.
 
 Registry: 4 rows (`*_ffundagent` ×3, `*_ffundagent8`), mode `agent_file_protocol`.
 Specs: `configs/gbdt/experiments/*_ffundagent{,8}.yaml`. Full per-iteration
-decision trail: `results/gbdt/experiments/<cell>_ffundagent/loop/` +
-`iterations.jsonl`. Prior: `_275` (default loop), `_274` (lattice), `_272`/`_273`
-(champion A/Bs). Plan: `V1.7_fundamentals_features_plan.md`.
+decision trail: `results/gbdt/experiments/<cell>_ffundagent/loop/`
+(`iter_<N>_request.json` + `iter_<N>_decision.json` pairs; note `iterations.jsonl`
+is not populated in agent mode). Prior: `_275` (default loop), `_274` (lattice),
+`_272`/`_273` (champion A/Bs). Plan: `V1.7_fundamentals_features_plan.md`.
