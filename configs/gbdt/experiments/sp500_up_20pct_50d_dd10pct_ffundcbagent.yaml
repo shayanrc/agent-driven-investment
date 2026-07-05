@@ -1,0 +1,33 @@
+# Experiment: sp500_up_20pct_50d_dd10pct_ffundcbagent
+# CatBoost control for _276 (+20%/50d): same agent-driven protocol, same windows,
+# same 292-col all_fundamentals pool - different backend. Tests whether the
+# _276 tail-flattening under Brier-guided tuning is an xgboost property or
+# general. iter_0 = CatBoost defaults on the full pool (the first CatBoost
+# fundamentals baseline on this cell). _276 lesson applied: screen FEW configs.
+# Gates: plateau 0.0001 (#204), gate 0.25, tie_band 0.0 (strict val argmin).
+# --snapshot-end 2026-07-02 at launch AND on every --resume. Memo _277.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.25
+    tie_band: 0.0
+
+random_seed: 42
