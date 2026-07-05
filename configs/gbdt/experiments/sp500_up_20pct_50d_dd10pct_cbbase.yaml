@@ -1,0 +1,29 @@
+# Experiment: sp500_up_20pct_50d_dd10pct_cbbase
+# CatBoost TECHNICAL-ONLY base arm (window-1 window, train_start 2019-01-01) - completes
+# the backend x features factorial for _278: cb-on-all vs cb-on-all_fundamentals
+# separates the CatBoost backend effect from the F18 increment. Single fit,
+# CatBoost defaults. --snapshot-end 2026-07-02 at runtime.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
