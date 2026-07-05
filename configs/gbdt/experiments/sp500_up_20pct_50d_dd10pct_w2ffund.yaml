@@ -1,0 +1,32 @@
+# Experiment: sp500_up_20pct_50d_dd10pct_w2ffund
+# Window-2 confirmation (V1.7_TBD par.5, memo _278): date_aligned train_start
+# 2019-07-01 shifts every segment ~6 months vs the canonical 2019-01-01 anchor,
+# giving an independent test window (~2025-H1, zero overlap with window 1's
+# 2024-07-26 -> 2024-12-16) that stays fully labeled for H=200 - the trailing
+# snapshot gives Q=0 there (_263), which is why window 2 is date-aligned (_264
+# precedent). Arm: xgb fundamentals (default HP single fit) - the confirmed-best config class.
+# --snapshot-end 2026-07-02 at runtime (same cache view; matrices stay warm).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-07-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
