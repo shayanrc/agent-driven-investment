@@ -4,10 +4,14 @@
 standard FS+HP loop add on the top fundamentals cells — and does FS drop the
 z-score columns where they dilute (the `_274` hypothesis)?
 
-**Cell selection.** Top 3 skill-bearing `_ffund` models by R-p@3 (the leaderboard
-sort): **+20%/100d**, **+20%/50d**, **+40%/200d**. `+10%/50d` ranked first raw but is
-excluded — a diagnosed-null cell per the compound rule (AUC 0.489 ∈ [0.46, 0.54],
-R-p@10 lift 0.379/0.335 = 1.13 < 1.2); its R-p@3 is base-rate, not skill.
+**Cell selection.** Top 3 `_ffund` models by R-p@3 (the leaderboard sort) **within
+the `_274` F18-edge band** (20–50% × 50–200d): **+20%/100d**, **+20%/50d**,
+**+40%/200d**. Two higher-raw-R-p@3 cells were passed over deliberately:
+`+10%/50d` (0.417) is a diagnosed-null cell per the compound rule (AUC 0.489 ∈
+[0.46, 0.54], R-p@10 lift 0.379/0.335 = 1.13 < 1.2 — its R-p@3 is base-rate, not
+skill), and `+10%/25d` (0.350) sits outside the F18-edge band with a marginal
+fundamentals delta (`_274`: ΔAUC +0.008 on a 0.197 base-rate cell) — tuning it
+would measure the technical model, not the fundamentals contribution.
 
 **Design.** `<cell>_ffundtune`: `features.candidates: all_fundamentals` (292 cols =
 279 technical + 13 F18), default auto-callback loop (`callback_mode: default`,
