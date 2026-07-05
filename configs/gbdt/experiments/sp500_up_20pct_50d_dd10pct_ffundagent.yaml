@@ -1,0 +1,34 @@
+# Experiment: sp500_up_20pct_50d_dd10pct_ffundagent
+# Agent-driven FS+HP tune (agent_file_protocol) of the +20%/50d F18 fundamentals
+# model — pushes past the _275 default-loop ceiling (2-3 iters, one l2 step).
+# iter_0 = default HP on the full 292-col all_fundamentals pool (= the _274
+# ffund single-fit anchor). plateau 0.0001 = the #204 workaround; gate 0.25
+# loosened so the agent (not one bad step) manages exploration; tie_band 0.0
+# = strict val-Brier argmin at finalization (avoids the _275 +20/100 tie-band
+# pathology). date_aligned matches _274/_275 (test 2024-07-26 -> 2024-12-16).
+# --snapshot-end 2026-07-02 at launch AND on every --resume. Memo _276.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.25
+    tie_band: 0.0
+
+random_seed: 42
