@@ -21,7 +21,8 @@ displaced iter 0, the CatBoost-defaults arm was re-emitted via a 2-launch mini-r
 | +20%/50d | +0.004 (+0.057) | 0.10335 (0.10788) | val↓ book~ | **val argmin** + book held |
 
 Ordered boosting self-regularizes: gaps are 3–14× smaller than xgboost's, and
-**CatBoost's default val beats xgboost's best *tuned* val on all three cells.**
+**CatBoost's default val beats or effectively ties xgboost's best *tuned* val on all
+three cells** (the +20%/100d margin is 0.0005, vs xgb's untuned iter-0 there).
 `l2_leaf_reg` 10 was rejected on val on all three (no xgboost-style "val up, tail
 down" ambiguity — val and book mostly agreed in-loop). Depth 4 took the val argmin
 everywhere and finalized as each loop's pick.
@@ -55,7 +56,8 @@ everywhere and finalized as each loop's pick.
 
 ## Findings
 
-1. **CatBoost wins test AUC on all three cells** (+0.011 to +0.077) and test Brier
+1. **CatBoost wins test AUC on all three cells** (cb-defaults vs xgb ffund: +0.014
+   to +0.082) and test Brier
    on two — a consistent bulk-ranking advantage over xgboost on these long-horizon
    fundamentals cells, at defaults, before any tuning.
 2. **The test book comparison is cell-shaped, not uniform.**
@@ -63,8 +65,8 @@ everywhere and finalized as each loop's pick.
      prior best @1) — the strongest all-around book any arm has posted on this cell.
      The defaults arm shows @3–@20 + AUC are mostly the *backend*; depth-4 adds @1
      and @10/@20.
-   - +20%/50d: CatBoost takes the deep book (@10/@20) and AUC; xgboost keeps the
-     top (@1–@5). Opposite tail concentration.
+   - +20%/50d: CatBoost takes @5 (depth-4), the deep book (@10/@20) and AUC;
+     xgboost keeps the top (@1–@3). Opposite tail concentration.
    - +40%/200d: cb-defaults takes @1 (0.650, the cell's best; 5.5× base); xgb
      ffundtune keeps @3/@5.
 3. **The `_276` selection problem is backend-independent — and bidirectional.** On
