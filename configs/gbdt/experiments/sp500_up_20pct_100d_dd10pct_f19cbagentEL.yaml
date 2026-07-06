@@ -1,0 +1,26 @@
+# Experiment: sp500_up_20pct_100d_dd10pct_f19cbagentEL
+# 1-shot of the _f19cbagent eval-book leader (iter 2: depth 6, l2_leaf_reg 1.0)
+# which the val-argmin finalizer passed over for the depth-4 val-trap. Scores the
+# eval-leader on test for the _280 comparison. all_fundamentals2, same window.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 100
+  max_drawdown: 0.1
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+features:
+  candidates: all_fundamentals2
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  hp_starting:
+    l2_leaf_reg: 1.0
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
