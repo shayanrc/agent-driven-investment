@@ -17,7 +17,17 @@ run() {
   SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt timeout 3600 uv run python -m gbdt experiment \
     "configs/gbdt/experiments/$spec.yaml" --snapshot-end "$SNAP" --overwrite \
     >> "$LOG/$spec.log" 2>&1
-  echo "[F19] DONE  $spec rc=$? elapsed=$(( $(date +%s) - t0 ))s"
+  local rc=$?
+  # Post-fit cleanup: the durable outputs (metrics.json, predictions/,
+  # model, report) are what Phase E aggregation reads; the per-experiment
+  # matrix cache (~3.8G) is a regenerable slice of the shared universe cache
+  # (data/gbdt_feature_cache, untouched). Drop it so 68 arms don't re-
+  # accumulate ~260G. Only on a clean fit (rc=0) so a failure stays debuggable.
+  if [ "$rc" -eq 0 ]; then
+    rm -f "results/gbdt/experiments/$spec/_feature_matrix_cache.parquet" \
+          "results/gbdt/experiments/$spec/_feature_matrix_cache.key.json"
+  fi
+  echo "[F19] DONE  $spec rc=$rc elapsed=$(( $(date +%s) - t0 ))s free=$(df --output=avail $(pwd) | tail -1 | awk '{print int($1/1024/1024)"G"}')"
 }
 
 CELLS=$(uv run python - <<'PY'
