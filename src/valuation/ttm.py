@@ -31,7 +31,7 @@ FLOW_METRICS = ("revenue", "net_income", "fcf")
 
 _OUT_COLUMNS = (
     "effective_date", "asof_fiscal_period_end", "asof_filed_date",
-    "revenue_ttm", "net_income_ttm", "fcf_ttm", "shares",
+    "revenue_ttm", "net_income_ttm", "fcf_ttm", "revenue_q", "shares",
 )
 
 
@@ -69,13 +69,17 @@ def build_ttm_timeline(quarterly: pd.DataFrame) -> pd.DataFrame:
             row[f"{m}_ttm"] = (
                 float(vals.sum()) if vals.notna().all() else float("nan")
             )
+        # newest quarter's single-quarter revenue (the YoY/QoQ base for F19),
+        # carried on the same causal effective_date grid as revenue_ttm.
+        rev_q = q["revenue"].iloc[i]
+        row["revenue_q"] = float(rev_q) if pd.notna(rev_q) else float("nan")
         rows.append(row)
 
     out = pd.DataFrame(rows, columns=list(_OUT_COLUMNS))
     if out.empty:
         for c in ("effective_date", "asof_fiscal_period_end", "asof_filed_date"):
             out[c] = pd.Series(dtype="datetime64[ns]")
-        for c in ("revenue_ttm", "net_income_ttm", "fcf_ttm", "shares"):
+        for c in ("revenue_ttm", "net_income_ttm", "fcf_ttm", "revenue_q", "shares"):
             out[c] = pd.Series(dtype="float64")
         return out
     for c in ("effective_date", "asof_fiscal_period_end", "asof_filed_date"):

@@ -39,6 +39,21 @@ class TestBuildTTM:
         assert first["effective_date"] == pd.Timestamp("2025-02-15")
         # second snapshot rolls: 20+30+40+50 = 140, shares from newest quarter
         assert tl.iloc[1]["revenue_ttm"] == 140.0
+        # revenue_q carries the newest quarter's single-quarter revenue (F19
+        # base), on the same effective_date grid as revenue_ttm.
+        assert first["revenue_q"] == 40.0
+        assert tl.iloc[1]["revenue_q"] == 50.0
+
+    def test_revenue_q_nan_when_newest_quarter_missing(self):
+        # A NaN single-quarter revenue in the newest quarter → revenue_q NaN,
+        # even though the older three make revenue_ttm NaN too (guard parity).
+        q = _q(
+            ["2024-03-31", "2024-06-30", "2024-09-30", "2024-12-31"],
+            ["2024-05-01", "2024-08-01", "2024-11-01", "2025-02-15"],
+            revenue=[10, 20, 30, np.nan],
+        )
+        tl = build_ttm_timeline(q)
+        assert np.isnan(tl.iloc[0]["revenue_q"])
 
     def test_fewer_than_four_quarters_empty(self):
         q = _q(["2024-03-31", "2024-06-30", "2024-09-30"],
