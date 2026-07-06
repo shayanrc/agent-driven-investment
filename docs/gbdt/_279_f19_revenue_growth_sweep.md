@@ -84,15 +84,47 @@ are on the same window; `_278` found cb-base already beats every xgb arm on AUC 
 long-horizon cell-windows, and that F18's long-horizon edge failed window-2. F19 on
 `20pct/100d` is being tested against that backdrop.
 
-## Window-2 confirmation
+## Window-2 confirmation — the edge does NOT replicate
 
-<!-- FILLED IN BY PHASE F -->
+Re-ran the 4 arms of `20pct/100d` on an independent date_aligned window
+(`train_start: 2019-07-01` → test **2025-01-24 → 2025-06-17**, Q=100, base 0.232 —
+the `_278` window). Raw values:
 
-## Verdict
+| arm | window | AUC | test Brier | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| xgb F18 | w2 | 0.6326 | 0.1718 | 0.350 | 0.393 | 0.416 | 0.425 | 0.427 |
+| xgb F18+F19 | w2 | 0.6644 | 0.1688 | 0.440 | 0.437 | 0.388 | 0.395 | 0.385 |
+| cb F18 | w2 | 0.7372 | 0.1613 | 0.530 | 0.560 | 0.546 | 0.518 | 0.508 |
+| cb F18+F19 | w2 | 0.7192 | 0.1625 | 0.490 | 0.547 | 0.522 | 0.495 | 0.480 |
 
-<!-- FILLED IN AFTER WINDOW-2 -->
+**The window-1 edge inverts.** On window 1 F19 lifted the deep book (@3–@20) on
+both backends and traded away @1. On window 2:
+- **xgb:** the book effect **flips sign** — @5/@10/@20 now go *down* (0.416→0.388,
+  0.425→0.395, 0.427→0.385) while @1 goes *up* (0.350→0.440). AUC rises both
+  windows (+0.032), but the R-p@10 delta is +0.045 (w1) → **−0.030 (w2)**.
+- **cb:** F19 now **hurts everything** — AUC −0.018, Brier +0.001, and every K down
+  (@10 0.518→0.495). The clean w1 deep-book win (@10 +0.055) reverses to −0.023.
 
-Registry: 68 rows (`*_{f18,f19}{xgb,cb}`, mode `single_fit`) + 4 window-2 rows.
+Neither backend clears the deep-book bar on window 2. The one both-backend window-1
+winner does not survive.
+
+## Verdict — F19 not adopted
+
+- **No cell shows a robust two-window F19 edge.** F19 (revenue growth) is
+  **contextually additive but not robust** — the exact pattern of F17-macro
+  (`_264`) and long-horizon F18 (`_278`). The single both-backend window-1 winner
+  (`20pct/100d`) failed window-2 replication with a sign-flip on both backends.
+- **F19 stays as committed, opt-in infrastructure** (the `all_fundamentals2` token),
+  **not promoted.** F18/`all_fundamentals` remains byte-identical; no champion
+  change, no `/daily-predictions` change (human decisions, `_019`).
+- **The single-quarter-QoQ FS-drop test is unanswered** by this sweep (single-fit
+  does no pruning) and parked in `V1.8_TBD` — but with F19 non-robust overall, it's
+  a low-priority curiosity, not a blocker.
+- Consistent with the standing read: on these sp500 cells the robust lever is the
+  **backend** (CatBoost, `_278`), not additional fundamentals feature families.
+
+Registry: 68 window-1 rows (`*_{f18,f19}{xgb,cb}`, mode `single_fit`) + 4 window-2
+rows (`*_{f18,f19}{xgb,cb}_w2`).
 Specs: `configs/gbdt/experiments/sp500_up_*_{f18,f19}{xgb,cb}.yaml`. Plan:
 `V1.8_revenue_growth_features_plan.md`. Prior: `_278` (F18 window-2 + CatBoost),
 `_274` (F18 lattice).
