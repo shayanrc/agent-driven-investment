@@ -30,7 +30,7 @@ PANEL_COLUMNS = (
     "earnings_yield", "sales_yield", "fcf_yield",
     "eps_ttm", "rev_ps_ttm", "fcf_ps_ttm",
     "market_cap", "adj_close", "shares",
-    "revenue_ttm", "net_income_ttm", "fcf_ttm",
+    "revenue_ttm", "net_income_ttm", "fcf_ttm", "revenue_q",
     "asof_fiscal_period_end", "asof_filed_date",
 )
 
