@@ -1,0 +1,29 @@
+# Experiment: sp500_up_20pct_100d_dd10pct_f18cb_w2
+# V1.8 F19 window-2 confirmation of the both-backend winner 20pct_100d (memo _279).
+# Independent date_aligned window (train_start 2019-07-01 -> test ~2025-H1, the
+# _278 pattern), same matched single-fit. Tests whether the F19 growth edge on
+# 20pct/100d replicates off window 1. --snapshot-end set at runtime.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 100
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-07-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: catboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
