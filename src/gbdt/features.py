@@ -851,6 +851,67 @@ def fundamentals_features(
     return pd.DataFrame(out, index=panel.index)
 
 
+def _pct_growth(s: pd.Series, k: int) -> pd.Series:
+    """Trailing percent change of ``s`` over ``k`` trading days, per ticker:
+    ``s(t)/s(t−k) − 1``. Non-positive or NaN base/current → NaN (a revenue
+    that crossed zero has no meaningful growth %). Strictly trailing (causal):
+    the ``k``-row shift within each ticker only looks backward, and the source
+    series is already ``filed_date ≤ t`` from the valuation panel."""
+    prev = s.groupby(level="ticker").shift(k)
+    ratio = (s / prev).where((s > 0) & (prev > 0))
+    return ratio - 1.0
+
+
+def fundamentals_growth_features(
+    fund_df: pd.DataFrame,
+    panel: pd.DataFrame,
+    *,
+    yoy_lookback: int = _FUND_GROWTH_LOOKBACK,
+    qoq_lookback: int = _FUND_CHG_LOOKBACK,
+) -> pd.DataFrame:
+    """F19 — revenue-growth family (percent), joined per (date, ticker).
+
+    Four growth measures, each emitted as {level, ``_xs_rank``, ``_xs_zscore``}
+    (the F18 idiom — asset-agnostic, universe-relative), in **percent** form
+    (``ratio − 1``, unlike the F18 ``fund_rev_ttm_yoy`` which is log):
+      - ``fund_rev_q_yoy``        single-quarter revenue YoY (seasonality-safe)
+      - ``fund_rev_q_qoq``        single-quarter sequential QoQ (seasonal — kept
+                                  deliberately; if dead, importance FS drops it)
+      - ``fund_rev_ttm_yoy_pct``  TTM revenue YoY % (smooth; percent twin of the
+                                  F18 log column)
+      - ``fund_rev_ttm_qoq``      TTM sequential QoQ % (acceleration, smooth)
+
+    ``fund_df`` must carry ``revenue_q`` (single-quarter) + ``revenue_ttm``.
+    Causal (C1): the same convention as F18 — value at ``t`` uses only filings
+    with ``filed_date ≤ t``; the YoY (252-td) / QoQ (63-td) shifts are strictly
+    trailing; the cross-sectional ranks/z-scores are same-date. Verified by the
+    fundamentals-perturbation leakage test. Missing columns degrade gracefully.
+    """
+    dates = panel.index.get_level_values("date")
+    symbols = panel.index.get_level_values("ticker").str.split(":").str[-1]
+    join_idx = pd.MultiIndex.from_arrays([dates, symbols], names=["date", "symbol"])
+    aligned = fund_df.sort_index().reindex(join_idx)
+    aligned.index = panel.index  # relabel (date, symbol) → (date, ticker)
+
+    measures: dict[str, pd.Series] = {}
+    if "revenue_q" in aligned.columns:
+        rq = aligned["revenue_q"]
+        measures["fund_rev_q_yoy"] = _pct_growth(rq, yoy_lookback)
+        measures["fund_rev_q_qoq"] = _pct_growth(rq, qoq_lookback)
+    if "revenue_ttm" in aligned.columns:
+        rt = aligned["revenue_ttm"]
+        measures["fund_rev_ttm_yoy_pct"] = _pct_growth(rt, yoy_lookback)
+        measures["fund_rev_ttm_qoq"] = _pct_growth(rt, qoq_lookback)
+
+    out: dict[str, pd.Series] = {}
+    for name, s in measures.items():
+        out[name] = s
+        out[f"{name}_xs_rank"] = s.groupby(level="date").rank(pct=True)
+        out[f"{name}_xs_zscore"] = _xs_zscore(s)
+
+    return pd.DataFrame(out, index=panel.index)
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
@@ -900,6 +961,11 @@ def build_feature_matrix(
         # Baseline families PLUS the opt-in fundamentals family (F18). "all"
         # untouched — existing specs/models unaffected.
         sel = set(_ALL_FAMILIES) | {"F18"}
+    elif families == "all_fundamentals2":
+        # Baseline + F18 (valuation levels) + F19 (revenue growth). Both
+        # "all" and "all_fundamentals" are left untouched above, so existing
+        # specs/models (incl. the _272–_278 F18 lattice) stay byte-identical.
+        sel = set(_ALL_FAMILIES) | {"F18", "F19"}
     else:
         sel = set(families)
 
@@ -992,6 +1058,14 @@ def build_feature_matrix(
                 "families='all_fundamentals' or 'F18' is in the families list."
             )
         plan.append(("F18", lambda: fundamentals_features(fund_df, panel)))
+    if "F19" in sel:
+        if fund_df is None:
+            raise ValueError(
+                "F19 (revenue growth) selected but fund_df is None — the "
+                "runner must load the valuation panel and pass fund_df when "
+                "families='all_fundamentals2' or 'F19' is in the families list."
+            )
+        plan.append(("F19", lambda: fundamentals_growth_features(fund_df, panel)))
 
     total = len(plan)
     t_start = time.time()

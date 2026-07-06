@@ -534,7 +534,7 @@ def load_macro_panel(
 
 VALUATION_PANEL_PATH = "results/valuation/data/valuation_panel.parquet"
 _FUND_FEATURE_COLS: tuple[str, ...] = (
-    "earnings_yield", "sales_yield", "fcf_yield", "revenue_ttm",
+    "earnings_yield", "sales_yield", "fcf_yield", "revenue_ttm", "revenue_q",
 )
 
 
