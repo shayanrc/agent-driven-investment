@@ -1,0 +1,33 @@
+# Experiment: sp500_up_50pct_200d_dd25pct_f19xgbagent
+# V1.8 F19 agent-driven FS+HP finetune (memo _280). Selected as a top-3-by-R-p@3
+# candidate from the _279 F19 sweep. all_fundamentals2 (304c), same window as the
+# sweep (date_aligned train_start 2019-01-01) so tuned-vs-single-fit is comparable;
+# iter_0 = default HP == the _279 f19xgb single-fit. Agent (this session) drives
+# each iteration. Gates: plateau 0.0001 (#204), gate 0.25, tie_band 0.0 (strict val
+# argmin). --snapshot-end 2026-07-06 at launch AND every --resume (reuses the warm
+# all_fundamentals2 universe cache).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals2
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 16
+    plateau_threshold: 0.0001
+    degradation_gate: 0.25
+    tie_band: 0.0
+
+random_seed: 42
