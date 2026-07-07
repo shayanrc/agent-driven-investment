@@ -822,12 +822,14 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         if _macro_selected else None
     )
     # F18/F19 fundamentals are opt-in the same way: "all_fundamentals"
-    # (F18), "all_fundamentals2" (F18+F19), or an explicit "F18"/"F19"
-    # triggers the (cache-only) valuation-panel read below; every existing
-    # spec uses "all" → no read, no behaviour change. The panel-artifact
-    # signature is folded into the cache key so a rebuilt panel invalidates.
+    # (F18), "all_fundamentals2" (F18+F19), "all_fundamentals_vwap" (F18+F20),
+    # or an explicit "F18"/"F19" triggers the (cache-only) valuation-panel read
+    # below; every existing spec uses "all" → no read, no behaviour change. The
+    # panel-artifact signature is folded into the cache key so a rebuilt panel
+    # invalidates. NB "all_vwap" (F20 only) is pure-panel — no fund read.
     _fund_selected = (
-        families in ("all_fundamentals", "all_fundamentals2")
+        families in ("all_fundamentals", "all_fundamentals2",
+                     "all_fundamentals_vwap")
         or (not isinstance(families, str)
             and bool({"F18", "F19"} & set(families)))
     )
