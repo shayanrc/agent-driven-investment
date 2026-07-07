@@ -1,0 +1,52 @@
+# Agent-mode run on the nifty500 +30%/50d cell — V1.3 Option B (scout + FS-prefit + agent_file_protocol).
+#
+# Comparison reference:
+#   - row 9 (no `_aligned`): CatBoost default_full_loop, R-p@1=0.431, R-p@3=0.242 (pre-existing, #92)
+#   - row 16 (_aligned): XGBoost sweep mode (3 iters), R-p@1=0.080, R-p@3=0.128 (#242 sweep)
+#
+# Cell context (NOT strong-top-1 — sweep R-p@1 = 0.080):
+#   - playbook rule 7 (sweep R-p@1 ≤ 0.1): rare-event regime, mcw L2 grid OK
+#   - rule 10 (anti-AUC + R-p@10 lift > 1.8x): not triggered (AUC=0.74, R-p@10 lift ≈ 4.6x — has signal)
+#   - Healthy AUC + non-trivial top-K signal → #240 risk LOWER than #239/#241 (those were strong-top-1)
+#
+# V1.3 Option B settings:
+#   - backend.scout.enabled: true → response curves on 8 single knobs
+#   - backend.fs_prefit.enabled: true → cliff-cut feature pool before iter_0
+#   - callback_mode: agent_file_protocol → agent drives combine + iter loop
+#   - plateau_threshold: 0.0001 (per #223 workaround — disables runner auto-plateau in agent mode)
+#   - tie_band: 0.005 (V1.3 default)
+
+experiment_name: nifty500_up_30pct_50d_dd15pct_agent
+
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 30
+  horizon_days: 50
+  max_drawdown: 0.15
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+  train_rows: 800
+  val_rows: 400
+  eval_rows: 200
+  test_rows: 100
+  min_train_rows_per_ticker: 200
+  min_rows_per_ticker: 1600
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 8
+    plateau_threshold: 0.0001
+    degradation_gate: 0.01
+    tie_band: 0.005
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+
+random_seed: 42
