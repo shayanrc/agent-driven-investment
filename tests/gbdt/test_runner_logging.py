@@ -191,7 +191,7 @@ def test_B3b_preflight_git_binary_missing_graceful_fallback(tmp_path):
     """B3 variant: subprocess.run raising ``FileNotFoundError`` (git
     binary missing on PATH) also falls back to the unknown/False
     defaults without crashing the run."""
-    with patch("gbdt.__main__.subprocess.run",
+    with patch("gbdt.experiment_runner.subprocess.run",
                 side_effect=FileNotFoundError("git: command not found")):
         pf = _collect_preflight(tmp_path)
     assert pf["code_commit"] == "unknown"

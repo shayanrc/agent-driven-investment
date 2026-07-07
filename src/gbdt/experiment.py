@@ -1,12 +1,15 @@
 """``python -m gbdt.experiment <spec.yaml>`` entry point.
 
-Thin wrapper over :func:`gbdt.__main__.run_experiment` so the
+Thin wrapper over :func:`gbdt.experiment_runner.run_experiment` so the
 ``/gbdt-experiment`` skill and the docs' ``python -m gbdt.experiment <spec>``
 invocation work without going through the top-level subcommand.
 
-Per V1_PLAN.md Stage 8 the orchestrator lives in ``__main__`` and this
-module is the documented CLI shim. Importing ``gbdt.experiment`` also
-re-exports ``run_experiment`` and ``load_spec`` for programmatic use.
+The v1 Stage 8 orchestrator originally lived in ``__main__``; the runner
+split moved it to ``gbdt.experiment_runner`` (with spec handling in
+``gbdt.spec`` and the agent/scout cycles in ``gbdt.agent_cycles``) and left
+``__main__`` as the CLI + back-compat re-export surface. Importing
+``gbdt.experiment`` still re-exports ``run_experiment`` and ``load_spec``
+for programmatic use.
 """
 
 from __future__ import annotations
