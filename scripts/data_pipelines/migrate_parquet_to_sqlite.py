@@ -25,9 +25,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# Ensure src/ on path when run as a standalone script.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-
 import data_pipelines  # noqa: F401  — env load + side-effect domain registration via import below
 import data_pipelines.domains.us_equities  # noqa: F401  — registers the domain
 from data_pipelines.cache import write_processed_atomic
