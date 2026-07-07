@@ -161,7 +161,7 @@ Feature pool overrides. **By default the experiment starts with all 279 candidat
 
 | Field | Type | Default |
 |---|---|---|
-| `candidates` | list[str], `"all"`, `"all_macro"`, `"all_fundamentals"`, `"all_fundamentals2"`, `"all_calendar2"`, or `"all_fundamentals_calendar2"` | `"all"` (the full 279-col pool) |
+| `candidates` | list[str], `"all"`, `"all_macro"`, `"all_fundamentals"`, `"all_fundamentals2"`, `"all_calendar2"`, `"all_fundamentals_calendar2"`, `"all_vwap"`, or `"all_fundamentals_vwap"` | `"all"` (the full 279-col pool) |
 | `exclude` | list[str] | `[]` |
 | `lookback_windows` | list[int] | from `default.yaml`: `[5, 10, 20, 50, 100, 200]` |
 
@@ -225,6 +225,25 @@ F17 macro feature family** (~45 cols). It is the **only** way to pull F17 in —
 deliberately **excluded from the `"all"` token**, so every existing spec and committed
 model stays **byte-identical**. (Implementation: `"all"` → `_ALL_FAMILIES` (F1–F16);
 `"all_macro"` → `_ALL_FAMILIES + ("F17",)`.)
+
+#### The `all_vwap` / `all_fundamentals_vwap` tokens (F20 VWAP-deviation — opt-in)
+
+```yaml
+features:
+  candidates: all_vwap                # = "all" (F1–F16) PLUS the F20 VWAP-deviation family
+  # candidates: all_fundamentals_vwap # = "all" PLUS F18 (valuation) PLUS F20 (VWAP)
+```
+
+**F20** is a pure-panel (OHLCV-only) technical family — 14 columns: `vwap_dev_{N}` and
+`vwap_dev_zscore_{N}` for `N ∈ {5,10,20,50,100,200}`, plus `vwap_dev_xs_zscore` /
+`vwap_dev_xs_rank`. Daily bars have no intraday VWAP, so the proxy is a causal (C1)
+trailing volume-weighted mean of the typical price `(H+L+C)/3` over N: `vwap_dev_N =
+close / VWAP_N − 1`, then a per-stock trailing z-score and a cross-sectional z/rank
+(20-day anchor). Like F17/F18/F19 it is deliberately **excluded from `"all"`** so every
+existing spec/model stays **byte-identical**. `all_vwap` needs no external data;
+`all_fundamentals_vwap` also triggers the valuation-panel read (for F18).
+(Implementation: `"all_vwap"` → `_ALL_FAMILIES + ("F20",)`; `"all_fundamentals_vwap"` →
+`_ALL_FAMILIES + ("F18", "F20")`.)
 
 **F17** broadcasts daily FRED-style macro series to every `(date, ticker)` row,
 **1-trading-day-lagged** (C1 causal — proven by an F17 case in the leakage harness).
