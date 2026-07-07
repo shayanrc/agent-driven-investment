@@ -60,6 +60,15 @@ tests/gbdt/tmp/
 results/backtests/_008_roll/*_fresh.csv
 results/backtests/_009_nifty/*_fresh.csv
 results/backtests/_019_fwd_oos/*_fresh.csv
+# Figure policy: figures embedded in a memo narrative stay committed (e.g. the
+# canonical _019_fwd_oos/figs/ set); regenerable analysis figures that no memo
+# embeds do not. The dated predicted_prob_* series is re-emitted by
+# scripts/backtests/analyze_forward_prob.py on each run; the _029 per-cell figs
+# are re-emitted by the k-sweep runner (the CSV/JSON data alongside them IS
+# committed).
+results/backtests/_019_fwd_oos/predicted_prob_*.png
+results/backtests/_019_fwd_oos/predicted_prob_*.svg
+results/backtests/_029_k_sweep/*/figs/
 # valuation: large regenerable daily panel + split cache (rebuild via
 # scripts.valuation.build_valuation_panel); the latest-snapshot CSV is checked in
 results/valuation/data/valuation_panel.parquet
