@@ -38,6 +38,7 @@ from data_pipelines.domains.us_equities.registry import parse_identifier
 from data_pipelines.domains.us_equities.schema import QUALITY_FULL
 from data_pipelines.errors import EmptyPayload, ProviderError
 from data_pipelines.raw_store import write_raw_atomic
+from data_pipelines.retry import RetryPolicy, call_with_retry
 
 DOMAIN_NAME = "us_equities"
 
@@ -59,6 +60,14 @@ class YFinanceAdapter(Adapter):
 
     def __init__(self, config: USEquitiesConfig | None = None):
         self._config = config or USEquitiesConfig()
+
+    def _retry_policy(self) -> RetryPolicy:
+        return RetryPolicy(
+            max_retries=self._config.retry_max_retries,
+            base_delay_sec=self._config.retry_base_delay_sec,
+            max_delay_sec=self._config.retry_max_delay_sec,
+            jitter=self._config.retry_jitter,
+        )
 
     def _yf_symbol(self, identifier: str) -> str:
         prefix, symbol = parse_identifier(identifier)
@@ -86,17 +95,24 @@ class YFinanceAdapter(Adapter):
         except ImportError as e:
             raise ProviderError(self.name, identifier, "yfinance not installed") from e
 
-        try:
-            # yfinance end is exclusive; pad by 1 day to make our [start, end] inclusive.
-            from datetime import timedelta
-            df = yf.Ticker(symbol).history(
-                start=start.isoformat(),
-                end=(end + timedelta(days=1)).isoformat(),
-                auto_adjust=False,
-                actions=False,
-            )
-        except Exception as e:  # yfinance raises a grab-bag of types
-            raise ProviderError(self.name, identifier, f"yfinance error: {e}") from e
+        def _do_fetch() -> pd.DataFrame:
+            try:
+                # yfinance end is exclusive; pad by 1 day to make our
+                # [start, end] inclusive.
+                from datetime import timedelta
+                return yf.Ticker(symbol).history(
+                    start=start.isoformat(),
+                    end=(end + timedelta(days=1)).isoformat(),
+                    auto_adjust=False,
+                    actions=False,
+                )
+            except Exception as e:  # yfinance raises a grab-bag of types
+                raise ProviderError(self.name, identifier, f"yfinance error: {e}") from e
+
+        df = call_with_retry(
+            _do_fetch, self._retry_policy(),
+            provider=self.name, identifier=identifier,
+        )
 
         if df is None or len(df) == 0:
             raise EmptyPayload(self.name, identifier)
