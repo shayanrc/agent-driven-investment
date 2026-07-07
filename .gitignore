@@ -33,16 +33,16 @@ results/forecasters/presets/*
 results/forecasters/forecasts/*
 !results/forecasters/forecasts/.gitkeep
 
-# gbdt: per-run feature-matrix cache (task #181) — a build-time optimization
-# for the exit-and-resume agent loop. Derivable from the panel + spec, so it is
-# never committed (the full candidate matrix can be large on heavy panels).
-results/gbdt/experiments/**/_feature_matrix_cache.parquet
-results/gbdt/experiments/**/_feature_matrix_cache.key.json
-
-# gbdt-diagnose: per-cell in-sample matrix cache for /gbdt-diagnose
-# (derivable from the panel + spec; reused on re-run for fast iteration on
-# --top-n / --no-pdp; can be ~700 MB on US universes, never committed).
-results/gbdt/experiments/**/diagnose/_insample_matrix.parquet
+# gbdt experiment artifact dirs are local by default. The committed record for
+# a cell is its spec (configs/gbdt/experiments/), its registry row
+# (results/gbdt/data/r_precision_at_k.csv), the memo, and the aggregated JSONs
+# in results/gbdt/data/. Sweep arms alone were accumulating ~50 MB/dir of
+# regenerable models + prediction CSVs. Artifacts that back a memo directly
+# (embedded figs, cited metrics.json/report.md) are force-added deliberately:
+#     git add -f results/gbdt/experiments/<cell>/<paths>
+# The ~130 historically committed cells stay tracked (ignore rules never
+# untrack).
+results/gbdt/experiments/*
 
 # Run logs — captured stdout, often carries machine-specific paths from
 # Python tracebacks. The cache fingerprint that mattered (size + mtime +
