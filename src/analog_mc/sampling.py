@@ -137,6 +137,113 @@ def _alpha_from_halflife(halflife: float) -> float:
     return 1.0 - 2.0 ** (-1.0 / halflife)
 
 
+class _BlockScaler:
+    """Shared per-block σ-scaling + running-EWMA state for path generation.
+
+    Encapsulates the C3 sequence (demean against the shared ``mu_origin`` →
+    clip the σ ratio → rescale → add drift AFTER the multiplier) and the C4
+    per-path running-EWMA σ recursion, so ``generate_paths`` and
+    ``generate_paths_conditional`` share one implementation instead of
+    carrying the same logic inline (the pre-dedup copies had drifted only in
+    comments, never in behavior — extraction verified bit-identical on a
+    fixed-seed harness covering both σ modes × ``record_ratios``).
+
+    Two σ modes, selected by whether ``sigma_path`` is provided:
+
+    - **block-constant** (v1/C4): σ_current = per-path running EWMA σ,
+      σ_historical = the analog's σ at its origin. ``update_ewma`` advances
+      the recursion from each scaled block.
+    - **per-step** (v3b/E9): σ_current[t] from the GARCH-simulated
+      ``sigma_path``, σ_historical[t] = σ at the analog's SAME forward step
+      (``sigma_at_returns[analog_origin + 1 + t]``). The EWMA branch is
+      bypassed — ``update_ewma`` is a no-op (the GARCH σ path is independent
+      of the simulated returns).
+
+    ``ratios_out`` records the PRE-clip ratio for the clip-hit diagnostic:
+    the block-constant ratio per path, or the block-mean of the per-step
+    ratios in v3b mode.
+    """
+
+    def __init__(
+        self,
+        *,
+        config: Config,
+        n_paths: int,
+        sigma_init: float,
+        mu_origin: float,
+        drift_target: float,
+        candidate_indices: np.ndarray,
+        sigma_at_candidates: np.ndarray,
+        record_ratios: bool,
+        sigma_path: np.ndarray | None = None,
+        sigma_at_returns: np.ndarray | None = None,
+    ):
+        self.per_step_sigma = sigma_path is not None
+        if self.per_step_sigma:
+            if sigma_at_returns is None:
+                raise ValueError("sigma_path requires sigma_at_returns (σ per causal index)")
+            if sigma_path.shape != (n_paths, config.forecast_horizon):
+                raise ValueError(
+                    f"sigma_path shape {sigma_path.shape} must be "
+                    f"({n_paths}, {config.forecast_horizon})"
+                )
+        self._config = config
+        self._mu_origin = mu_origin
+        self._drift_target = drift_target
+        self._block_length = config.block_length
+        self._candidate_indices = candidate_indices
+        self._sigma_at_candidates = sigma_at_candidates
+        self._sigma_path = sigma_path
+        self._sigma_at_returns = sigma_at_returns
+        alpha = _alpha_from_halflife(config.ewma_halflife)
+        self._alpha = alpha
+        self._one_minus_alpha = 1.0 - alpha
+        self._running_var = np.full(n_paths, sigma_init * sigma_init, dtype=np.float64)
+        self._step_offsets = np.arange(1, config.block_length + 1)
+        self.ratios_out = (
+            np.empty((n_paths, config.n_blocks), dtype=np.float64)
+            if record_ratios else None
+        )
+
+    def scale(self, raw_blocks: np.ndarray, chosen_local: np.ndarray, b: int) -> np.ndarray:
+        """C3: demean → clip σ ratio → rescale → add drift, for block ``b``."""
+        demeaned = raw_blocks - self._mu_origin
+        if self.per_step_sigma:
+            block_length = self._block_length
+            sigma_path_block = self._sigma_path[:, b * block_length : (b + 1) * block_length]
+            analog_origins = self._candidate_indices[chosen_local]
+            hist_positions = analog_origins[:, None] + self._step_offsets[None, :]
+            sigma_hist_block = self._sigma_at_returns[hist_positions]
+            raw_ratio = sigma_path_block / sigma_hist_block
+            ratio = np.clip(raw_ratio, self._config.vol_clip_lower, self._config.vol_clip_upper)
+            if self.ratios_out is not None:
+                # Block-level summary: mean PRE-clip ratio across the block, per path.
+                self.ratios_out[:, b] = raw_ratio.mean(axis=1)
+            return demeaned * ratio + self._drift_target
+        sigma_current = np.sqrt(self._running_var)
+        sigma_historical = self._sigma_at_candidates[chosen_local]
+        # Vectorized C3 (v1.1): subtract SHARED mu_origin, not per-block mean.
+        raw_ratio = sigma_current / sigma_historical
+        ratio = np.clip(raw_ratio, self._config.vol_clip_lower, self._config.vol_clip_upper)
+        if self.ratios_out is not None:
+            self.ratios_out[:, b] = raw_ratio  # record PRE-clip ratio for clip-hit diagnostic
+        return demeaned * ratio[:, None] + self._drift_target
+
+    def update_ewma(self, scaled: np.ndarray) -> None:
+        """C4: advance the per-path running EWMA σ from the scaled block.
+
+        No-op in per-step σ mode — the GARCH σ_path is independent of the
+        simulated returns.
+        """
+        if self.per_step_sigma:
+            return
+        for r_idx in range(self._block_length):
+            r = scaled[:, r_idx]
+            self._running_var = (
+                self._one_minus_alpha * self._running_var + self._alpha * r * r
+            )
+
+
 def generate_paths(
     probs: np.ndarray,
     candidate_indices: np.ndarray,
@@ -186,26 +293,18 @@ def generate_paths(
     horizon = config.forecast_horizon
     block_length = config.block_length
     n_blocks = config.n_blocks
-    alpha = _alpha_from_halflife(config.ewma_halflife)
-    one_minus_alpha = 1.0 - alpha
 
-    # v3b (E9): per-step σ rescaling when a precomputed sigma_path is provided.
-    # In that mode, σ_current[t] comes from the GARCH-simulated path (sigma_path
-    # at step t) and σ_historical[t] comes from the analog's σ at the SAME
-    # forward step (sigma_at_returns at index analog_origin + 1 + t). Block-
-    # constant ratio (the EWMA branch below) is bypassed.
-    per_step_sigma = sigma_path is not None
-    if per_step_sigma:
-        if sigma_at_returns is None:
-            raise ValueError("sigma_path requires sigma_at_returns (σ per causal index)")
-        if sigma_path.shape != (n_paths, horizon):
-            raise ValueError(
-                f"sigma_path shape {sigma_path.shape} must be ({n_paths}, {horizon})"
-            )
-
+    # v3b (E9): per-step σ rescaling when a precomputed sigma_path is provided
+    # — see _BlockScaler for both σ modes and the ratio-recording contract.
+    scaler = _BlockScaler(
+        config=config, n_paths=n_paths, sigma_init=sigma_init,
+        mu_origin=mu_origin, drift_target=drift_target,
+        candidate_indices=candidate_indices,
+        sigma_at_candidates=sigma_at_candidates,
+        record_ratios=record_ratios,
+        sigma_path=sigma_path, sigma_at_returns=sigma_at_returns,
+    )
     paths = np.empty((n_paths, horizon), dtype=np.float64)
-    running_var = np.full(n_paths, sigma_init * sigma_init, dtype=np.float64)
-    ratios_out = np.empty((n_paths, n_blocks), dtype=np.float64) if record_ratios else None
 
     for b in range(n_blocks):
         chosen_local, raw_blocks = sample_analog_blocks(
@@ -216,43 +315,12 @@ def generate_paths(
             n_paths=n_paths,
             rng=rng,
         )
-        demeaned = raw_blocks - mu_origin
-
-        if per_step_sigma:
-            # σ_current per step from GARCH-simulated path.
-            sigma_path_block = sigma_path[:, b * block_length : (b + 1) * block_length]
-            # σ_historical per step: σ at analog_origin + 1 + r for each row.
-            analog_origins = candidate_indices[chosen_local]  # (n_paths,)
-            step_offsets = np.arange(1, block_length + 1)  # forward offsets
-            hist_positions = analog_origins[:, None] + step_offsets[None, :]  # (n_paths, block_length)
-            sigma_hist_block = sigma_at_returns[hist_positions]  # (n_paths, block_length)
-            raw_ratio = sigma_path_block / sigma_hist_block
-            ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
-            scaled = demeaned * ratio + drift_target
-            if ratios_out is not None:
-                # Block-level summary: mean PRE-clip ratio across the block, per path.
-                ratios_out[:, b] = raw_ratio.mean(axis=1)
-        else:
-            sigma_current = np.sqrt(running_var)
-            sigma_historical = sigma_at_candidates[chosen_local]
-            # Vectorized C3 (v1.1): subtract SHARED mu_origin, not per-block mean.
-            raw_ratio = sigma_current / sigma_historical
-            ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
-            if ratios_out is not None:
-                ratios_out[:, b] = raw_ratio  # record PRE-clip ratio for clip-hit diagnostic
-            scaled = demeaned * ratio[:, None] + drift_target
-
+        scaled = scaler.scale(raw_blocks, chosen_local, b)
         paths[:, b * block_length : (b + 1) * block_length] = scaled
+        scaler.update_ewma(scaled)
 
-        if not per_step_sigma:
-            # Update running EWMA σ per path using the scaled returns from this block.
-            # Skipped in v3b mode — GARCH σ_path is independent of simulated returns.
-            for r_idx in range(block_length):
-                r = scaled[:, r_idx]
-                running_var = one_minus_alpha * running_var + alpha * r * r
-
-    if ratios_out is not None:
-        return paths, ratios_out
+    if scaler.ratios_out is not None:
+        return paths, scaler.ratios_out
     return paths
 
 
@@ -344,8 +412,6 @@ def generate_paths_conditional(
     n_blocks = config.n_blocks
     horizons = tuple(int(h) for h in config.zscore_horizons)
     max_h = max(horizons)
-    alpha = _alpha_from_halflife(config.ewma_halflife)
-    one_minus_alpha = 1.0 - alpha
 
     if origin_idx + 1 < max_h:
         raise ValueError(
@@ -353,41 +419,16 @@ def generate_paths_conditional(
             f"max(zscore_horizons)={max_h}."
         )
 
-    # v3b (E9): per-step σ rescaling. See generate_paths for the same pattern.
-    per_step_sigma = sigma_path is not None
-    if per_step_sigma:
-        if sigma_at_returns is None:
-            raise ValueError("sigma_path requires sigma_at_returns (σ per causal index)")
-        if sigma_path.shape != (n_paths, horizon):
-            raise ValueError(
-                f"sigma_path shape {sigma_path.shape} must be ({n_paths}, {horizon})"
-            )
-
+    # v3b (E9): per-step σ rescaling — see _BlockScaler for both σ modes.
+    scaler = _BlockScaler(
+        config=config, n_paths=n_paths, sigma_init=sigma_init,
+        mu_origin=mu_origin, drift_target=drift_target,
+        candidate_indices=candidate_indices,
+        sigma_at_candidates=sigma_at_candidates,
+        record_ratios=record_ratios,
+        sigma_path=sigma_path, sigma_at_returns=sigma_at_returns,
+    )
     paths = np.empty((n_paths, horizon), dtype=np.float64)
-    running_var = np.full(n_paths, sigma_init * sigma_init, dtype=np.float64)
-    ratios_out = np.empty((n_paths, n_blocks), dtype=np.float64) if record_ratios else None
-    step_offsets = np.arange(1, block_length + 1)
-
-    def _scale(raw_blocks: np.ndarray, chosen_local: np.ndarray, b: int) -> np.ndarray:
-        """Local helper — block-constant or per-step σ scaling."""
-        demeaned = raw_blocks - mu_origin
-        if per_step_sigma:
-            sigma_path_block = sigma_path[:, b * block_length : (b + 1) * block_length]
-            analog_origins = candidate_indices[chosen_local]
-            hist_positions = analog_origins[:, None] + step_offsets[None, :]
-            sigma_hist_block = sigma_at_returns[hist_positions]
-            raw_ratio = sigma_path_block / sigma_hist_block
-            ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
-            if ratios_out is not None:
-                ratios_out[:, b] = raw_ratio.mean(axis=1)
-            return demeaned * ratio + drift_target
-        sigma_current = np.sqrt(running_var)
-        sigma_historical = sigma_at_candidates[chosen_local]
-        raw_ratio = sigma_current / sigma_historical
-        ratio = np.clip(raw_ratio, config.vol_clip_lower, config.vol_clip_upper)
-        if ratios_out is not None:
-            ratios_out[:, b] = raw_ratio
-        return demeaned * ratio[:, None] + drift_target
 
     # ---- Block 0 — same as v1: distances from the real-data origin ----
     distances0 = composite_distance(z_at_origin, z_at_candidates, weights)
@@ -400,12 +441,9 @@ def generate_paths_conditional(
         n_paths=n_paths,
         rng=rng,
     )
-    scaled = _scale(raw_blocks, chosen_local, 0)
+    scaled = scaler.scale(raw_blocks, chosen_local, 0)
     paths[:, :block_length] = scaled
-    if not per_step_sigma:
-        for r_idx in range(block_length):
-            r = scaled[:, r_idx]
-            running_var = one_minus_alpha * running_var + alpha * r * r
+    scaler.update_ewma(scaled)
 
     # ---- Per-path tail buffer for blocks 1+ ----
     # Warm-start with the last (max_h - block_length) REAL returns ending at origin_idx,
@@ -448,17 +486,13 @@ def generate_paths_conditional(
         offsets = np.arange(block_length, dtype=np.int64)
         raw_blocks = returns[starts[:, None] + offsets[None, :]]
 
-        scaled = _scale(raw_blocks, chosen_local, b)
+        scaled = scaler.scale(raw_blocks, chosen_local, b)
         paths[:, b * block_length : (b + 1) * block_length] = scaled
-
-        if not per_step_sigma:
-            for r_idx in range(block_length):
-                r = scaled[:, r_idx]
-                running_var = one_minus_alpha * running_var + alpha * r * r
+        scaler.update_ewma(scaled)
 
         # Roll the tail buffer: drop oldest block_length, append the new block.
         tail = np.concatenate([tail[:, block_length:], scaled], axis=1)
 
-    if ratios_out is not None:
-        return paths, ratios_out
+    if scaler.ratios_out is not None:
+        return paths, scaler.ratios_out
     return paths
