@@ -13,6 +13,7 @@ construction time rather than mid-run.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
@@ -163,3 +164,14 @@ class Config:
         if unknown:
             raise ValueError(f"Unknown config keys in {path}: {sorted(unknown)}")
         return cls(**data)
+
+
+def config_hash(config: Config) -> str:
+    """Stable content hash of a config (canonical sorted-YAML, sha256).
+
+    Format pinned to the forecasters result contract (``"sha256:<hex>"``);
+    recorded in run-dir ``meta.json`` and forecast metadata so runs and
+    presets can be cross-referenced by the same value.
+    """
+    s = yaml.safe_dump(config.to_dict(), sort_keys=True)
+    return "sha256:" + hashlib.sha256(s.encode()).hexdigest()
