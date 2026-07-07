@@ -25,6 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from data_pipelines.cache import half_open_day_bounds
 from data_pipelines.domains.us_equities.universe import (
     load_universe as load_us_equities_universe,
 )
@@ -79,14 +80,7 @@ def read_adj_close(
     db = _data_root(repo_root) / "processed.db"
     if not db.is_file():
         raise FileNotFoundError(f"cache db missing at {db}")
-    start_s = (
-        "1900-01-01" if start is None
-        else pd.Timestamp(start).normalize().strftime("%Y-%m-%d")
-    )
-    end_excl = (
-        "2100-01-01" if end is None
-        else (pd.Timestamp(end).normalize() + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-    )
+    start_s, end_excl = half_open_day_bounds(start, end)
     con = sqlite3.connect(str(db))
     try:
         df = pd.read_sql_query(

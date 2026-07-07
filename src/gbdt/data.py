@@ -44,6 +44,7 @@ import data_pipelines.domains.nse_equities  # noqa: F401
 import data_pipelines.domains.us_equities  # noqa: F401
 import data_pipelines.domains.fred_macro  # noqa: F401  (registers FRED: for macro features)
 from data_pipelines import fetch as _dp_fetch
+from data_pipelines.cache import half_open_day_bounds
 
 
 # Repo-relative roots. Resolved against the CWD unless caller passes
@@ -372,18 +373,10 @@ def _cache_read(
     db = Path(_data_root(repo_root)) / "processed.db"
     if not db.exists():
         raise FileNotFoundError(f"cache db missing at {db}")
-    # Cached dates carry a 'YYYY-MM-DD 00:00:00' time component, so a bare
-    # 'date <= end' string-compares the end-day row ('…16 00:00:00') as GREATER
-    # than the bare end string ('…16') and silently drops it — an off-by-one
-    # that hides the most recent day from every caller (load_panel, fresh
-    # inference, …). Use a half-open interval [start_day, end_day + 1) on
-    # normalized day boundaries: 'date >= start_day' includes the start day
-    # (its '…00:00:00' sorts after the bare date), and 'date < (end_day + 1)'
-    # includes the full end day regardless of the stored time component.
-    start_s = pd.Timestamp(start).normalize().strftime("%Y-%m-%d")
-    end_excl = ("2100-01-01" if end is None
-                else (pd.Timestamp(end).normalize()
-                      + pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+    # Half-open [start_day, end_day + 1) bounds — the stored dates carry a
+    # time component that a bare 'date <= end' silently drops (#182); see
+    # data_pipelines.cache.half_open_day_bounds.
+    start_s, end_excl = half_open_day_bounds(start, end)
     con = sqlite3.connect(str(db))
     try:
         df = pd.read_sql_query(
@@ -480,10 +473,7 @@ def _cache_read_fred(
     db = Path(_data_root(repo_root)) / "processed.db"
     if not db.exists():
         raise FileNotFoundError(f"cache db missing at {db}")
-    start_s = pd.Timestamp(start).normalize().strftime("%Y-%m-%d")
-    end_excl = ("2100-01-01" if end is None
-                else (pd.Timestamp(end).normalize()
-                      + pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+    start_s, end_excl = half_open_day_bounds(start, end)
     con = sqlite3.connect(str(db))
     try:
         df = pd.read_sql_query(

@@ -27,6 +27,7 @@ from typing import Any
 import pandas as pd
 
 from data_pipelines.cache import (
+    _as_date,
     detect_gaps,
     merge_cache,
     read_processed,
@@ -321,10 +322,3 @@ def _build_source_meta(
     }
 
 
-def _as_date(x) -> date:
-    if isinstance(x, date) and not isinstance(x, datetime):
-        return x
-    if isinstance(x, datetime):
-        return x.date()
-    ts = pd.Timestamp(x)
-    return ts.date()

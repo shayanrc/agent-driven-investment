@@ -521,6 +521,23 @@ def _as_date(x) -> date:
     return ts.date()
 
 
+def half_open_day_bounds(start=None, end=None) -> tuple[str, str]:
+    """SQL bounds ``(start_day, end_day_exclusive)`` for the cache ``date`` column.
+
+    Stored dates carry a ``'YYYY-MM-DD 00:00:00'`` time component, so a bare
+    ``date <= 'YYYY-MM-DD'`` string-compare sorts the end-day row *after* the
+    bare end string and silently drops it (the #182 off-by-one). Query with
+    ``date >= start AND date < end_exclusive`` instead. ``None`` bounds fall
+    back to wide sentinels (1900-01-01 / 2100-01-01).
+    """
+    start_s = ("1900-01-01" if start is None
+               else pd.Timestamp(start).normalize().strftime("%Y-%m-%d"))
+    end_excl = ("2100-01-01" if end is None
+                else (pd.Timestamp(end).normalize()
+                      + pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+    return start_s, end_excl
+
+
 def _build_meta(
     *,
     existing_meta: dict | None,
