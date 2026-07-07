@@ -1,16 +1,22 @@
 """Score the refreshed panel with an already-trained gbdt model (inference only).
 
-No retraining: load a cell's saved XGBoost booster + selected feature list,
-rebuild the causal feature matrix on the now-extended OHLCV panel, and emit
+No retraining: load a cell's saved XGBoost/CatBoost booster + selected feature
+list, rebuild the causal feature matrix on the now-extended OHLCV panel, and emit
 predictions for the dates AFTER the cell's published test window — a genuinely
 fresh out-of-sample set the model never saw.
+
+Technical cells (token ``all``) build via the fast on-disk incremental cache;
+F18/F19 fundamentals cells (``all_fundamentals``/``all_fundamentals2``) instead
+join the point-in-time valuation panel and build the ``fund_*`` columns directly
+(the incremental cache is technical-only). See ``FUNDAMENTALS_TOKENS``.
 
 Correctness:
   * Features are causal rolling stats (C1), so scoring later dates introduces
     no look-ahead.
-  * The build call mirrors gbdt/__main__.py:1955 exactly
-    (build_feature_matrix(...).dropna(axis=1, how="all")), then subset to the
-    cell's features.yaml in saved order.
+  * The build call mirrors the training build in
+    ``gbdt/experiment_runner.py`` exactly (same families token + ``fund_df``,
+    then ``build_feature_matrix(...).dropna(axis=1, how="all")``), then subsets
+    to the cell's features.yaml in saved order.
   * Self-check: on the overlap with the cell's predictions/test.csv, the
     reproduced p_raw must match the artifact to < 1e-4, or we abort (the
     feature build / model load diverged and the fresh scores can't be trusted).
@@ -34,13 +40,19 @@ import json
 
 from gbdt import features as gbdt_features
 from gbdt import incremental_feature_cache as _ifc
-from gbdt.data import load_panel
+from gbdt.data import load_panel, load_fundamentals_panel
 from gbdt.model import CatBoostModel, XGBoostModel
 
+REPO = Path(__file__).resolve().parents[2]
 VALIDATION_TOL = 1e-4
 CACHE_DIR = "data/gbdt_feature_cache"
 # V1.6 Phase 5 — on-disk incremental feature-matrix cache (extend, don't rebuild).
 INCREMENTAL_CACHE_DIR = "data/gbdt_incremental_cache"
+# F18/F19 opt-in feature tokens. A cell selecting one of these needs the point-in-time
+# valuation panel joined into the build — the technical-only incremental cache
+# (build_or_extend, families="all", fund_df=None) can't produce its fund_* columns, so
+# these cells take the fundamentals-aware direct-build branch in _build_one instead.
+FUNDAMENTALS_TOKENS = {"all_fundamentals", "all_fundamentals2"}
 
 
 def _training_panel_index(universe: str, test_keys: set) -> tuple[pd.Index, pd.Timestamp] | None:
@@ -154,7 +166,12 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
     """
     feats = yaml.safe_load((cell / "features.yaml").read_text())["features"]
     hp = yaml.safe_load((cell / "hp.yaml").read_text())["hp"]
-    universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
+    spec = yaml.safe_load((cell / "spec.yaml").read_text())
+    universe = spec["target"]["universe"]
+    # Feature token drives HOW the matrix is built. Technical cells (token "all")
+    # ride the fast incremental cache; F18/F19 cells need the valuation panel joined,
+    # which that cache can't produce (see FUNDAMENTALS_TOKENS) → direct build below.
+    token = (spec.get("features") or {}).get("candidates", "all") or "all"
 
     # Panel from warmup_start so the 200-day rolling features are warm; cache_only
     # (the refresh already populated it). Shared across same-(universe, slice) cells.
@@ -173,18 +190,39 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
             ).hexdigest()[:16]
         panel = aligned
 
-    # Feature build keyed by the ALIGNED row-set — identical alignment ⇒ one in-process
-    # build. The build itself goes through the on-disk INCREMENTAL cache (V1.6 Phase 5):
-    # load the cached matrix + extend only the new dates (seam-checked), else full
-    # rebuild. ``align_sig`` keys per-cell alignment so two cells never collide on one
-    # entry. Result matches a from-scratch build to the ~1e-4 contract (frozen historical
-    # rows incl the test window stay exact, so the self-check below is unaffected).
-    fk = (universe, warmup_start, int(pd.util.hash_pandas_object(panel.index, index=False).sum()))
+    # Feature build keyed by the ALIGNED row-set AND the feature token — identical
+    # (universe, slice, alignment, token) ⇒ one in-process build. The token is in the
+    # key so a fundamentals cell and a technical cell of the same universe never collide
+    # on one cache entry (they need different builds). Technical builds go through the
+    # on-disk INCREMENTAL cache (V1.6 Phase 5): load the cached matrix + extend only the
+    # new dates (seam-checked), else full rebuild — matches a from-scratch build to the
+    # ~1e-4 contract (frozen historical rows incl the test window stay exact, so the
+    # self-check below is unaffected).
+    idx_hash = int(pd.util.hash_pandas_object(panel.index, index=False).sum())
+    fk = (universe, warmup_start, token, idx_hash)
     if fk not in feat_cache:
-        feat_cache[fk] = _ifc.build_or_extend(
-            INCREMENTAL_CACHE_DIR, universe, warmup_start, panel, panel_obj.index_series,
-            annualization=panel_obj.annualization_factor, align_signature=align_sig,
-        )
+        if token in FUNDAMENTALS_TOKENS:
+            # F18/F19: join the point-in-time valuation panel and build the fund_*
+            # columns directly (the incremental cache is technical-only). No on-disk
+            # cache for this path yet — it full-builds the ~7y warmup slice each run
+            # (sp500 only, ~2-3 min; a fund incremental cache is a V1.8 optimization).
+            # This mirrors the TRAINING build (experiment_runner ~L935+948) exactly:
+            # same families token + fund_df, same dropna — so the self-check below
+            # reproduces predictions/test.csv to the <1e-4 faithfulness contract.
+            pdates = panel.index.get_level_values("date")
+            fund_df = load_fundamentals_panel(pdates.min(), pdates.max(), repo_root=REPO)
+            print(f"[infer] fundamentals build ({token}): valuation panel "
+                  f"{len(fund_df)} (date,symbol) rows × {fund_df.shape[1]} cols")
+            feat_cache[fk] = gbdt_features.build_feature_matrix(
+                panel, panel_obj.index_series,
+                annualization=panel_obj.annualization_factor,
+                families=token, fund_df=fund_df,
+            ).dropna(axis=1, how="all")
+        else:
+            feat_cache[fk] = _ifc.build_or_extend(
+                INCREMENTAL_CACHE_DIR, universe, warmup_start, panel, panel_obj.index_series,
+                annualization=panel_obj.annualization_factor, align_signature=align_sig,
+            )
     X = feat_cache[fk]
 
     missing = [f for f in feats if f not in X.columns]
