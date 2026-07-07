@@ -162,6 +162,7 @@ def _cmd_reprocess(args) -> int:
     if args.identifier:
         identifiers = [args.identifier]
     else:
+        # --all, or bare invocation: every cached identifier in the domain.
         identifiers = _cached_identifiers(data_root, domain.name)
     if not identifiers:
         print("reprocess: no cached identifiers found")
@@ -361,8 +362,11 @@ def build_parser() -> argparse.ArgumentParser:
     r = sub.add_parser("reprocess", help="Re-derive processed from raw (no API)")
     r.add_argument("--domain", default="us_equities")
     grp = r.add_mutually_exclusive_group()
-    grp.add_argument("--identifier")
-    grp.add_argument("--all", action="store_true")
+    grp.add_argument("--identifier",
+                     help="Reprocess a single cached identifier")
+    grp.add_argument("--all", action="store_true",
+                     help="Reprocess every cached identifier in the domain "
+                          "(also the default when neither flag is given)")
     r.set_defaults(func=_cmd_reprocess)
 
     lc = sub.add_parser("list-cached", help="List cached identifiers")
