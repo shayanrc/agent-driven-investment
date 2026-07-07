@@ -72,6 +72,15 @@ CELLS = {
                        "deployed": False, "backfill_from": "2026-01-01"},
     "russell_40_100": {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
                        "deployed": False, "backfill_from": "2026-01-01"},
+    # F18 FUNDAMENTALS candidate (top fundamental-feature model by R-p@3, _279/_280).
+    # First cell whose feature token is `all_fundamentals` — inference joins the
+    # point-in-time valuation panel via the fundamentals-aware build branch in
+    # infer_fresh_predictions._build_one (the technical-only incremental cache can't
+    # produce its fund_* columns). Its per-cell self-check still guards faithfulness.
+    # deployed=False (forward comparison only; a champion swap is a separate decision).
+    # test_end 2025-06-17 → backfill from 2026-01-01 is genuine OOS.
+    "sp500_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_w2ffundtune",
+                     "deployed": False, "backfill_from": "2026-01-01"},
 }
 
 # Unified v2 schema. Gate columns are universe-aware (``gate_index`` names the
