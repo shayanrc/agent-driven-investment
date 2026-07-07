@@ -17,16 +17,12 @@ the cache) so the comparison is wire-data, not merge-cache resolutions.
 
 from __future__ import annotations
 
-import sys
 import tempfile
 from datetime import date
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-# Ensure src/ on path when run as a script.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 import data_pipelines  # noqa: F401  — triggers .env load
 
