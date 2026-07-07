@@ -790,7 +790,9 @@ def test_runner_disable_plateau_gate_present_in_source():
     """
     from pathlib import Path
 
-    src = Path(__file__).resolve().parents[2] / "src" / "gbdt" / "__main__.py"
+    # run_experiment lives in gbdt.experiment_runner since the runner split.
+    src = (Path(__file__).resolve().parents[2]
+           / "src" / "gbdt" / "experiment_runner.py")
     text = src.read_text()
     # Gate computed from callback_mode.
     assert 'disable_plateau = (callback_mode == "agent_file_protocol")' in text

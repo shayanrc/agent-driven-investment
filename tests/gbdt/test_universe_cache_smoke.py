@@ -33,7 +33,7 @@ import pytest
 import yaml
 
 import gbdt.data as gbdt_data
-import gbdt.__main__ as gbdt_main
+import gbdt.experiment_runner as gbdt_runner
 from gbdt import feature_cache as per_cell_cache
 from gbdt import features as gbdt_features
 from gbdt import universe_feature_cache as ufc
@@ -147,14 +147,16 @@ def share_env(tmp_path, monkeypatch):
 
     fake_data_root = tmp_path / "cache_data"
     fake_data_root.mkdir()
-    real_preflight = gbdt_main._collect_preflight
+    real_preflight = gbdt_runner._collect_preflight
 
     def _patched_preflight(repo_root):
         pf = real_preflight(repo_root)
         pf["data_root"] = str(fake_data_root)
         return pf
 
-    monkeypatch.setattr(gbdt_main, "_collect_preflight", _patched_preflight)
+    # run_experiment resolves _collect_preflight from its own module
+    # (gbdt.experiment_runner) since the runner split, so patch there.
+    monkeypatch.setattr(gbdt_runner, "_collect_preflight", _patched_preflight)
 
     art_dir = tmp_path / "artifacts"
     spec_dir = tmp_path / "specs"
