@@ -89,7 +89,7 @@ class YFinanceFundamentalsAdapter(Adapter):
             cashflow = ticker.quarterly_cashflow
         except Exception as e:  # yfinance raises a zoo of exception types
             raise ProviderError(
-                self.name, identifier, f"yfinance error: {type(e).__name__}"
+                self.name, identifier, f"yfinance error: {type(e).__name__}: {e}"
             ) from None
 
         if (income is None or income.empty) and (
