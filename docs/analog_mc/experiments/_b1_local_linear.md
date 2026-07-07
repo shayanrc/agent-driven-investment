@@ -11,7 +11,7 @@
 - Implementation: `src/analog_mc/local_linear.py` (WLS fit, scale-aware Tikhonov, extrapolation clamp, NaN-forward drop, `LocalLinearDiagnostics` dataclass). Hooks into `simulate.forecast()` immediately after probability resolution; correction enters via `drift_target += correction / forecast_horizon`.
 - Tests: `tests/analog_mc/test_local_linear.py` — 10 tests, all pass. Bit-identical to v2.4 when knob is off.
 - Canonical run: `runs/analog_mc/20260520T155220Z` — 76 folds, 1000 paths, 66×5 weight grid, ~11.8h compute (2026-05-20 21:22 → 2026-05-21 09:08).
-- Sanity precursor: `scripts/v4_b1_sanity.py`, results at `results/analog_mc/data/v4_b1_sanity.json`, write-up at [`_b1_sanity_v0.md`](_b1_sanity_v0.md). Predicted −6.7% failure CRPS / 4-of-5 sign-agreement isolated effect; canonical confirmed the broad shape.
+- Sanity precursor: `scripts/analog_mc/v4_b1_sanity.py`, results at `results/analog_mc/data/v4_b1_sanity.json`, write-up at [`_b1_sanity_v0.md`](_b1_sanity_v0.md). Predicted −6.7% failure CRPS / 4-of-5 sign-agreement isolated effect; canonical confirmed the broad shape.
 
 ## Headline numbers
 
@@ -59,7 +59,7 @@ B1 is *real* — the only experiment with both failure AND control aggregate imp
 - `src/analog_mc/local_linear.py`, `src/analog_mc/simulate.py` (B1 hook), `src/analog_mc/config.py` (`local_linear_correction` knob)
 - `configs/analog_mc/ablation_B1_localreg.yaml`
 - `tests/analog_mc/test_local_linear.py` (10 tests)
-- `scripts/v4_b1_sanity.py` + `_b1_sanity_v0.md` + `v4_b1_sanity.json`
+- `scripts/analog_mc/v4_b1_sanity.py` + `_b1_sanity_v0.md` + `v4_b1_sanity.json`
 - `runs/analog_mc/20260520T155220Z/` (canonical artefacts)
 - `results/analog_mc/data/fat_tail_b1_local_linear.json` + `_diff.json`
 - `docs/analog_mc/experiments/figs/b1_local_linear_fat_tail/` (15-anchor panel)

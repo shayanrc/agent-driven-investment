@@ -18,7 +18,7 @@ import numpy as np
 
 from analog_mc.scoring import crps_per_step
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
 A2_RUN = REPO / "runs/analog_mc/20260521T061730Z"
 

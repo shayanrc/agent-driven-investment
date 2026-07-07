@@ -31,7 +31,7 @@ from analog_mc.local_linear import (
 )
 from analog_mc.simulate import eligible_candidates
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 B1_RUN = REPO / "runs/analog_mc/20260520T155220Z"
 ANCHORS = REPO / "results/analog_mc/data/fat_tail_eval_anchors.json"
 OUT = REPO / "results/analog_mc/data/v4_5_3_b1_beta_autopsy.json"

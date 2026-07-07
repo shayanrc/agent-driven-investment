@@ -218,10 +218,10 @@ These were not investigated and remain open:
 uv run python -m analog_mc walk-forward --config configs/analog_mc/ablation_C_cond_only.yaml
 
 # 2. Render Cell C figures (skip the slow fixed-baseline re-eval):
-uv run python scripts/render_diagnostics.py runs/analog_mc/<C_run_dir> --skip-fixed-baseline
+uv run python scripts/analog_mc/render_diagnostics.py runs/analog_mc/<C_run_dir> --skip-fixed-baseline
 
 # 3. Full 6-cell decomposition table:
-uv run python scripts/ablation_decompose.py \
+uv run python scripts/analog_mc/ablation_decompose.py \
     A-fast:runs/analog_mc/20260516T170018Z \
     A-canonical:runs/analog_mc/20260516T180000Z \
     B-fast:runs/analog_mc/20260517T050831Z \

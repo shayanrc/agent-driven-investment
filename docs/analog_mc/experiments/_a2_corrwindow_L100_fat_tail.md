@@ -68,7 +68,7 @@ Run: `runs/analog_mc/20260521T061730Z` · 15 anchors × 60-day horizon.
 ## Reproducing
 
 ```bash
-uv run python scripts/render_fat_tail_panel.py \
+uv run python scripts/analog_mc/render_fat_tail_panel.py \
     --run-dir runs/analog_mc/20260521T061730Z \
     --label "A2.1 (corrwindow L=100)" \
     --out-dir docs/analog_mc/experiments/figs/a2_corrwindow_L100_fat_tail \

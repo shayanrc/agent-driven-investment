@@ -91,13 +91,13 @@ The promotion bar from [`V4_EXPERIMENTS_PLAN.md` §"Mandatory fat-tail evaluatio
 
 ```bash
 # Quantitative baseline
-uv run python scripts/compute_fat_tail_baseline_v24.py
+uv run python scripts/analog_mc/compute_fat_tail_baseline_v24.py
 
 # Visual panel (15 charts)
 for d in 1991-03-26 2010-04-23 2010-11-10 2012-03-14 2025-07-02 \
          1990-09-24 2001-04-04 2001-10-02 \
          2000-04-03 2008-10-03 2017-06-01 2018-10-08 2020-03-16 2022-03-01 2026-02-19; do
-  uv run python scripts/plot_forecast_from_date.py --date "$d" \
+  uv run python scripts/analog_mc/plot_forecast_from_date.py --date "$d" \
     --out "docs/analog_mc/experiments/figs/v24_fat_tail/v24_${d//-/}.png"
 done
 ```

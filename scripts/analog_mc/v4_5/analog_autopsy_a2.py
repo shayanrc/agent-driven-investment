@@ -29,7 +29,7 @@ from analog_mc.distances_corrwindow import corrwindow_distance
 from analog_mc.features import compute_features
 from analog_mc.simulate import eligible_candidates
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 A2_RUN = REPO / "runs/analog_mc/20260521T061730Z"
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
 ANCHORS = REPO / "results/analog_mc/data/fat_tail_eval_anchors.json"

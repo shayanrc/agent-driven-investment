@@ -272,7 +272,7 @@ The two approaches are **complementary**: A2.1 dominates on shape-similar failur
 - 2020-03-16 and 2018-10-08 remain hard. Neither experiment recovers magnitude on the COVID anchor; if the joint experiment also fails, **B6 (high-vol-regime variance inflation)** becomes a candidate (out of v4 scope; surface at end-of-v4 decision).
 
 1. **Canonical Cell-D-s30 baseline already landed** at `runs/analog_mc/20260520T045525Z` (76 folds, 1000 paths, 66×5 weight grid). This is the v2.4 reference for all v4 comparisons; per-fold artefacts are in place and were the substrate for v3.5's diagnostics.
-2. **B1 (Platzer local-linear correction)** — canonical IN PROGRESS at `runs/analog_mc/20260520T155220Z` (started 2026-05-20 21:22, ETA ~7 h). Sanity (`scripts/v4_b1_sanity.py`) showed −6.7% failure CRPS / 4-of-5 sign agreement at isolated correction; canonical includes search-time effect.
+2. **B1 (Platzer local-linear correction)** — canonical IN PROGRESS at `runs/analog_mc/20260520T155220Z` (started 2026-05-20 21:22, ETA ~7 h). Sanity (`scripts/analog_mc/v4_b1_sanity.py`) showed −6.7% failure CRPS / 4-of-5 sign agreement at isolated correction; canonical includes search-time effect.
 3. **A2.1 (correlation-window distance)** — corrwindow scaffolded (replaces OFTER-faithful, which is deferred until paper access). Sanity selects **L=100**. Canonical queued for execution after B1 canonical completes.
 4. **B5 (A2.1+B1 joint)** — new candidate from the sanity evidence. Both knobs are orthogonal in code (drift correction + distance change); cost is one extra canonical run. Decision: launch if B1 and A2.1 canonicals both ship without major control regression.
 5. **C1 (KS GoF diagnostic)** — runs alongside B1/A2 (no compute). Same role as before: becomes the new promotion decision rule if it agrees with heuristics on retroactive v3 data.
@@ -298,7 +298,7 @@ Per-experiment reports:
 
 **Every v4 experiment that produces a forecast must report the [`FAT_TAIL_EVAL.md`](FAT_TAIL_EVAL.md) panel** — 15 anchors (5 extreme-positive z₅₀, 3 extreme-negative z₅₀, 7 hand-curated regime-coverage), 60-day forecast vs realized, coverage table, per-anchor CRPS diff vs v2.4 baseline. The aggregate CRPS / PIT diagnostics are necessary but not sufficient: v3 surfaced that the analog primitive systematically misses regime-transition rallies, and aggregate metrics average those misses away. **An experiment that improves aggregate CRPS but regresses on >2 fat-tail anchors is not promotable without explicit justification.**
 
-The 15-anchor list is pinned at `results/analog_mc/data/fat_tail_eval_anchors.json`. Use `scripts/select_fat_tail_anchors.py` to regenerate after a canonical re-run; `scripts/plot_forecast_from_date.py --date <ISO>` to render per-anchor charts.
+The 15-anchor list is pinned at `results/analog_mc/data/fat_tail_eval_anchors.json`. Use `scripts/analog_mc/select_fat_tail_anchors.py` to regenerate after a canonical re-run; `scripts/analog_mc/plot_forecast_from_date.py --date <ISO>` to render per-anchor charts.
 
 Each experiment-producing-a-forecast (A1, A2, B1, B2, B3 below) lists this panel as a required deliverable. The diagnostic-only experiment C1 does not produce forecasts and is exempt.
 

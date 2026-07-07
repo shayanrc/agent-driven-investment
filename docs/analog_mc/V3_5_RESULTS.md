@@ -264,10 +264,10 @@ docs/analog_mc/v3.5/_v3_5_2_tail_mass.md
 docs/analog_mc/v3.5/_v3_5_3_fhs_spotcheck.md
 docs/analog_mc/v3.5/_v3_5_4_analog_autopsy.md
 
-scripts/v3_5/inspect_failure_weights.py
-scripts/v3_5/audit_pool_tail_mass.py
-scripts/v3_5/fhs_spotcheck.py
-scripts/v3_5/analog_autopsy.py
+scripts/analog_mc/v3_5/inspect_failure_weights.py
+scripts/analog_mc/v3_5/audit_pool_tail_mass.py
+scripts/analog_mc/v3_5/fhs_spotcheck.py
+scripts/analog_mc/v3_5/analog_autopsy.py
 
 results/analog_mc/data/v3_5_1_weights.json
 results/analog_mc/data/v3_5_2_tail_mass.json

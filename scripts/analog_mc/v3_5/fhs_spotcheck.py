@@ -29,7 +29,7 @@ from analog_mc.data import load_returns
 from analog_mc.features import causal_ewma_vol
 from analog_mc.vol import fit_garch, simulate_garch_sigma_paths
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUN_DIR = ROOT / "runs" / "analog_mc" / "20260520T045525Z"
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 OUT_JSON = ROOT / "results" / "analog_mc" / "data" / "v3_5_3_fhs_spotcheck.json"

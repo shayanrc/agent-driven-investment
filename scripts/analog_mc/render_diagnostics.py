@@ -1,7 +1,7 @@
 """Render every Stage 9 diagnostic for a given run dir, save figures to <run>/figs/.
 
 Usage:
-    uv run python scripts/render_diagnostics.py <run_dir> [--skip-fixed-baseline]
+    uv run python scripts/analog_mc/render_diagnostics.py <run_dir> [--skip-fixed-baseline]
 
 If <run_dir> is omitted, defaults to the most recent run under runs/analog_mc/.
 ``--skip-fixed-baseline`` skips the (1/3, 1/3, 1/3) re-eval, which re-runs the

@@ -207,10 +207,10 @@ docs/analog_mc/v3.5/_v3_5_2_tail_mass.md         # pool tail-mass audit
 docs/analog_mc/v3.5/_v3_5_3_fhs_spotcheck.md     # FHS spot-check
 docs/analog_mc/v3.5/_v3_5_4_analog_autopsy.md    # analog autopsy
 
-scripts/v3_5/inspect_failure_weights.py          # V3.5.1
-scripts/v3_5/audit_pool_tail_mass.py             # V3.5.2
-scripts/v3_5/fhs_spotcheck.py                    # V3.5.3
-scripts/v3_5/analog_autopsy.py                   # V3.5.4
+scripts/analog_mc/v3_5/inspect_failure_weights.py          # V3.5.1
+scripts/analog_mc/v3_5/audit_pool_tail_mass.py             # V3.5.2
+scripts/analog_mc/v3_5/fhs_spotcheck.py                    # V3.5.3
+scripts/analog_mc/v3_5/analog_autopsy.py                   # V3.5.4
 
 results/analog_mc/data/v3_5_1_weights.json
 results/analog_mc/data/v3_5_2_tail_mass.json

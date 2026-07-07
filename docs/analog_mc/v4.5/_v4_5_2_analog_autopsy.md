@@ -8,7 +8,7 @@
 - **Mass-weighted 60-day forward return** vs realized
 - **|Δfwd|** = absolute disagreement between A2.1 and v2.4 mass-weighted forwards (an ensemble-disagreement signal)
 
-Script: [`scripts/v4_5/analog_autopsy_a2.py`](../../../scripts/v4_5/analog_autopsy_a2.py) · Data: [`v4_5_2_analog_autopsy.json`](../../../results/analog_mc/data/v4_5_2_analog_autopsy.json)
+Script: [`scripts/analog_mc/v4_5/analog_autopsy_a2.py`](../../../scripts/analog_mc/v4_5/analog_autopsy_a2.py) · Data: [`v4_5_2_analog_autopsy.json`](../../../results/analog_mc/data/v4_5_2_analog_autopsy.json)
 
 ## Headline per-anchor table
 

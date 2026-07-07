@@ -15,10 +15,10 @@ Output modes (mutually exclusive — pass one):
                        + aggregated PIT histogram per experiment
 
 Default experiment set:
-    uv run python scripts/render_fat_tail_panel_compare.py --experiment-grid
+    uv run python scripts/analog_mc/render_fat_tail_panel_compare.py --experiment-grid
 
 Custom experiment set (e.g., adding a V5 canonical):
-    uv run python scripts/render_fat_tail_panel_compare.py --experiment-grid \\
+    uv run python scripts/analog_mc/render_fat_tail_panel_compare.py --experiment-grid \\
         --experiment "v2.4=runs/analog_mc/20260520T045525Z" \\
         --experiment "V5.A.2=runs/analog_mc/20260601T012345Z"
 
@@ -42,7 +42,7 @@ import pandas as pd
 from analog_mc.config import Config
 from analog_mc.data import load_close_series
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 
 DEFAULT_EXPERIMENTS = [

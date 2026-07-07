@@ -14,7 +14,7 @@ configs (~12 h re-eval). Cell-vs-cell deltas are the attribution mechanism for
 ablations.
 
 Usage:
-    uv run python scripts/ablation_decompose.py \\
+    uv run python scripts/analog_mc/ablation_decompose.py \\
         A-fast:runs/analog_mc/20260516T170018Z \\
         A-canonical:runs/analog_mc/20260516T180000Z \\
         B-fast:runs/analog_mc/20260517T050831Z \\

@@ -24,7 +24,7 @@ import pandas as pd
 from analog_mc.config import Config
 from analog_mc.data import load_close_series
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
 ANCHORS = REPO / "results/analog_mc/data/fat_tail_eval_anchors.json"
 OUT = REPO / "results/analog_mc/data/v4_5_9_drawdown_sanity.json"

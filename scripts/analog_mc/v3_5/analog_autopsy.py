@@ -33,7 +33,7 @@ from analog_mc.distances import composite_distance, distances_to_probs
 from analog_mc.features import compute_features
 from analog_mc.simulate import eligible_candidates
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUN_DIR = ROOT / "runs" / "analog_mc" / "20260520T045525Z"
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 OUT_JSON = ROOT / "results" / "analog_mc" / "data" / "v3_5_4_analog_autopsy.json"

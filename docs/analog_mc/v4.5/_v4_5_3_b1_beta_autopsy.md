@@ -4,7 +4,7 @@
 
 **Method.** For each B1 regression anchor: reproduce the B1 canonical fold's WLS fit using the fold-specific weights/n_eff, compute per-candidate leverage `h_ii = w_i · x_iᵀ (XᵀWX + λI)⁻¹ x_i`, identify max-leverage candidate, refit with it dropped, compare corrections. 3 B1 wins included as positive controls.
 
-Script: [`scripts/v4_5/b1_beta_autopsy.py`](../../../scripts/v4_5/b1_beta_autopsy.py) · Data: [`v4_5_3_b1_beta_autopsy.json`](../../../results/analog_mc/data/v4_5_3_b1_beta_autopsy.json)
+Script: [`scripts/analog_mc/v4_5/b1_beta_autopsy.py`](../../../scripts/analog_mc/v4_5/b1_beta_autopsy.py) · Data: [`v4_5_3_b1_beta_autopsy.json`](../../../results/analog_mc/data/v4_5_3_b1_beta_autopsy.json)
 
 ## Per-anchor table
 

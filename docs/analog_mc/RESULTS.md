@@ -141,7 +141,7 @@ Black is realized, coloured line is the forecast median, dark band is 50% credib
 
 Re-render with:
 ```bash
-uv run python scripts/plot_forecast_vs_realized.py \
+uv run python scripts/analog_mc/plot_forecast_vs_realized.py \
     --v1-run runs/analog_mc/20260516T180000Z \
     --v2-run runs/analog_mc/20260517T145344Z \
     --out docs/analog_mc/figs/forecast_vs_realized_v1_vs_v21.png \
@@ -298,8 +298,8 @@ The ACF rule fires here too, exactly as at fast preset and exactly as in v1/v2.1
 | Artifact | Command |
 |---|---|
 | Walk-forward run | `uv run python -m analog_mc walk-forward --config configs/analog_mc/<preset>.yaml` |
-| Diagnostics + decision rules | `uv run python scripts/render_diagnostics.py runs/analog_mc/<timestamp>` |
-| Forecast-vs-realized fans | `uv run python scripts/plot_forecast_vs_realized.py --v1-run <a> --v2-run <b> --out <png>` |
+| Diagnostics + decision rules | `uv run python scripts/analog_mc/render_diagnostics.py runs/analog_mc/<timestamp>` |
+| Forecast-vs-realized fans | `uv run python scripts/analog_mc/plot_forecast_vs_realized.py --v1-run <a> --v2-run <b> --out <png>` |
 
 ---
 

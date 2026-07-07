@@ -6,8 +6,8 @@ canonical run. If the origin isn't in any fold's test window, errors out
 schedule had reached it).
 
 Usage:
-    uv run python scripts/plot_forecast_from_date.py --date 2022-03-01
-    uv run python scripts/plot_forecast_from_date.py --date 2020-03-16 --out custom.png
+    uv run python scripts/analog_mc/plot_forecast_from_date.py --date 2022-03-01
+    uv run python scripts/analog_mc/plot_forecast_from_date.py --date 2020-03-16 --out custom.png
 """
 from __future__ import annotations
 

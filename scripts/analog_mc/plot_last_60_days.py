@@ -6,7 +6,7 @@ paths, and renders median + 50% / 90% credible bands against the realized
 price track.
 
 Usage:
-    uv run python scripts/plot_last_60_days.py [--run RUN_DIR] [--out OUT_PATH]
+    uv run python scripts/analog_mc/plot_last_60_days.py [--run RUN_DIR] [--out OUT_PATH]
 """
 
 from __future__ import annotations

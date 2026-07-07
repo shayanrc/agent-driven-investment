@@ -27,7 +27,7 @@ from analog_mc.features import compute_features
 from analog_mc.local_linear import forward_logret_sums
 from analog_mc.simulate import eligible_candidates
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
 A2_RUN = REPO / "runs/analog_mc/20260521T061730Z"
 OUT = REPO / "results/analog_mc/data/v4_5_4_covid_pool.json"
