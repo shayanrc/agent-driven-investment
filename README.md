@@ -6,23 +6,26 @@ Investment research infrastructure driven by AI agents. Claude acts as the quant
 
 ## Modules
 
-The repo hosts five independently versioned modules under a shared layout:
+The repo hosts eight independently versioned modules under a shared layout:
 
 | Module | What it does | Status |
 |---|---|---|
 | **analog_mc** | Probabilistic 60-day price-path forecasting via analog Monte Carlo | v2.4 canonical; v5 experiments completed |
-| **data_pipelines** | Generic time-series ingestion: fetch, cache, normalize across providers | v1 shipped; US equities + NSE equities domains |
+| **data_pipelines** | Generic time-series ingestion: fetch, cache, normalize across providers | v3 shipped; US + NSE equities, US fundamentals, FRED-macro domains |
 | **forecasters** | Agent-callable forecasting surface with saved-model presets | v1 shipped; analog_mc wired as backend #1 |
-| **gbdt** | Categorical-outcome GBDT classifiers for event-probability forecasting | v1 shipped; CatBoost + agent-driven FS/HP loop |
+| **gbdt** | Categorical-outcome GBDT classifiers for event-probability forecasting | v1.x shipped; CatBoost/XGBoost + agent-driven FS/HP loop |
+| **calibration** | Probability calibration (isotonic etc.), fit separately from strategies | v1 shipped |
+| **valuation** | Point-in-time valuation ratios (PE/PS/P-FCF yields) over the fundamentals cache | v1 shipped; feeds gbdt F18 |
+| **trading_strategies** | Backend-agnostic decision policies: forecasts in, orders out | v1 shipped; TopKDailyKellyLabelExit |
 | **backtesting** | Multi-asset backtesting engine with structural look-ahead-bias elimination | v1 shipped |
 
-Each module has a goal doc at `docs/<module>/goal.md` that defines success criteria and unacceptable trade-offs.
+Each module has a goal doc at `docs/<module>/goal.md` that defines success criteria and unacceptable trade-offs. `backtests/` (no trailing module name) is not a module — it's the cross-module harness where the gbdt → calibration → trading_strategies → backtesting pipeline is evaluated, including the daily forward-OOS prediction cadence.
 
 ---
 
 ## The agent surface
 
-Seven Claude Code skills compose into an end-to-end research workflow:
+Ten Claude Code skills compose into an end-to-end research workflow:
 
 ```
 /data-health           Check cache coverage and freshness
@@ -31,6 +34,9 @@ Seven Claude Code skills compose into an end-to-end research workflow:
 /forecast              Run a preset against a time series (single-origin fan chart)
 /tune-preset           Fit a new preset via walk-forward grid search (hours of compute)
 /gbdt-experiment       Run a GBDT experiment end-to-end from a YAML spec
+/gbdt-diagnose         Emit a diagnostic bundle for a fitted gbdt cell artifact
+/daily-predictions     Refresh data + re-score the deployed cells, log top picks
+/task-graph            Render the project task-dependency graph
 /arxiv-search          Search arXiv for related papers
 ```
 
@@ -76,6 +82,7 @@ df = fetch("NIFTY:RELIANCE", start="2010-01-01", end="2026-05-15")
 **Shipped domains:**
 - **US equities** — NYSE + NASDAQ, S&P 500 / NASDAQ 100 / Russell 1000 universes. Adapter chain: Stooq (bulk seed) → Tiingo (incremental) → yfinance (fallback).
 - **NSE equities** — Indian markets, NIFTY 50 through NIFTY Total Market universes (30+ pre-registered). Adapter chain: jugaad-data → nselib → yfinance.
+- **US fundamentals** — quarterly company fundamentals (`fetch("FUND:<TICKER>")`): revenue, net income, OCF/capex/FCF, shares, EPS, with authoritative SEC filing dates. Adapter chain: macrotrends → SEC EDGAR → yfinance. Feeds the valuation module.
 - **FRED macro** — daily FRED-style macro series (Treasury yields, 2s10s curve, credit OAS, breakevens, real yield, VIX, broad USD), date-broadcast to the equity panel. Consumed by the opt-in gbdt F17 feature family.
 
 Two-layer cache: immutable raw downloads at `data/raw/<provider>/` + canonical-schema SQLite at `data/processed.db`. Repeated calls hit the cache; gaps are detected and backfilled automatically.
@@ -106,7 +113,19 @@ target:
 
 The agent is the ML iteration loop: it reads a per-iteration diagnostic bundle (train-vs-val gap, feature importance, calibration curve), decides which features to prune and how to adjust hyperparameters, and writes a human-readable report with its reasoning. Calibration is the headline metric — a well-calibrated model with modest AUC is a v1 success; high AUC without calibration is a failure.
 
-279-column feature pool across 16 families, including cross-sectional rank/z-score features (plus an opt-in 17th family, F17 macro covariates, off by default — see `docs/gbdt/EXPERIMENT_SPEC.md`). Walk-forward validation with conditional isotonic calibration gated by Spiegelhalter Z-test.
+279-column core feature pool across 16 families, including cross-sectional rank/z-score features, plus opt-in families off by default: F17 macro covariates and F18 point-in-time fundamentals (see `docs/gbdt/EXPERIMENT_SPEC.md`). Walk-forward validation with conditional isotonic calibration gated by Spiegelhalter Z-test.
+
+### calibration
+
+Probability calibration (isotonic and friends) as its own module: calibrators are fit separately on held-out predictions and handed to strategies already-fit, so the strategy layer never trains anything.
+
+### valuation
+
+Point-in-time valuation ratios (PE/PS/P-FCF as inverse yields) built from the `us_fundamentals` cache joined to daily prices. TTM values step only on SEC `filed_date` (causal — no restatement leakage), split-basis aligned. The daily panel is regenerable via `scripts.valuation.build_valuation_panel` and consumed by the opt-in gbdt F18 feature family.
+
+### trading_strategies
+
+Backend-agnostic decision policies: they consume a `dict[date → (ticker, p_mean, p_low, p_high)]` of forecasts and emit orders (e.g. `TopKDailyKellyLabelExit` — hold-through-horizon with exit-driven turnover). Not forecasters, not execution engines.
 
 ### backtesting
 
@@ -144,10 +163,10 @@ Top-level directories are reserved for cross-module concerns.
 The project uses [uv](https://docs.astral.sh/uv/) for environment management (Python >= 3.12).
 
 ```bash
-# install all dependencies (analog_mc, data_pipelines, forecasters, gbdt, backtesting — all editable)
+# install all dependencies (all eight modules installed editable)
 uv sync
 
-# run the full test suite (866 tests)
+# run the full test suite (1,700+ tests)
 uv run pytest
 
 # run tests for a single module
@@ -206,11 +225,11 @@ Each module is config-driven via YAML files in `configs/<module>/`:
 
 ## Project stats
 
-- **~28,000 lines** of source code across 5 modules
-- **1,500+ tests** (123 files) covering correctness constraints, schema invariants, look-ahead detection, and integration
-- **360+ commits** of iterative, diagnostic-driven development
+- **~30,000 lines** of source code across 8 modules
+- **1,700+ tests** (140 files) covering correctness constraints, schema invariants, look-ahead detection, and integration
+- **590+ commits** of iterative, diagnostic-driven development
 - **30+ pre-registered universes** across US and Indian equity markets
-- **230+ experiment configs** spanning multiple universes, thresholds, and horizons
+- **400+ experiment configs** spanning multiple universes, thresholds, and horizons
 
 ---
 
