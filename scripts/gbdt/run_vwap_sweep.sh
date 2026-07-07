@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# V1.8 VWAP (F20) lattice sweep driver: 136 matched single fits — 17 sp500 cells
-# × {xgboost, catboost} × {all, all_vwap, all_fundamentals, all_fundamentals_vwap}.
-# Order: within each backend, base → vwap → fund → fundvwap; xgboost group before
-# catboost (faster → early signal). Sequential (single-writer SQLite contract).
-# Snapshot pinned so the universe feature-cache key is stable across all arms
-# (one cold build per universe-view, warm after).
+# V1.8 VWAP (F20) lattice sweep driver: 68 matched single fits — 17 sp500 cells
+# × xgboost × {all, all_vwap, all_fundamentals, all_fundamentals_vwap}.
+# xgboost-only by user decision (2026-07-07): xgboost warm fits ~7min vs catboost
+# ~9.3min, and the backend question was already settled by _277/_278 (catboost
+# wins long-horizon test AUC) — so the catboost half was dropped to halve wall-
+# clock while keeping the full vwap-minus-base + fundvwap-minus-fund read.
+# Order: base → vwap → fund → fundvwap. Sequential (single-writer SQLite
+# contract). Snapshot pinned so the universe feature-cache key is stable across
+# all arms (one cold build per feature-token, warm after). Resumable: skips arms
+# whose metrics.json already exists.
 #
 # Usage: scripts/gbdt/run_vwap_sweep.sh [SNAPSHOT_END]   (default: today)
 set -u
@@ -22,6 +26,12 @@ fi
 
 run() {
   local spec=$1
+  # Resume: skip arms already completed (metrics.json present) so a relaunch
+  # doesn't redo finished fits.
+  if [ -f "results/gbdt/experiments/$spec/metrics.json" ]; then
+    echo "[VWAP] SKIP  $spec (already done)"
+    return
+  fi
   local t0=$(date +%s)
   echo "[VWAP] START $spec $(date -u +%FT%TZ)"
   SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt timeout 3600 uv run python -m gbdt experiment \
@@ -48,7 +58,7 @@ for f in sorted(glob.glob(f"{d}/sp500_up_*pct_*d_dd*pct.yaml")):
 PY
 )
 
-for suffix in basexgb vwapxgb fundxgb fundvwapxgb basecb vwapcb fundcb fundvwapcb; do
+for suffix in basexgb vwapxgb fundxgb fundvwapxgb; do
   echo "[VWAP] === arm group: $suffix ==="
   for cell in $CELLS; do
     run "${cell}_${suffix}"
