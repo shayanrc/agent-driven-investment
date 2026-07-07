@@ -44,7 +44,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from analog_mc.config import Config
+from analog_mc.config import Config, config_hash as _config_hash
 from analog_mc.data import (
     Fold,
     close_series_from_dataframe,
@@ -160,12 +160,6 @@ def _summarize_paths(
         "p75": [float(x) for x in np.percentile(price, 75, axis=0)],
         "p95": [float(x) for x in np.percentile(price, 95, axis=0)],
     }
-
-
-def _config_hash(config: Config) -> str:
-    import yaml
-    s = yaml.safe_dump(config.to_dict(), sort_keys=True)
-    return "sha256:" + hashlib.sha256(s.encode()).hexdigest()
 
 
 # ----------------------------------------------------------------------------

@@ -72,7 +72,10 @@ def render(runs_root: Path = Path("runs/analog_mc")) -> None:
     cols = st.columns(4)
     cols[0].metric("ticker", config.ticker)
     cols[1].metric("folds completed", meta.get("n_folds_completed", "?"))
-    cols[2].metric("config hash", (meta.get("config_hash") or "?")[:8])
+    cols[2].metric(
+        "config hash",
+        (meta.get("config_hash") or "?").removeprefix("sha256:")[:8],
+    )
     cols[3].metric(
         "git commit",
         (meta.get("git_commit") or "—")[:7] if meta.get("git_commit") else "—",

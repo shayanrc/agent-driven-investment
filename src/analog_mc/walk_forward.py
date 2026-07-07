@@ -38,7 +38,6 @@ Test-eval parallelism (env-controlled):
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -53,7 +52,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from analog_mc.config import Config
+from analog_mc.config import Config, config_hash as _config_hash
 from analog_mc.data import Fold, generate_folds
 from analog_mc.features import compute_features
 from analog_mc.scoring import crps_sample
@@ -84,13 +83,6 @@ def _git_commit_hash() -> str | None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     return None
-
-
-def _config_hash(config: Config) -> str:
-    """Stable hash of the config's YAML representation."""
-    import yaml
-    s = yaml.safe_dump(config.to_dict(), sort_keys=True)
-    return hashlib.blake2b(s.encode(), digest_size=8).hexdigest()
 
 
 def create_run_dir(config: Config, root: str | Path | None = None) -> Path:
