@@ -1,0 +1,30 @@
+# Experiment: russell1000_up_10pct_25d_dd5pct_basexgb
+# V1.8 VWAP (F20) lattice sweep (xgboost · technical). Matched single
+# fit (default HP, max_iterations 1, date_aligned train_start 2019-01-01): within
+# a backend the arms differ ONLY in features.candidates, so vwap-minus-base and
+# fundvwap-minus-fund are clean reads of the F20 VWAP-deviation contribution.
+# --snapshot-end set at runtime.
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 10
+  horizon_days: 25
+  max_drawdown: 0.05
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
