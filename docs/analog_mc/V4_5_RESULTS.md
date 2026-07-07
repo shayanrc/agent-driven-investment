@@ -112,15 +112,15 @@ docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md # added during execution
 docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md        # added during execution
 docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md     # added during execution
 
-scripts/v4_5/validate_gate_signal.py
-scripts/v4_5/analog_autopsy_a2.py
-scripts/v4_5/b1_beta_autopsy.py
-scripts/v4_5/covid_pool_sufficiency.py
-scripts/v4_5/path_construction_inspection.py
-scripts/v4_5/tail_selection_scan.py
-scripts/v4_5/mechanism_map.py
-scripts/v4_5/v5_a2_ensemble_preview.py
-scripts/v4_5/drawdown_feature_sanity.py
+scripts/analog_mc/v4_5/validate_gate_signal.py
+scripts/analog_mc/v4_5/analog_autopsy_a2.py
+scripts/analog_mc/v4_5/b1_beta_autopsy.py
+scripts/analog_mc/v4_5/covid_pool_sufficiency.py
+scripts/analog_mc/v4_5/path_construction_inspection.py
+scripts/analog_mc/v4_5/tail_selection_scan.py
+scripts/analog_mc/v4_5/mechanism_map.py
+scripts/analog_mc/v4_5/v5_a2_ensemble_preview.py
+scripts/analog_mc/v4_5/drawdown_feature_sanity.py
 
 results/analog_mc/data/v4_5_1_gate_signal.json
 results/analog_mc/data/v4_5_2_analog_autopsy.json

@@ -8,7 +8,7 @@
 - Fraction of top-20 with forward sign matching realized.
 - Year-cluster distribution.
 
-Script: [`scripts/v4_5/drawdown_feature_sanity.py`](../../../scripts/v4_5/drawdown_feature_sanity.py) · Data: [`v4_5_9_drawdown_sanity.json`](../../../results/analog_mc/data/v4_5_9_drawdown_sanity.json)
+Script: [`scripts/analog_mc/v4_5/drawdown_feature_sanity.py`](../../../scripts/analog_mc/v4_5/drawdown_feature_sanity.py) · Data: [`v4_5_9_drawdown_sanity.json`](../../../results/analog_mc/data/v4_5_9_drawdown_sanity.json)
 
 ## Anchor-by-anchor verdict
 

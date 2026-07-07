@@ -156,7 +156,7 @@ Listed in priority order — earliest results may obviate or refocus later steps
 
 **Deliverable.** `docs/analog_mc/v4.5/_v4_5_4_covid_pool.md` with the pool histogram + per-matcher probability table. `results/analog_mc/data/v4_5_4_covid_pool.json`.
 
-**Implementation hint.** ~70 lines. Heaviest reuse from V3.5.2 (`scripts/v3_5/audit_pool_tail_mass.py`) — modify to take a single fold rather than all 5 failure folds, and add the per-matcher probability column. The matcher probability layer needs the same composite-distance computation as V4.5.2; if V4.5.2 has been done first, refactor a small helper.
+**Implementation hint.** ~70 lines. Heaviest reuse from V3.5.2 (`scripts/analog_mc/v3_5/audit_pool_tail_mass.py`) — modify to take a single fold rather than all 5 failure folds, and add the per-matcher probability column. The matcher probability layer needs the same composite-distance computation as V4.5.2; if V4.5.2 has been done first, refactor a small helper.
 
 ---
 
@@ -200,7 +200,7 @@ The four added investigations follow the same format as V4.5.1–5 but are docum
 
 **Verdict.** Confirmed at 2022-03-01 (A2 ratio 3.56 vs v24 ratio 8.87 — A2 paths converge at 40% of v24's rate) and 2017-06-01 (A2 4.75 vs v24 7.61, ~62%). The inverse pattern holds at A2.1 WIN anchors (2010-04-23, 2001-10-02 — A2 *more* dispersed than v24). Mechanism: `simulate.py:306–309` forces `use_conditional=False` under corrwindow, so blocks 1–5 reuse block-0 distances. Motivates **V5.A.3** (conditional corrwindow re-matching). Does NOT address Mode-1 (concentrated top-K) regressions.
 
-**Deliverable.** `docs/analog_mc/v4.5/_v4_5_6_path_construction.md`; `results/analog_mc/data/v4_5_6_path_construction.json`; `scripts/v4_5/path_construction_inspection.py`.
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_6_path_construction.md`; `results/analog_mc/data/v4_5_6_path_construction.json`; `scripts/analog_mc/v4_5/path_construction_inspection.py`.
 
 ---
 
@@ -214,7 +214,7 @@ The four added investigations follow the same format as V4.5.1–5 but are docum
 
 **Verdict.** Three cohorts: (1) 10/15 anchors where at least one matcher finds the tail, with v2.4 and A2.1 anti-correlated by anchor (v2.4 lift 6.56 at 2008-10-03 vs A2.1 0.69; A2.1 lift 1.88 at 1991-03-26 vs v2.4 0.42); (2) 5/15 "neither finds it" anchors at extreme |realized| > 13% (2001-04, 2001-10, 2020-03, 2022-03, 2012-03); (3) 1/15 trivial (2017-06-01, realized ≈ 0). Cohort-1 complementarity is the **strongest possible argument for ensemble**, leading to V5.A.2 (path-level ensemble) as the cheapest credible lever; Cohort-2 motivates **V5.B** (drawdown feature) and **V5.C** (delay-coordinate distance) as feature-augmentation candidates.
 
-**Deliverable.** `docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md`; `results/analog_mc/data/v4_5_7_tail_selection_scan.json`; `scripts/v4_5/tail_selection_scan.py`.
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md`; `results/analog_mc/data/v4_5_7_tail_selection_scan.json`; `scripts/analog_mc/v4_5/tail_selection_scan.py`.
 
 ---
 
@@ -228,7 +228,7 @@ The four added investigations follow the same format as V4.5.1–5 but are docum
 
 **Verdict.** **V5.A.2 alone fails the bar at every α.** Failures recovered plateaus at 2/5; regressions are monotone-increasing in α (0 → 10 from α=0 → α=1). At α=0.5: regressions cut 10→6, 2008-10-03 catastrophe rescued (90-band 7→41), aggregate failure CRPS −12% vs v2.4 with only +13% control penalty. Best-balanced configuration but 2018-10-08 / 2020-03-16 / 2026-02-19 never reach 45/60 coverage even at α=1. **V5.A.2 at α=0.5 is the BASE configuration; the minimum viable stack is V5.A.2 + V5.B.** This invalidates the prior plan-doc framing that an ensemble alone might suffice.
 
-**Deliverable.** `docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md`; `results/analog_mc/data/v4_5_8_v5a2_preview.json`; `scripts/v4_5/v5_a2_ensemble_preview.py`.
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md`; `results/analog_mc/data/v4_5_8_v5a2_preview.json`; `scripts/analog_mc/v4_5/v5_a2_ensemble_preview.py`.
 
 ---
 
@@ -242,7 +242,7 @@ The four added investigations follow the same format as V4.5.1–5 but are docum
 
 **Verdict.** Feature works at 3/5 Cohort-2 anchors — strong sanity at 2001-04-04 (85% same-sign, all top-20 from 1990 recession-recovery) and 2001-10-02 (75% same-sign), moderate at 2022-03-01 (60%, mean in right direction). Bimodal at 2020-03-16 (55%) — pulls both 1987-style V-recoveries and 2008-style continuations at COVID's extreme drawdown; needs a co-feature. Inert at 2012-03-14 (target dd = 0, so feature has no signal). Motivates **V5.B as P1** with optional **V5.B.2 stretch** (drawdown + vol-regime co-feature) gated on COVID coverage. Also surfaces a feature-formula bug in the V4.5.9 first iteration (linear difference instead of log-ratio normalized by vol) that the V5.B implementation must avoid.
 
-**Deliverable.** `docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md`; `results/analog_mc/data/v4_5_9_drawdown_sanity.json`; `scripts/v4_5/drawdown_feature_sanity.py`.
+**Deliverable.** `docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md`; `results/analog_mc/data/v4_5_9_drawdown_sanity.json`; `scripts/analog_mc/v4_5/drawdown_feature_sanity.py`.
 
 ---
 
@@ -321,15 +321,15 @@ docs/analog_mc/v4.5/_v4_5_7_tail_selection_scan.md   # added: tail-positive gene
 docs/analog_mc/v4.5/_v4_5_8_v5a2_preview.md          # added: V5.A.2 ensemble preview
 docs/analog_mc/v4.5/_v4_5_9_drawdown_sanity.md       # added: drawdown-feature sanity
 
-scripts/v4_5/validate_gate_signal.py             # V4.5.1
-scripts/v4_5/analog_autopsy_a2.py                # V4.5.2
-scripts/v4_5/b1_beta_autopsy.py                  # V4.5.3
-scripts/v4_5/covid_pool_sufficiency.py           # V4.5.4
-scripts/v4_5/mechanism_map.py                    # V4.5.5
-scripts/v4_5/path_construction_inspection.py    # V4.5.6 (added)
-scripts/v4_5/tail_selection_scan.py             # V4.5.7 (added)
-scripts/v4_5/v5_a2_ensemble_preview.py          # V4.5.8 (added)
-scripts/v4_5/drawdown_feature_sanity.py         # V4.5.9 (added)
+scripts/analog_mc/v4_5/validate_gate_signal.py             # V4.5.1
+scripts/analog_mc/v4_5/analog_autopsy_a2.py                # V4.5.2
+scripts/analog_mc/v4_5/b1_beta_autopsy.py                  # V4.5.3
+scripts/analog_mc/v4_5/covid_pool_sufficiency.py           # V4.5.4
+scripts/analog_mc/v4_5/mechanism_map.py                    # V4.5.5
+scripts/analog_mc/v4_5/path_construction_inspection.py    # V4.5.6 (added)
+scripts/analog_mc/v4_5/tail_selection_scan.py             # V4.5.7 (added)
+scripts/analog_mc/v4_5/v5_a2_ensemble_preview.py          # V4.5.8 (added)
+scripts/analog_mc/v4_5/drawdown_feature_sanity.py         # V4.5.9 (added)
 
 results/analog_mc/data/v4_5_1_gate_signal.json
 results/analog_mc/data/v4_5_2_analog_autopsy.json

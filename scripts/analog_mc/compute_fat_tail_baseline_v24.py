@@ -25,7 +25,7 @@ import numpy as np
 
 from analog_mc.scoring import crps_per_step
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RUN_DIR = ROOT / "runs" / "analog_mc" / "20260520T045525Z"
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 OUT_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_baseline_v24.json"

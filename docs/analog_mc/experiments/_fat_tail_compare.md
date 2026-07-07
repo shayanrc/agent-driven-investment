@@ -76,7 +76,7 @@
 ## Reproducing
 
 ```bash
-uv run python scripts/render_fat_tail_panel_compare.py \
+uv run python scripts/analog_mc/render_fat_tail_panel_compare.py \
     --out-dir docs/analog_mc/experiments/figs/fat_tail_compare
 ```
 

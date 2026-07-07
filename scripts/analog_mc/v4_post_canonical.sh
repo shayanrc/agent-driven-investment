@@ -9,10 +9,10 @@
 #   - docs/analog_mc/experiments/figs/<label>_fat_tail/*.png (15-chart panel)
 #
 # Usage:
-#   bash scripts/v4_post_canonical.sh runs/analog_mc/<TIMESTAMP> <label> "<display title>"
+#   bash scripts/analog_mc/v4_post_canonical.sh runs/analog_mc/<TIMESTAMP> <label> "<display title>"
 #
 # Example:
-#   bash scripts/v4_post_canonical.sh runs/analog_mc/20260520T155220Z \
+#   bash scripts/analog_mc/v4_post_canonical.sh runs/analog_mc/20260520T155220Z \
 #       b1_local_linear "B1 (Platzer local-linear)"
 
 set -euo pipefail
@@ -37,14 +37,14 @@ if [ ! -d "$RUN_DIR/folds" ]; then
 fi
 
 echo "[1/2] Computing fat-tail eval + diff vs v2.4 baseline..."
-uv run python scripts/compute_fat_tail_eval.py \
+uv run python scripts/analog_mc/compute_fat_tail_eval.py \
     --run-dir "$RUN_DIR" \
     --label "$LABEL" \
     --baseline-json "$BASELINE_JSON"
 
 echo
 echo "[2/2] Rendering 15-anchor fat-tail panel..."
-uv run python scripts/render_fat_tail_panel.py \
+uv run python scripts/analog_mc/render_fat_tail_panel.py \
     --run-dir "$RUN_DIR" \
     --label "$TITLE" \
     --out-dir "$PANEL_DIR" \

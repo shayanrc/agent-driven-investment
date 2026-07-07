@@ -12,7 +12,7 @@ Each subplot shows: realized price path (solid black), forecast median (red),
 sample paths (thin grey lines).
 
 Usage:
-    uv run python scripts/plot_forecast_vs_realized.py \\
+    uv run python scripts/analog_mc/plot_forecast_vs_realized.py \\
         --v1-run runs/analog_mc/20260516T180000Z \\
         --v2-run runs/analog_mc/20260517T050831Z \\
         --out runs/analog_mc/_forecast_vs_realized.png

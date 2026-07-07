@@ -4,7 +4,7 @@
 
 **Method.** Read per-fold val_crps from A2.1v1 canonical (`runs/analog_mc/20260521T061730Z`, 76 folds). Threshold-sweep k ∈ {1.2, 1.5, 2.0, 3.0}. For each fat-tail anchor, identify its fold; if the fold is "gated" (val_crps > threshold), substitute v2.4's cell into the hypothetical V5.1 panel. Score against the v4 promotion bar (≥3/5 failures recovered AND ≤2/15 regressions >5%).
 
-Script: [`scripts/v4_5/validate_gate_signal.py`](../../../scripts/v4_5/validate_gate_signal.py) · Data: [`v4_5_1_gate_signal.json`](../../../results/analog_mc/data/v4_5_1_gate_signal.json)
+Script: [`scripts/analog_mc/v4_5/validate_gate_signal.py`](../../../scripts/analog_mc/v4_5/validate_gate_signal.py) · Data: [`v4_5_1_gate_signal.json`](../../../results/analog_mc/data/v4_5_1_gate_signal.json)
 
 ## Headline
 

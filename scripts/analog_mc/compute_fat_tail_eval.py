@@ -6,7 +6,7 @@ against a baseline JSON.
 
 Usage:
     # Compute the eval for a new B1 run, diffed against the v2.4 baseline.
-    uv run python scripts/compute_fat_tail_eval.py \\
+    uv run python scripts/analog_mc/compute_fat_tail_eval.py \\
         --run-dir runs/analog_mc/20260520T155220Z \\
         --label b1_local_linear \\
         --baseline-json results/analog_mc/data/fat_tail_baseline_v24.json
@@ -29,7 +29,7 @@ import numpy as np
 
 from analog_mc.scoring import crps_per_step
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 
 FAILURE_DATES = {

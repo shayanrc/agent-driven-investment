@@ -4,7 +4,7 @@
 
 **Method.** For each Mode-3 regression anchor + 3 wins for comparison, read the cached forecast paths from the canonical run's `forecasts.npz`. Compute cross-path **cumulative-log-return std growth ratio** = `std_cum_logret[day 59] / std_cum_logret[day 0]`. Brownian baseline: √60 ≈ 7.75 (since cum std scales as √t for iid returns).
 
-Script: [`scripts/v4_5/path_construction_inspection.py`](../../../scripts/v4_5/path_construction_inspection.py) · Data: [`v4_5_6_path_construction.json`](../../../results/analog_mc/data/v4_5_6_path_construction.json)
+Script: [`scripts/analog_mc/v4_5/path_construction_inspection.py`](../../../scripts/analog_mc/v4_5/path_construction_inspection.py) · Data: [`v4_5_6_path_construction.json`](../../../results/analog_mc/data/v4_5_6_path_construction.json)
 
 ## Per-anchor cumulative-std growth
 

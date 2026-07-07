@@ -23,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 A2_RUN = REPO / "runs/analog_mc/20260521T061730Z"
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
 OUT = REPO / "results/analog_mc/data/v4_5_6_path_construction.json"

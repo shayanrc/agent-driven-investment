@@ -53,7 +53,7 @@ In recommended priority/cost order. Each maps to mechanisms identified in [`V4_5
 1. Take v2.4 and A2.1v1 forecasts.npz from existing canonical runs (no new walk-forward).
 2. For each (fold × origin), concatenate path arrays at **α = 0.5** (500 paths from v2.4 + 500 from A2.1 = 1000 mixed paths).
 3. Recompute all CRPS / coverage / PIT / diagnostics on the mixed path set.
-4. Run the 15-anchor fat-tail panel via existing `scripts/compute_fat_tail_eval.py` + `scripts/render_fat_tail_panel.py`.
+4. Run the 15-anchor fat-tail panel via existing `scripts/analog_mc/compute_fat_tail_eval.py` + `scripts/analog_mc/render_fat_tail_panel.py`.
 5. (Optional) Re-do at α=0.6 if 2010-04-23 90-band coverage drops too close to 45 threshold (V4.5.8 showed margin of 48 at α=0.5).
 
 **Cost.** ~1 day. No new walk-forward — repurposes cached forecasts. ~200 LOC for the ensemble-mixing script + fat-tail panel renderer adaptation.
@@ -202,11 +202,11 @@ Conservative interpretation: a candidate must pass BOTH conditions to promote to
 
 ## Refresh the cross-experiment fat-tail comparison
 
-After every V5 canonical run completes, regenerate the cross-experiment fat-tail figures so the comparison panel includes the new run alongside the v4 set. `scripts/render_fat_tail_panel_compare.py` accepts `--experiment LABEL=RUN_DIR` flags (repeatable, `rsplit("=", 1)` so `=` in labels is fine) and assigns colors automatically for unknown labels.
+After every V5 canonical run completes, regenerate the cross-experiment fat-tail figures so the comparison panel includes the new run alongside the v4 set. `scripts/analog_mc/render_fat_tail_panel_compare.py` accepts `--experiment LABEL=RUN_DIR` flags (repeatable, `rsplit("=", 1)` so `=` in labels is fine) and assigns colors automatically for unknown labels.
 
 ```bash
 # Canonical example (extend after V5.A.2 lands):
-uv run python scripts/render_fat_tail_panel_compare.py --experiment-grid \
+uv run python scripts/analog_mc/render_fat_tail_panel_compare.py --experiment-grid \
   --experiment "v2.4 baseline (Cell-D-s30)=runs/analog_mc/20260520T045525Z" \
   --experiment "B1 (Platzer local-linear)=runs/analog_mc/20260520T155220Z" \
   --experiment "A2.1 (corrwindow L=100)=runs/analog_mc/20260521T061730Z" \
@@ -214,7 +214,7 @@ uv run python scripts/render_fat_tail_panel_compare.py --experiment-grid \
   --experiment "V5.A.2 ensemble=runs/analog_mc/<v5_a2_ts>"
 
 # Also refresh the per-experiment 15-anchor panel for the new run:
-uv run python scripts/render_fat_tail_panel.py \
+uv run python scripts/analog_mc/render_fat_tail_panel.py \
   --run-dir runs/analog_mc/<v5_a2_ts> \
   --label "V5.A.2 ensemble" \
   --out-dir docs/analog_mc/experiments/figs/v5_a2_ensemble_fat_tail \

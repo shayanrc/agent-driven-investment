@@ -16,7 +16,7 @@
 # practice get a fresh timestamp; the append semantics are kept defensive.
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 LOG_TS="$(date -u +%Y%m%dT%H%M%SZ)"
 LOG_FILE="logs/nifty50_deep_${LOG_TS}.log"

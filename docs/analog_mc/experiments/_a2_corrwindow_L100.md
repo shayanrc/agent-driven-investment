@@ -13,7 +13,7 @@ This is the v4 A2 implementation. A2.2 (literature-faithful OFTER `arXiv 2304.03
 - Implementation: `src/analog_mc/distances_corrwindow.py` (vectorized Pearson-corr-window distance with ε floor + degenerate-window guards). `simulate.forecast()` routes via `_compute_block0_distances()`; corrwindow internally disables conditional block sampling (per design D3 — block-0 probs reused for every block; conditional re-matching would require per-path window assembly, out of v1 scope).
 - Tests: `tests/analog_mc/test_corrwindow.py` — 15 tests, all pass.
 - Canonical run: `runs/analog_mc/20260521T061730Z` — 76 folds, 1000 paths, weight grid × `n_eff=50` only, ~5.9h compute (2026-05-21 11:47 → 17:39).
-- Sanity precursor: `scripts/v4_a2_corrwindow_sanity.py`, results at [`_a2_corrwindow_sanity_v0.md`](_a2_corrwindow_sanity_v0.md). Selected L=100 from sweep over {10, 20, 60, 100}.
+- Sanity precursor: `scripts/analog_mc/v4_a2_corrwindow_sanity.py`, results at [`_a2_corrwindow_sanity_v0.md`](_a2_corrwindow_sanity_v0.md). Selected L=100 from sweep over {10, 20, 60, 100}.
 
 ### v0 abort
 
@@ -73,7 +73,7 @@ A2.1 also surfaced an unresolved question: corrwindow's disabling of conditional
 - `src/analog_mc/distances_corrwindow.py`, `src/analog_mc/simulate.py` (corrwindow hook + conditional-sampling guard), `src/analog_mc/config.py` (`matcher_distance`, `corrwindow_length`)
 - `configs/analog_mc/ablation_A2_corrwindow_L100.yaml`
 - `tests/analog_mc/test_corrwindow.py` (15 tests)
-- `scripts/v4_a2_corrwindow_sanity.py` + `_a2_corrwindow_sanity_v0.md` + `v4_a2_corrwindow_sanity.json`
+- `scripts/analog_mc/v4_a2_corrwindow_sanity.py` + `_a2_corrwindow_sanity_v0.md` + `v4_a2_corrwindow_sanity.json`
 - `runs/analog_mc/20260521T061730Z/` (canonical v1 artefacts)
 - `runs/analog_mc/_a2_corrwindow_v0_aborted_20260521T033950Z/` (archived v0 for diagnostics)
 - `results/analog_mc/data/fat_tail_a2_corrwindow_L100.json` + `_diff.json`

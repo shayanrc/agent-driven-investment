@@ -2,7 +2,7 @@
 
 **Purpose.** Synthesize V4.5.1–4 + 6/7 into a single 15-anchor × failure-mechanism matrix, then map mechanisms to v5 candidate experiments. This is what v5 plans against.
 
-Script: [`scripts/v4_5/mechanism_map.py`](../../../scripts/v4_5/mechanism_map.py) · Data: [`v4_5_5_mechanism_map.json`](../../../results/analog_mc/data/v4_5_5_mechanism_map.json)
+Script: [`scripts/analog_mc/v4_5/mechanism_map.py`](../../../scripts/analog_mc/v4_5/mechanism_map.py) · Data: [`v4_5_5_mechanism_map.json`](../../../results/analog_mc/data/v4_5_5_mechanism_map.json)
 
 ## Mechanism definitions
 

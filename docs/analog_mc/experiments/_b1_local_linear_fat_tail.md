@@ -68,7 +68,7 @@ Run: `runs/analog_mc/20260520T155220Z` · 15 anchors × 60-day horizon.
 ## Reproducing
 
 ```bash
-uv run python scripts/render_fat_tail_panel.py \
+uv run python scripts/analog_mc/render_fat_tail_panel.py \
     --run-dir runs/analog_mc/20260520T155220Z \
     --label "B1 (Platzer local-linear)" \
     --out-dir docs/analog_mc/experiments/figs/b1_local_linear_fat_tail \

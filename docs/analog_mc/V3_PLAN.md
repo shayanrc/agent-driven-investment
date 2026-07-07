@@ -441,7 +441,7 @@ LLM-paced re-estimate of E9 (5h instead of 1.5 days) changes the calculus: codin
 | `runs/analog_mc/20260519T{060335,064102,071520}Z` | E1 run dirs | ✅ |
 | `docs/analog_mc/experiments/_e1_block_length.md` | E1 results | ✅ |
 | `docs/analog_mc/figs/e1_block_length_acf.png` | E1 ACF comparison plot | ✅ |
-| `scripts/_e1_aggregate.py` | E1 aggregator (reusable for E10/E9 ACF curves) | ✅ |
+| `scripts/analog_mc/_e1_aggregate.py` | E1 aggregator (reusable for E10/E9 ACF curves) | ✅ |
 | `configs/analog_mc/ablation_E10_celld_bl20.yaml` | E10 cell | ✅ |
 | `docs/analog_mc/experiments/_e10_celld_bl20.md` + figs | E10 results | ✅ |
 | `configs/analog_mc/ablation_E3_seed{7,1337,2024,99}.yaml` | E3 seed configs (only seed7 ran) | ✅ |

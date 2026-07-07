@@ -4,7 +4,7 @@
 
 **Method.** For each of the 15 fat-tail anchors, load cached v2.4 and A2.1v1 path arrays from `forecasts.npz`, mix at multiple α ratios (α = fraction of paths from A2.1), recompute CRPS and 50/90-band coverage. **No new walk-forward.**
 
-Script: [`scripts/v4_5/v5_a2_ensemble_preview.py`](../../../scripts/v4_5/v5_a2_ensemble_preview.py) · Data: [`v4_5_8_v5a2_preview.json`](../../../results/analog_mc/data/v4_5_8_v5a2_preview.json)
+Script: [`scripts/analog_mc/v4_5/v5_a2_ensemble_preview.py`](../../../scripts/analog_mc/v4_5/v5_a2_ensemble_preview.py) · Data: [`v4_5_8_v5a2_preview.json`](../../../results/analog_mc/data/v4_5_8_v5a2_preview.json)
 
 ## Headline — α sweep
 

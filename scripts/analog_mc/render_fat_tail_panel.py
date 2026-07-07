@@ -6,7 +6,7 @@ process — faster than 15 subprocess invocations and supports per-experiment
 title labels.
 
 Usage:
-    uv run python scripts/render_fat_tail_panel.py \\
+    uv run python scripts/analog_mc/render_fat_tail_panel.py \\
         --run-dir runs/analog_mc/20260520T155220Z \\
         --label "B1 (Platzer local-linear)" \\
         --out-dir docs/analog_mc/experiments/figs/b1_local_linear_fat_tail \\
@@ -29,7 +29,7 @@ import pandas as pd
 from analog_mc.config import Config
 from analog_mc.data import load_close_series
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 
 

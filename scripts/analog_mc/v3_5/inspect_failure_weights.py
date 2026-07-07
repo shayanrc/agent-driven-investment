@@ -16,7 +16,7 @@ import json
 import statistics
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUN_DIR = ROOT / "runs" / "analog_mc" / "20260520T045525Z"
 ANCHORS_JSON = ROOT / "results" / "analog_mc" / "data" / "fat_tail_eval_anchors.json"
 OUT_JSON = ROOT / "results" / "analog_mc" / "data" / "v3_5_1_weights.json"

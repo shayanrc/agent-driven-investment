@@ -71,7 +71,7 @@ Per V3_PLAN's gating rules:
 - `runs/analog_mc/20260519T060335Z/` (bl=5)
 - `runs/analog_mc/20260519T064102Z/` (bl=10)
 - `runs/analog_mc/20260519T071520Z/` (bl=20)
-- `scripts/_e1_aggregate.py` — ACF + per-regime CRPS aggregator
+- `scripts/analog_mc/_e1_aggregate.py` — ACF + per-regime CRPS aggregator
 - `results/analog_mc/data/_e1_data.json` — machine-readable summary
 - `docs/analog_mc/figs/e1_block_length_acf.png` — three simulated curves + realized
 - This page.

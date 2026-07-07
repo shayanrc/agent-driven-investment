@@ -68,7 +68,7 @@ Run: `runs/analog_mc/20260521T121025Z` · 15 anchors × 60-day horizon.
 ## Reproducing
 
 ```bash
-uv run python scripts/render_fat_tail_panel.py \
+uv run python scripts/analog_mc/render_fat_tail_panel.py \
     --run-dir runs/analog_mc/20260521T121025Z \
     --label "B5 (joint A2.1+B1)" \
     --out-dir docs/analog_mc/experiments/figs/b5_joint_fat_tail \

@@ -4,7 +4,7 @@
 
 **Method.** At the 2020-03-16 anchor, compute probability mass concentration above the +30%/+40%/+50% realized-forward thresholds under each matcher (v2.4 weighted-Euclidean, A2.1 corrwindow L=100). Compute **lift over uniform** = `mass(above-T) / count(above-T) × N`. If lift < 1, the matcher is *avoiding* tail-positive candidates relative to random selection.
 
-Script: [`scripts/v4_5/covid_pool_sufficiency.py`](../../../scripts/v4_5/covid_pool_sufficiency.py) · Data: [`v4_5_4_covid_pool.json`](../../../results/analog_mc/data/v4_5_4_covid_pool.json)
+Script: [`scripts/analog_mc/v4_5/covid_pool_sufficiency.py`](../../../scripts/analog_mc/v4_5/covid_pool_sufficiency.py) · Data: [`v4_5_4_covid_pool.json`](../../../results/analog_mc/data/v4_5_4_covid_pool.json)
 
 ## Headline
 

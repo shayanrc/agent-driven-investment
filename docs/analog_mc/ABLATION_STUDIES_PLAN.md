@@ -50,7 +50,7 @@ Phase 2's only remaining task is documentation: include the A-canonical ↔ B-ca
 
 ## Decomposition analyses (no new runs)
 
-For each cell, compute and tabulate using `scripts/ablation_decompose.py`:
+For each cell, compute and tabulate using `scripts/analog_mc/ablation_decompose.py`:
 
 | Decomposition | What it answers |
 |---|---|
@@ -68,7 +68,7 @@ All five decompositions run cheaply on persisted artifacts; the script skips the
 
 1. Author `configs/analog_mc/ablation_C_cond_only.yaml`. ✅
 2. Launch Cell C walk-forward in background; arm a 15-min cron status check. ✅
-3. **In parallel:** author `scripts/ablation_decompose.py` and dry-run it on the 5 existing cells (A-fast, A-canonical, B-fast, B-canonical, D-fast) to catch any plumbing issue before C lands. ⏳
+3. **In parallel:** author `scripts/analog_mc/ablation_decompose.py` and dry-run it on the 5 existing cells (A-fast, A-canonical, B-fast, B-canonical, D-fast) to catch any plumbing issue before C lands. ⏳
 4. When Cell C completes (~6 h), render diagnostic figs for it and rerun decompose with all 6 cells.
 5. Author `docs/analog_mc/ABLATION_STUDIES_REPORT.md` — the results report.
 6. Update `RESULTS.md` (one-line index pointer to ABLATIONS) and `V2_PLAN.md` (ablation-conclusion paragraph under the v2.2 audit).
@@ -81,7 +81,7 @@ All runs are crash-resumable via `walk_forward.run_walk_forward(resume=True)` so
 | Path | Purpose |
 |---|---|
 | `configs/analog_mc/ablation_C_cond_only.yaml` | Cell C preset |
-| `scripts/ablation_decompose.py` | Multi-run decomposition table generator |
+| `scripts/analog_mc/ablation_decompose.py` | Multi-run decomposition table generator |
 | `docs/analog_mc/ABLATION_STUDIES_REPORT.md` | Results report — headline 2×2 + Phase-2 row + all decompositions + conclusion |
 | `docs/analog_mc/ABLATION_STUDIES_PLAN.md` | **This file** — the spec |
 | Pointer updates in `RESULTS.md` and `V2_PLAN.md` | Cross-references; not duplicates of ABLATION_STUDIES_REPORT.md content |
@@ -89,16 +89,16 @@ All runs are crash-resumable via `walk_forward.run_walk_forward(resume=True)` so
 ## Existing helpers to reuse
 
 - `analog_mc.diagnostics.{load_run, aggregate_crps_overall, aggregate_crps_per_step, aggregate_crps_per_vol_regime, decision_rules}` — used by `ablation_decompose.py`
-- `scripts/render_diagnostics.py` — render Cell C figures
-- `scripts/plot_forecast_vs_realized.py` — could be extended to a 4-cell fan comparison if visualisation helps the writeup
+- `scripts/analog_mc/render_diagnostics.py` — render Cell C figures
+- `scripts/analog_mc/plot_forecast_vs_realized.py` — could be extended to a 4-cell fan comparison if visualisation helps the writeup
 
 ## Verification
 
 For Cell C walk-forward:
 
 1. `runs/analog_mc/<new>/lock` removed and `Walk-forward complete: 76 folds` log line appears in `runs/analog_mc/_ablation_C.log`.
-2. `uv run python scripts/render_diagnostics.py runs/analog_mc/<new>` runs to completion. **Will hang on the fixed-weight baseline re-eval** because the preset has `conditional_block_sampling=true` — same workaround as the v2.2 audit: either skip the fixed-baseline section by reading the persisted `summary.parquet` directly, or temporarily flip the run dir's `config.yaml` for the diagnostics pass. The 2×2 attribution does not depend on it.
-3. `uv run python scripts/ablation_decompose.py <cells ...>` emits the comparison tables with no crashes.
+2. `uv run python scripts/analog_mc/render_diagnostics.py runs/analog_mc/<new>` runs to completion. **Will hang on the fixed-weight baseline re-eval** because the preset has `conditional_block_sampling=true` — same workaround as the v2.2 audit: either skip the fixed-baseline section by reading the persisted `summary.parquet` directly, or temporarily flip the run dir's `config.yaml` for the diagnostics pass. The 2×2 attribution does not depend on it.
+3. `uv run python scripts/analog_mc/ablation_decompose.py <cells ...>` emits the comparison tables with no crashes.
 
 ## Decision rules (read after Phase 1 completes)
 

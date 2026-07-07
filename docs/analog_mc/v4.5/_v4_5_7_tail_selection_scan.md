@@ -4,7 +4,7 @@
 
 **Method.** For each anchor, compute `lift = mass(same-sign-tail with |realized_60d| ≥ |anchor realized|) / (count_in_tail / n_eligible)`. Lift < 1 means the matcher avoids the right-direction tail relative to uniform random selection. Lift > 1 means over-selection.
 
-Script: [`scripts/v4_5/tail_selection_scan.py`](../../../scripts/v4_5/tail_selection_scan.py) · Data: [`v4_5_7_tail_selection_scan.json`](../../../results/analog_mc/data/v4_5_7_tail_selection_scan.json)
+Script: [`scripts/analog_mc/v4_5/tail_selection_scan.py`](../../../scripts/analog_mc/v4_5/tail_selection_scan.py) · Data: [`v4_5_7_tail_selection_scan.json`](../../../results/analog_mc/data/v4_5_7_tail_selection_scan.json)
 
 ## Per-anchor lift table
 

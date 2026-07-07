@@ -22,7 +22,7 @@ import json
 import statistics
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 A2_RUN = REPO / "runs/analog_mc/20260521T061730Z"
 B1_RUN = REPO / "runs/analog_mc/20260520T155220Z"
 V24_RUN = REPO / "runs/analog_mc/20260520T045525Z"
