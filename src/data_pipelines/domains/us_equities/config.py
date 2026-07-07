@@ -34,6 +34,14 @@ class USEquitiesConfig:
 
     yfinance_enabled: bool = True
 
+    # Shared retry/backoff (data_pipelines.retry.call_with_retry) for the
+    # yfinance fallback tier — same knobs as the nse_equities and
+    # us_fundamentals domains.
+    retry_max_retries: int = 3
+    retry_base_delay_sec: float = 1.0
+    retry_max_delay_sec: float = 30.0
+    retry_jitter: bool = True
+
     # Index symbol → Stooq URL slug. Stooq uses lowercase '^spx' (no '.us').
     stooq_index_slugs: dict[str, str] = field(default_factory=lambda: {
         "^SPX": "^spx",
@@ -47,6 +55,12 @@ class USEquitiesConfig:
             raise ValueError("big_gap_threshold_days must be >= 1")
         if self.tiingo_max_retries < 0:
             raise ValueError("tiingo_max_retries must be >= 0")
+        if self.retry_max_retries < 0:
+            raise ValueError("retry_max_retries must be >= 0")
+        if self.retry_base_delay_sec < 0:
+            raise ValueError("retry_base_delay_sec must be >= 0")
+        if self.retry_max_delay_sec < self.retry_base_delay_sec:
+            raise ValueError("retry_max_delay_sec must be >= retry_base_delay_sec")
         if not self.tiingo_api_key_env:
             raise ValueError("tiingo_api_key_env must be a non-empty env-var name")
         if not self.stooq_api_key_env:

@@ -135,7 +135,9 @@ class TestFetchMocked:
                 adapter.fetch("NYSE:ZZZZ", start=date(2026, 1, 1),
                               end=date(2026, 1, 9), data_root=tmp_path)
 
-    def test_yf_raise_wrapped(self, adapter, tmp_path):
+    def test_yf_raise_wrapped(self, tmp_path):
+        # Zero retries so the wrapped error propagates without backoff sleeps.
+        ad = YFinanceAdapter(USEquitiesConfig(retry_max_retries=0))
         mock_yf = MagicMock()
         ticker = MagicMock()
         ticker.history.side_effect = RuntimeError("yfinance internal failure")
@@ -143,8 +145,31 @@ class TestFetchMocked:
 
         with patch.dict("sys.modules", {"yfinance": mock_yf}):
             with pytest.raises(ProviderError, match="yfinance error"):
-                adapter.fetch("NYSE:AAPL", start=date(2026, 1, 1),
-                              end=date(2026, 1, 9), data_root=tmp_path)
+                ad.fetch("NYSE:AAPL", start=date(2026, 1, 1),
+                         end=date(2026, 1, 9), data_root=tmp_path)
+
+    def test_transient_error_retried_then_succeeds(self, tmp_path):
+        # Same shared retry/backoff as the nse_equities yfinance adapter:
+        # a transient failure on attempt 1 is retried and the fetch lands.
+        ad = YFinanceAdapter(USEquitiesConfig(
+            retry_max_retries=2,
+            retry_base_delay_sec=0.01,
+            retry_max_delay_sec=0.01,
+            retry_jitter=False,
+        ))
+        mock_yf = MagicMock()
+        ticker = MagicMock()
+        ticker.history.side_effect = [
+            RuntimeError("transient yfinance failure"),
+            _yf_like_df(),
+        ]
+        mock_yf.Ticker.return_value = ticker
+
+        with patch.dict("sys.modules", {"yfinance": mock_yf}):
+            raw = ad.fetch("NYSE:AAPL", start=date(2026, 1, 1),
+                           end=date(2026, 1, 9), data_root=tmp_path)
+        assert raw.exists()
+        assert ticker.history.call_count == 2
 
     def test_disabled_config_rejects(self, tmp_path):
         ad = YFinanceAdapter(USEquitiesConfig(yfinance_enabled=False))

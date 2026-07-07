@@ -37,6 +37,7 @@ from data_pipelines.domains.us_fundamentals.schema import (
 )
 from data_pipelines.errors import EmptyPayload, ProviderError
 from data_pipelines.raw_store import write_raw_atomic
+from data_pipelines.retry import RetryPolicy, call_with_retry
 
 DOMAIN_NAME = "us_fundamentals"
 
@@ -67,6 +68,14 @@ class YFinanceFundamentalsAdapter(Adapter):
     def __init__(self, config: USFundamentalsConfig | None = None):
         self._config = config or USFundamentalsConfig()
 
+    def _retry_policy(self) -> RetryPolicy:
+        return RetryPolicy(
+            max_retries=self._config.retry_max_retries,
+            base_delay_sec=self._config.retry_base_delay_sec,
+            max_delay_sec=self._config.retry_max_delay_sec,
+            jitter=self._config.retry_jitter,
+        )
+
     def fetch(
         self,
         identifier: str,
@@ -83,14 +92,20 @@ class YFinanceFundamentalsAdapter(Adapter):
                 self.name, identifier, "yfinance not installed"
             ) from e
 
-        try:
-            ticker = yf.Ticker(symbol.replace(".", "-"))  # yahoo dash-spells
-            income = ticker.quarterly_income_stmt
-            cashflow = ticker.quarterly_cashflow
-        except Exception as e:  # yfinance raises a zoo of exception types
-            raise ProviderError(
-                self.name, identifier, f"yfinance error: {type(e).__name__}: {e}"
-            ) from None
+        def _do_fetch() -> tuple:
+            try:
+                ticker = yf.Ticker(symbol.replace(".", "-"))  # yahoo dash-spells
+                return ticker.quarterly_income_stmt, ticker.quarterly_cashflow
+            except Exception as e:  # yfinance raises a zoo of exception types
+                raise ProviderError(
+                    self.name, identifier,
+                    f"yfinance error: {type(e).__name__}: {e}"
+                ) from None
+
+        income, cashflow = call_with_retry(
+            _do_fetch, self._retry_policy(),
+            provider=self.name, identifier=identifier,
+        )
 
         if (income is None or income.empty) and (
             cashflow is None or cashflow.empty
