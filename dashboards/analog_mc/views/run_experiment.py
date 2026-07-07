@@ -21,11 +21,7 @@ import streamlit as st
 
 from analog_mc import Config
 
-
-def _list_configs(configs_root: Path) -> list[Path]:
-    if not configs_root.exists():
-        return []
-    return sorted(configs_root.glob("*.yaml"))
+from dashboards.analog_mc.views._shared import list_configs as _list_configs
 
 
 def _list_active_runs(runs_root: Path) -> list[Path]:
