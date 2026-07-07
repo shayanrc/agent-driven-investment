@@ -362,6 +362,83 @@ def volume_family(panel: pd.DataFrame,
 
 
 # ---------------------------------------------------------------------------
+# F20 — VWAP-deviation family (opt-in; NOT in _ALL_FAMILIES).
+# Daily OHLCV has no intraday VWAP, so use a causal daily proxy: the trailing
+# volume-weighted mean of the typical price (H+L+C)/3 over N, then the deviation
+# of today's close from it — how stretched price is above/below where volume
+# actually transacted. Both a per-stock trailing z-score (is this stretch large
+# vs the stock's own recent history?) and a cross-sectional z/rank (asset-
+# agnostic, universe-relative) form, mirroring the F7 dollar_move idiom. Every
+# window is strictly trailing incl. the current bar (C1 causal — the current bar
+# is known at prediction time t, same as all F1–F16 rolling features).
+# ---------------------------------------------------------------------------
+
+_VWAP_XS_ANCHOR = 20  # the cross-sectional deviation uses the 20-day VWAP
+
+
+def _typical_price(panel: pd.DataFrame) -> pd.Series:
+    return (panel["high"] + panel["low"] + panel["close"]) / 3.0
+
+
+def _rolling_vwap_N(panel: pd.DataFrame, N: int) -> pd.Series:
+    """Trailing N-day volume-weighted mean of the typical price (causal,
+    per-ticker). ``Σ(TP·vol) / Σ(vol)`` over the trailing N bars."""
+    tp = _typical_price(panel)
+    vol = panel["volume"].astype(float)
+    num = _roll(tp * vol, N, "sum")
+    den = _roll(vol, N, "sum")
+    return num / den.replace(0, np.nan)
+
+
+def _vwap_dev_N(panel: pd.DataFrame, lookbacks) -> dict[str, pd.Series]:
+    """Relative deviation of close from its N-day VWAP: ``close / VWAP_N − 1``
+    (finite, signed — positive = price above the volume-weighted average)."""
+    close = panel["close"]
+    out = {}
+    for N in lookbacks:
+        vwap = _rolling_vwap_N(panel, N)
+        out[f"vwap_dev_{N}"] = close / vwap - 1.0
+    return out
+
+
+def _vwap_dev_zscore_N(panel: pd.DataFrame, lookbacks) -> dict[str, pd.Series]:
+    """Per-stock trailing z-score of the N-day VWAP deviation over its own
+    N-window — standardizes the stretch against the stock's recent deviations."""
+    close = panel["close"]
+    out = {}
+    for N in lookbacks:
+        vwap = _rolling_vwap_N(panel, N)
+        dev = close / vwap - 1.0
+        mean = _roll(dev, N, "mean")
+        std = _roll(dev, N, "std")
+        out[f"vwap_dev_zscore_{N}"] = (dev - mean) / std.replace(0, np.nan)
+    return out
+
+
+def _vwap_dev_xs(panel: pd.DataFrame) -> dict[str, pd.Series]:
+    """Cross-sectional z-score and rank of today's 20-day VWAP deviation across
+    the panel (universe-relative, asset-agnostic)."""
+    close = panel["close"]
+    vwap = _rolling_vwap_N(panel, _VWAP_XS_ANCHOR)
+    dev = close / vwap - 1.0
+    g = dev.groupby(level="date")
+    z = (dev - g.transform("mean")) / g.transform("std").replace(0, np.nan)
+    r = g.rank(pct=True)
+    return {"vwap_dev_xs_zscore": z, "vwap_dev_xs_rank": r}
+
+
+def vwap_family(panel: pd.DataFrame,
+                lookbacks: Iterable[int] = DEFAULT_LOOKBACKS) -> pd.DataFrame:
+    """F20 — VWAP-deviation family: per-N relative deviation + per-stock z-score
+    (2·len(lookbacks) cols) plus the cross-sectional z/rank (2 cols)."""
+    out = {}
+    out.update(_vwap_dev_N(panel, lookbacks))
+    out.update(_vwap_dev_zscore_N(panel, lookbacks))
+    out.update(_vwap_dev_xs(panel))
+    return pd.DataFrame(out).reindex(panel.index)
+
+
+# ---------------------------------------------------------------------------
 # F8 — higher moments
 # ---------------------------------------------------------------------------
 
@@ -1013,6 +1090,15 @@ def build_feature_matrix(
         # "all_fundamentals" untouched, so existing specs/models stay
         # byte-identical.
         sel = set(_ALL_FAMILIES) | {"F18", "F21"}
+    elif families == "all_vwap":
+        # Baseline families PLUS the opt-in VWAP-deviation family (F20). "all"
+        # untouched — existing specs/models unaffected.
+        sel = set(_ALL_FAMILIES) | {"F20"}
+    elif families == "all_fundamentals_vwap":
+        # Baseline + F18 (valuation levels) + F20 (VWAP deviation). "all" and
+        # "all_fundamentals" untouched, so existing specs/models stay
+        # byte-identical.
+        sel = set(_ALL_FAMILIES) | {"F18", "F20"}
     else:
         sel = set(families)
 
@@ -1117,6 +1203,10 @@ def build_feature_matrix(
         # Pure date-only calendar family (no external data guard, like F15).
         # Opt-in via the "all_calendar2" / "all_fundamentals_calendar2" tokens.
         plan.append(("F21", lambda: calendar2_features(panel)))
+    if "F20" in sel:
+        # Pure-panel technical family (OHLCV only) — no external data guard,
+        # like F7. Opt-in via the "all_vwap" / "all_fundamentals_vwap" tokens.
+        plan.append(("F20", lambda: vwap_family(panel, lookbacks)))
 
     total = len(plan)
     t_start = time.time()
@@ -1188,6 +1278,7 @@ __all__ = [
     "index_drawdown_N",
     "index_runup_N",
     "volume_family",
+    "vwap_family",
     "higher_moments",
     "beta_N",
     "range_vol",
