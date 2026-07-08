@@ -28,6 +28,7 @@ from gbdt.agent_cycles import (  # noqa: F401
     _resolve_callback,
 )
 from gbdt.experiment_runner import (  # noqa: F401
+    _clear_stale_loop_decisions,
     _collect_preflight,
     _compute_headline,
     _data_hash,
