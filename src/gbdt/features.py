@@ -542,6 +542,43 @@ def calendar_features(panel: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# F21 — calendar2: month-of-quarter + quarter-of-year (opt-in; NOT in
+# _ALL_FAMILIES). F15 already encodes month-of-year cyclically; F21 adds the
+# two *within-quarter* / *which-quarter* positions that F15 does not resolve:
+# where in the fiscal/reporting quarter today sits (relevant to earnings-season
+# seasonality) and which calendar quarter it is. A standalone importance check
+# + ablation found ``moq_sin`` ranked 16/297 by gain and the 4 cols lifted test
+# R-p@K on a representative window — but window-sensitively, and the standalone
+# fit didn't reproduce the runner's calibrated/weighted model, so a faithful
+# matched A/B through the runner is the real test. Cyclically encoded to match
+# the F15 idiom. Trivially causal (date-only, no look-ahead — same as F15).
+# ---------------------------------------------------------------------------
+
+
+def calendar2_features(panel: pd.DataFrame) -> pd.DataFrame:
+    """F21 — month-of-quarter + quarter-of-year, cyclically encoded (4 cols).
+
+    - ``moq = ((month - 1) % 3) + 1`` ∈ {1,2,3} → ``moq_sin`` / ``moq_cos`` at
+      period 3 (position within the fiscal/reporting quarter).
+    - ``qoy = ((month - 1) // 3) + 1`` ∈ {1,2,3,4} → ``qoy_sin`` / ``qoy_cos``
+      at period 4 (which calendar quarter).
+
+    ``month`` is derived from ``panel.index.get_level_values("date").month``, so
+    the family is trivially causal (date-only; no look-ahead), same as F15.
+    """
+    month = panel.index.get_level_values("date").month.values.astype(float)
+    moq = ((month - 1) % 3) + 1
+    qoy = ((month - 1) // 3) + 1
+
+    out = pd.DataFrame(index=panel.index)
+    out["moq_sin"] = np.sin(2 * np.pi * moq / 3.0)
+    out["moq_cos"] = np.cos(2 * np.pi * moq / 3.0)
+    out["qoy_sin"] = np.sin(2 * np.pi * qoy / 4.0)
+    out["qoy_cos"] = np.cos(2 * np.pi * qoy / 4.0)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # F16 — signed-days-outside-band
 # ---------------------------------------------------------------------------
 
@@ -966,6 +1003,16 @@ def build_feature_matrix(
         # "all" and "all_fundamentals" are left untouched above, so existing
         # specs/models (incl. the _272–_278 F18 lattice) stay byte-identical.
         sel = set(_ALL_FAMILIES) | {"F18", "F19"}
+    elif families == "all_calendar2":
+        # Baseline families PLUS the opt-in F21 calendar2 family (month-of-
+        # quarter + quarter-of-year). "all" is left untouched above so existing
+        # specs/models stay byte-identical.
+        sel = set(_ALL_FAMILIES) | {"F21"}
+    elif families == "all_fundamentals_calendar2":
+        # Baseline + F18 (valuation levels) + F21 (calendar2). "all" and
+        # "all_fundamentals" untouched, so existing specs/models stay
+        # byte-identical.
+        sel = set(_ALL_FAMILIES) | {"F18", "F21"}
     else:
         sel = set(families)
 
@@ -1066,6 +1113,10 @@ def build_feature_matrix(
                 "families='all_fundamentals2' or 'F19' is in the families list."
             )
         plan.append(("F19", lambda: fundamentals_growth_features(fund_df, panel)))
+    if "F21" in sel:
+        # Pure date-only calendar family (no external data guard, like F15).
+        # Opt-in via the "all_calendar2" / "all_fundamentals_calendar2" tokens.
+        plan.append(("F21", lambda: calendar2_features(panel)))
 
     total = len(plan)
     t_start = time.time()
@@ -1144,6 +1195,7 @@ __all__ = [
     "vol_regime",
     "cross_sectional_rank_z",
     "calendar_features",
+    "calendar2_features",
     "f16_underlying",
     "f16_meta_underlying_columns",
     "signed_days_outside_band_meta",
