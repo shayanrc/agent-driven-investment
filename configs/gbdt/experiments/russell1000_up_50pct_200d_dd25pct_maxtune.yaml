@@ -1,0 +1,32 @@
+# Experiment: russell1000_up_50pct_200d_dd25pct_maxtune
+# Board-topper attack (task #26): the russell1000 +50%/200d cell is the backtest
+# board #1 (+135.9%) and R-p@3 board #2 (0.642, aligned/cb). This spec's primary
+# purpose is building the russell1000 MAXIMAL-pool feature matrix
+# (all_fundamentals_vwap_calendar2, 310 cols) — the stratified ensemble is then
+# trained manually on the cached matrix (scripts/gbdt/stratified_boosting.py
+# pattern), matching the incumbent's date-aligned segments.
+# --snapshot-end set at runtime (2026-07-06).
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals_vwap_calendar2
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 12
+    plateau_threshold: 0.0001
+    degradation_gate: 0.01
+
+random_seed: 42
