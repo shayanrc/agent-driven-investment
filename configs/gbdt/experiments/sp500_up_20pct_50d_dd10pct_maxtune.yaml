@@ -1,0 +1,31 @@
+# Experiment: sp500_up_20pct_50d_dd10pct_maxtune
+# Manual finetune (agent_file_protocol, driven in-session) on the MAXIMAL opt-in
+# feature pool: technical (F1-F16) + F18 fundamentals + F20 VWAP-dev + F21
+# calendar2. Target cell is high-AUC / low-R-p@1 (bulk ranking skill but a near-
+# chance top pick) — the goal is to recover top-of-book (R-p@1/@3) without FS,
+# "with all the features". Common event (~13.6% prevalence) + mid horizon (H=50)
+# = the tunable regime per _282. --snapshot-end set at runtime (2026-07-06).
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals_vwap_calendar2
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 12
+    plateau_threshold: 0.0001   # disable runner auto-plateau (#204) — agent drives should_stop
+    degradation_gate: 0.01
+
+random_seed: 42
