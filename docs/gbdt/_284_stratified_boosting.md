@@ -65,7 +65,47 @@ Machine-readable: `results/gbdt/data/_284_data.json`.
 
 ## Tree-anatomy analysis
 
-*(pending — `scripts/gbdt/analyze_stratified_trees.py` over the per-tree artifacts: ensemble importance vs iter-0 family shares, availability-normalized usage rates, same-path cross-family co-occurrence, calendar-pair integrity, F18 path-partners. To be appended.)*
+Re-run with identical seed persisting per-tree artifacts; determinism verified exactly (val Brier 0.0997 / eval 0.1236 reproduce to 4dp — the analyzed ensemble IS the scored one). `scripts/gbdt/analyze_stratified_trees.py`.
+
+**1. The model rebuilt itself around fundamentals.** Family gain shares, stratified vs iter-0 (same classifier both sides):
+
+| family | n_feat | stratified | iter-0 | shift |
+|---|--:|--:|--:|--:|
+| F18 fundamentals | 13 | **41.9%** | 4.4% | +37.5 |
+| volatility | 54 | 21.2% | 40.7% | −19.5 |
+| drawdown | 12 | 10.5% | 12.3% | −1.8 |
+| returns | 54 | 6.7% | 17.5% | −10.9 |
+| calendar (F15+F21) | 14 | 6.6% | 4.5% | +2.1 |
+| trend | 6 | 4.1% | 1.6% | +2.5 |
+| cross-sectional | 65 | 3.9% | 10.2% | −6.4 |
+| vwap | 14 | 2.7% | 2.8% | −0.1 |
+| persistence (F16) | 54 | 1.6% | 3.9% | −2.3 |
+| volume | 24 | 1.0% | 2.2% | −1.2 |
+
+All 13 F18 columns land in the top 16 by gain (`fund_rev_ttm_yoy` #1 at 6.0%); `garman_klass_50`'s 18.8% iter-0 monopoly is gone (top vol feature is now `parkinson_200` at 4.7%). Gain is far flatter — top feature 6% vs 18.8%. Being uncapped + offered every tree, fundamentals became the trunk; the capped ladders became regime conditioners.
+
+**2. Availability-normalized usage separates signal from dead weight.** Long-window ladder features are used **100% of the time they're offered** (`parkinson_200`, `realized_vol_100`, `beta_200`, `index_runup_200`, `vol_of_vol_50/100`, `stock_return_zscore_200`); F18 gets used in 78–96% of all 800 trees. At the bottom, the **F16 persistence family is dead weight**: many `*_outside_band_*` columns are used in **0%** of the trees that offered them (25–36 offers, zero splits) — the family holds 54 of 310 columns for 1.6% of gain.
+
+**3. What actually goes together on a path (the interaction structure):**
+- **F18 × trend** is the dominant cross-family interaction: `fund_sales_yield × sma_distance_200` co-paths in **52%** of trees offering both (140/267); nearly every F18 column pairs with `sma_distance_100/200` at 37–43%. The model's unit of reasoning: *valuation/growth conditioned on where price sits vs its long trend*.
+- **F18 × calendar**: every top fund column pairs with `moy_cos`/`moy_sin` at ~29–34% — seasonally-phased fundamentals.
+- **Within-F18** (the uncapped exception earning its keep): `fund_rev_ttm_yoy × fund_sales_yield` on the same path in **49% of all 800 trees** — the growth×valuation (GARP) interaction; yields × their own xs-ranks follow at 40–46%.
+- Family×family path-share: F18×F18 21.3%, F18×vol 10.7%, F18×returns 8.3% — F18 rows dominate every interaction row; no non-F18 pair exceeds 1.7%.
+- Top non-F18 partners of fundamentals: `sma_distance_200` (1,330 path-pairs), `moy_cos` (1,227), `moy_sin` (1,006), then `vwap_dev_zscore_200` (707) and `drawdown_200` (656) — vwap's contribution is real but runs *through* fundamental paths.
+
+**4. Calendar-pair integrity — the intact-pair rule matters for exactly two pairs:**
+
+| pair | offered | both used | one used | same path |
+|---|--:|--:|--:|--:|
+| moy | 344 | 189 | 128 | 57 |
+| qoy | 324 | 79 | 161 | 6 |
+| dom | 292 | 54 | 122 | 21 |
+| moq | 333 | 20 | 117 | 0 |
+| dow | 307 | **1** | 25 | 0 |
+
+`moy` genuinely works as a pair (55% both-used when offered). `dow` is dead on a 50-day horizon (1 tree in 307 used both), `moq` near-dead — candidates to drop from the rotation in refinement.
+
+**Refinement candidates surfaced by the anatomy** (not yet acted on): (a) drop or down-weight the persistence slot — 54 columns of near-zero conditional usage; (b) drop the `dow` (and maybe `moq`) pair; (c) bias ladder sampling toward long windows (the 100%-usage end); (d) the flip-side risk to watch — 41.9% of gain now rides on 13 quarterly-updated F18 columns, so the test window will say whether that concentration is regime-robust.
 
 ## Caveats / discipline
 
