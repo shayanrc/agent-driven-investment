@@ -107,6 +107,23 @@ All 13 F18 columns land in the top 16 by gain (`fund_rev_ttm_yoy` #1 at 6.0%); `
 
 **Refinement candidates surfaced by the anatomy** (not yet acted on): (a) drop or down-weight the persistence slot — 54 columns of near-zero conditional usage; (b) drop the `dow` (and maybe `moq`) pair; (c) bias ladder sampling toward long windows (the 100%-usage end); (d) the flip-side risk to watch — 41.9% of gain now rides on 13 quarterly-updated F18 columns, so the test window will say whether that concentration is regime-robust.
 
+## One-shot blind test (committed 2026-07-08)
+
+Pre-declared, single look, all three arms; test 2024-07-26→2024-12-16 (46,400 rows, Q=100 days, base_rate 0.1273 — matches the registry rows on this window):
+
+| model | Brier | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 | R-p@20 |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| baseline_iter0 | 0.1154 | 0.672 | 0.130 | 0.217 | 0.230 | 0.237 | 0.258 |
+| control_rand35 | 0.1115 | 0.695 | 0.190 | 0.290 | 0.294 | 0.291 | 0.290 |
+| **stratified** | **0.1106** | **0.702** | **0.260** | **0.363** | **0.390** | **0.375** | **0.332** |
+
+Registry bar on the same window: `f18xgb` (all_fundamentals, default HP) AUC 0.687, R-p@1 0.44, @3 0.393, @5 0.340, @10 0.317.
+
+**Reading:**
+1. **The structural claim replicated blind.** stratified > control > baseline on every metric — the eval-window ordering carried to test with no anti-selection. The relative gaps *grew*: stratified doubles its own pool's baseline at @1 (0.260 vs 0.130) and beats it +67% at @3 (0.363 vs 0.217).
+2. **The maximal pool itself was a handicap — stratification mostly rescued it.** On this exact window, default HP on the cleaner `all_fundamentals` pool (f18xgb, 293 cols) scores @1 0.44 / @3 0.393; the same default HP on our 310-col maximal pool collapses to 0.130 / 0.217 (the `_283`-style dilution — +31 mostly-noise columns wreck the default-HP top-of-book). Stratification recovers most of the damage (0.260 / 0.363) *while keeping all features*, but does not fully close to the cleaner-pool bar at @1/@3. It DOES beat f18xgb at @5 (0.390 vs 0.340) and @10 (0.375 vs 0.317) and on AUC (0.702 vs 0.687).
+3. **Verdict vs leaderboard: below the same-window champion at the sharp top, above it in the mid-book.** The natural next variant writes itself: stratified sampling over a *pruned* pool (drop the anatomy's dead weight — persistence, dow/moq, low-usage members) — i.e., the offer-efficiency FS. That variant is judged on val+eval and confirmed on the **w2 window** (2025-01-24→2025-06-17, already defined in the registry) per the `_272`→`_273` pattern — this window's look is spent.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
