@@ -144,6 +144,21 @@ Worse nearly everywhere, decisively at the sharp top on both segments. **Mechani
 
 Standing result: **the original 310-col stratified arm remains the _284 model.** Untested parked variant: family-level pool cut (stratified over `all_fundamentals` only, dropping vwap+cal2 wholesale) — motivated by the test-window pool-ablation finding, but each additional variant spends val/eval looks; revisit alongside the w2 confirmation if pursued.
 
+## Backtest placement (champion strategy config, long OOS window)
+
+Scored the exact saved ensemble over **2024-07-26 → 2026-06-12** (472 trading days; everything after 2024-12-16 is pure forward-OOS never seen by any decision) and ran the standard harness (`run_backtest_cell`, champion config: rank selection / equal sizing / K=3, calibrator refit on our val split; run dir `runs/backtests/strat_284_oos`):
+
+| | total return | max DD |
+|---|--:|--:|
+| **stratified (rank/equal K=3)** | **+92.4%** | −22.7% |
+| SPX buy-hold (same window) | +37.0% | −18.9% |
+| EW basket | +38.2% | −18.9% |
+| EW top-K unmanaged | +119.1% | −41.2% |
+
+222 entries / 82 tickers; exposure 0.84; exits: 93 DD-stops, 83 target-hits, 38 horizon. Excess over index **+55.4 pts over ~22.5 months**.
+
+Board context (windows differ — total returns are not directly commensurable): the board top is russell1000 +50% champion **+135.9%** (excess +72.1 over ~35 months) and ndx40_mix **+121.7%** (excess +84.2 over ~12 months — the strongest per-month excess). Our +55.4/22.5mo sits between them on excess-per-month, on a cell (sp500 +20%/50d, common-event mid-horizon) whose registry arms never made the board. Same-cell precedent: the deployed sp500_20 champion did +58.1% vs SPX +8.4% on its (older, shorter) window. DD runs deeper than index (ungated, as all board rows; `_017`'s SMA200 gate would cap it). Not a registry row yet; not promoted.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
