@@ -144,6 +144,26 @@ Worse nearly everywhere, decisively at the sharp top on both segments. **Mechani
 
 Standing result: **the original 310-col stratified arm remains the _284 model.** Untested parked variant: family-level pool cut (stratified over `all_fundamentals` only, dropping vwap+cal2 wholesale) — motivated by the test-window pool-ablation finding, but each additional variant spends val/eval looks; revisit alongside the w2 confirmation if pursued.
 
+## w2 confirmation + classification-first comparison (the primary lens)
+
+Per the standing convention, R-p@K + AUC are compared BEFORE any PnL claim. The scored OOS window contains the **pre-registered w2 confirmation window** (2025-01-24 → 2025-06-17, 100 days) — the same window the cell's w2 registry arms were tested on (their train ends 2022-08-31; the stratified ensemble's train ends 2022-03-04, six months staler).
+
+**w2 window, same cell, same 100 days (our slice base_rate 0.1430 vs registry 0.1404):**
+
+| model | backend | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|---|--:|--:|--:|--:|--:|
+| w2cbbase | catboost | 0.820 | **0.560** | 0.467 | 0.463 | 0.454 |
+| w2cbdef | catboost | 0.820 | 0.540 | **0.503** | 0.463 | **0.457** |
+| **stratified (_284)** | xgb custom | 0.816 | 0.520 | 0.480 | **0.474** | 0.445 |
+| w2fbase | xgboost | 0.673 | 0.430 | 0.380 | 0.386 | 0.393 |
+| w2ffund | xgboost | 0.685 | 0.350 | 0.397 | 0.401 | 0.422 |
+
+**The stratified ensemble replicates at champion level on the independent second window** — within noise of the two catboost champions (AUC 0.816 vs 0.820; @1 0.520 vs 0.540/0.560; @3 between them; @5 above both) and decisively above the same-backend xgboost arms (@1 +0.09 to +0.17, @3 +0.08 to +0.10). This is the two-window bar the F17/F18/F20 feature arcs failed: w1 one-shot (ordering replicated, below the f18xgb sharp top) + w2 (champion-level). Split-but-strong: it does not *beat* the cb champions; it matches them with a staler train cutoff and a different mechanism (mixed-family trees on the maximal pool).
+
+**Full 22.5-month OOS realized classification** (2024-07-26 → 2026-04-21 labelable, 435 days, base_rate 0.1446): AUC **0.715**, R-p@1 0.382, @3 0.402, @5 0.410, @10 0.398.
+
+**Board-top models' registry rows for context** (each on its own test window — not directly commensurable): russell1000 +50%/200d (base 0.152): AUC 0.697, @1 0.737, @3 0.642; ndx40_mix (base 0.037): AUC 0.923, @1 0.333, @3 0.313, @10 0.735; sp500 +50%/50d f18cb (base 0.010): AUC 0.934, @1 0.132. The long-horizon/rare-event board leaders live in structurally different (base_rate, horizon) regimes.
+
 ## Backtest placement (champion strategy config, long OOS window)
 
 Scored the exact saved ensemble over **2024-07-26 → 2026-06-12** (472 trading days; everything after 2024-12-16 is pure forward-OOS never seen by any decision) and ran the standard harness (`run_backtest_cell`, champion config: rank selection / equal sizing / K=3, calibrator refit on our val split; run dir `runs/backtests/strat_284_oos`):
