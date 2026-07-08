@@ -82,6 +82,54 @@ def _has_runner_artifacts(out_dir: Path) -> bool:
     return any(p for p in out_dir.iterdir() if not p.name.startswith("."))
 
 
+def _clear_stale_loop_decisions(out_dir: Path) -> list[Path]:
+    """Remove agent-authored decision files left over from a prior run.
+
+    On ``--overwrite`` a fresh run is intended: the runner re-trains iter 0 and
+    rewrites the loop ``checkpoint.json`` + ``iter_0_request.json``, but it never
+    rewrites the **decision** files — those are agent-authored, so nothing on the
+    runner side overwrites them. A leftover
+    ``loop/iter_<N>_decision.json`` (or ``scout/{combine,iter_0}_decision.json``)
+    would then be read by the next ``--resume`` and silently re-applied — its
+    old ``hp_changes`` / ``prune_features`` contaminating a run that was meant to
+    start clean. Deleting them makes the loop dir pristine so a bare ``--resume``
+    fails fast ("decision file not found") until the agent writes a fresh
+    decision. ``--resume`` itself never clears — it depends on the decision the
+    agent just authored.
+
+    All ``iter_*_decision.json`` are removed (not just ``iter_0``): a prior run
+    that reached iter N left decisions 0..N, and the loop pauses again at each
+    iteration, so a surviving ``iter_1_decision.json`` would re-contaminate the
+    resume one iteration later.
+
+    Returns the list of paths actually removed. Best-effort per file: a removal
+    error is logged, not raised — an otherwise-fine overwrite must not crash over
+    a decision file we couldn't unlink.
+    """
+    loop_dir = loop_protocol.decision_path(out_dir, 0).parent
+    stale = sorted(loop_dir.glob("iter_*_decision.json"))
+    for path in (
+        gbdt_scout_io.combine_decision_path(out_dir),
+        gbdt_scout_io.iter_0_decision_path(out_dir),
+    ):
+        if path.exists():
+            stale.append(path)
+
+    removed: list[Path] = []
+    for path in stale:
+        try:
+            path.unlink()
+            removed.append(path)
+            print(f"[overwrite] cleared stale decision file {path.name}", flush=True)
+        except OSError as exc:
+            print(
+                f"[overwrite] WARNING: could not remove stale decision file "
+                f"{path} ({exc!r}); a subsequent --resume may re-apply it",
+                flush=True,
+            )
+    return removed
+
+
 def _project_test_rows(
     panel: pd.DataFrame,
     *,
@@ -432,6 +480,15 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         print("[experiment] pass --overwrite to replace", file=sys.stderr)
         sys.exit(2)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # --overwrite means a FRESH run: purge any agent-authored loop/scout
+    # decision files left behind by a prior run of this same cell so a later
+    # --resume can't silently re-apply the old HP schedule (the runner rewrites
+    # checkpoint.json + iter_0_request.json, but never the decision files).
+    # Gated on ``resume is None`` because a --resume run legitimately depends on
+    # the decision the agent just wrote; only a fresh overwrite clears.
+    if overwrite and resume is None:
+        _clear_stale_loop_decisions(out_dir)
 
     # Persistent agent-loop observability (task #177): an APPEND-only
     # ``loop/progress.log`` (survives across the separate-process resume model)
