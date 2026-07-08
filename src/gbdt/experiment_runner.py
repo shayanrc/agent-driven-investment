@@ -829,7 +829,7 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
     # invalidates. NB "all_vwap" (F20 only) is pure-panel — no fund read.
     _fund_selected = (
         families in ("all_fundamentals", "all_fundamentals2",
-                     "all_fundamentals_vwap")
+                     "all_fundamentals_vwap", "all_fundamentals_vwap_calendar2")
         or (not isinstance(families, str)
             and bool({"F18", "F19"} & set(families)))
     )
