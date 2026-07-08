@@ -1,0 +1,29 @@
+# Experiment: nasdaq100_up_20pct_50d_dd10pct_fundtune
+# V1.8 VWAP finetune (_282): auto-loop FS+HP on a strong-absolute cell
+# (R-p@3>0.5 & AUC>0.5). callback_mode default (high-AUC cell, val_brier not
+# degenerate); iter 0 == the single-fit so every delta is tuned-vs-untuned.
+# Watch the _276/_280 anti-selection pattern (bulk gains flattening the test book).
+target:
+  universe: nasdaq100
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 10
+    plateau_threshold: 0.0001
+    degradation_gate: 0.01
+
+random_seed: 42
