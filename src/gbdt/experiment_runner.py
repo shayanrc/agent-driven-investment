@@ -120,7 +120,11 @@ def _clear_stale_loop_decisions(out_dir: Path) -> list[Path]:
         try:
             path.unlink()
             removed.append(path)
-            print(f"[overwrite] cleared stale decision file {path.name}", flush=True)
+            print(
+                f"[overwrite] cleared stale decision file "
+                f"{path.parent.name}/{path.name}",
+                flush=True,
+            )
         except OSError as exc:
             print(
                 f"[overwrite] WARNING: could not remove stale decision file "
