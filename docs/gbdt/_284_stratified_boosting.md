@@ -124,6 +124,26 @@ Registry bar on the same window: `f18xgb` (all_fundamentals, default HP) AUC 0.6
 2. **The maximal pool itself was a handicap — stratification mostly rescued it.** On this exact window, default HP on the cleaner `all_fundamentals` pool (f18xgb, 293 cols) scores @1 0.44 / @3 0.393; the same default HP on our 310-col maximal pool collapses to 0.130 / 0.217 (the `_283`-style dilution — +31 mostly-noise columns wreck the default-HP top-of-book). Stratification recovers most of the damage (0.260 / 0.363) *while keeping all features*, but does not fully close to the cleaner-pool bar at @1/@3. It DOES beat f18xgb at @5 (0.390 vs 0.340) and @10 (0.375 vs 0.317) and on AUC (0.702 vs 0.687).
 3. **Verdict vs leaderboard: below the same-window champion at the sharp top, above it in the mid-book.** The natural next variant writes itself: stratified sampling over a *pruned* pool (drop the anatomy's dead weight — persistence, dow/moq, low-usage members) — i.e., the offer-efficiency FS. That variant is judged on val+eval and confirmed on the **w2 window** (2025-01-24→2025-06-17, already defined in the registry) per the `_272`→`_273` pattern — this window's look is spent.
 
+## Refinement 1: within-family usage-prune + dow drop — REJECTED
+
+Pre-declared variant (user-directed): drop members with conditional usage < 10% at ≥20 offers (persistence 54→29, flags 4→1 — the rule auto-pruned the India-legacy `diwali/budget/fiscal_year_end` flags on this US universe, keeping `fomc_week`; cross-sectional −4, volatility −1, volume −1) + drop the `dow` pair. Pool 310→274; recipe otherwise identical (seed 42, 800×eta0.05×depth6).
+
+Result vs the original stratified arm (val+eval; test untouched):
+
+| segment | metric | original | pruned | Δ |
+|---|---|--:|--:|--:|
+| val | AUC | 0.778 | 0.769 | −0.009 |
+| val | R-p@1 | 0.408 | 0.370 | −0.038 |
+| val | R-p@3 | 0.377 | 0.331 | −0.046 |
+| eval | AUC | 0.750 | 0.744 | −0.006 |
+| eval | R-p@1 | 0.490 | 0.420 | −0.070 |
+| eval | R-p@3 | 0.440 | 0.435 | −0.005 |
+| eval | R-p@10 | 0.352 | 0.364 | +0.012 |
+
+Worse nearly everywhere, decisively at the sharp top on both segments. **Mechanistic read: in stratified sampling, dead features act as implicit family down-weights.** A tree offered 2 dead persistence columns simply declines the family — the slot's *effective* weight self-tunes to ~0. Pruning the dead members concentrates the family's 2 draws on its live-but-mediocre members, so weak families get *more* splits than before, diluting the top book. "Cleaning the pool" re-weights weak families UP — the opposite of the intent. (Draw-sequence noise from the changed pool contributes, but the sharp-top direction is consistent across both segments.)
+
+Standing result: **the original 310-col stratified arm remains the _284 model.** Untested parked variant: family-level pool cut (stratified over `all_fundamentals` only, dropping vwap+cal2 wholesale) — motivated by the test-window pool-ablation finding, but each additional variant spends val/eval looks; revisit alongside the w2 confirmation if pursued.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
