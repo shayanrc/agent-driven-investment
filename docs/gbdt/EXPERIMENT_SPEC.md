@@ -161,7 +161,7 @@ Feature pool overrides. **By default the experiment starts with all 279 candidat
 
 | Field | Type | Default |
 |---|---|---|
-| `candidates` | list[str], `"all"`, or `"all_macro"` | `"all"` (the full 279-col pool) |
+| `candidates` | list[str], `"all"`, `"all_macro"`, `"all_fundamentals"`, `"all_fundamentals2"`, `"all_calendar2"`, or `"all_fundamentals_calendar2"` | `"all"` (the full 279-col pool) |
 | `exclude` | list[str] | `[]` |
 | `lookback_windows` | list[int] | from `default.yaml`: `[5, 10, 20, 50, 100, 200]` |
 
@@ -192,6 +192,26 @@ features:
     - rel_strength_20
     - sma_distance_50
 ```
+
+#### The `all_calendar2` / `all_fundamentals_calendar2` tokens (F21 calendar2 — opt-in)
+
+```yaml
+features:
+  candidates: all_calendar2                # = "all" (F1–F16) PLUS the F21 calendar2 family
+  # candidates: all_fundamentals_calendar2 # = "all" PLUS F18 (valuation) PLUS F21 (calendar2)
+```
+
+**F21** is a pure date-only calendar family — 4 columns: `moq_sin` / `moq_cos`
+(month-of-quarter, `moq = ((month-1) % 3) + 1 ∈ {1,2,3}`, cyclically encoded at period 3)
+and `qoy_sin` / `qoy_cos` (quarter-of-year, `qoy = ((month-1) // 3) + 1 ∈ {1,2,3,4}`, at
+period 4). F15 already encodes month-of-year; F21 adds the *within-quarter* /
+*which-quarter* positions F15 does not resolve (earnings-season seasonality). `month` is
+derived from `panel.index.get_level_values("date").month`, so the family is trivially
+causal (date-only, no look-ahead — same as F15). Like F17/F18/F19/F20 it is deliberately
+**excluded from `"all"`** so every existing spec/model stays **byte-identical**. Neither
+token needs external data beyond the panel; `all_fundamentals_calendar2` also triggers the
+valuation-panel read (for F18). (Implementation: `"all_calendar2"` → `_ALL_FAMILIES +
+("F21",)`; `"all_fundamentals_calendar2"` → `_ALL_FAMILIES + ("F18", "F21")`.)
 
 #### The `all_macro` token (F17 macro features — opt-in)
 
