@@ -1099,6 +1099,11 @@ def build_feature_matrix(
         # "all_fundamentals" untouched, so existing specs/models stay
         # byte-identical.
         sel = set(_ALL_FAMILIES) | {"F18", "F20"}
+    elif families == "all_fundamentals_vwap_calendar2":
+        # Maximal opt-in pool: baseline + F18 (valuation levels) + F20 (VWAP
+        # deviation) + F21 (calendar2). "all" untouched — existing specs/models
+        # stay byte-identical.
+        sel = set(_ALL_FAMILIES) | {"F18", "F20", "F21"}
     else:
         sel = set(families)
 
