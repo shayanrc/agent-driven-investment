@@ -1,0 +1,117 @@
+{
+ "experiment": "_284_stratified_boosting",
+ "cell": "sp500_up_20pct_50d_dd10pct_maxtune",
+ "features_token": "all_fundamentals_vwap_calendar2",
+ "n_features": 310,
+ "design": {
+  "capped_families_max2": [
+   "volatility",
+   "returns",
+   "drawdown",
+   "cross-sectional",
+   "persistence",
+   "volume",
+   "trend",
+   "vwap"
+  ],
+  "uncapped": [
+   "F18"
+  ],
+  "calendar_pairs_intact": [
+   "dow",
+   "dom",
+   "moy",
+   "moq",
+   "qoy"
+  ],
+  "n_trees": 800,
+  "eta": 0.05,
+  "depth": 6,
+  "seed": 42,
+  "cols_per_tree": 35
+ },
+ "segments": {
+  "train": [
+   "2019-01-02",
+   "2022-03-04"
+  ],
+  "val": [
+   "2022-03-07",
+   "2023-10-06"
+  ],
+  "eval": [
+   "2023-10-09",
+   "2024-07-25"
+  ],
+  "test": [
+   "2024-07-26",
+   "2024-12-16 (BLIND)"
+  ]
+ },
+ "prevalence": {
+  "train": 0.1481,
+  "val": 0.1114,
+  "eval": 0.1505
+ },
+ "arms": {
+  "stratified": {
+   "val": {
+    "brier": 0.09970357269048691,
+    "auc": 0.7783493797962124,
+    "rp1": 0.4075,
+    "rp3": 0.3766666666666667,
+    "rp5": 0.3534999999999999,
+    "rp10": 0.32994841269841274
+   },
+   "eval": {
+    "brier": 0.12360040843486786,
+    "auc": 0.7497098988504531,
+    "rp1": 0.49,
+    "rp3": 0.44,
+    "rp5": 0.38400000000000006,
+    "rp10": 0.35150000000000003
+   }
+  },
+  "control_rand35": {
+   "val": {
+    "brier": 0.10928954929113388,
+    "auc": 0.776608915264065,
+    "rp1": 0.37,
+    "rp3": 0.3625,
+    "rp5": 0.342,
+    "rp10": 0.3235793650793651
+   },
+   "eval": {
+    "brier": 0.12730903923511505,
+    "auc": 0.7406732609113602,
+    "rp1": 0.355,
+    "rp3": 0.355,
+    "rp5": 0.3390000000000001,
+    "rp10": 0.338
+   }
+  },
+  "baseline_iter0": {
+   "val": {
+    "brier": 0.11635903269052505,
+    "auc": 0.7550506537013029,
+    "rp1": 0.325,
+    "rp3": 0.345,
+    "rp5": 0.337,
+    "rp10": 0.31382539682539684
+   },
+   "eval": {
+    "brier": 0.13105054199695587,
+    "auc": 0.7049321378284162,
+    "rp1": 0.38,
+    "rp3": 0.32166666666666666,
+    "rp5": 0.309,
+    "rp10": 0.3285
+   }
+  }
+ },
+ "diagnostics": {
+  "coverage": "310/310",
+  "avg_distinct_families_per_tree": 8.4
+ },
+ "status": "val+eval only; test blind; not promoted"
+}
