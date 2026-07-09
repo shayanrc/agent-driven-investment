@@ -158,7 +158,11 @@ CB_PARAMS = dict(iterations=1, depth=DEPTH, learning_rate=ETA,
                  random_seed=SEED, thread_count=8, verbose=0,
                  allow_writing_files=False)
 
-models, colslog = [], []
+# Model objects are NOT retained: 800 fitted CatBoost objects OOM-killed the
+# r1k shot at 36.7GB RSS (2026-07-09). The ensemble is seed-deterministic
+# (rng consumed identically per tree), so it regenerates on demand; metrics +
+# the per-tree column log are the deliverables.
+colslog = []
 for t in range(N_TREES):
     cols_t = sample_cols()
     idx = [colpos[c] for c in cols_t]
@@ -167,10 +171,12 @@ for t in range(N_TREES):
     m = CatBoostClassifier(**CB_PARAMS)
     m.fit(ptr)
     margins["train"] = m.predict(ptr, prediction_type="RawFormulaVal")
+    del ptr
     for s in ("val", "eval", "test"):
         ps = Pool(Xnp[s][:, idx], baseline=margins[s], feature_names=cols_t)
         margins[s] = m.predict(ps, prediction_type="RawFormulaVal")
-    models.append(m)
+        del ps
+    del m
     colslog.append(cols_t)
     if (t + 1) % 100 == 0:
         print(f"[strat-cb] tree {t+1}/{N_TREES} ({time.time()-t0:.0f}s)", flush=True)
@@ -183,8 +189,9 @@ for s in ("val", "eval", "test"):
               **{f"rp{k}": v for k, v in rpk(DIDX[s], Ynp[s], p).items()}}
 json.dump({"incumbent": cell["incumbent"], "segments": SEG, "results": res},
           open(OUT / "results.json", "w"), indent=1)
-with open(OUT / "model.pkl", "wb") as fh:
-    pickle.dump({"models": models, "cols_per_tree": colslog, "m0": m0}, fh)
+with open(OUT / "recipe.pkl", "wb") as fh:
+    pickle.dump({"cols_per_tree": colslog, "m0": m0, "seed": SEED,
+                 "cb_params": CB_PARAMS}, fh)
 
 print(f"\n=== {cell_key} val/eval (decision segments) — TEST withheld to JSON ===")
 for s in ("val", "eval"):
