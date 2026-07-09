@@ -108,6 +108,8 @@ suffix = ""
 if len(sys.argv) > 2 and sys.argv[2] == "double":
     N_TREES, ETA = 1600, 0.025
     suffix = "_double"
+elif len(sys.argv) > 2 and sys.argv[2] == "longbias":
+    suffix = "_longbias"
 OUT = Path(f"runs/gbdt/stratified/{cell_key}_50pct_200d_cb{suffix}")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -142,11 +144,36 @@ colpos = {c: i for i, c in enumerate(feat_cols)}
 
 rng = np.random.default_rng(SEED)
 
+# Round-4 arm (pre-declared 2026-07-09, before any results): "longbias" =
+# within each capped family, draw the 2 features with probability
+# proportional to the parsed lookback window (largest number in the name;
+# family-median weight when unparseable). H=200 targets should weight
+# 200d-scale dynamics; the uniform draw underweights them (the ladders
+# carry more short-window variants than long). Everything else stays at
+# the round-2 optimum (cb backend, 800 trees, eta 0.05).
+LONG_BIAS = len(sys.argv) > 2 and sys.argv[2] == "longbias"
+import re as _re
+
+
+def _lookback_weights(feats):
+    raw = []
+    for f in feats:
+        nums = [int(n) for n in _re.findall(r"\d+", f)]
+        raw.append(float(max(nums)) if nums else None)
+    known = [w for w in raw if w is not None]
+    med = float(np.median(known)) if known else 1.0
+    w = np.array([x if x is not None else med for x in raw])
+    return w / w.sum()
+
+
+FAMILY_P = {g: _lookback_weights(groups[g]) for g in CAPPED} if LONG_BIAS else {}
+
 
 def sample_cols():
     cols = []
     for g in CAPPED:
-        cols += list(rng.choice(groups[g], size=2, replace=False))
+        cols += list(rng.choice(groups[g], size=2, replace=False,
+                                p=FAMILY_P.get(g)))
     cols += groups["F18"]
     for pi in rng.choice(len(PAIRS), size=2, replace=False):
         cols += list(PAIRS[pi])
