@@ -194,7 +194,11 @@ class NSEXbrlAdapter(Adapter):
             qe = _parse_nse_date(rec.get("toDate", ""))
             if qe is None or qe.year < self._config.min_year:
                 continue
-            if lo <= qe <= hi and rec.get("xbrl"):
+            # Older records carry an "-" placeholder instead of an XBRL URL
+            # (pre-XBRL-era filings) — only real attachment links are
+            # downloadable (live finding, 2026-07-09 pilot).
+            link = str(rec.get("xbrl") or "")
+            if lo <= qe <= hi and link.startswith("http"):
                 wanted.append(rec)
 
         xbrl: dict[str, str] = {}
@@ -324,6 +328,11 @@ class NSEXbrlAdapter(Adapter):
                 ) as resp:
                     return resp.read()
             except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # A permanently-missing attachment — retrying can't help
+                    # (EmptyPayload is in the policy's do_not_retry set).
+                    _log.info("nse_xbrl: 404 attachment %s", url)
+                    raise EmptyPayload(self.name, identifier) from None
                 raise ProviderError(
                     self.name, identifier, f"HTTP {e.code} ({url})"
                 ) from None
@@ -451,13 +460,24 @@ def _extract_quarter_facts(xml_text: str, quarter_end: date) -> dict | None:
         contexts[cid] = (None, inst) if inst else (s, e)
 
     def _is_quarter_ctx(cid: str) -> bool:
-        s, e = contexts.get(cid, (None, None))
+        if cid not in contexts:
+            # 2018-2021-era instances reference the headline P&L facts with
+            # contextRef="OneD" WITHOUT defining that context (era filing-tool
+            # quirk, live finding 2026-07-09). The results-format column
+            # convention is positional and stable: OneD = the current
+            # quarter. Fall back to it only when the id is undefined —
+            # defined contexts are always validated structurally.
+            return cid == "OneD"
+        s, e = contexts[cid]
         if s is None or e is None or e != quarter_end:
             return False
         return _QUARTER_MIN_DAYS <= (e - s).days <= _QUARTER_MAX_DAYS
 
     def _is_instant_at_end(cid: str) -> bool:
-        s, e = contexts.get(cid, (None, None))
+        if cid not in contexts:
+            # Same convention fallback, instant flavor (OneI = at quarter end).
+            return cid == "OneI"
+        s, e = contexts[cid]
         return s is None and e == quarter_end
 
     # local tag name → list[(contextRef, value)]
