@@ -147,5 +147,63 @@
    "rp10": 0.23700000000000002,
    "rp20": 0.25843567251461985
   }
+ },
+ "board_campaign_round2_cb": {
+  "date": "2026-07-09",
+  "recipe": {
+   "backend": "catboost",
+   "n_trees": 800,
+   "eta": 0.05,
+   "depth": 6,
+   "seed": 42,
+   "note": "identical _284 recipe, learner swap only; NaN-tolerant harness"
+  },
+  "sp500_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.7189,
+    "brier": 0.0969,
+    "rp1": 0.745,
+    "rp3": 0.663,
+    "rp5": 0.568,
+    "rp10": 0.456
+   },
+   "val": {
+    "auc": 0.743,
+    "brier": 0.0761,
+    "rp1": 0.285,
+    "rp3": 0.295,
+    "rp5": 0.301,
+    "rp10": 0.328
+   },
+   "incumbent_eval_biased": {
+    "rp1": 0.845,
+    "rp3": 0.738
+   },
+   "verdict": "does not lead; test look banked"
+  },
+  "russell1000_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.7342,
+    "brier": 0.1085,
+    "rp1": 0.605,
+    "rp3": 0.523,
+    "rp5": 0.503,
+    "rp10": 0.454
+   },
+   "val": {
+    "auc": 0.7661,
+    "brier": 0.0891,
+    "rp1": 0.51,
+    "rp3": 0.371,
+    "rp5": 0.355,
+    "rp10": 0.321
+   },
+   "incumbent_eval_unbiased": {
+    "auc": 0.722,
+    "rp1": 0.745,
+    "rp3": 0.595
+   },
+   "verdict": "AUC leads, top-of-book does not; test look banked"
+  }
  }
 }
