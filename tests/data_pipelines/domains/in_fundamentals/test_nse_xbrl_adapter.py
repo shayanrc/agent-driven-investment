@@ -95,3 +95,22 @@ class TestBasisSelection:
         df = NSEXbrlAdapter().parse(p)
         assert len(df) == 1
         assert df.loc[0, "consolidated"] == 1.0
+
+
+class TestUndefinedContextConvention:
+    """2018-2021-era instances reference contextRef="OneD" without defining
+    it (filing-tool quirk). The positional column convention (OneD = current
+    quarter) is the fallback — live regression fixture from the pilot."""
+
+    FIXTURE_2018 = FIXTURE.parent / "nse_envelope_reliance_2018.json"
+
+    def test_2018_instance_parses_via_convention(self):
+        df = NSEXbrlAdapter().parse(self.FIXTURE_2018)
+        assert len(df) == 1
+        row = df.loc[0]
+        assert row["date"] == pd.Timestamp("2018-06-30")
+        assert row["revenue"] == pytest.approx(1_330_690.0)
+        assert row["net_income"] == pytest.approx(94_850.0)
+        assert row["filed_date"] == pd.Timestamp("2018-08-07")
+        assert row["consolidated"] == 1.0
+        assert 5_000 < row["shares_diluted"] < 7_000
