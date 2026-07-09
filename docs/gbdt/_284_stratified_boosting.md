@@ -202,6 +202,45 @@ AUC matches; top-of-book far behind. **Test look NOT spent.**
 
 **Round-1 read:** the `_284` recipe does NOT transfer as-is to long-horizon (H=200) cells — the same boundary `_282` drew for the finetunes (H≥100 resists) and consistent with `_277`/`_278` (CatBoost systematically dominates long-horizon cells at every K). The board tops hold, honestly. Round-2 levers (parked under the campaign task): **cb-backend stratified trees** (combine the incumbents' backend edge with our structure — the highest-prior lever), larger tree budgets, long-window-biased draws, and the nasdaq cells (ndx40_mix, the R-p@3 0.756 anti-AUC cell). Both sealed test looks remain banked.
 
+## Board-topper campaign, round 2 (2026-07-09) — cb backend; incumbents hold again
+
+Round-1's highest-prior lever, executed: the identical pre-declared recipe
+(seed 42, 800 trees, eta 0.05, depth 6, same caps/pairs) with **only the
+per-tree learner swapped to CatBoost** (1-iteration fits chained via `Pool
+baseline`, Plain boosting, has_time pinned) — testing whether the incumbents'
+backend (`_277`/`_278`: CatBoost owns long horizons) closes the H=200 gap.
+NaN-tolerant harness; same aligned segments; test → JSON unread.
+`scripts/gbdt/stratified_cb_attack.py`.
+
+**Shot 1 — sp500 +50%/200d** (incumbent agent-biased eval @1 0.845/@3 0.738):
+
+| eval segment | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| cb-stratified | 0.719 | 0.745 | 0.663 | 0.568 | 0.456 |
+| xgb-stratified (round 1, v1) | — | 0.755 | 0.623 | — | — |
+
+**Shot 2 — russell1000 +50%/200d** (incumbent unbiased eval AUC 0.722 /
+@1 0.745 / @3 0.595):
+
+| eval segment | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| cb-stratified | 0.734 | 0.605 | 0.523 | 0.503 | 0.454 |
+| xgb-stratified (round 1) | 0.727 | 0.415 | 0.370 | 0.344 | 0.342 |
+
+Neither candidate leads its incumbent's eval decision metric — **both test
+looks stay banked; both incumbents hold.**
+
+**Round-2 read:** the backend swap is *real but insufficient*. It moved the
+top-of-book materially on both cells (sp500 @3 0.623→0.663; r1k @1
+0.415→0.605, @3 0.370→0.523 — closing over half of round-1's r1k gap) while
+leaving @1 short of the board line on both. So CatBoost's long-horizon edge
+composes with the stratified structure, but the incumbents' @1 dominance at
+H=200 is not explained by backend + per-tree feature stratification alone.
+Ops note: the first r1k attempt was OOM-killed at 36.7GB RSS — retaining 800
+fitted CatBoost objects is the leak; the fix (models not retained, recipe +
+seed persisted instead — the ensemble is rng-deterministic) is in
+`scripts/gbdt/stratified_cb_attack.py`.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
