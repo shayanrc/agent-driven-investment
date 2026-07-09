@@ -91,11 +91,17 @@ _TAG_PRIORITY: dict[str, tuple[str, ...]] = {
         "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
         "BasicEarningsLossPerShare",
         "BasicEarningsLossPerShareFromContinuingOperations",
+        # Bank results taxonomy (HDFCBANK pilot): "EarningsPerShare" without
+        # "Loss"; headline EPS = after extraordinary items.
+        "BasicEarningsPerShareAfterExtraordinaryItems",
+        "BasicEarningsPerShareBeforeExtraordinaryItems",
     ),
     "eps_diluted": (
         "DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
         "DilutedEarningsLossPerShare",
         "DilutedEarningsLossPerShareFromContinuingOperations",
+        "DilutedEarningsPerShareAfterExtraordinaryItems",
+        "DilutedEarningsPerShareBeforeExtraordinaryItems",
     ),
 }
 
