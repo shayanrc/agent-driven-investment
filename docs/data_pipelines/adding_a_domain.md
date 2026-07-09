@@ -334,3 +334,60 @@ chain since us_equities** (macrotrends → SEC EDGAR → yfinance). Plan:
    different providers land on one grid and gap detection converge. Any
    future multi-provider non-daily domain will need the same: normalize the
    time axis in ONE place all adapters import.
+
+## Domain #5 retrospective — `in_fundamentals` (v4, 2026-07-09)
+
+The second fundamentals domain. It reused more of #4 than any prior domain
+reused of its predecessor — and the reuse was the right call, not a shortcut.
+
+1. **When domain #N is "#N-1 in a different jurisdiction", import, don't
+   copy.** `in_fundamentals.schema` *imports* the grid-snap utilities from
+   `us_fundamentals.schema` and reuses `QuarterEndCalendar` wholesale (Indian
+   fiscal quarters end on calendar quarter-ends, so the grid is identical).
+   The schema is the 12 us_fundamentals columns + one appended `consolidated`
+   flag — the shared positional prefix is deliberate so cross-domain
+   consumers (the valuation panel) read the same names. First time the "three
+   similar lines beat one premature abstraction" rule (goal.md) tipped the
+   other way: domain #4 informed the shape, so #5 shares code. No `core/`
+   framework extraction was needed — just honest imports.
+
+2. **The live pilot is worth more than the fixture for a scraped source.**
+   Five tickers (RELIANCE/TCS/INFY/HDFCBANK + an insurance survey) surfaced
+   SEVEN quirks a fixture could never have shown, each then frozen as a
+   regression fixture: `-` placeholder XBRL links, permanently-404 attachments
+   (→ non-retryable `EmptyPayload`), a 2018-2021 filing-tool era that
+   references `contextRef="OneD"` without *defining* the context (→ positional
+   column-convention fallback), the SEBI **integrated-filing regime** that
+   silently replaced the classic quarterly stream at Q4 FY25 (→ a second
+   endpoint, normalized onto the classic record shape), bank profit + EPS
+   tags, insurance premium-income + `ProfitLossAfterTax` tags, and archive-gone
+   gaps that must soft-fail (`EmptyPayload`, not `ProviderError`, or a
+   multi-gap fetch aborts before reaching a later fillable gap). Budget pilot
+   iterations generously for any HTML/XBRL-scraped source.
+
+3. **Namespace-agnostic tag matching survives taxonomy drift.** The Ind-AS
+   prefix drifts `in-bse-fin` / `in-capmkt` across eras and formats
+   (corporate / NBFC / bank / life-insurer / general-insurer). Matching on the
+   *local* tag name (strip the `{namespace}`) with a priority list per metric —
+   most-specific first, format-specific fallbacks appended — covered all six
+   formats without branching on issuer type. When a taxonomy has dialects,
+   match structurally and by local name, never by full qualified name.
+
+4. **Structural context selection beats name-based.** The quarter fact is the
+   one whose context is a **70-115 day duration ending on the filing's
+   `toDate`** — rejects YTD/half-year/annual by *shape*, so it works even when
+   contexts are labeled opaquely (`OneD`, `FourD`) or left undefined (handled
+   by a positional fallback only when the id is genuinely absent).
+
+5. **Native point-in-time dates are a jurisdiction property, not a given.**
+   us_fundamentals needed a whole EDGAR-submissions enrichment pass for
+   `filed_date` (and still carried 95.5% NULL before it). NSE stamps every
+   filing natively → 99.6% coverage, zero enrichment. Check what the source
+   gives you before building the pass; the US pattern is not universal.
+
+6. **Honest absence scales.** 497/500 seeded; the 3 misses are BSE-primary
+   large-caps with no NSE XBRL (the ANSS-analog from #4's 1/1015). Per-ticker
+   isolation logs and continues; the seed's non-zero exit is the triage
+   signal, not a failure. Insurers land revenue+NI with EPS/shares honestly
+   NaN rather than guessed — the same never-guess discipline as #4's
+   `filed_date`.
