@@ -17,6 +17,7 @@ import pandas as pd
 from valuation.prices import (
     adjust_shares_to_latest_basis,
     fetch_splits,
+    nse_equities_identifier,
     read_adj_close,
     us_equities_identifier,
 )
@@ -71,17 +72,27 @@ def build_panel(
     repo_root: Path | None = None,
     splits_provider: Callable[[str], pd.Series] = fetch_splits,
     on_progress: Callable[[int, int, str], None] | None = None,
+    domain=None,
+    id_mapper: Callable[[str], str | None] = us_equities_identifier,
+    price_table: str = "us_equities_data",
 ) -> pd.DataFrame:
     """Daily point-in-time valuation panel for ``tickers`` (``FUND:*``).
 
     Skips a ticker with no cached fundamentals, no equity-universe mapping, or
     no cached prices. ``splits_provider`` is injectable (tests / a cached
     provider avoid the per-ticker yfinance call).
+
+    US byte-identical by default: ``domain`` defaults to the ``us_fundamentals``
+    domain, ``id_mapper`` maps ``FUND:*`` → us_equities identifiers, and
+    ``price_table`` reads ``us_equities_data``. The NSE path overrides all three
+    (``in_fundamentals`` domain, ``nse_equities_identifier``,
+    ``nse_equities_data``) — see ``build_nse_panel``.
     """
     from data_pipelines.cache import read_processed
-    from data_pipelines.domains.us_fundamentals import get_domain
 
-    domain = get_domain()
+    if domain is None:
+        from data_pipelines.domains.us_fundamentals import get_domain
+        domain = get_domain()
     root = repo_root if repo_root is not None else Path.cwd()
     frames: list[pd.DataFrame] = []
     for i, fund_id in enumerate(tickers, 1):
@@ -90,10 +101,12 @@ def build_panel(
         q, _ = read_processed(root / "data", domain, fund_id)
         if q is None or q.empty:
             continue
-        eq_id = us_equities_identifier(fund_id)
+        eq_id = id_mapper(fund_id)
         if eq_id is None:
             continue
-        prices = read_adj_close(eq_id, start, end, repo_root=repo_root)
+        prices = read_adj_close(
+            eq_id, start, end, repo_root=repo_root, table=price_table
+        )
         if prices.empty:
             continue
         symbol = fund_id.split(":", 1)[1]
@@ -107,6 +120,40 @@ def build_panel(
     if not frames:
         return pd.DataFrame(columns=list(PANEL_COLUMNS))
     return pd.concat(frames, ignore_index=True)
+
+
+def build_nse_panel(
+    tickers: list[str],
+    start: str | date | None = None,
+    end: str | date | None = None,
+    *,
+    repo_root: Path | None = None,
+    splits_provider: Callable[[str], pd.Series] | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
+) -> pd.DataFrame:
+    """NSE convenience wrapper over ``build_panel``.
+
+    Wires the ``in_fundamentals`` domain, ``nse_equities_identifier``
+    (``INFUND:RELIANCE`` → ``NSE:RELIANCE``), and the ``nse_equities_data`` price
+    table. ``tickers`` are ``INFUND:*``. The default split provider appends the
+    yfinance ``.NS`` suffix. India-specific data shape (fcf all-NaN, insurers
+    with no diluted shares) flows through as honest NaN ratios — no special
+    handling needed here.
+    """
+    from data_pipelines.domains.in_fundamentals import get_domain
+
+    if splits_provider is None:
+        def splits_provider(symbol: str) -> pd.Series:  # noqa: E306
+            return fetch_splits(symbol, suffix=".NS")
+    return build_panel(
+        tickers, start, end,
+        repo_root=repo_root,
+        splits_provider=splits_provider,
+        on_progress=on_progress,
+        domain=get_domain(),
+        id_mapper=nse_equities_identifier,
+        price_table="nse_equities_data",
+    )
 
 
 def latest_snapshot(panel: pd.DataFrame) -> pd.DataFrame:

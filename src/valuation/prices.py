@@ -26,6 +26,9 @@ from pathlib import Path
 import pandas as pd
 
 from data_pipelines.cache import half_open_day_bounds
+from data_pipelines.domains.nse_equities.universe import (
+    load_universe as load_nse_equities_universe,
+)
 from data_pipelines.domains.us_equities.universe import (
     load_universe as load_us_equities_universe,
 )
@@ -33,6 +36,10 @@ from data_pipelines.domains.us_equities.universe import (
 # Equity universes that make up the fundamentals universe (mirror of
 # valuation's sibling us_fundamentals.universe.EQUITY_UNIVERSES).
 _EQUITY_UNIVERSES = ("sp500", "russell1000", "nasdaq100")
+
+# nse_equities universe backing the in_fundamentals universe. nifty500 is the
+# broadest equity universe (the in_fundamentals universe was derived from it).
+_NSE_UNIVERSE = "nifty500"
 
 
 def _data_root(repo_root: Path | None) -> Path:
@@ -64,18 +71,48 @@ def us_equities_identifier(fund_identifier: str) -> str | None:
     return _symbol_to_identifier().get(symbol.upper())
 
 
+@lru_cache(maxsize=1)
+def _nse_symbol_to_identifier() -> dict[str, str]:
+    """symbol (``RELIANCE``) → nse_equities identifier (``NSE:RELIANCE``).
+
+    Built from the nifty500 universe YAML, with the ``NIFTY:``/``INDEX:`` index
+    pseudo-tickers excluded (only real ``NSE:`` equities map).
+    """
+    out: dict[str, str] = {}
+    for ident in load_nse_equities_universe(_NSE_UNIVERSE):
+        prefix, symbol = ident.split(":", 1)
+        if prefix in ("INDEX", "NIFTY"):
+            continue
+        out.setdefault(symbol, ident)
+    return out
+
+
+def nse_equities_identifier(infund_identifier: str) -> str | None:
+    """``INFUND:RELIANCE`` → ``NSE:RELIANCE`` (or None if the symbol isn't in the
+    nse equity universe)."""
+    symbol = (
+        infund_identifier.split(":", 1)[1]
+        if ":" in infund_identifier
+        else infund_identifier
+    )
+    return _nse_symbol_to_identifier().get(symbol.upper())
+
+
 def read_adj_close(
     identifier: str,
     start: str | date | None = None,
     end: str | date | None = None,
     *,
     repo_root: Path | None = None,
+    table: str = "us_equities_data",
 ) -> pd.DataFrame:
-    """Daily ``(date, adj_close)`` for a us_equities identifier from the cache.
+    """Daily ``(date, adj_close)`` for an equity identifier from the cache.
 
-    Uses the half-open ``[start, end+1)`` interval so the stored
-    ``'YYYY-MM-DD 00:00:00'`` time component doesn't drop the end day (the #182
-    off-by-one). Returns an empty frame if the ticker isn't cached.
+    ``table`` selects the domain's price table (default ``us_equities_data`` —
+    US byte-identical; pass ``nse_equities_data`` for NSE). Uses the half-open
+    ``[start, end+1)`` interval so the stored ``'YYYY-MM-DD 00:00:00'`` time
+    component doesn't drop the end day (the #182 off-by-one). Returns an empty
+    frame if the ticker isn't cached.
     """
     db = _data_root(repo_root) / "processed.db"
     if not db.is_file():
@@ -84,7 +121,7 @@ def read_adj_close(
     con = sqlite3.connect(str(db))
     try:
         df = pd.read_sql_query(
-            "SELECT date, adj_close FROM us_equities_data "
+            f"SELECT date, adj_close FROM {table} "
             "WHERE ticker = ? AND date >= ? AND date < ? ORDER BY date",
             con, params=(identifier, start_s, end_excl),
         )
@@ -99,12 +136,18 @@ def read_adj_close(
 # Split-basis alignment
 # ---------------------------------------------------------------------------
 
-def fetch_splits(symbol: str) -> pd.Series:
+def fetch_splits(symbol: str, *, suffix: str = "") -> pd.Series:
     """Split events for ``symbol`` from yfinance: a Series indexed by (naive)
-    date with the split ratio (4.0 for a 4:1). Empty if none / on error."""
+    date with the split ratio (4.0 for a 4:1). Empty if none / on error.
+
+    ``suffix`` is appended to the yfinance ticker: US default ``""`` (with the
+    ``.``→``-`` class-share convention, e.g. ``BRK.B`` → ``BRK-B``); NSE callers
+    pass ``suffix=".NS"`` so ``RELIANCE`` → ``RELIANCE.NS``.
+    """
     try:
         import yfinance as yf
-        s = yf.Ticker(symbol.replace(".", "-")).splits
+        yf_symbol = symbol.replace(".", "-") + suffix if suffix else symbol.replace(".", "-")
+        s = yf.Ticker(yf_symbol).splits
     except Exception:
         return pd.Series(dtype="float64")
     if s is None or len(s) == 0:
