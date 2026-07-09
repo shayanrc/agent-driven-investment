@@ -241,6 +241,19 @@ fitted CatBoost objects is the leak; the fix (models not retained, recipe +
 seed persisted instead — the ensemble is rng-deterministic) is in
 `scripts/gbdt/stratified_cb_attack.py`.
 
+## Board-topper campaign, round 3 (2026-07-09) — budget-doubled cb; regression, incumbents hold
+
+Pre-declared: 1600 trees at eta 0.025 (2× capacity, constant total
+shrinkage), recipe otherwise frozen on the cb backend. **Both cells
+regressed vs round 2's 800/0.05 point** — sp500 eval @1 0.745→0.730 /
+@3 0.663→0.632; r1k eval @1 0.605→0.500 / @3 0.523→0.453 (AUC ~flat).
+Neither leads; test looks stay banked.
+
+**Round-3 read:** capacity is not the missing ingredient — the smoother
+ensemble (half eta) dilutes the top tail, the same direction rule 14 /
+`_282` documents for smoothing knobs on top-of-book metrics. The 800-tree /
+0.05 point stands as the stratified-cb optimum on both H=200 cells.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).

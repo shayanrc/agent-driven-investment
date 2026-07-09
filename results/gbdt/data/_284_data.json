@@ -205,5 +205,40 @@
    },
    "verdict": "AUC leads, top-of-book does not; test look banked"
   }
+ },
+ "board_campaign_round3_cb_double": {
+  "date": "2026-07-09",
+  "recipe": {
+   "backend": "catboost",
+   "n_trees": 1600,
+   "eta": 0.025,
+   "depth": 6,
+   "seed": 42,
+   "note": "2x budget at half eta, recipe otherwise frozen (pre-declared)"
+  },
+  "sp500_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.7155,
+    "brier": 0.0958,
+    "rp1": 0.73,
+    "rp3": 0.632,
+    "rp5": 0.574,
+    "rp10": 0.463
+   },
+   "vs_round2": "regression (r2 eval rp1 0.745 / rp3 0.663)",
+   "verdict": "does not lead; test look banked"
+  },
+  "russell1000_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.7357,
+    "brier": 0.1085,
+    "rp1": 0.5,
+    "rp3": 0.453,
+    "rp5": 0.454,
+    "rp10": 0.432
+   },
+   "vs_round2": "regression (r2 eval rp1 0.605 / rp3 0.523)",
+   "verdict": "does not lead; test look banked"
+  }
  }
 }
