@@ -80,6 +80,12 @@ _TAG_PRIORITY: dict[str, tuple[str, ...]] = {
     "net_income": (
         "ProfitLossForPeriod",
         "ProfitLossForPeriodFromContinuingOperations",
+        # Bank results taxonomy (live finding, HDFCBANK pilot): banks file
+        # "...ForThePeriod" (with "The") and the minority-adjusted bottom
+        # line. Owners-attributable preferred where both exist.
+        "ProfitLossAfterTaxesMinorityInterestAndShareOfProfitLossOfAssociates",
+        "ProfitLossForThePeriod",
+        "ProfitLossFromOrdinaryActivitiesAfterTax",
     ),
     "eps_basic": (
         "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
@@ -121,6 +127,46 @@ def _parse_filed(s: str | None) -> date | None:
         except ValueError:
             continue
     return None
+
+
+def _normalize_integrated_record(rec: dict) -> dict | None:
+    """Map an integrated-filing record onto the classic record shape.
+
+    SEBI's Integrated Filing regime replaced the classic quarterly stream
+    from Q4 FY25; its records use different field names (``qe_Date``,
+    ``broadcast_Date``, ``seq_Id``, ``consolidated`` = "Standalone" instead
+    of "Non-Consolidated") and interleave governance filings with the
+    financials. Pure function so ``parse()`` can re-derive it from the raw
+    envelope (D8).
+    """
+    if rec.get("type") != "Integrated Filing- Financials":
+        return None
+    qe = rec.get("qe_Date")
+    if not qe:
+        return None
+    return {
+        "period": _PERIOD_KEEP,
+        "toDate": qe,
+        "consolidated": "Consolidated"
+        if rec.get("consolidated") == "Consolidated" else "Non-Consolidated",
+        "filingDate": rec.get("broadcast_Date"),
+        "broadCastDate": rec.get("broadcast_Date"),
+        "seqNumber": f"INT_{rec.get('seq_Id')}",
+        "xbrl": rec.get("xbrl"),
+        "audited": rec.get("audited"),
+        "relatingTo": None,
+    }
+
+
+def _iter_quarterly_records(doc: dict):
+    """Yield classic-shaped quarterly records from both metadata streams."""
+    for rec in doc.get("metadata", []):
+        if rec.get("period") == _PERIOD_KEEP:
+            yield rec
+    for raw in doc.get("integrated_metadata", []):
+        rec = _normalize_integrated_record(raw)
+        if rec is not None:
+            yield rec
 
 
 class _Throttle:
@@ -182,15 +228,15 @@ class NSEXbrlAdapter(Adapter):
     ) -> Path:
         _, symbol = parse_identifier(identifier)
         records = self._fetch_metadata(symbol, identifier)
-        if not records:
+        integrated = self._fetch_integrated(symbol, identifier)
+        if not records and not integrated:
             raise EmptyPayload(self.name, identifier)
 
         lo = start or date(self._config.min_year, 1, 1)
         hi = end or datetime.now(timezone.utc).date()
+        doc_view = {"metadata": records, "integrated_metadata": integrated}
         wanted: list[dict] = []
-        for rec in records:
-            if rec.get("period") != _PERIOD_KEEP:
-                continue
+        for rec in _iter_quarterly_records(doc_view):
             qe = _parse_nse_date(rec.get("toDate", ""))
             if qe is None or qe.year < self._config.min_year:
                 continue
@@ -224,6 +270,7 @@ class NSEXbrlAdapter(Adapter):
         envelope = json.dumps({
             "symbol": symbol,
             "metadata": records,
+            "integrated_metadata": integrated,
             "xbrl": xbrl,
         }).encode("utf-8")
         return write_raw_atomic(
@@ -314,6 +361,67 @@ class NSEXbrlAdapter(Adapter):
             _do, self._retry_policy(), provider=self.name, identifier=identifier
         )
 
+    def _fetch_integrated(self, symbol: str, identifier: str) -> list[dict]:
+        """Integrated-filing metadata (the post-Q4-FY25 quarterly stream).
+
+        Soft-fails to [] on provider errors: the classic stream still covers
+        pre-2025 history, and an unfilled recent gap is reported honestly by
+        the dispatcher's gap accounting rather than sinking the whole fetch.
+        """
+        url = (
+            self._config.nse_base_url + self._config.integrated_api_path
+            + "?" + urllib.parse.urlencode({
+                "index": "equities", "symbol": symbol, "period": _PERIOD_KEEP,
+            })
+        )
+
+        def _do() -> list[dict]:
+            self._warm_session()
+            self._api_throttle.wait()
+            req = urllib.request.Request(url, headers={
+                "User-Agent": self._config.browser_user_agent,
+                "Accept": "application/json",
+                "Referer": self._config.results_referer,
+            })
+            try:
+                with self._opener.open(
+                    req, timeout=self._config.timeout_sec
+                ) as resp:
+                    body = resp.read()
+            except urllib.error.HTTPError as e:
+                self._session_warm = False
+                raise ProviderError(
+                    self.name, identifier, f"HTTP {e.code} (integrated)"
+                ) from None
+            except urllib.error.URLError as e:
+                raise ProviderError(
+                    self.name, identifier, f"URL error: {e.reason}"
+                ) from None
+            except TimeoutError:
+                raise ProviderError(self.name, identifier, "timeout") from None
+            try:
+                payload = json.loads(body)
+            except json.JSONDecodeError:
+                self._session_warm = False
+                raise ProviderError(
+                    self.name, identifier,
+                    "non-JSON integrated response (bot guard?)",
+                ) from None
+            data = payload.get("data") if isinstance(payload, dict) else None
+            return data if isinstance(data, list) else []
+
+        try:
+            return call_with_retry(
+                _do, self._retry_policy(),
+                provider=self.name, identifier=identifier,
+            )
+        except ProviderError as e:
+            _log.warning(
+                "nse_xbrl: integrated-filing metadata failed for %s (%s); "
+                "continuing with the classic stream only", identifier, e,
+            )
+            return []
+
     def _get_archive(self, url: str, identifier: str) -> bytes:
         def _do() -> bytes:
             self._archive_throttle.wait()
@@ -362,9 +470,7 @@ class NSEXbrlAdapter(Adapter):
         xbrl: dict[str, str] = doc.get("xbrl", {})
 
         rows: list[dict] = []
-        for rec in doc.get("metadata", []):
-            if rec.get("period") != _PERIOD_KEEP:
-                continue
+        for rec in _iter_quarterly_records(doc):
             key = str(rec.get("seqNumber", rec.get("xbrl", "")))
             xml_text = xbrl.get(key)
             if not xml_text:
