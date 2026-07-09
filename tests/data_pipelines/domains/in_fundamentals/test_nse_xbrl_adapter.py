@@ -140,3 +140,38 @@ class TestIntegratedFilingStream:
         assert "Integrated Filing- Governance" in types  # present in fixture
         df = NSEXbrlAdapter().parse(self.FIXTURE_INT)
         assert len(df) == 1  # ...but never parsed
+
+
+class TestInsuranceTaxonomies:
+    """Life (LI) and general (GI) insurers file premium income instead of
+    RevenueFromOperations and ...AfterTax profit variants; they carry no EPS
+    facts and no trustworthy share count, so shares/EPS stay honestly NaN.
+    Live Q4 FY26 captures: SBILIFE (LI), ICICIGI (GI)."""
+
+    FIXTURE_LI = FIXTURE.parent / "nse_envelope_sbilife_li.json"
+    FIXTURE_GI = FIXTURE.parent / "nse_envelope_icicigi_gi.json"
+
+    def test_life_insurer_parses(self):
+        df = NSEXbrlAdapter().parse(self.FIXTURE_LI)
+        assert len(df) == 1
+        row = df.loc[0]
+        assert row["date"] == pd.Timestamp("2026-03-31")
+        assert row["revenue"] == pytest.approx(279_388.6)   # gross premium
+        assert row["net_income"] == pytest.approx(8_046.4)
+        assert row["filed_date"] == pd.Timestamp("2026-04-22")
+        assert row["consolidated"] == 0.0                   # standalone
+
+    def test_general_insurer_parses(self):
+        df = NSEXbrlAdapter().parse(self.FIXTURE_GI)
+        assert len(df) == 1
+        row = df.loc[0]
+        assert row["date"] == pd.Timestamp("2026-03-31")
+        assert row["revenue"] == pytest.approx(80_737.0)    # gross premiums written
+        assert row["net_income"] == pytest.approx(5_465.6)
+        assert row["filed_date"] == pd.Timestamp("2026-04-15")
+
+    def test_insurer_shares_eps_honestly_nan(self):
+        for fx in (self.FIXTURE_LI, self.FIXTURE_GI):
+            row = NSEXbrlAdapter().parse(fx).loc[0]
+            assert pd.isna(row["eps_basic"]) and pd.isna(row["eps_diluted"])
+            assert pd.isna(row["shares_basic"]) and pd.isna(row["shares_diluted"])

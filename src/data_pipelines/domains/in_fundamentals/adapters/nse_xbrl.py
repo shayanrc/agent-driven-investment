@@ -75,6 +75,17 @@ _TAG_PRIORITY: dict[str, tuple[str, ...]] = {
         "TotalRevenueFromOperations",
         "RevenueFromInterestAndDividendOperations",
         "InterestEarned",
+        # Insurance taxonomies (live survey, 2026-07-09): life (LI) and
+        # general (GI) insurers file premium income, not revenue-from-
+        # operations. Gross-premium first (the P/GWP convention); the tag
+        # sets are disjoint across formats, so ordering only matters within
+        # one instance.
+        "GrossPremiumIncome",            # LI
+        "GrossPremiumsWritten",          # GI
+        "NetPremiumIncome",              # LI
+        "NetPremiumWritten",             # GI
+        "PremiumEarned",                 # GI
+        "NetPremium",                    # LI + GI
         "TotalIncome",
     ),
     "net_income": (
@@ -86,6 +97,14 @@ _TAG_PRIORITY: dict[str, tuple[str, ...]] = {
         "ProfitLossAfterTaxesMinorityInterestAndShareOfProfitLossOfAssociates",
         "ProfitLossForThePeriod",
         "ProfitLossFromOrdinaryActivitiesAfterTax",
+        # Insurance taxonomies: LI files ...AfterTaxAndExtraordinaryItems,
+        # GI files plain ...AfterTax. Insurers carry NO EPS facts and no
+        # trustworthy share count (GI's NumberOfShares fails the sanity
+        # check vs actual outstanding; LI has paid-up capital but no face
+        # value) — shares/EPS stay honestly NaN for them (V4_TBD).
+        "ProfitLossAfterTaxAndExtraordinaryItems",
+        "ProfitLossAfterTax",
+        "ProfitLossAfterTaxBeforeExtraordinaryItems",
     ),
     "eps_basic": (
         "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
