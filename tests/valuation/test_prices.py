@@ -8,6 +8,7 @@ import pytest
 from valuation.prices import (
     adjust_shares_to_latest_basis,
     cumulative_split_factor,
+    nse_equities_identifier,
     us_equities_identifier,
 )
 
@@ -24,6 +25,23 @@ class TestIdentifierMap:
 
     def test_accepts_bare_symbol(self):
         assert us_equities_identifier("AAPL") == "NASDAQ:AAPL"
+
+
+class TestNseIdentifierMap:
+    def test_maps_known_symbol(self):
+        # RELIANCE is in the nifty500 universe as NSE:RELIANCE
+        assert nse_equities_identifier("INFUND:RELIANCE") == "NSE:RELIANCE"
+
+    def test_unknown_symbol_returns_none(self):
+        # not a nifty500 constituent
+        assert nse_equities_identifier("INFUND:ZZZNOPE") is None
+
+    def test_accepts_bare_symbol(self):
+        assert nse_equities_identifier("RELIANCE") == "NSE:RELIANCE"
+
+    def test_index_pseudo_ticker_excluded(self):
+        # the NIFTY:500 index entry in the universe is not a mappable equity
+        assert nse_equities_identifier("INFUND:500") is None
 
 
 class TestSplitFactor:
