@@ -22,6 +22,11 @@ class InFundamentalsConfig:
     # --- NSE endpoints ---
     nse_base_url: str = "https://www.nseindia.com"
     results_api_path: str = "/api/corporates-financial-results"
+    # SEBI's Integrated Filing regime replaced the classic quarterly results
+    # stream from Q4 FY25 (Mar-2025) — the classic endpoint simply stops at
+    # Dec-2024 (live finding, 2026-07-09 pilot). Both endpoints are fetched
+    # and merged.
+    integrated_api_path: str = "/api/integrated-filing-results"
     # Referer the API expects (part of the bot-guard heuristics).
     results_referer: str = (
         "https://www.nseindia.com/companies-listing/"

@@ -114,3 +114,29 @@ class TestUndefinedContextConvention:
         assert row["filed_date"] == pd.Timestamp("2018-08-07")
         assert row["consolidated"] == 1.0
         assert 5_000 < row["shares_diluted"] < 7_000
+
+
+class TestIntegratedFilingStream:
+    """SEBI's Integrated Filing regime replaced the classic quarterly stream
+    from Q4 FY25 — records come from a second endpoint with different field
+    names and interleaved governance filings. Live TCS Q1 FY26 capture."""
+
+    FIXTURE_INT = FIXTURE.parent / "nse_envelope_tcs_integrated.json"
+
+    def test_integrated_record_parses(self):
+        df = NSEXbrlAdapter().parse(self.FIXTURE_INT)
+        assert len(df) == 1
+        row = df.loc[0]
+        assert row["date"] == pd.Timestamp("2025-06-30")
+        assert row["revenue"] == pytest.approx(634_370.0)
+        assert row["net_income"] == pytest.approx(128_190.0)
+        assert row["consolidated"] == 1.0
+        assert row["filed_date"] == pd.Timestamp("2025-07-10")
+
+    def test_governance_records_skipped(self):
+        import json
+        doc = json.loads(self.FIXTURE_INT.read_text())
+        types = {r["type"] for r in doc["integrated_metadata"]}
+        assert "Integrated Filing- Governance" in types  # present in fixture
+        df = NSEXbrlAdapter().parse(self.FIXTURE_INT)
+        assert len(df) == 1  # ...but never parsed
