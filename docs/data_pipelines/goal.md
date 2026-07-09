@@ -95,7 +95,8 @@ v1 = framework + exactly one domain.
 **Explicitly deferred to later domains / versions:**
 - NSE (India) — shipped in v1.7; LSE (UK), TSE (Japan), and other non-US equity domains still deferred.
 - FRED macroeconomic series — **shipped in v2** (`fred_macro` domain: daily/monthly/quarterly series — rates, curve, credit spreads, breakevens, inflation, labor, growth; see `V2_FRED_MACRO_PLAN.md`). Still deferred: US Treasury auction schedules, BEA series, and weekly-cadence FRED series (need a 4th calendar).
-- US company fundamentals — **shipped in v3** (`us_fundamentals` domain: quarterly income + cash-flow metrics on a calendar quarter-end grid, macrotrends → SEC EDGAR → yfinance chain; see `V3_US_FUNDAMENTALS_PLAN.md`). Still deferred: annual statements, balance-sheet metrics, NSE fundamentals (`V3_TBD.md`).
+- US company fundamentals — **shipped in v3** (`us_fundamentals` domain: quarterly income + cash-flow metrics on a calendar quarter-end grid, macrotrends → SEC EDGAR → yfinance chain; see `V3_US_FUNDAMENTALS_PLAN.md`). Still deferred: annual statements, balance-sheet metrics.
+- Indian company fundamentals — **shipped in v4** (`in_fundamentals` domain: quarterly premium/income + EPS on the same calendar quarter-end grid, `INFUND:<TICKER>`, single NSE-XBRL adapter over the classic + integrated-filing streams with native filed dates; nifty500 seeded 497/500; see `V4_IN_FUNDAMENTALS_PLAN.md`). Still deferred: quarterly cash flow (India files half-yearly), insurer share counts + pre-2025 insurer history, a BSE fallback (`V4_TBD.md`).
 - Commodity prices, FX rates, crypto.
 - Intraday bars (any domain).
 - Corporate actions as separate tables (splits, dividends, mergers — adj_close captures what consumers need for v1).
