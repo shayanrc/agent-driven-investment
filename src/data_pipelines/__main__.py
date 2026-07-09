@@ -38,6 +38,7 @@ import data_pipelines.domains.us_equities  # noqa: F401
 import data_pipelines.domains.nse_equities  # noqa: F401
 import data_pipelines.domains.fred_macro  # noqa: F401
 import data_pipelines.domains.us_fundamentals  # noqa: F401
+import data_pipelines.domains.in_fundamentals  # noqa: F401
 from data_pipelines.domains.us_equities import get_domain as get_us_equities_domain
 from data_pipelines.domains.us_equities.universe import (
     load_universe as load_us_equities_universe,
@@ -51,6 +52,9 @@ from data_pipelines.domains.fred_macro.universe import (
 from data_pipelines.domains.us_fundamentals.universe import (
     load_universe as load_us_fundamentals_universe,
 )
+from data_pipelines.domains.in_fundamentals.universe import (
+    load_universe as load_in_fundamentals_universe,
+)
 
 def _load_universe_for_domain(domain_name: str, universe_name: str) -> list[str]:
     # Resolved at call time (not at import) so test-time patches of either
@@ -63,6 +67,8 @@ def _load_universe_for_domain(domain_name: str, universe_name: str) -> list[str]
         return load_fred_macro_universe(universe_name)
     if domain_name == "us_fundamentals":
         return load_us_fundamentals_universe(universe_name)
+    if domain_name == "in_fundamentals":
+        return load_in_fundamentals_universe(universe_name)
     raise ValueError(f"unknown domain {domain_name!r}")
 
 
