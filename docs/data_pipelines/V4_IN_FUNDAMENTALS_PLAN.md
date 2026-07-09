@@ -153,3 +153,47 @@ membership.
   published ₹ figure; second call is a pure cache hit.
 - Reprocess-from-raw determinism: `parse()` twice on the same envelope →
   byte-identical frames.
+
+## Outcome
+
+**Full nifty500 seed (2026-07-09): 497/500 cached, 3 genuine gaps. 12,924 rows.**
+
+- **Coverage:** median **31 quarters/ticker** (min 2 recent IPOs, max 36), grid
+  **2017-03-31 → 2026-03-31**. The 2016 XBRL-era floor holds in practice — the
+  earliest landed grid date is 2017-Q1 (older records carry `-` placeholder
+  links).
+- **NULL rates:** revenue **0.0%**, net_income **0.0%**, eps_diluted 0.4%,
+  shares_diluted 1.1%, **filed_date 0.4%**. The filed-date coverage is the
+  headline: NSE stamps every filing natively, so India gets 99.6% point-in-time
+  dates with **no enrichment pass** — the US domain needed a separate EDGAR
+  submissions pass and still carried 95.5% NULL before it. `ocf`/`capex`/`fcf`
+  are 100% NULL by design (no quarterly cash flow in India).
+- **The shares_diluted 1.1% NULL is where designed:** the 11 insurers (SBILIFE,
+  ICICIGI, ICICIPRULI, HDFCLIFE, LICI, GICRE, NIACL, NIVABUPA, STARHEALTH +
+  GODIGIT, CANHLIFE — the format-fingerprint caught two beyond the 9 anticipated)
+  carry no EPS/share facts, plus scattered single loss-quarters on non-insurers
+  where NI/EPS derivation can't run. Insurer revenue (gross premium) and
+  net_income land cleanly.
+- **Every format family parsed** (XBRL count by URL prefix): INDAS 17,125 ·
+  INTEGRATED_FILING_INDAS 4,221 · NBFC_INDAS 1,349 · BANKING 1,036 ·
+  INTEGRATED_FILING_NBFC_INDAS 486 · INTEGRATED_FILING_BANKING 258 ·
+  INTEGRATED_FILING_GI 43 · INTEGRATED_FILING_LI 42 · NONINDAS 27 ·
+  INTEGRATED_FILING_NONINDAS 3. Corporates, NBFCs/AMCs, banks (incl. PSU),
+  life + general insurers, and the pre-Ind-AS `NONINDAS` stragglers all covered,
+  across both the classic and integrated-filing streams.
+- **Spot checks (Q3 FY26, published-figure agreement):** HDFCBANK PAT ₹19,807 cr /
+  EPS 12.82; TCS ₹10,720 cr / EPS 29.45; MARUTI EPS ₹123.38; BAJFINANCE (NBFC)
+  ₹4,066 cr; SBILIFE (LI) gross premium ₹30,450 cr with EPS honestly blank.
+- **Three genuine gaps** — ABBOTINDIA, BAYERCROP, MCX: no fetchable quarterly
+  XBRL on either NSE stream (a single stale 2010 placeholder record on the
+  classic stream, zero integrated records). All three are BSE-primary large-caps
+  that file elsewhere — the ANSS-analog (US seed's 1/1015 delisted miss). Concrete
+  BSE-fallback candidates (`V4_TBD.md` §3). Per-ticker isolation logged each and
+  moved on.
+
+**Pilot findings folded in (5 tickers → the full universe):** the seven quirks
+found during the RELIANCE/TCS/INFY/HDFCBANK pilot + the SBILIFE/ICICIGI insurance
+survey (placeholder links, permanent-404s, the 2018-2021 undefined-context era,
+the SEBI integrated-filing regime cutover at Q4 FY25, bank profit + EPS tags,
+insurance premium-income + AfterTax tags, archive-gone-gap soft-fail) all held at
+scale — 497 clean tickers, zero unhandled-format failures.
