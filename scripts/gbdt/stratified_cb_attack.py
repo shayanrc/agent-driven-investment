@@ -32,23 +32,41 @@ from gbdt.targets import build_target
 
 t0 = time.time()
 SEED, N_TREES, ETA, DEPTH = 42, 800, 0.05, 6
-SEG = {"train": ("2018-01-02", "2021-03-08"), "val": ("2021-03-09", "2022-10-06"),
-       "eval": ("2022-10-07", "2023-07-26"), "test": ("2023-07-27", "2024-10-03")}
+
+_H200_SEG = {"train": ("2018-01-02", "2021-03-08"), "val": ("2021-03-09", "2022-10-06"),
+             "eval": ("2022-10-07", "2023-07-26"), "test": ("2023-07-27", "2024-10-03")}
+_H200_TARGET = {"threshold_pct": 50, "horizon_days": 200, "max_drawdown": 0.25}
 
 CELLS = {
     "sp500": {
         "run": "results/gbdt/experiments/sp500_up_20pct_50d_dd10pct_maxtune",
-        "universe": "sp500",
+        "universe": "sp500", "target": _H200_TARGET, "seg": _H200_SEG,
         # public registry test metrics of sp500_up_50pct_200d_dd25pct cbagent
         "incumbent": {"basis": "test", "auc": 0.7161, "rp1": 0.930,
                       "rp3": 0.6167, "rp5": 0.5553, "rp10": 0.4873},
     },
     "r1k": {
         "run": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_maxtune",
-        "universe": "russell1000",
+        "universe": "russell1000", "target": _H200_TARGET, "seg": _H200_SEG,
         # incumbent's unbiased EVAL metrics (from its published eval.csv);
         # its test stays sealed.
         "incumbent": {"basis": "eval", "auc": 0.722, "rp1": 0.745, "rp3": 0.595},
+    },
+    # Round 5 — the nasdaq front (the recipe's home turf: decoupled cell,
+    # AUC 0.846 with weak eval top-book). Incumbent = ndx40_mix
+    # (nasdaq100_up_40pct_50d_dd20pct_agentloop_mix); its trailing-anchor
+    # windows are cleanly DISJOINT (unlike the +10%/50d revalidation cell,
+    # whose eval/test overlap breaks the banked-test protocol). Incumbent
+    # eval computed from its published predictions/eval.csv restricted to
+    # the registry eval window (2025-03-14..2025-12-29, base 0.0603).
+    "ndx40": {
+        "run": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_maxtune",
+        "universe": "nasdaq100",
+        "target": {"threshold_pct": 40, "horizon_days": 50, "max_drawdown": 0.20},
+        "seg": {"train": ("2020-06-04", "2023-08-08"), "val": ("2023-08-09", "2025-03-13"),
+                "eval": ("2025-03-14", "2025-12-29"), "test": ("2025-12-30", "2026-03-12")},
+        "incumbent": {"basis": "eval", "auc": 0.8459, "rp1": 0.397, "rp3": 0.338,
+                      "rp5": 0.370, "rp10": 0.497},
     },
 }
 
@@ -110,7 +128,8 @@ if len(sys.argv) > 2 and sys.argv[2] == "double":
     suffix = "_double"
 elif len(sys.argv) > 2 and sys.argv[2] == "longbias":
     suffix = "_longbias"
-OUT = Path(f"runs/gbdt/stratified/{cell_key}_50pct_200d_cb{suffix}")
+SEG = cell["seg"]
+OUT = Path(f"runs/gbdt/stratified/{cell_key}_cb{suffix}")
 OUT.mkdir(parents=True, exist_ok=True)
 
 X = pd.read_parquet(
@@ -119,8 +138,7 @@ X = pd.read_parquet(
              ("date", "<=", pd.Timestamp(SEG["test"][1]))],
 )
 panel = load_panel(cell["universe"], end="2026-07-06").panel
-y = build_target(panel, direction="up", threshold_pct=50, horizon_days=200,
-                 max_drawdown=0.25).rename("target")
+y = build_target(panel, direction="up", **cell["target"]).rename("target")
 del panel
 df = X.join(y, how="left").dropna(subset=["target"])  # NaN-tolerant (runner-faithful)
 del X
