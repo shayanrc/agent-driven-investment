@@ -274,5 +274,43 @@
    "verdict": "regression at every K; test look banked"
   },
   "campaign_close": "4 rounds, 0 test looks spent; H=200 incumbents hold; next front = nasdaq cells"
+ },
+ "board_campaign_round5_ndx40": {
+  "date": "2026-07-09",
+  "recipe": {
+   "backend": "catboost",
+   "n_trees": 800,
+   "eta": 0.05,
+   "depth": 6,
+   "seed": 42,
+   "note": "campaign-optimum recipe, pre-declared; nasdaq100 maxtune matrix"
+  },
+  "nasdaq100_up_40pct_50d_dd20pct": {
+   "eval": {
+    "auc": 0.8096,
+    "brier": 0.0575,
+    "rp1": 0.161,
+    "rp3": 0.211,
+    "rp5": 0.263,
+    "rp10": 0.456
+   },
+   "val": {
+    "auc": 0.8304,
+    "brier": 0.0234,
+    "rp1": 0.372,
+    "rp3": 0.298,
+    "rp5": 0.306,
+    "rp10": 0.48
+   },
+   "incumbent_eval": {
+    "auc": 0.8459,
+    "rp1": 0.397,
+    "rp3": 0.338,
+    "rp5": 0.37,
+    "rp10": 0.497
+   },
+   "verdict": "trails at every K; test look banked; rare-event regime (base 0.060) \u2014 the _282 noise-dominated domain"
+  },
+  "campaign_final": "5 rounds, 2 fronts, 0 test looks spent, all incumbents hold"
  }
 }

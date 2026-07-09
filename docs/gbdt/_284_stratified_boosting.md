@@ -282,6 +282,40 @@ per rounds 0–1 stays common+mid-horizon decoupled cells — the declared next
 front is the nasdaq board cells (ndx40_mix; nasdaq +10%/50d anti-AUC), a
 different fight on the recipe's own terms.
 
+## Board-topper campaign, round 5 (2026-07-09) — nasdaq front; CAMPAIGN CLOSED
+
+The declared "different fight": ndx40_mix (`nasdaq100_up_40pct_50d_dd20pct_
+agentloop_mix`, backtest board +121.7%), a strongly **decoupled** cell —
+incumbent eval AUC 0.8459 with weak top-book (@1 0.397/@3 0.338, base
+0.0603 on the registry eval window; bar computed from its published
+predictions). Recipe frozen at the campaign optimum (cb, 800, 0.05);
+incumbent's exact trailing-anchor segments; new nasdaq100 maximal matrix.
+The other declared nasdaq cell (+10%/50d anti-AUC, R-p@3 0.756) was NOT
+attacked: its published eval/test windows overlap ~7 months, which breaks
+the banked-test protocol by construction.
+
+| eval | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| cb-stratified | 0.810 | 0.161 | 0.211 | 0.263 | 0.456 |
+| incumbent | 0.846 | 0.397 | 0.338 | 0.370 | 0.497 |
+
+Trails at every K — test look banked, incumbent holds. **The home-turf
+hypothesis fails on this cell for a legible reason:** ndx40 is a
+*rare-event* decoupled cell (base 0.060, 100-ticker universe) — the
+noise-dominated top-of-book regime `_282` mapped — whereas the recipe's
+actual win (`_284` origin) was a *common-event* decoupled cell (sp500,
+base ~0.14, 500 names). Decoupling alone isn't the recipe's home turf;
+decoupling **plus a common base rate** is.
+
+**Campaign final: 5 rounds, 2 fronts, 0 test looks spent, every incumbent
+holds.** The honest scorecard: the stratified recipe is a real, replicated
+win on common+mid-horizon decoupled cells (the original arc) and does not
+displace board tops on long horizons or rare-event cells. Future re-entry
+points: (a) runner productionization (`V1.9_TBD`) to field stratified arms
+in standard sweeps; (b) the nifty500 board once F18-IN lands — its cells
+are weak (R-p@3 0.38–0.44) and fundamentals are the missing axis there
+(`V4_IN_FUNDAMENTALS_PLAN.md`).
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
