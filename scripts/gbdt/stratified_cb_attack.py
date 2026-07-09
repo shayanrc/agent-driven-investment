@@ -100,7 +100,15 @@ def rpk(index, ytrue, p, ks=(1, 3, 5, 10)):
 
 cell_key = sys.argv[1]
 cell = CELLS[cell_key]
-OUT = Path(f"runs/gbdt/stratified/{cell_key}_50pct_200d_cb")
+# Round-3 arm (pre-declared 2026-07-09, before any results): "double" =
+# 2x budget at half the learning rate (1600 trees, eta 0.025), recipe
+# otherwise frozen — the standard capacity trade, testing whether the
+# H=200 @1 gap responds to ensemble depth.
+suffix = ""
+if len(sys.argv) > 2 and sys.argv[2] == "double":
+    N_TREES, ETA = 1600, 0.025
+    suffix = "_double"
+OUT = Path(f"runs/gbdt/stratified/{cell_key}_50pct_200d_cb{suffix}")
 OUT.mkdir(parents=True, exist_ok=True)
 
 X = pd.read_parquet(
