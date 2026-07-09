@@ -254,6 +254,34 @@ ensemble (half eta) dilutes the top tail, the same direction rule 14 /
 `_282` documents for smoothing knobs on top-of-book metrics. The 800-tree /
 0.05 point stands as the stratified-cb optimum on both H=200 cells.
 
+## Board-topper campaign, round 4 (2026-07-09) — long-window-biased draws; H=200 campaign CLOSED
+
+Pre-declared: within each capped family, per-tree features drawn with
+probability proportional to the parsed lookback window (H=200 should weight
+200d-scale dynamics), on the round-2 optimum (cb, 800 trees, eta 0.05).
+
+| eval | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| sp500 longbias | 0.713 | 0.780 | 0.578 | 0.490 | 0.438 |
+| r1k longbias | 0.732 | 0.435 | 0.452 | 0.455 | 0.447 |
+
+sp500 @1 0.780 is the campaign's best top-1 (r2 0.745) but still short of
+the incumbent's 0.845, and it comes at the cost of the book below it
+(@3 0.663→0.578); r1k regressed at every K. Neither leads.
+
+**Campaign close (4 rounds, 0 test looks spent):** xgb structure (r1),
+cb backend (r2), 2× budget (r3), lookback-biased draws (r4) — every lever
+moved the needle somewhere, none crossed the board line. The H=200
+incumbents' @1 dominance survives structure, backend, capacity, and
+sampling-prior changes; combined with `_282` (H≥100 resists finetuning) and
+`_277`/`_278` (cb owns long horizons), the standing read is that the
+long-horizon board tops are near the ceiling of what this feature pool +
+top-1 metric supports on these windows. Both sealed test looks remain
+banked for any future candidate that leads on eval. The recipe's home turf
+per rounds 0–1 stays common+mid-horizon decoupled cells — the declared next
+front is the nasdaq board cells (ndx40_mix; nasdaq +10%/50d anti-AUC), a
+different fight on the recipe's own terms.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
