@@ -240,5 +240,39 @@
    "vs_round2": "regression (r2 eval rp1 0.605 / rp3 0.523)",
    "verdict": "does not lead; test look banked"
   }
+ },
+ "board_campaign_round4_cb_longbias": {
+  "date": "2026-07-09",
+  "recipe": {
+   "backend": "catboost",
+   "n_trees": 800,
+   "eta": 0.05,
+   "depth": 6,
+   "seed": 42,
+   "note": "lookback-proportional family sampling (pre-declared)"
+  },
+  "sp500_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.7132,
+    "brier": 0.0982,
+    "rp1": 0.78,
+    "rp3": 0.578,
+    "rp5": 0.49,
+    "rp10": 0.438
+   },
+   "verdict": "campaign-best @1 but does not lead (0.845); book thins; test look banked"
+  },
+  "russell1000_up_50pct_200d_dd25pct": {
+   "eval": {
+    "auc": 0.732,
+    "brier": 0.1102,
+    "rp1": 0.435,
+    "rp3": 0.452,
+    "rp5": 0.455,
+    "rp10": 0.447
+   },
+   "verdict": "regression at every K; test look banked"
+  },
+  "campaign_close": "4 rounds, 0 test looks spent; H=200 incumbents hold; next front = nasdaq cells"
  }
 }
