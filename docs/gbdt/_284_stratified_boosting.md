@@ -179,6 +179,29 @@ Scored the exact saved ensemble over **2024-07-26 → 2026-06-12** (472 trading 
 
 Board context (windows differ — total returns are not directly commensurable): the board top is russell1000 +50% champion **+135.9%** (excess +72.1 over ~35 months) and ndx40_mix **+121.7%** (excess +84.2 over ~12 months — the strongest per-month excess). Our +55.4/22.5mo sits between them on excess-per-month, on a cell (sp500 +20%/50d, common-event mid-horizon) whose registry arms never made the board. Same-cell precedent: the deployed sp500_20 champion did +58.1% vs SPX +8.4% on its (older, shorter) window. DD runs deeper than index (ungated, as all board rows; `_017`'s SMA200 gate would cap it). Not a registry row yet; not promoted.
 
+## Board-topper campaign, round 1 (2026-07-09) — incumbents hold
+
+User-directed attack on the leaderboard tops, honest protocol: pre-declared candidates, iteration on val/eval only, ONE sealed test look per candidate spent only when leading on eval. Two shots fired at the H=200 giants (both share the aligned windows: train 2018-01-02→2021-03-08, eval 2022-10-07→2023-07-26, test 2023-07-27→2024-10-03):
+
+**Shot 1 — sp500 +50%/200d** (incumbent `aligned_cbagent`: test @1 0.930/@3 0.617; its eval, agent-selected so optimistically biased: @1 0.845/@3 0.738/@5 0.644/@10 0.536):
+
+| eval segment | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| v1 (dropna harness, 2019+ train) | 0.708 | 0.755 | 0.623 | 0.579 | 0.523 |
+| v2 (NaN-tolerant, +2018 train, row-faithful) | 0.726 | 0.740 | 0.625 | 0.530 | 0.472 |
+
+Behind at every K both variants (v2 improves bulk only). **Test look NOT spent.** Note v2's harness discovery: the runner never drops feature-NaN rows — the dropna harness had silently shed all of 2018 (F18 coverage + warmup) and ~5% of segment rows; NaN-tolerant restores faithfulness (kept for all future shots).
+
+**Shot 2 — russell1000 +50%/200d** (backtest board #1, +135.9%; incumbent `aligned` cb single-fit — eval computed from its published predictions, unbiased: AUC 0.722, @1 0.745/@3 0.595/@5 0.571/@10 0.534, base 0.125):
+
+| eval segment | AUC | R-p@1 | R-p@3 | R-p@5 | R-p@10 |
+|---|--:|--:|--:|--:|--:|
+| stratified v1 (NaN-tolerant) | 0.727 | 0.415 | 0.370 | 0.344 | 0.342 |
+
+AUC matches; top-of-book far behind. **Test look NOT spent.**
+
+**Round-1 read:** the `_284` recipe does NOT transfer as-is to long-horizon (H=200) cells — the same boundary `_282` drew for the finetunes (H≥100 resists) and consistent with `_277`/`_278` (CatBoost systematically dominates long-horizon cells at every K). The board tops hold, honestly. Round-2 levers (parked under the campaign task): **cb-backend stratified trees** (combine the incumbents' backend edge with our structure — the highest-prior lever), larger tree budgets, long-window-biased draws, and the nasdaq cells (ndx40_mix, the R-p@3 0.756 anti-AUC cell). Both sealed test looks remain banked.
+
 ## Caveats / discipline
 
 - **One cell, one window-pair.** val+eval agree (the `_282` sweet-spot regime where eval tracks test) but the standing rule holds: one-shot test commit, then an independent second-window replication before any adoption talk (the `_272`→`_273` pattern; `_283`'s standalone-vs-faithful reversal is the fresh cautionary tale).
