@@ -263,9 +263,12 @@ class NSEXbrlAdapter(Adapter):
                     identifier, key, e,
                 )
         if wanted and not xbrl:
-            raise ProviderError(
-                self.name, identifier, "all XBRL attachments failed"
-            )
+            # Every attachment in this window is gone from the archives
+            # (e.g. HDFCBANK's Sep-2018 filing) — that's an EmptyPayload,
+            # not a provider outage: the dispatcher soft-fails the gap and
+            # continues to the next one. A hard ProviderError here aborted
+            # the whole multi-gap fetch (live finding, 2026-07-09 pilot).
+            raise EmptyPayload(self.name, identifier)
 
         envelope = json.dumps({
             "symbol": symbol,
