@@ -54,6 +54,14 @@ Dual-listed coverage + redundancy for NSE outages; same `in-bse-fin`/
 recon needed (their AnnGetData/results APIs are param-fussy — read the page
 JS). Would also settle §1's BSE question.
 
+**Concrete motivating misses (full nifty500 seed, 2026-07-09):** three
+tickers have NO fetchable quarterly XBRL on either NSE stream —
+**ABBOTINDIA, BAYERCROP, MCX** (a single stale 2010 placeholder record on
+the classic stream, zero integrated-filing records). All are BSE-primary
+large-caps that clearly file quarterly somewhere; the NSE chain simply has
+nothing for them. These are the first customers of a BSE adapter (and the
+test that it closes the 497/500 → 500/500 gap).
+
 ## 4. Half-yearly cash-flow fills
 
 SEBI mandates half-yearly CF statements; H1/FY filings could populate
