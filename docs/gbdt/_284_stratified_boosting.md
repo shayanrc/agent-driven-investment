@@ -1,7 +1,7 @@
 # _284 — Group-stratified boosting: mixed-family trees recover the top-of-book
 
 **Date:** 2026-07-08 · **Branch:** `gbdt-stratified-boosting` · **Cell:** sp500 +20%/50d (dd10) · **Backend:** xgboost (custom loop)
-**Status:** val+eval complete — **test still BLIND** (one-shot commit pending). NOT promoted, NOT in `/daily-predictions`.
+**Status:** complete arc — one-shot test spent 2026-07-08 (ordering replicated), **w2-confirmed at champion level**, backtested (+92.4% vs SPX +37.0%), board-campaign round 1 (H=200 incumbents hold; their test looks banked). NOT promoted, NOT in `/daily-predictions`.
 
 ## Question
 
