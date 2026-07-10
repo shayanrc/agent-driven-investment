@@ -60,27 +60,33 @@ def _synth_panel_with_index(n_rows: int = 250, n_tickers: int = 2, seed: int = 0
 # ---------------------------------------------------------------------------
 
 
-_PROGRESS_RE = re.compile(
-    r"^\[features\] family=(\S+) step=(\d+)/(\d+) elapsed=([\d.]+)s$"
+# A family START line is emitted for EVERY family, always (unthrottled) — the
+# "what is running right now" signal so a long compute is never mistaken for a
+# stall. A DONE line reports the family's wall-time, throttled to ≥30s gaps but
+# ALWAYS emitted for a family that itself took ≥30s (plus a forced-final emit).
+_START_RE = re.compile(
+    r"^\[features\] family=(\S+) step=(\d+)/(\d+) start \(elapsed=([\d.]+)s\)$"
+)
+_DONE_RE = re.compile(
+    r"^\[features\] family=(\S+) step=(\d+)/(\d+) done "
+    r"family_secs=([\d.]+)s elapsed=([\d.]+)s$"
 )
 
 
-def _extract_progress_lines(captured_stderr: str) -> list[tuple[str, int, int, float]]:
+def _extract(captured_stderr: str, rx) -> list[tuple]:
     out = []
     for line in captured_stderr.splitlines():
-        m = _PROGRESS_RE.match(line.strip())
+        m = rx.match(line.strip())
         if m:
-            out.append((m.group(1), int(m.group(2)), int(m.group(3)),
-                        float(m.group(4))))
+            out.append(tuple(m.groups()))
     return out
 
 
-def test_A1_features_logger_emits_at_least_one_line(capsys):
-    """A1: every run produces at least one progress line, even for
-    short/fast feature builds (smoketest panels included)."""
+def test_A1_features_logger_starts_every_family(capsys):
+    """A1: every family emits a START line (the in-progress signal) — one per
+    family, always, before the compute — plus at least one DONE line whose
+    final entry references the last family."""
     panel, index_df = _synth_panel_with_index(n_rows=220, n_tickers=2)
-    # Subset of families so the build is fast; logging contract holds
-    # regardless of the family count.
     X = F.build_feature_matrix(
         panel, index_df,
         lookbacks=(5, 10),
@@ -88,35 +94,41 @@ def test_A1_features_logger_emits_at_least_one_line(capsys):
     )
     assert X.shape[0] == len(panel)
     captured = capsys.readouterr()
-    lines = _extract_progress_lines(captured.err)
-    assert len(lines) >= 1, f"expected ≥1 progress line, got: {captured.err!r}"
-    # The single forced-final line should reference the last family.
-    fam, step, total, _elapsed = lines[-1]
-    assert step == total, "final line should report step == total"
-    assert total == 3, f"plan had 3 families, got total={total}"
+    starts = _extract(captured.err, _START_RE)
+    dones = _extract(captured.err, _DONE_RE)
+    # One START per family, in order, always.
+    assert len(starts) == 3, f"expected 3 START lines, got: {captured.err!r}"
+    assert [int(s[1]) for s in starts] == [1, 2, 3]
+    assert all(int(s[2]) == 3 for s in starts), "total should be 3 on every line"
+    # At least one DONE (the forced-final), referencing the last family.
+    assert len(dones) >= 1, f"expected ≥1 DONE line, got: {captured.err!r}"
+    assert int(dones[-1][1]) == int(dones[-1][2]), "final DONE step == total"
 
 
-def test_A2_features_logger_throttles_under_30s(capsys):
-    """A2: when every family completes instantaneously the logger emits
-    AT MOST one line — the forced-final emit — never multiple lines."""
+def test_A2_features_logger_start_unthrottled_done_throttled(capsys):
+    """A2: the START line is unthrottled (one per family regardless of speed),
+    while the DONE line stays throttled — on an all-instant build that means
+    N START lines but exactly ONE DONE (the forced-final emit)."""
     panel, index_df = _synth_panel_with_index(n_rows=200, n_tickers=2)
-    # Use the full default family pool so the throttle has many
-    # opportunities to fire; on a small synthetic panel everything runs
-    # in well under 30s.
+    fams = ["F2", "F4", "F8", "F12", "F13", "F15"]
     X = F.build_feature_matrix(
         panel, index_df,
         lookbacks=(5, 10),
-        families=["F2", "F4", "F8", "F12", "F13", "F15"],
+        families=fams,
     )
     assert X.shape[0] == len(panel)
     captured = capsys.readouterr()
-    lines = _extract_progress_lines(captured.err)
-    # Throttle bound: at most one line per 30s, plus a single forced
-    # final emit when no line fired yet. On a synthetic ≤1s build that
-    # means exactly one line.
-    assert len(lines) == 1, (
-        f"throttle violated: expected exactly 1 line on instant build, "
-        f"got {len(lines)} lines: {captured.err!r}"
+    starts = _extract(captured.err, _START_RE)
+    dones = _extract(captured.err, _DONE_RE)
+    # START: exactly one per family, always (the anti-stall signal).
+    assert len(starts) == len(fams), (
+        f"expected {len(fams)} START lines (one per family), "
+        f"got {len(starts)}: {captured.err!r}"
+    )
+    # DONE: throttled — on a ≤1s build only the forced-final emit fires.
+    assert len(dones) == 1, (
+        f"throttle violated: expected exactly 1 DONE line on instant build, "
+        f"got {len(dones)}: {captured.err!r}"
     )
 
 
