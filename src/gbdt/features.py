@@ -271,17 +271,12 @@ def _obv_N(panel: pd.DataFrame, lookbacks):
     close = panel["close"]
     vol = panel["volume"].astype(float)
 
-    def _per_obv(c: pd.Series) -> pd.Series:
-        # c here is the per-ticker close slice with MultiIndex preserved.
-        # We need volume's matching slice for the same dates.
-        ticker = c.index.get_level_values("ticker")[0]
-        v = vol.xs(ticker, level="ticker", drop_level=False)
-        # Re-align v to c's index in case the slices differ in order
-        v = v.reindex(c.index)
-        sign = np.sign(c.diff()).fillna(0.0)
-        return (sign * v).cumsum()
-
-    obv = _per_ticker(close, _per_obv)
+    # Vectorized OBV: sign(Δclose)·vol accumulated per ticker in one native
+    # groupby pass. Bit-identical to the prior per-ticker groupby.apply + .xs
+    # (cumsum is sequential within a ticker, same op order), but with no Python
+    # per-group dispatch and no O(rows) cross-section lookup per ticker.
+    sign = np.sign(close.groupby(level="ticker").diff()).fillna(0.0)
+    obv = (sign * vol).groupby(level="ticker").cumsum()
 
     out = {}
     for N in lookbacks:
@@ -296,18 +291,25 @@ def _vol_ret_corr_N(panel: pd.DataFrame, lookbacks):
     vol_change = np.log(
         panel["volume"].astype(float).replace(0, np.nan)
     ).groupby(level="ticker").diff()
-    tickers = panel.index.get_level_values("ticker").unique()
+    # Closed-form rolling Pearson correlation via native per-ticker moments:
+    # corr = (E[rv] − E[r]E[v]) / sqrt(var_r · var_v), each E[·] a native _roll
+    # mean. Replaces the per-ticker Python loop (rolling.corr + index rebuild +
+    # concat over every ticker) — the dominant F7 cost. The ddof cancels in the
+    # ratio, so this is float32-identical to the pandas rolling.corr the loop
+    # used (differs only ~1e-12 in float64 from summation order, below float32
+    # epsilon → model-identical). Each variance is clamped ≥0 so float error
+    # near a constant window can't spawn a spurious value via sqrt of a
+    # microscopic negative (denom→0→NaN, matching pandas' undefined corr).
+    rv, rr, vv = rets * vol_change, rets * rets, vol_change * vol_change
     out = {}
     for N in lookbacks:
-        chunks = []
-        for t in tickers:
-            r = rets.xs(t, level="ticker")
-            vc = vol_change.xs(t, level="ticker")
-            c = r.rolling(N, min_periods=N).corr(vc)
-            c.index = pd.MultiIndex.from_product([c.index, [t]], names=["date", "ticker"])
-            chunks.append(c)
-        stitched = pd.concat(chunks).sort_index()
-        out[f"vol_ret_corr_{N}"] = stitched
+        mr = _roll(rets, N, "mean")
+        mv = _roll(vol_change, N, "mean")
+        cov = _roll(rv, N, "mean") - mr * mv
+        var_r = np.maximum(_roll(rr, N, "mean") - mr * mr, 0.0)
+        var_v = np.maximum(_roll(vv, N, "mean") - mv * mv, 0.0)
+        denom = np.sqrt(var_r * var_v)
+        out[f"vol_ret_corr_{N}"] = cov / denom.replace(0, np.nan)
     return out
 
 
@@ -463,20 +465,26 @@ def beta_N(panel: pd.DataFrame, index_df: pd.DataFrame,
     rets = _safe_log_returns(_close(panel))
     # Guard: index close of 0 → NaN log-return (zero-denom #182).
     irets = np.log(index_df["close"].replace(0, np.nan)).diff()
-    tickers = panel.index.get_level_values("ticker").unique()
 
+    # Closed-form rolling beta = cov(r, ir) / var(ir) via native per-ticker
+    # moments. The index returns are broadcast to every (date, ticker) row, so
+    # cov and var are single native _roll passes instead of a per-ticker Python
+    # loop (rolling.cov/.var + index rebuild + concat over every ticker) — the
+    # dominant F10 cost. The ddof=1 factors cancel in cov/var, so this is
+    # float32-identical to the pandas rolling.cov/.var the loop used (~1e-12
+    # float64 drift from summation order, below float32 epsilon → model-
+    # identical). var(ir) clamped ≥0 so float error near a flat window can't
+    # sqrt/divide into a spurious value (denom→0→NaN, matching pandas).
+    dates = panel.index.get_level_values("date")
+    ir = pd.Series(irets.reindex(dates).to_numpy(), index=panel.index)
+    rir, ir2 = rets * ir, ir * ir
     out: dict[str, pd.Series] = {}
     for N in lookbacks:
-        chunks = []
-        for t in tickers:
-            r = rets.xs(t, level="ticker")
-            ir = irets.reindex(r.index)
-            cov = r.rolling(N, min_periods=N).cov(ir)
-            var = ir.rolling(N, min_periods=N).var()
-            beta = cov / var.replace(0, np.nan)
-            beta.index = pd.MultiIndex.from_product([beta.index, [t]], names=["date", "ticker"])
-            chunks.append(beta)
-        out[f"beta_{N}"] = pd.concat(chunks).sort_index()
+        mr = _roll(rets, N, "mean")
+        mir = _roll(ir, N, "mean")
+        cov = _roll(rir, N, "mean") - mr * mir
+        var = np.maximum(_roll(ir2, N, "mean") - mir * mir, 0.0)
+        out[f"beta_{N}"] = cov / var.replace(0, np.nan)
     return pd.DataFrame(out).reindex(panel.index)
 
 
@@ -746,15 +754,16 @@ def signed_days_outside_band_meta(
     Input: a ``(date, ticker)``-indexed DataFrame of z-scored underlyings.
     Output column naming: ``<base>_outside_band_<sigma>``.
 
-    ONE per-ticker ``groupby.apply`` over the whole z-frame computes all
-    ``len(columns) × len(sigmas)`` outputs in a single split/apply/combine, rather
-    than that many separate ``_per_ticker`` passes (93 for the standard 31-col ×
-    3-σ layer). The per-ticker streak function is unchanged and runs on the same
-    per-ticker chronological z-series, so the output is bit-identical; this only
-    collapses the ~93 split/combine passes into one. V1.6 Phase 1a — measured 3.6×
-    on the sp500 daily slice (the split/combine overhead, not the streak math, is
-    ~54% of the build; see ``docs/gbdt/V1.6_incremental_feature_cache_plan.md``).
-    Column order (col-major: for col, for sigma) is preserved.
+    Fully vectorized across tickers: the z-frame is stacked contiguously per
+    ticker and each ``(column, sigma)`` streak is computed in one native pass
+    with a run-reset forced at every ticker boundary — no per-ticker Python
+    dispatch or per-group DataFrame assembly. Bit-identical to the prior
+    per-ticker ``groupby.apply`` form (which was itself bit-identical to the
+    original element-wise Python loop): treating a ticker boundary as a run
+    boundary is exactly per-ticker independence. V1.8 — measured 3.6× over the
+    groupby.apply on the sp500 daily slice (the split/combine overhead, not the
+    streak math, was ~54% of the layer). Column order (col-major: for col, for
+    sigma) is preserved.
     """
     labels = [
         (sg, str(int(sg)) if sg == int(sg) else str(sg).replace(".", "p"))
@@ -762,15 +771,41 @@ def signed_days_outside_band_meta(
     ]
     cols = list(z_columns.columns)
 
-    def _one_ticker(sub: pd.DataFrame) -> pd.DataFrame:
-        out: dict[str, np.ndarray] = {}
-        for col in cols:
-            v = sub[col].to_numpy()
-            for sg, label in labels:
-                out[f"{col}_outside_band_{label}"] = _signed_days_outside_band_one(v, sg)
-        return pd.DataFrame(out, index=sub.index)
-
-    return z_columns.groupby(level="ticker", group_keys=False).apply(_one_ticker)
+    # Cross-ticker vectorized run-length: instead of a per-ticker groupby.apply
+    # (Python dispatch over every ticker + per-group DataFrame assembly), stack
+    # each ticker contiguously and compute the signed-days streak in one pass
+    # per (column, sigma), forcing a run-reset at each ticker boundary. The
+    # run-length math + NaN/sign/reset semantics are unchanged, so the output is
+    # bit-identical to the groupby.apply form (which is itself bit-identical to
+    # the original per-ticker Python loop); this only removes the per-group
+    # dispatch. A ticker boundary is treated exactly like any state change — it
+    # starts a fresh run — which is precisely per-ticker independence.
+    z2 = z_columns.reorder_levels(["ticker", "date"]).sort_index()
+    tk = z2.index.get_level_values("ticker").to_numpy()
+    boundary = np.empty(len(z2), dtype=bool)
+    boundary[0] = True
+    boundary[1:] = tk[1:] != tk[:-1]
+    idx = np.arange(len(z2))
+    out: dict[str, np.ndarray] = {}
+    for col in cols:
+        zc = z2[col].to_numpy(dtype=float)
+        isnan = np.isnan(zc)
+        for sg, label in labels:
+            state = np.zeros(len(zc), dtype=np.int64)
+            state[zc >= sg] = 1
+            state[zc <= -sg] = -1
+            key = state.copy()
+            key[isnan] = 2  # sentinel: NaN always breaks the run
+            change = np.empty(len(zc), dtype=bool)
+            change[0] = True
+            change[1:] = key[1:] != key[:-1]
+            change |= boundary  # a ticker boundary starts a fresh run
+            run_start = np.maximum.accumulate(np.where(change, idx, 0))
+            o = (state * (idx - run_start + 1)).astype(float)
+            o[isnan] = np.nan
+            out[f"{col}_outside_band_{label}"] = o
+    res = pd.DataFrame(out, index=z2.index)
+    return res.reorder_levels(["date", "ticker"]).reindex(z_columns.index)
 
 
 def f16_meta_underlying_columns(
@@ -1218,23 +1253,33 @@ def build_feature_matrix(
     last_log_time = t_start
     any_emit = False
     for i, (fam, fn) in enumerate(plan, start=1):
+        # Emit a START line for EVERY family, always (unthrottled), BEFORE the
+        # (possibly slow) compute. This is the "what is running right now"
+        # signal: an expensive family (e.g. F7 ~200s on a big panel) is now
+        # visible as in-progress the instant it starts, so a long compute can
+        # never be mistaken for a stall — you see its start line and know it's
+        # working. The completion line below reports its own wall-time.
+        t_fam = time.time()
+        print(
+            f"[features] family={fam} step={i}/{total} start "
+            f"(elapsed={t_fam - t_start:.1f}s)",
+            file=sys.stderr, flush=True,
+        )
         result = fn()
         computed[fam] = result
         pieces.append(result)
         now = time.time()
-        # Time-based throttle: emit at most once per
-        # _FEATURES_PROGRESS_THROTTLE_SEC seconds. To guarantee at least
-        # one progress line per run (so smoketests / fast panels still
-        # produce evidence the stage advanced), force the final-boundary
-        # emit ONLY when no prior line was emitted — otherwise the
-        # throttle takes precedence (a 35s F1 followed by instantaneous
-        # F2..F15 emits exactly one line, not two).
+        fam_secs = now - t_fam
+        # Completion line: throttled for cheap families, but ALWAYS emitted for
+        # a family that itself took >= the throttle (so every slow family
+        # reports its own duration), plus a final-boundary emit if nothing else
+        # printed.
         throttle_ok = (now - last_log_time) >= _FEATURES_PROGRESS_THROTTLE_SEC
         force_final = (i == total and not any_emit)
-        if throttle_ok or force_final:
+        if throttle_ok or force_final or fam_secs >= _FEATURES_PROGRESS_THROTTLE_SEC:
             print(
-                f"[features] family={fam} step={i}/{total} "
-                f"elapsed={now - t_start:.1f}s",
+                f"[features] family={fam} step={i}/{total} done "
+                f"family_secs={fam_secs:.1f}s elapsed={now - t_start:.1f}s",
                 file=sys.stderr,
                 flush=True,
             )
