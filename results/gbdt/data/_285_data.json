@@ -1,0 +1,107 @@
+{
+ "experiment": "_285_nifty500_f18in_sweep",
+ "universe": "nifty500",
+ "arms": [
+  "all_calendar2 (base)",
+  "all_fundamentals_calendar2 (fund)"
+ ],
+ "protocol": "matched base-vs-fund A/B, xgboost default HP single fit, F18 isolated (both arms carry F21 calendar2)",
+ "regime_correction": {
+  "train_start": "2015-01-01",
+  "back_extended_names": "82->311",
+  "test_extended_to": "2025-07-01",
+  "Q_test": 205
+ },
+ "segments": {
+  "train": "2015-01-01..2022-03-29",
+  "val": "2022-03-30..2023-11-09",
+  "eval": "2023-11-10..2024-09-03",
+  "test": "2024-09-04..2025-07-01"
+ },
+ "n_cells": 20,
+ "n_fits": 40,
+ "verdict": "wash overall; F18 win localized to 100d horizon (20/100d + 30/100d); top-of-book damage at 20/50d",
+ "overall_delta": {
+  "auc": {
+   "mean": 0.0064,
+   "median": 0.0015,
+   "n_pos": 10
+  },
+  "rp1": {
+   "mean": -0.0108,
+   "median": -0.02,
+   "n_pos": 8
+  },
+  "rp5": {
+   "mean": 0.0037,
+   "median": -0.001,
+   "n_pos": 9
+  },
+  "rp10": {
+   "mean": 0.0047,
+   "median": -0.003,
+   "n_pos": 10
+  }
+ },
+ "delta_by_horizon": {
+  "10": {
+   "auc": -0.004,
+   "rp1": -0.028,
+   "rp5": 0.02,
+   "rp10": 0.056
+  },
+  "25": {
+   "auc": -0.009,
+   "rp1": 0.038,
+   "rp5": 0.014,
+   "rp10": -0.012
+  },
+  "50": {
+   "auc": 0.019,
+   "rp1": -0.056,
+   "rp5": -0.032,
+   "rp10": -0.02
+  },
+  "100": {
+   "auc": 0.021,
+   "rp1": 0.026,
+   "rp5": 0.027,
+   "rp10": 0.016
+  },
+  "200": {
+   "auc": 0.004,
+   "rp1": -0.033,
+   "rp5": -0.011,
+   "rp10": -0.017
+  }
+ },
+ "champions": {
+  "30/100d": {
+   "base_rate": 0.143,
+   "auc_base": 0.55,
+   "auc_fund": 0.614,
+   "rp1_base": 0.215,
+   "rp1_fund": 0.283,
+   "rp10_base": 0.163,
+   "rp10_fund": 0.297
+  },
+  "20/100d": {
+   "base_rate": 0.233,
+   "auc_base": 0.517,
+   "auc_fund": 0.539,
+   "rp1_base": 0.234,
+   "rp1_fund": 0.415,
+   "rp10_base": 0.21,
+   "rp10_fund": 0.251
+  }
+ },
+ "anti_pattern": {
+  "20/50d": {
+   "auc_delta": 0.033,
+   "rp1_delta": -0.19,
+   "rp3_delta": -0.158
+  }
+ },
+ "promoted": false,
+ "needs": "second-window replication (see task #28 sp500)"
+}
