@@ -1,0 +1,41 @@
+# Experiment: nifty500_up_20pct_100d_dd10pct_ffundtune
+# FS+HP agent-protocol finetune of the 20/100d FUND cell — the other powered
+# F18-IN win in the regime-corrected nifty500 sweep (fund R-p@1 0.234->0.415
+# (+0.180), R-p@3 +0.107, AUC +0.022 vs the technical+calendar2 base). Same
+# window/universe as the sweep A/B (train_start 2015, test 2024-09-04->2025-07-01,
+# 315 deep names); only the backend loop changes: FS-first (fs_prefit cliff-cut +
+# scout) then agent-driven HP. Judge finetuned vs the ffund single-fit on the
+# held-out TEST BOOK (R-p@1/3/5/10), not val/AUC (the _276 guard).
+# --snapshot-end set at runtime.
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 100
+  max_drawdown: 0.10
+
+split:
+  mode: date_aligned
+  train_start: 2015-01-01
+  train_rows: 1787
+  min_rows_per_ticker: 2591
+  test_rows: 204
+
+features:
+  candidates: all_fundamentals_calendar2
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 8
+    plateau_threshold: 0.0001
+    degradation_gate: 0.01
+    tie_band: 0.005
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+
+random_seed: 42
