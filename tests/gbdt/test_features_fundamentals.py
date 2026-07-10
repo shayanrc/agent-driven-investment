@@ -151,3 +151,38 @@ def test_all_fundamentals_requires_fund_df():
         assert False, "expected ValueError when fund_df is None"
     except ValueError as e:
         assert "fund_df" in str(e)
+
+
+# --- F18-IN: NSE valuation-panel routing (task #27) -------------------------
+
+def test_nse_universe_routes_to_nse_panel_path(tmp_path):
+    """The runner picks VALUATION_PANEL_NSE_PATH for NSE-calendar universes and
+    the US default (None → VALUATION_PANEL_PATH) otherwise. Guards the routing
+    predicate + that load_fundamentals_panel honors an explicit path."""
+    import pandas as pd
+    from gbdt import data as gbdt_data
+    from gbdt.universe_calendar import resolve_calendar_name
+
+    # routing predicate
+    assert resolve_calendar_name("nifty500", None) == "NSE"
+    assert resolve_calendar_name("nifty50", None) == "NSE"
+    assert resolve_calendar_name("sp500", None) == "NYSE"
+    assert resolve_calendar_name("russell1000", None) == "NYSE"
+
+    # load_fundamentals_panel honors an explicit path (the NSE parquet)
+    nse_dir = tmp_path / "results" / "valuation" / "data"
+    nse_dir.mkdir(parents=True)
+    panel = pd.DataFrame({
+        "ticker": ["INFUND:RELIANCE", "INFUND:TCS"],
+        "date": pd.to_datetime(["2024-06-28", "2024-06-28"]),
+        "earnings_yield": [0.04, 0.05], "sales_yield": [0.5, 0.3],
+        "fcf_yield": [float("nan"), float("nan")],  # all-NaN in India
+        "revenue_ttm": [900000.0, 240000.0], "revenue_q": [230000.0, 63000.0],
+    })
+    panel.to_parquet(nse_dir / "valuation_panel_nse.parquet")
+    out = gbdt_data.load_fundamentals_panel(
+        None, None, repo_root=tmp_path,
+        path=gbdt_data.VALUATION_PANEL_NSE_PATH,
+    )
+    assert set(out.index.get_level_values("symbol")) == {"RELIANCE", "TCS"}
+    assert out["fcf_yield"].isna().all()  # India: no fcf

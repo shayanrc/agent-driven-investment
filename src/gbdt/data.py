@@ -523,6 +523,11 @@ def load_macro_panel(
 
 
 VALUATION_PANEL_PATH = "results/valuation/data/valuation_panel.parquet"
+# NSE (Indian) universes read a separate panel built from in_fundamentals +
+# nse_equities (INR, no fcf — India files cash flow half-yearly, so fcf_yield
+# is all-NaN and its F18 columns drop out downstream). Selected by the runner
+# via the universe's calendar (NSE vs NYSE); see load_fundamentals_panel.
+VALUATION_PANEL_NSE_PATH = "results/valuation/data/valuation_panel_nse.parquet"
 _FUND_FEATURE_COLS: tuple[str, ...] = (
     "earnings_yield", "sales_yield", "fcf_yield", "revenue_ttm", "revenue_q",
 )
