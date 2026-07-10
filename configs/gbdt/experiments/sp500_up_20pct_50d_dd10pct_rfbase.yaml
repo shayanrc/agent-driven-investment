@@ -1,0 +1,28 @@
+# sp500_up_20pct_50d_dd10pct_rfbase — sp500 F18 second-window sweep (base arm), memo _287.
+# Regime-corrected mirror of nifty500 _285: date_aligned train_start 2015,
+# calendar2 tokens, xgboost default HP, single fit. base and +fund differ
+# ONLY in features.candidates -> fund-minus-base delta = clean F18 read.
+# --snapshot-end 2025-07-01 set at runtime.
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 20
+  horizon_days: 50
+  max_drawdown: 0.1
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  train_rows: 1787
+  min_rows_per_ticker: 2591
+  test_rows: 204
+features:
+  candidates: all_calendar2
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
