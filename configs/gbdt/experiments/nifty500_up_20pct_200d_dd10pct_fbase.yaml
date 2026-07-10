@@ -13,7 +13,8 @@ target:
 
 split:
   mode: date_aligned
-  train_start: 2019-01-01
+  train_start: 2015-01-01
+  train_rows: 1787
 
 features:
   candidates: all
