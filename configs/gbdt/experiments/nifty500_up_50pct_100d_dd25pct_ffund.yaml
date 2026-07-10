@@ -1,0 +1,30 @@
+# Experiment: nifty500_up_50pct_100d_dd25pct_ffund
+# Fundamentals horizon×target sweep (+fund arm, date_aligned), memo _274.
+# IDENTICAL config to the _272/_273 A/B (xgboost, default HP, single fit): base
+# and +fund differ ONLY in features.candidates, so each cell's fund-minus-base
+# delta is a clean read of the F18 contribution at this (threshold, horizon).
+# --snapshot-end set at runtime.
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 100
+  max_drawdown: 0.25
+
+split:
+  mode: date_aligned
+  train_start: 2019-01-01
+
+features:
+  candidates: all_fundamentals
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
