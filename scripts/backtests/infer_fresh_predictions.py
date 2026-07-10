@@ -330,7 +330,10 @@ def self_check(scores: pd.DataFrame, cell: Path, *, incremental: bool,
     that is genuine feature/model corruption (the _007 backfill bug). The default
     (strict) behavior is unchanged, so the /daily-predictions cadence is untouched."""
     pre = f"[{label}] " if label else ""
-    print(f"{pre}[validate] reproducing predictions/test.csv ...")
+    print(f"{pre}[validate] reproducing predictions/test.csv — re-building the "
+          f"feature matrix + re-scoring the full test window to prove "
+          f"faithfulness (CPU-heavy; expect the [features] family=... progress "
+          f"below, several minutes on large universes) ...", flush=True)
     try:
         v = validate_against_test(scores, cell)
         print(f"{pre}          n_overlap={v['n_overlap']} max_abs_diff={v['max_abs_diff']:.2e} "
