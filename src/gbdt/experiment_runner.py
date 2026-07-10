@@ -995,8 +995,21 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             fund_df = None
             if _fund_selected:
                 _pdates = panel_obj.panel.index.get_level_values("date")
+                # Route the valuation panel by the universe's calendar: NSE
+                # universes read the INR in_fundamentals panel, everything
+                # else the US panel. Keeps the F18 feature token universe-
+                # agnostic (no new token; byte-identity of `all` preserved).
+                _uni_block = (spec.get("universes") or {}).get(target["universe"])
+                _fund_path = (
+                    gbdt_data.VALUATION_PANEL_NSE_PATH
+                    if gbdt_universe_calendar.resolve_calendar_name(
+                        target["universe"], _uni_block
+                    ) == "NSE"
+                    else None  # None → load_fundamentals_panel's US default
+                )
                 fund_df = gbdt_data.load_fundamentals_panel(
                     _pdates.min(), _pdates.max(), repo_root=repo_root,
+                    path=_fund_path,
                 )
                 _milestone(
                     f"[features] fundamentals panel: {len(fund_df)} (date,symbol) "
