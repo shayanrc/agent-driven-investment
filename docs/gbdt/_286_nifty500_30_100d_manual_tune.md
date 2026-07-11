@@ -1,5 +1,14 @@
 # _286 — nifty500 30/100d fund-arm HP tuning: no robust win (single-fit stands)
 
+> **⚠️ INVALIDATED (2026-07-11) — NSE-FUNDAMENTALS COVERAGE CONFOUND. Rerun pending (#34).**
+> This tuning targeted the nifty500 F18 cells, whose F18 columns are **~48–58% NaN
+> across the 2015-start training window** (NSE XBRL coverage cliff — F18 begins
+> **2019-01-16**). The single-fit "baseline" and every sweep were fit on
+> half-missing F18, so the negative verdict is **confounded**. Pending backfill
+> (#32) + rerun (#34). NOTE: the **eta-rank-invariance finding is a general
+> calibration property, independent of F18 coverage, and stands.** See
+> [[project-in-fundamentals-coverage-cliff]].
+
 **Verdict: no HP configuration robustly beats the single-fit on a principled
 val+eval basis. The single-fit stands.** The top-K signal on this cell is
 noise-dominated at the eval-window scale. Consistent with the fragile-edge read
