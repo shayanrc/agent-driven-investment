@@ -1,0 +1,501 @@
+{
+ "experiment": "_287_sp500_f18_second_window",
+ "verdict": "F18 does NOT robustly help sp500 at 100d; nifty500 100d win did not replicate",
+ "setup": "regime-corrected mirror of nifty500 _285: date_aligned 2015, calendar2 tokens, xgboost default single-fit, test snapshot-end 2025-07-01",
+ "n_cells": 17,
+ "cells": [
+  {
+   "cell": "sp500_up_10pct_10d_dd5pct",
+   "threshold_pct": 10,
+   "horizon_days": 10,
+   "base_rate": 0.0714,
+   "base": {
+    "auc": 0.7489,
+    "brier": 0.063,
+    "base_rate": 0.0714,
+    "rp1": 0.2451,
+    "rp3": 0.2435,
+    "rp10": 0.2278
+   },
+   "fund": {
+    "auc": 0.7385,
+    "brier": 0.0638,
+    "base_rate": 0.0714,
+    "rp1": 0.2255,
+    "rp3": 0.2288,
+    "rp10": 0.22
+   },
+   "delta": {
+    "auc": -0.0104,
+    "brier": 0.00083,
+    "rp1": -0.0196,
+    "rp3": -0.0147,
+    "rp10": -0.0077
+   }
+  },
+  {
+   "cell": "sp500_up_10pct_25d_dd5pct",
+   "threshold_pct": 10,
+   "horizon_days": 25,
+   "base_rate": 0.2047,
+   "base": {
+    "auc": 0.6417,
+    "brier": 0.1599,
+    "base_rate": 0.2047,
+    "rp1": 0.3284,
+    "rp3": 0.3578,
+    "rp10": 0.3299
+   },
+   "fund": {
+    "auc": 0.6533,
+    "brier": 0.1585,
+    "base_rate": 0.2047,
+    "rp1": 0.3382,
+    "rp3": 0.3529,
+    "rp10": 0.3228
+   },
+   "delta": {
+    "auc": 0.0117,
+    "brier": -0.00134,
+    "rp1": 0.0098,
+    "rp3": -0.0049,
+    "rp10": -0.0071
+   }
+  },
+  {
+   "cell": "sp500_up_10pct_50d_dd5pct",
+   "threshold_pct": 10,
+   "horizon_days": 50,
+   "base_rate": 0.3156,
+   "base": {
+    "auc": 0.5322,
+    "brier": 0.2284,
+    "base_rate": 0.3156,
+    "rp1": 0.4109,
+    "rp3": 0.3564,
+    "rp10": 0.3624
+   },
+   "fund": {
+    "auc": 0.5148,
+    "brier": 0.2269,
+    "base_rate": 0.3156,
+    "rp1": 0.4257,
+    "rp3": 0.3795,
+    "rp10": 0.3535
+   },
+   "delta": {
+    "auc": -0.0174,
+    "brier": -0.00146,
+    "rp1": 0.0149,
+    "rp3": 0.0231,
+    "rp10": -0.0089
+   }
+  },
+  {
+   "cell": "sp500_up_10pct_5d_dd5pct",
+   "threshold_pct": 10,
+   "horizon_days": 5,
+   "base_rate": 0.0255,
+   "base": {
+    "auc": 0.8047,
+    "brier": 0.0236,
+    "base_rate": 0.0255,
+    "rp1": 0.2176,
+    "rp3": 0.171,
+    "rp10": 0.1821
+   },
+   "fund": {
+    "auc": 0.8198,
+    "brier": 0.0235,
+    "base_rate": 0.0255,
+    "rp1": 0.1969,
+    "rp3": 0.1805,
+    "rp10": 0.1954
+   },
+   "delta": {
+    "auc": 0.0152,
+    "brier": -4e-05,
+    "rp1": -0.0207,
+    "rp3": 0.0095,
+    "rp10": 0.0134
+   }
+  },
+  {
+   "cell": "sp500_up_20pct_100d_dd10pct",
+   "threshold_pct": 20,
+   "horizon_days": 100,
+   "base_rate": 0.2183,
+   "base": {
+    "auc": 0.5823,
+    "brier": 0.1827,
+    "base_rate": 0.2183,
+    "rp1": 0.2961,
+    "rp3": 0.3289,
+    "rp10": 0.2987
+   },
+   "fund": {
+    "auc": 0.5528,
+    "brier": 0.1834,
+    "base_rate": 0.2183,
+    "rp1": 0.3421,
+    "rp3": 0.3487,
+    "rp10": 0.2895
+   },
+   "delta": {
+    "auc": -0.0295,
+    "brier": 0.00063,
+    "rp1": 0.0461,
+    "rp3": 0.0197,
+    "rp10": -0.0092
+   }
+  },
+  {
+   "cell": "sp500_up_20pct_10d_dd10pct",
+   "threshold_pct": 20,
+   "horizon_days": 10,
+   "base_rate": 0.0066,
+   "base": {
+    "auc": 0.8401,
+    "brier": 0.0073,
+    "base_rate": 0.0066,
+    "rp1": 0.2179,
+    "rp3": 0.1538,
+    "rp10": 0.2809
+   },
+   "fund": {
+    "auc": 0.8485,
+    "brier": 0.0074,
+    "base_rate": 0.0066,
+    "rp1": 0.1282,
+    "rp3": 0.1549,
+    "rp10": 0.2631
+   },
+   "delta": {
+    "auc": 0.0084,
+    "brier": 6e-05,
+    "rp1": -0.0897,
+    "rp3": 0.0011,
+    "rp10": -0.0178
+   }
+  },
+  {
+   "cell": "sp500_up_20pct_25d_dd10pct",
+   "threshold_pct": 20,
+   "horizon_days": 25,
+   "base_rate": 0.0425,
+   "base": {
+    "auc": 0.8104,
+    "brier": 0.0385,
+    "base_rate": 0.0425,
+    "rp1": 0.1724,
+    "rp3": 0.179,
+    "rp10": 0.2085
+   },
+   "fund": {
+    "auc": 0.8,
+    "brier": 0.0384,
+    "base_rate": 0.0425,
+    "rp1": 0.1921,
+    "rp3": 0.1683,
+    "rp10": 0.1946
+   },
+   "delta": {
+    "auc": -0.0104,
+    "brier": -7e-05,
+    "rp1": 0.0197,
+    "rp3": -0.0107,
+    "rp10": -0.0139
+   }
+  },
+  {
+   "cell": "sp500_up_20pct_50d_dd10pct",
+   "threshold_pct": 20,
+   "horizon_days": 50,
+   "base_rate": 0.1056,
+   "base": {
+    "auc": 0.6982,
+    "brier": 0.0914,
+    "base_rate": 0.1056,
+    "rp1": 0.1782,
+    "rp3": 0.2805,
+    "rp10": 0.2657
+   },
+   "fund": {
+    "auc": 0.6931,
+    "brier": 0.0927,
+    "base_rate": 0.1056,
+    "rp1": 0.1931,
+    "rp3": 0.1931,
+    "rp10": 0.2142
+   },
+   "delta": {
+    "auc": -0.0051,
+    "brier": 0.00126,
+    "rp1": 0.0149,
+    "rp3": -0.0875,
+    "rp10": -0.0515
+   }
+  },
+  {
+   "cell": "sp500_up_20pct_5d_dd10pct",
+   "threshold_pct": 20,
+   "horizon_days": 5,
+   "base_rate": 0.002,
+   "base": {
+    "auc": 0.786,
+    "brier": 0.002,
+    "base_rate": 0.002,
+    "rp1": 0.1739,
+    "rp3": 0.2011,
+    "rp10": 0.3717
+   },
+   "fund": {
+    "auc": 0.7804,
+    "brier": 0.002,
+    "base_rate": 0.002,
+    "rp1": 0.1196,
+    "rp3": 0.154,
+    "rp10": 0.2862
+   },
+   "delta": {
+    "auc": -0.0056,
+    "brier": -0.0,
+    "rp1": -0.0543,
+    "rp3": -0.0471,
+    "rp10": -0.0855
+   }
+  },
+  {
+   "cell": "sp500_up_40pct_100d_dd20pct",
+   "threshold_pct": 40,
+   "horizon_days": 100,
+   "base_rate": 0.0466,
+   "base": {
+    "auc": 0.7575,
+    "brier": 0.044,
+    "base_rate": 0.0466,
+    "rp1": 0.4737,
+    "rp3": 0.2829,
+    "rp10": 0.2222
+   },
+   "fund": {
+    "auc": 0.7497,
+    "brier": 0.0437,
+    "base_rate": 0.0466,
+    "rp1": 0.2434,
+    "rp3": 0.2785,
+    "rp10": 0.247
+   },
+   "delta": {
+    "auc": -0.0078,
+    "brier": -0.00031,
+    "rp1": -0.2303,
+    "rp3": -0.0044,
+    "rp10": 0.0247
+   }
+  },
+  {
+   "cell": "sp500_up_40pct_200d_dd20pct",
+   "threshold_pct": 40,
+   "horizon_days": 200,
+   "base_rate": 0.1553,
+   "base": {
+    "auc": 0.6324,
+    "brier": 0.1355,
+    "base_rate": 0.1553,
+    "rp1": 0.1346,
+    "rp3": 0.2372,
+    "rp10": 0.3654
+   },
+   "fund": {
+    "auc": 0.6109,
+    "brier": 0.1349,
+    "base_rate": 0.1553,
+    "rp1": 0.2692,
+    "rp3": 0.2821,
+    "rp10": 0.3462
+   },
+   "delta": {
+    "auc": -0.0215,
+    "brier": -0.0006,
+    "rp1": 0.1346,
+    "rp3": 0.0449,
+    "rp10": -0.0192
+   }
+  },
+  {
+   "cell": "sp500_up_40pct_25d_dd20pct",
+   "threshold_pct": 40,
+   "horizon_days": 25,
+   "base_rate": 0.0039,
+   "base": {
+    "auc": 0.9332,
+    "brier": 0.0038,
+    "base_rate": 0.0039,
+    "rp1": 0.1066,
+    "rp3": 0.2473,
+    "rp10": 0.4485
+   },
+   "fund": {
+    "auc": 0.9367,
+    "brier": 0.0038,
+    "base_rate": 0.0039,
+    "rp1": 0.2787,
+    "rp3": 0.2637,
+    "rp10": 0.4273
+   },
+   "delta": {
+    "auc": 0.0036,
+    "brier": 1e-05,
+    "rp1": 0.1721,
+    "rp3": 0.0164,
+    "rp10": -0.0211
+   }
+  },
+  {
+   "cell": "sp500_up_40pct_50d_dd20pct",
+   "threshold_pct": 40,
+   "horizon_days": 50,
+   "base_rate": 0.0144,
+   "base": {
+    "auc": 0.8706,
+    "brier": 0.0136,
+    "base_rate": 0.0144,
+    "rp1": 0.2316,
+    "rp3": 0.2693,
+    "rp10": 0.2976
+   },
+   "fund": {
+    "auc": 0.8827,
+    "brier": 0.0136,
+    "base_rate": 0.0144,
+    "rp1": 0.1737,
+    "rp3": 0.2149,
+    "rp10": 0.3225
+   },
+   "delta": {
+    "auc": 0.0121,
+    "brier": -1e-05,
+    "rp1": -0.0579,
+    "rp3": -0.0544,
+    "rp10": 0.0249
+   }
+  },
+  {
+   "cell": "sp500_up_50pct_100d_dd25pct",
+   "threshold_pct": 50,
+   "horizon_days": 100,
+   "base_rate": 0.0228,
+   "base": {
+    "auc": 0.8249,
+    "brier": 0.0219,
+    "base_rate": 0.0228,
+    "rp1": 0.1633,
+    "rp3": 0.1791,
+    "rp10": 0.2581
+   },
+   "fund": {
+    "auc": 0.8374,
+    "brier": 0.0218,
+    "base_rate": 0.0228,
+    "rp1": 0.1361,
+    "rp3": 0.1621,
+    "rp10": 0.2544
+   },
+   "delta": {
+    "auc": 0.0125,
+    "brier": -4e-05,
+    "rp1": -0.0272,
+    "rp3": -0.017,
+    "rp10": -0.0037
+   }
+  },
+  {
+   "cell": "sp500_up_50pct_200d_dd25pct",
+   "threshold_pct": 50,
+   "horizon_days": 200,
+   "base_rate": 0.0903,
+   "base": {
+    "auc": 0.7285,
+    "brier": 0.0822,
+    "base_rate": 0.0903,
+    "rp1": 0.0385,
+    "rp3": 0.2051,
+    "rp10": 0.3635
+   },
+   "fund": {
+    "auc": 0.6954,
+    "brier": 0.0818,
+    "base_rate": 0.0903,
+    "rp1": 0.0769,
+    "rp3": 0.2179,
+    "rp10": 0.3423
+   },
+   "delta": {
+    "auc": -0.0331,
+    "brier": -0.0004,
+    "rp1": 0.0385,
+    "rp3": 0.0128,
+    "rp10": -0.0212
+   }
+  },
+  {
+   "cell": "sp500_up_50pct_25d_dd25pct",
+   "threshold_pct": 50,
+   "horizon_days": 25,
+   "base_rate": 0.0016,
+   "base": {
+    "auc": 0.9034,
+    "brier": 0.0016,
+    "base_rate": 0.0016,
+    "rp1": 0.369,
+    "rp3": 0.3492,
+    "rp10": 0.5562
+   },
+   "fund": {
+    "auc": 0.9055,
+    "brier": 0.0016,
+    "base_rate": 0.0016,
+    "rp1": 0.1429,
+    "rp3": 0.2659,
+    "rp10": 0.6434
+   },
+   "delta": {
+    "auc": 0.0021,
+    "brier": -0.0,
+    "rp1": -0.2262,
+    "rp3": -0.0833,
+    "rp10": 0.0872
+   }
+  },
+  {
+   "cell": "sp500_up_50pct_50d_dd25pct",
+   "threshold_pct": 50,
+   "horizon_days": 50,
+   "base_rate": 0.0068,
+   "base": {
+    "auc": 0.9062,
+    "brier": 0.0065,
+    "base_rate": 0.0068,
+    "rp1": 0.2138,
+    "rp3": 0.2904,
+    "rp10": 0.3744
+   },
+   "fund": {
+    "auc": 0.9189,
+    "brier": 0.0066,
+    "base_rate": 0.0068,
+    "rp1": 0.2075,
+    "rp3": 0.2526,
+    "rp10": 0.3999
+   },
+   "delta": {
+    "auc": 0.0128,
+    "brier": 5e-05,
+    "rp1": -0.0063,
+    "rp3": -0.0377,
+    "rp10": 0.0255
+   }
+  }
+ ]
+}
