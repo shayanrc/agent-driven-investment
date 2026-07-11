@@ -1,5 +1,15 @@
 # _285 — nifty500 F18-IN fundamentals sweep (regime-corrected, calendar2)
 
+> **⚠️ INVALIDATED (2026-07-11) — NSE-FUNDAMENTALS COVERAGE CONFOUND. Rerun pending (#34).**
+> This sweep used `train_start 2015`, but NSE F18 fundamentals only begin **~2019**
+> (in_fundamentals / NSE valuation panel start **2019-01-16** — an XBRL coverage
+> cliff, not a bug). F18 is **~48–58% NaN across the 2015–2024 training window**
+> (100% NaN pre-2019), so the fund arm trained with F18 **absent for ~40% of the
+> window**. **The fund-minus-base deltas and the "100d win" read below are
+> confounded and NOT reliable** — F18 never got a fair shot in early training.
+> Pending pre-2019 backfill (#32) + rerun (#34). See
+> [[project-in-fundamentals-coverage-cliff]].
+
 **One-liner:** F18-IN (Indian point-in-time valuation ratios) is a **wash-to-slightly-negative** signal on nifty500 overall — matching the US F18 verdict — **but** the effect is horizon-shaped, with a clean, coherent, powered win localized to the **100-day horizon** (20/100d + 30/100d) and real top-of-book damage at 50d. Single-window result; needs second-window replication before any adoption.
 
 ## Setup
