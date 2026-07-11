@@ -401,6 +401,29 @@ def _cache_read(
         logger.warning(
             "dropped %d all-NaN OHLCV rows from %s cache", n_dropped, ticker,
         )
+    # Split/dividend adjustment (V5, docs/data_pipelines/V5_SPLIT_ADJUSTMENT_FIX_PLAN).
+    # Features (features.py) and the target (targets.py) consume raw `close`/`high`/
+    # `low`, but the cache's `close` is split-UNADJUSTED (jugaad NSE bhav / Tiingo US
+    # raw close), so every split injected a fake ~-50% return/vol/drawdown spike. The
+    # `adj_close` column IS split-and-dividend adjusted (the data_pipelines contract).
+    # Re-express the whole OHLCV bar on the adj_close basis: ratio = adj_close/close
+    # scales O/H/L (close becomes adj_close), volume scales inversely. Rows with a
+    # missing or non-positive close/adj_close are left untouched.
+    if {"close", "adj_close"}.issubset(df.columns) and len(df):
+        c = pd.to_numeric(df["close"], errors="coerce")
+        a = pd.to_numeric(df["adj_close"], errors="coerce")
+        ratio = (a / c).where((c > 0) & (a > 0))
+        m = ratio.notna()
+        if m.any():
+            for col in ("open", "high", "low"):
+                if col in df.columns:
+                    df[col] = df[col].astype("float64")
+                    df.loc[m, col] = df.loc[m, col] * ratio[m]
+            df["close"] = df["close"].astype("float64")
+            df.loc[m, "close"] = a[m]
+            if "volume" in df.columns:
+                df["volume"] = df["volume"].astype("float64")
+                df.loc[m, "volume"] = df.loc[m, "volume"] / ratio[m]
     if return_nan_count:
         return df, int(n_dropped)
     return df
