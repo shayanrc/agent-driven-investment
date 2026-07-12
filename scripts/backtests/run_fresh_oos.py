@@ -70,6 +70,22 @@ def main() -> None:
                     help="label-exit horizon in trading days; default reads the "
                          "cell's target.horizon_days (the _001 HORIZON constant is "
                          "only the fallback). +50%%/50d and +20%%/25d champions differ.")
+    ap.add_argument("--selection-mode", default="breakeven", choices=["breakeven", "rank"],
+                    help="'breakeven': enter only picks whose calibrated p clears the "
+                         "breakeven bar (default). 'rank': daily top-K by score, no "
+                         "breakeven gate — the deployed /daily-predictions behaviour. Use "
+                         "rank for rare-event cells whose calibrated p is capped below breakeven.")
+    ap.add_argument("--rank-by", default="calibrated", choices=["calibrated", "raw"],
+                    help="in rank mode, sort the daily top-K on the quantized calibrated p "
+                         "('calibrated') or the model's finer-resolution p_raw ('raw'). raw "
+                         "recovers ranking when calibrated p ties on a wide isotonic plateau.")
+    ap.add_argument("--sizing-mode", default="kelly",
+                    choices=["kelly", "equal", "rank_kelly"],
+                    help="'rank_kelly' sizes on the cell's eval R-p@K (a realistic per-pick "
+                         "win prob) instead of the plateaued calibrated p; pair with rank mode.")
+    ap.add_argument("--rank-kelly-p", type=float, default=None,
+                    help="explicit per-pick win prob for rank_kelly (default: computed from "
+                         "the cell's eval R-p@K).")
     args = ap.parse_args()
     cell = Path(args.cell)
     out = Path(args.out)
@@ -90,6 +106,28 @@ def main() -> None:
     cal, col = fit_calibrator(cell)
     fresh = pd.read_csv(args.predictions, parse_dates=["date"])
     preds = _predictions_dict(fresh, cal)
+    # rank_kelly per-pick win prob = the cell's EVAL R-p@K (a realistic hit-rate),
+    # since the calibrated p is plateaued far below breakeven on rare-event cells.
+    rank_kelly_p = args.rank_kelly_p
+    if args.sizing_mode == "rank_kelly" and rank_kelly_p is None:
+        ev = pd.read_csv(cell / "predictions" / "eval.csv", parse_dates=["date"])
+        hits = []
+        for _, g in ev.groupby("date"):
+            R = int(g["y_true"].sum())
+            if R == 0:
+                continue
+            topk = g.nlargest(K, "p_calibrated")
+            hits.append(topk["y_true"].sum() / min(K, R))
+        rank_kelly_p = float(pd.Series(hits).mean())
+        print(f"[rank_kelly] eval R-p@{K} = {rank_kelly_p:.3f} (used as per-pick win prob)")
+    # rank_by="raw": sort the entry top-K on the model's finest-resolution p_raw
+    # (the calibrated p ties on wide isotonic plateaus — see the 0-trade diagnosis).
+    rank_scores = None
+    if args.rank_by == "raw":
+        if "p_raw" not in fresh.columns:
+            raise ValueError("--rank-by raw needs a 'p_raw' column in the predictions CSV")
+        rank_scores = {pd.Timestamp(d): dict(zip(sub.ticker, sub.p_raw))
+                       for d, sub in fresh.groupby("date")}
     tickers = sorted(fresh.ticker.unique())
     fresh_start, fresh_end = fresh.date.min(), fresh.date.max()
     print(f"    fresh signals [{fresh_start.date()} .. {fresh_end.date()}] "
@@ -119,10 +157,14 @@ def main() -> None:
     # 4. Run strategy.
     print("[4] running fresh-OOS strategy ...")
     print(f"    c={args.c} selection_bound={args.selection_bound}")
+    print(f"    selection_mode={args.selection_mode} rank_by={args.rank_by} "
+          f"sizing_mode={args.sizing_mode}")
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
         horizon_days=horizon, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
+        selection_mode=args.selection_mode, sizing_mode=args.sizing_mode,
+        rank_kelly_p=rank_kelly_p, rank_scores=rank_scores,
     )
     history = run_strategy(bt, strat)
     eq = _equity_from_history(history)
@@ -163,7 +205,9 @@ def main() -> None:
     summary = {
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound,
                    "K": K, "target_return": TARGET_RETURN, "stop_drawdown": STOP_DD,
-                   "horizon_days": horizon},
+                   "horizon_days": horizon, "selection_mode": args.selection_mode,
+                   "rank_by": args.rank_by, "sizing_mode": args.sizing_mode,
+                   "rank_kelly_p": rank_kelly_p},
         "window": {"fresh_start": str(fresh_start.date()), "fresh_end": str(fresh_end.date()),
                    "comparison_end": str(comparison_end.date()),
                    "full_resolve_cutoff": str(full_resolve_cutoff.date())},
