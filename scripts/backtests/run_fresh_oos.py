@@ -66,11 +66,24 @@ def main() -> None:
     ap.add_argument("--c", type=float, default=FRACTIONAL_C, help="fractional Kelly c")
     ap.add_argument("--selection-bound", default="mean", choices=["mean", "low"],
                     help="entry filter clears breakeven against p_mean or p_low")
+    ap.add_argument("--horizon", type=int, default=None,
+                    help="label-exit horizon in trading days; default reads the "
+                         "cell's target.horizon_days (the _001 HORIZON constant is "
+                         "only the fallback). +50%%/50d and +20%%/25d champions differ.")
     args = ap.parse_args()
     cell = Path(args.cell)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "figs").mkdir(exist_ok=True)
+
+    # Per-cell horizon: champions differ (50d vs 25d), so use the cell's own
+    # target.horizon_days rather than the hardcoded _001 constant (bug: champ20
+    # was backtested at HORIZON=50). CLI --horizon overrides.
+    import yaml
+    _spec = yaml.safe_load((cell / "spec.yaml").read_text())
+    horizon = args.horizon or int(_spec.get("target", {}).get("horizon_days", HORIZON))
+    print(f"[cfg] horizon_days={horizon} (cell spec) "
+          f"target_return={TARGET_RETURN} stop_dd={STOP_DD} K={K}")
 
     # 1. Calibrator fit on the cell's VAL (leak-free), transform fresh preds.
     print("[1] fitting calibrator on cell VAL ...")
@@ -93,9 +106,9 @@ def main() -> None:
     n_resolvable = int((ref[(ref > fresh_start)] <= comparison_end).sum())
     # signals that can complete a full 50-BD horizon by the data end:
     last_full = ref[ref <= comparison_end]
-    full_resolve_cutoff = last_full[-(HORIZON + 1)] if len(last_full) > HORIZON else fresh_start
+    full_resolve_cutoff = last_full[-(horizon + 1)] if len(last_full) > horizon else fresh_start
     print(f"    comparison_end={comparison_end.date()} "
-          f"(full 50-BD resolution only for signals <= {full_resolve_cutoff.date()})")
+          f"(full {horizon}-BD resolution only for signals <= {full_resolve_cutoff.date()})")
 
     # 3. Feeds (roster only) + engine.
     roster = {t: s for t, s in closes.items() if t != NDX_TICKER}
@@ -108,7 +121,7 @@ def main() -> None:
     print(f"    c={args.c} selection_bound={args.selection_bound}")
     strat = TopKDailyKellyLabelExit(
         predictions=preds, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
-        horizon_days=HORIZON, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
+        horizon_days=horizon, sizer=DiscreteBoundedLossKelly(), sizer_payoffs=(WIN, LOSS),
         breakeven_p=BREAKEVEN_P, fractional_c=args.c, selection_bound=args.selection_bound,
     )
     history = run_strategy(bt, strat)
@@ -127,7 +140,7 @@ def main() -> None:
     res["ew_basket"] = {"equity": e, "metrics": m}
     e, m, _ = bm.event_driven_topk(
         preds, basket, K=K, target_return=TARGET_RETURN, stop_drawdown=STOP_DD,
-        horizon_days=HORIZON, breakeven_p=BREAKEVEN_P, timeline=timeline,
+        horizon_days=horizon, breakeven_p=BREAKEVEN_P, timeline=timeline,
         initial_cash=INITIAL_CASH)
     res["ew_topk_no_kelly"] = {"equity": e, "metrics": m}
 
@@ -149,7 +162,8 @@ def main() -> None:
     from collections import Counter
     summary = {
         "config": {"fractional_c": args.c, "selection_bound": args.selection_bound,
-                   "K": K, "target_return": TARGET_RETURN, "stop_drawdown": STOP_DD},
+                   "K": K, "target_return": TARGET_RETURN, "stop_drawdown": STOP_DD,
+                   "horizon_days": horizon},
         "window": {"fresh_start": str(fresh_start.date()), "fresh_end": str(fresh_end.date()),
                    "comparison_end": str(comparison_end.date()),
                    "full_resolve_cutoff": str(full_resolve_cutoff.date())},
