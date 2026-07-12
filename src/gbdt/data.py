@@ -409,7 +409,11 @@ def _cache_read(
     # Re-express the whole OHLCV bar on the adj_close basis: ratio = adj_close/close
     # scales O/H/L (close becomes adj_close), volume scales inversely. Rows with a
     # missing or non-positive close/adj_close are left untouched.
-    if {"close", "adj_close"}.issubset(df.columns) and len(df):
+    # GBDT_NO_SPLIT_ADJUST=1 bypasses the adjustment (for split-effect A/B isolation
+    # only — measuring what the pre-V5 unadjusted loader produced; never set in prod).
+    import os as _os
+    if ({"close", "adj_close"}.issubset(df.columns) and len(df)
+            and not _os.environ.get("GBDT_NO_SPLIT_ADJUST")):
         c = pd.to_numeric(df["close"], errors="coerce")
         a = pd.to_numeric(df["adj_close"], errors="coerce")
         ratio = (a / c).where((c > 0) & (a > 0))
