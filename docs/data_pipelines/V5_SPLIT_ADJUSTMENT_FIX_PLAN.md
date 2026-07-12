@@ -3,6 +3,27 @@
 **Status:** COMPLETE (2026-07-12) — discovered 2026-07-11 while investigating the
 NSE F18 coverage cliff. Scope confirmed by the user: **full fix, both universes.**
 
+## Follow-up gap found 2026-07-12 — the incremental feature cache
+
+The V5 clear invalidated the **per-cell** feature caches but MISSED the shared
+**on-disk incremental feature cache** (`data/gbdt_incremental_cache`, 19G, "extend
+don't rebuild"). Its entries are keyed by a code+config hash that does NOT change
+on a values-only data correction (same blind-spot as `panel_signature`), so post-fix
+it held **stale unadjusted features**. Consequences observed:
+- Every post-fix `infer_fresh` full-rebuilds (~25 min/sp500 cell): the extend's
+  **seam check** correctly fails (adjusted tail ≠ unadjusted cached boundary) and
+  falls back to a cold build — protecting correctness but never cleanly replacing
+  the stale entry, so it rebuilds every time.
+- **Risk to `/daily-predictions`**: if any seam check passed spuriously it would
+  serve unadjusted features post-fix. (In practice the deployed models are also
+  unadjusted-trained, so main stays self-consistent until a champion retrain.)
+
+**Immediate fix:** cleared `data/gbdt_incremental_cache` + re-warmed on adjusted
+prices (one-time cost; fast + correct thereafter). **Code follow-up (V6_TBD):** fold
+a data-content signature (reseed stamp or an adj_close sample hash) into the
+incremental-cache key + `panel_signature` so a values-only correction auto-invalidates
+— today only the seam check catches it, at full-rebuild cost.
+
 ## Outcome (2026-07-12)
 
 **Fix delivered** (approach B for NSE + loader change for both):
