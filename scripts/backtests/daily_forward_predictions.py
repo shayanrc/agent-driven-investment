@@ -72,15 +72,21 @@ CELLS = {
                        "deployed": False, "backfill_from": "2026-01-01"},
     "russell_40_100": {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
                        "deployed": False, "backfill_from": "2026-01-01"},
-    # F18 FUNDAMENTALS candidate (top fundamental-feature model by R-p@3, _279/_280).
-    # First cell whose feature token is `all_fundamentals` — inference joins the
-    # point-in-time valuation panel via the fundamentals-aware build branch in
-    # infer_fresh_predictions._build_one (the technical-only incremental cache can't
-    # produce its fund_* columns). Its per-cell self-check still guards faithfulness.
-    # deployed=False (forward comparison only; a champion swap is a separate decision).
-    # test_end 2025-06-17 → backfill from 2026-01-01 is genuine OOS.
-    "sp500_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_w2ffundtune",
+    # SPLIT-ADJUSTED champion candidates (V5 fix). The two deployed sp500 champions
+    # reproduced on split-adjusted prices (champmatch single-fit: candidates=all,
+    # mcw=10, train_start 2019, one fit). Tracked deployed=False to forward-compare
+    # the corrected-price config against the deployed (unadjusted-trained) champions
+    # ahead of a swap decision. NOTE: the split fix moves the champions negligibly
+    # (ΔAUC ±0.004, #37), so these track ≈ their deployed counterparts. test_end
+    # 2024-12-16 → backfill from 2026-01-01 is genuine OOS. Artifacts are the
+    # V5-validated adjusted build (self-check faithful); a champion swap is separate.
+    "sp500_50_adj": {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_aligned_champmatch",
                      "deployed": False, "backfill_from": "2026-01-01"},
+    "sp500_20_adj": {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_aligned_champmatch",
+                     "deployed": False, "backfill_from": "2026-01-01"},
+    # (removed sp500_40_200 — the F18 fundamentals candidate failed two-window
+    # replication, _279/_280; the technical champions dominate it on the fresh-OOS
+    # backtest, so it's demoted out of the tracked comparison set.)
 }
 
 # Unified v2 schema. Gate columns are universe-aware (``gate_index`` names the
