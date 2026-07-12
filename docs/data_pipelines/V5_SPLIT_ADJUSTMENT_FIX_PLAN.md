@@ -1,7 +1,37 @@
 # V5 — Split-adjustment correctness fix (gbdt prices + NSE adj_close)
 
-**Status:** PLAN — discovered 2026-07-11 while investigating the NSE F18 coverage
-cliff. Scope confirmed by the user: **full fix, both universes.**
+**Status:** COMPLETE (2026-07-12) — discovered 2026-07-11 while investigating the
+NSE F18 coverage cliff. Scope confirmed by the user: **full fix, both universes.**
+
+## Outcome (2026-07-12)
+
+**Fix delivered** (approach B for NSE + loader change for both):
+- **NSE**: yfinance re-seed (`reseed_yfinance.py`) repaired `close`+`adj_close`;
+  surgical cleanup (`clean_nse_residual_artifacts.py`) of 3 feed-gap splits + 6
+  zero-vol placeholders + 2 bad prints. **500 split-spikes / 210 tickers → 23 / 17**,
+  every residual a genuine event (crises, demergers, insolvencies, data gaps).
+- **US**: `us_equities.adj_close` (Tiingo) was already correct; the gbdt loader
+  (`_cache_read`) now re-expresses every OHLCV bar on the `adj_close` basis, so
+  features + target are split-adjusted for both universes with no feature-code
+  change. Verified AAPL 75%→15%, NVDA 90%→30% (real earnings), RELIANCE smooth; 131
+  gbdt tests pass. Feature caches cleared (panel_signature hashes the index, NOT
+  values — it does not auto-detect the price change).
+- Feature-NaN audit: no broken features; only index-relative NaN (index series
+  shorter than panel — pre-window, benign) + long-lookback beta sparsity.
+
+**Re-run verdicts** (all on corrected split-adjusted prices + F18 backfilled to 2015):
+- **nifty500 F18** (#34, 40 cells): modest, **narrow** positive — concentrated at
+  ~20–30%/100d (30/100d ΔAUC +0.045, ΔR-p@3 +0.059). Much narrower than the
+  confounded `_285` claimed. Single window; needs w2.
+- **sp500 F18** (#36, 34 cells): **nil** (mean ΔAUC −0.001, ΔR-p@3 −0.022, +ve 7/17).
+  The `_287` non-replication **holds on clean data** — the split bug was not hiding
+  an sp500 F18 signal. → F18 is universe-specific (small nifty tilt, nothing on sp500).
+- **stratified boosting** (#31, early stopping added per user): **beats** control +
+  baseline on both nifty F18 cells (30/100d eval R-p@3 0.505 vs 0.379/0.412).
+- **sp500 champions** (#37): **robust to the fix** — champmatch adjusted vs unadjusted
+  (same spec + window) is ΔAUC ±0.004, ΔR-p@K within noise. US splits are rare, so
+  the deployed champions were barely touched; **no retire/retrain needed.** Backtest
+  delta follows as negligible (predictions near-identical); explicit run deferred.
 
 ## The bug
 
