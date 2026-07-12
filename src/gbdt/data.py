@@ -257,9 +257,17 @@ def ensure_universe_cached(
     cache_only: bool = True,
     staleness_days: int = DEFAULT_STALENESS_DAYS,
     reference_date: str | date | None = None,
+    fast_count: bool = False,
 ) -> dict[str, TickerStatus]:
     """For each ticker, verify cache row count meets ``min_rows`` and report
     freshness telemetry.
+
+    ``fast_count`` (cache_only only): decide eligibility via a cheap
+    ``COUNT(*)`` (``_cache_row_count``) instead of loading the full OHLCV to
+    take ``len(df)``. Same roster (the count matches ``_cache_read``'s
+    all-NaN drop), but skips the redundant deep read — the caller then builds
+    features over just a short window. ``nan_rows_dropped`` telemetry is 0 in
+    this mode (no rows were materialized to inspect).
 
     With ``cache_only=True`` (default) we read directly from the SQLite cache
     — no provider calls. This is what the experiment runner uses: gbdt v1
@@ -289,10 +297,14 @@ def ensure_universe_cached(
     statuses: dict[str, TickerStatus] = {}
     for ticker in tickers:
         try:
-            if cache_only:
+            if cache_only and fast_count:
+                n_rows = _cache_row_count(ticker, start, end, repo_root=repo_root)
+                nan_dropped = 0
+            elif cache_only:
                 df, nan_dropped = _cache_read(
                     ticker, start, end, repo_root=repo_root, return_nan_count=True,
                 )
+                n_rows = int(len(df))
             else:
                 ticker_end = end if end is not None else _cache_last_date(
                     ticker, repo_root=repo_root,
@@ -302,12 +314,13 @@ def ensure_universe_cached(
                     data_root=_data_root(repo_root),
                 )
                 nan_dropped = 0
+                n_rows = int(len(df))
         except Exception as exc:
             statuses[ticker] = TickerStatus(
                 ticker=ticker, rows=0, kept=False, reason=f"fetch failed: {exc}",
             )
             continue
-        n = int(len(df))
+        n = n_rows
         if n < min_rows:
             statuses[ticker] = TickerStatus(
                 ticker=ticker, rows=n, kept=False,
@@ -431,6 +444,46 @@ def _cache_read(
     if return_nan_count:
         return df, int(n_dropped)
     return df
+
+
+def _cache_row_count(
+    ticker: str,
+    start: str | date | None,
+    end: str | date | None,
+    *,
+    repo_root: Path | None = None,
+) -> int:
+    """Cheap ``COUNT(*)`` of non-all-NaN OHLCV rows over ``[start, end]``.
+
+    The fast-path eligibility proxy: matches ``len(_cache_read(...))`` (which
+    drops rows where every OHLCV value is NaN) via a WHERE clause, WITHOUT
+    loading the OHLCV. Lets ``load_panel`` decide the ≥``min_rows`` roster from
+    the full history while building features over only a short window — the
+    8.4y cold build exists ONLY to count rows for that roster (see
+    ``build_scores``). Same half-open [start, end+1) bounds + table routing as
+    ``_cache_read``.
+    """
+    import sqlite3
+    if ticker.startswith(("NSE:", "BSE:", "NIFTY:")):
+        table = "nse_equities_data"
+    else:
+        table = "us_equities_data"
+    db = Path(_data_root(repo_root)) / "processed.db"
+    if not db.exists():
+        raise FileNotFoundError(f"cache db missing at {db}")
+    start_s, end_excl = half_open_day_bounds(start or "1990-01-01", end)
+    con = sqlite3.connect(str(db))
+    try:
+        (n,) = con.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE ticker = ? AND date >= ? "
+            f"AND date < ? AND (open IS NOT NULL OR high IS NOT NULL "
+            f"OR low IS NOT NULL OR close IS NOT NULL OR adj_close IS NOT NULL "
+            f"OR volume IS NOT NULL)",
+            (ticker, start_s, end_excl),
+        ).fetchone()
+    finally:
+        con.close()
+    return int(n)
 
 
 def _cache_last_date(ticker: str, *, repo_root: Path | None = None) -> str | None:
@@ -671,6 +724,8 @@ def load_panel(
     repo_root: Path | None = None,
     cache_only: bool = True,
     staleness_days: int = DEFAULT_STALENESS_DAYS,
+    panel_start: str | date | None = None,
+    fast_count: bool = False,
 ) -> UniversePanel:
     """Load a universe's OHLCV panel as a long-format MultiIndex DataFrame.
 
@@ -686,6 +741,15 @@ def load_panel(
       older than ``staleness_days`` (default ≈ 14 trading days). Stale
       tickers are *not* dropped — the run continues and the staleness is
       recorded in the artifact for the analyst.
+
+    ``panel_start`` / ``fast_count`` (fast-path, default off — byte-identical
+    to the old behaviour when unset): the ≥``min_rows`` roster is decided over
+    ``[start, end]`` (via a cheap ``COUNT`` when ``fast_count``), but the OHLCV
+    panel is materialized only over ``[panel_start, end]``. This lets a caller
+    keep the full-history roster (so cross-sectional ranks match) while building
+    features on just a short warmup+scoring window — the whole point of the
+    ``build_scores`` fast path. ``panel_start=None`` ⇒ panel over ``[start, end]``
+    (unchanged).
     """
     meta = universe_metadata(universe, repo_root=repo_root)
     tickers = resolve_universe(universe, repo_root=repo_root)
@@ -693,7 +757,11 @@ def load_panel(
     statuses = ensure_universe_cached(
         tickers, start, end, min_rows=min_rows, repo_root=repo_root,
         cache_only=cache_only, staleness_days=staleness_days,
+        fast_count=fast_count,
     )
+    # Roster is decided over [start, end]; features are built over the shorter
+    # [panel_start, end] window (fast path). Falls back to `start` (unchanged).
+    load_start = panel_start if panel_start is not None else start
 
     kept = [t for t, s in statuses.items() if s.kept]
     if not kept:
@@ -704,12 +772,12 @@ def load_panel(
 
     def _load_one(t: str) -> pd.DataFrame:
         if cache_only:
-            return _cache_read(t, start or "1990-01-01", end, repo_root=repo_root)
+            return _cache_read(t, load_start or "1990-01-01", end, repo_root=repo_root)
         ticker_end = (end if end is not None
                       else _cache_last_date(t, repo_root=repo_root)
                       or date.today().isoformat())
         return _dp_fetch(
-            t, start or "1990-01-01", ticker_end,
+            t, load_start or "1990-01-01", ticker_end,
             data_root=_data_root(repo_root),
         )
 

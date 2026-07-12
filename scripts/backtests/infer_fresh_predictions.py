@@ -152,7 +152,8 @@ def _predict_proba_chunked(model, Xc: pd.DataFrame) -> np.ndarray:
 
 
 def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
-               panel_cache: dict, feat_cache: dict) -> pd.DataFrame:
+               panel_cache: dict, feat_cache: dict,
+               panel_start: str | None = None, fast_count: bool = False) -> pd.DataFrame:
     """Score one cell, reusing a shared panel-load + feature-build across cells.
 
     ``panel_cache`` is keyed by ``(universe, warmup_start)`` (the expensive
@@ -175,9 +176,15 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
 
     # Panel from warmup_start so the 200-day rolling features are warm; cache_only
     # (the refresh already populated it). Shared across same-(universe, slice) cells.
-    pk = (universe, warmup_start)
+    # Roster is decided over [warmup_start, end] (the ≥1600-td eligibility floor
+    # that defines the cross-sectional ticker set) but the panel is materialized
+    # only over [panel_start, end] — fast path. panel_start in the key so a full
+    # vs short build never collide.
+    pk = (universe, warmup_start, panel_start)
     if pk not in panel_cache:
-        panel_cache[pk] = load_panel(universe, start=warmup_start, end=end, cache_only=True)
+        panel_cache[pk] = load_panel(universe, start=warmup_start, end=end,
+                                     cache_only=True, panel_start=panel_start,
+                                     fast_count=fast_count)
     panel_obj = panel_cache[pk]
     panel = panel_obj.panel
     align_sig = "noalign"
@@ -219,9 +226,15 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
                 families=token, fund_df=fund_df,
             ).dropna(axis=1, how="all")
         else:
+            # panel_start folded into the cache signature: a short (fast-path)
+            # matrix does NOT cover [warmup_start, panel_start) and must never
+            # share a key with a full build (build_or_extend keys on warmup_start
+            # + align_signature only and stores just the max date, so it can't tell
+            # a truncated matrix from a full one).
+            cache_sig = align_sig if panel_start is None else f"{align_sig}|ps={panel_start}"
             feat_cache[fk] = _ifc.build_or_extend(
                 INCREMENTAL_CACHE_DIR, universe, warmup_start, panel, panel_obj.index_series,
-                annualization=panel_obj.annualization_factor, align_signature=align_sig,
+                annualization=panel_obj.annualization_factor, align_signature=cache_sig,
             )
     X = feat_cache[fk]
 
@@ -247,7 +260,9 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
 
 
 def build_scores(cell: Path, end: str, *, align_panel: bool = True,
-                 warmup_start: str = "1990-01-01") -> pd.DataFrame:
+                 warmup_start: str = "1990-01-01",
+                 panel_start: str | None = None,
+                 fast_count: bool = False) -> pd.DataFrame:
     """Return a (date,ticker)-indexed frame with column p_raw over [.., end].
 
     ``warmup_start`` bounds how far back the panel is loaded. The default
@@ -267,7 +282,8 @@ def build_scores(cell: Path, end: str, *, align_panel: bool = True,
     behavior is unchanged from the original implementation.
     """
     return _build_one(cell, end, align_panel=align_panel, warmup_start=warmup_start,
-                      panel_cache={}, feat_cache={})
+                      panel_cache={}, feat_cache={},
+                      panel_start=panel_start, fast_count=fast_count)
 
 
 def build_scores_multi(specs: list[tuple[Path, str]], end: str, *,
@@ -390,6 +406,13 @@ def main() -> None:
                          "full build, and it still covers the test window so the "
                          "self-check guards faithfulness. Sets the output cutoff "
                          "unless --fresh-after is given.")
+    ap.add_argument("--fast-path", action="store_true",
+                    help="FAST cold-start: decide the ≥1600-td roster via a cheap "
+                         "COUNT over the eligibility window, but build features only "
+                         "over a ~1800-day (F16-streak-safe) warmup+scoring slice "
+                         "instead of the full ~7y. ~1.5-2x faster on a cold build "
+                         "(F16's unbounded streak caps it); the self-check still guards "
+                         "faithfulness. Requires --since.")
     args = ap.parse_args()
     cell = Path(args.cell)
     universe = yaml.safe_load((cell / "spec.yaml").read_text())["target"]["universe"]
@@ -398,17 +421,30 @@ def main() -> None:
     # is cheap. WARMUP_DAYS must exceed the longest feature lookback (200 td) AND
     # reach back to cover the cell's test window so the self-check is meaningful.
     warmup_start = "1990-01-01"
+    panel_start = None
     if args.since is not None:
         # ~7y trailing slice: comfortably exceeds the 1600-td eligibility floor
         # (so the kept-ticker set matches the full build) while skipping the
         # deep history that contributes nothing to ≤200d rolling features.
         warmup_start = str((pd.Timestamp(args.since) - pd.Timedelta(days=2700)).date())
+        if args.fast_path:
+            # Roster still decided over [warmup_start, end] (via COUNT), but the
+            # feature panel is materialized only over [since - 1800d, end]. 1800
+            # calendar days ≈ 1240 td: exceeds F16's observed max streak (~975 td)
+            # measured back from the cell's test window (~1y before --since), so the
+            # self-check's test-window reproduction stays faithful. Shorter would
+            # corrupt F16 in the unguarded forward window (its streak is unbounded).
+            panel_start = str((pd.Timestamp(args.since) - pd.Timedelta(days=1800)).date())
 
-    mode = f"incremental (slice from {warmup_start})" if args.since else "full history"
+    mode = (f"FAST incremental (roster from {warmup_start}, features from {panel_start})"
+            if args.fast_path and args.since
+            else f"incremental (slice from {warmup_start})" if args.since
+            else "full history")
     print(f"[infer] building features + scoring {universe} through {args.end} "
           f"[{mode}] ...")
     scores = build_scores(cell, args.end, align_panel=not args.no_align,
-                          warmup_start=warmup_start)
+                          warmup_start=warmup_start, panel_start=panel_start,
+                          fast_count=args.fast_path and args.since is not None)
     scores["date"] = pd.to_datetime(scores["date"])
 
     self_check(scores, cell, incremental=args.since is not None,
