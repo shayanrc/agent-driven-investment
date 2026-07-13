@@ -61,32 +61,29 @@ SEED_JOBS = 8         # parallel fetch workers for the seed (network I/O-bound; 
 # (backfilled from 2026-01-01), but IN-sample for nasdaq_40_50 — its backfill_from
 # of 2026-01-01 therefore clamps to its 2026-03-13 OOS start. Champions (test_end
 # 2026-03/04) stay ``None`` -> test_end (their OOS legitimately begins then).
+# CANONICAL-PERIODS RETRAINS (see docs/gbdt/CANONICAL_FINETUNE_RECIPE.md). All six cells
+# retrained on the canonical evaluation windows (train 2015-01-01→2022-03-29, val→2023-06-30,
+# eval→2024-06-30, test 2024-07→2025-06) for consistency, replacing the ad-hoc agentloop/
+# champmatch artifacts. Each ``cell`` is the ``_canon_ft`` dir (model.ubj + features.yaml +
+# hp.yaml + spec.yaml). ``deployed=True`` is chosen by the backtest-window (2025-07→2026-06)
+# criterion **target hits > drawdown stops** (the two sp500 cells clear it: 98/83 and 92/79);
+# the four with more DD-stops than target-hits stay ``deployed=False`` candidates. test_end is
+# 2025-06-30 for every canonical cell, so OOS forward-scoring begins 2025-07-01 (backfill_from).
 CELLS = {
-    "sp500_50":       {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_agentloop",
-                       "deployed": True,  "backfill_from": None},
-    "sp500_20":       {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_agentloop",
-                       "deployed": True,  "backfill_from": None},
-    "russell_50_200": {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_aligned_agent_v14p1",
-                       "deployed": False, "backfill_from": "2026-01-01"},
-    "nasdaq_40_50":   {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_agentloop_mix",
-                       "deployed": False, "backfill_from": "2026-01-01"},
-    "russell_40_100": {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_aligned_agent_v14p1",
-                       "deployed": False, "backfill_from": "2026-01-01"},
-    # SPLIT-ADJUSTED champion candidates (V5 fix). The two deployed sp500 champions
-    # reproduced on split-adjusted prices (champmatch single-fit: candidates=all,
-    # mcw=10, train_start 2019, one fit). Tracked deployed=False to forward-compare
-    # the corrected-price config against the deployed (unadjusted-trained) champions
-    # ahead of a swap decision. NOTE: the split fix moves the champions negligibly
-    # (ΔAUC ±0.004, #37), so these track ≈ their deployed counterparts. test_end
-    # 2024-12-16 → backfill from 2026-01-01 is genuine OOS. Artifacts are the
-    # V5-validated adjusted build (self-check faithful); a champion swap is separate.
-    "sp500_50_adj": {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_aligned_champmatch",
-                     "deployed": False, "backfill_from": "2026-01-01"},
-    "sp500_20_adj": {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_aligned_champmatch",
-                     "deployed": False, "backfill_from": "2026-01-01"},
-    # (removed sp500_40_200 — the F18 fundamentals candidate failed two-window
-    # replication, _279/_280; the technical champions dominate it on the fresh-OOS
-    # backtest, so it's demoted out of the tracked comparison set.)
+    # DEPLOYED (target hits > DD stops on the backtest window)
+    "sp500_20":         {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_canon_ft",
+                         "deployed": True,  "backfill_from": "2025-07-01"},
+    "sp500_f18_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_f18_canon_ft",
+                         "deployed": True,  "backfill_from": "2025-07-01"},
+    # CANDIDATES (more DD stops than target hits — forward comparison, not deployed)
+    "sp500_50":         {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft",
+                         "deployed": False, "backfill_from": "2025-07-01"},
+    "nasdaq_40_50":     {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_canon_ft",
+                         "deployed": False, "backfill_from": "2025-07-01"},
+    "russell_40_100":   {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_canon_ft",
+                         "deployed": False, "backfill_from": "2025-07-01"},
+    "russell_50_200":   {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_canon_ft",
+                         "deployed": False, "backfill_from": "2025-07-01"},
 }
 
 # Unified v2 schema. Gate columns are universe-aware (``gate_index`` names the
