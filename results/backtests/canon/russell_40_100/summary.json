@@ -1,0 +1,68 @@
+{
+  "config": {
+    "fractional_c": 0.5,
+    "selection_bound": "mean",
+    "K": 3,
+    "target_return": 0.1,
+    "stop_drawdown": 0.05,
+    "horizon_days": 100,
+    "selection_mode": "rank",
+    "rank_by": "raw",
+    "sizing_mode": "equal",
+    "rank_kelly_p": null
+  },
+  "window": {
+    "fresh_start": "2025-07-01",
+    "fresh_end": "2026-06-30",
+    "comparison_end": "2026-07-10",
+    "full_resolve_cutoff": "2026-02-13"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 121216.17606432087,
+    "total_return": 0.21216176064320869,
+    "cagr": 0.199948629986888,
+    "max_dd": -0.15315836971668095,
+    "n_trades": 725,
+    "gross_exposure_avg": 0.7532539588851035
+  },
+  "benchmarks": {
+    "ndx_bh": {
+      "start": 100000.0,
+      "end": 132118.94408132628,
+      "total_return": 0.3211894408132627,
+      "cagr": 0.3182950246426943,
+      "max_dd": -0.12122844493191431,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 99999.9999999998,
+      "end": 120545.12307101936,
+      "total_return": 0.2054512307101961,
+      "cagr": 0.20022437824637285,
+      "max_dd": -0.08122219493509453,
+      "n_trades": 815,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 100000.0,
+      "total_return": 0.0,
+      "cagr": 0.0,
+      "max_dd": 0.0,
+      "n_trades": 0,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 239,
+    "exits": 238,
+    "trims": 248,
+    "open_at_end_unresolved": 1
+  },
+  "exit_triggers": {
+    "target": 95,
+    "DD": 143
+  }
+}
