@@ -9,7 +9,7 @@ A **read-only viewer** over the committed ``results/backtests/data/forward_predi
 
   * **Predictions** — one day's read: per-model big-card panels (ticker colour-coded by lift,
     company name, target/stop levels) and the cross-model **consensus** panel (most-voted,
-    ≥3/5 majority), with collapsible detail tables. The SMA200 regime gate lives in the sidebar.
+    ≥4/7 majority), with collapsible detail tables. The SMA200 regime gate lives in the sidebar.
   * **Backtests** — replay the logged picks on the price cache, independent of the backtest
     engine: pick a strategy (consensus or a model) + start date → equity vs index buy-hold with
     buy/sell trade markers, summary stats, and a trades table.
@@ -32,14 +32,16 @@ ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / "results/backtests/data/forward_predictions_log.csv"
 DB = ROOT / "data/processed.db"  # us_equities cache (read-only) — prices + the us_equities_names table
 
-# Display order (deployed champions first, then comparison candidates) + descriptive labels.
-MODEL_ORDER = ["sp500_50", "sp500_20", "russell_50_200", "russell_40_100", "nasdaq_40_50"]
+# Display order (deployed models first, then comparison candidates) + descriptive labels.
+MODEL_ORDER = ["sp500_20", "sp500_f18_40_200", "sp500_50", "sp500_50_c9",
+               "nasdaq_40_50", "russell_40_100", "russell_50_200"]
 MODEL_LABEL = {
-    "sp500_50": "sp500 +50% / 50d", "sp500_20": "sp500 +20% / 25d",
-    "russell_50_200": "russell1000 +50% / 200d", "russell_40_100": "russell1000 +40% / 100d",
-    "nasdaq_40_50": "nasdaq100 +40% / 50d",
+    "sp500_20": "sp500 +20% / 25d", "sp500_f18_40_200": "sp500 +40% / 200d F18",
+    "sp500_50": "sp500 +50% / 50d", "sp500_50_c9": "sp500 +50% / 50d (c9)",
+    "nasdaq_40_50": "nasdaq100 +40% / 50d", "russell_40_100": "russell1000 +40% / 100d",
+    "russell_50_200": "russell1000 +50% / 200d",
 }
-MAJORITY = 3  # ≥3 of 5 models = panel majority (≥50%)
+MAJORITY = 4  # ≥4 of 7 models = panel majority (≥50%)
 INIT_CASH = 100_000.0
 _INDEX_TK = {"nasdaq_40_50": "INDEX:^NDX"}  # buy-hold benchmark index per strategy (default ^SPX)
 
@@ -184,13 +186,13 @@ def _votes_color(n: int) -> str:
 
 def _render_consensus_panel(c: pd.DataFrame, names: dict) -> None:
     """Bordered panel of big cards for the consensus winner(s) — the names clearing the
-    ≥MAJORITY/5 panel majority (or the single top plurality name if none do)."""
+    ≥MAJORITY/7 panel majority (or the single top plurality name if none do)."""
     sym_name = {t.split(":")[-1]: n for t, n in names.items()}
     maj = c[c.models >= MAJORITY]
     winners = maj if not maj.empty else c.head(1)
     with st.container(border=True):
         head = "🗳️ Consensus winner" + ("s" if len(winners) > 1 else "")
-        note = "" if not maj.empty else f" · plurality (no ≥{MAJORITY}/5 majority)"
+        note = "" if not maj.empty else f" · plurality (no ≥{MAJORITY}/7 majority)"
         st.markdown(f"##### {head}{note}")
         for col, (_, r) in zip(st.columns(max(len(winners), 1)), winners.iterrows()):
             nm = sym_name.get(r.sym, "")
@@ -200,7 +202,7 @@ def _render_consensus_panel(c: pd.DataFrame, names: dict) -> None:
                 f'<div style="font-size:34px;font-weight:800;color:{_votes_color(int(r.models))};'
                 f'line-height:1.1">{r.sym}</div>'
                 f'<div style="font-size:11px;color:#9aa0a6;line-height:1.15;min-height:15px">{nm}</div>'
-                f'<div style="font-size:13px;color:#9aa0a6;margin-top:2px">{int(r.models)}/5 votes · Σp {r.psum:.2f}</div>'
+                f'<div style="font-size:13px;color:#9aa0a6;margin-top:2px">{int(r.models)}/7 votes · Σp {r.psum:.2f}</div>'
                 f'<div style="font-size:12px;color:#9aa0a6;margin-top:3px">{r.voters}</div></div>',
                 unsafe_allow_html=True)
 
@@ -249,7 +251,7 @@ def render_snapshot(df: pd.DataFrame, date, k: int, pool_k: int) -> None:
     with st.expander("🗳️ vote detail — table", expanded=False):
         st.dataframe(disp[["Stock", "# models", "Σp", "majority", "voting models"]],
                      hide_index=True, width="stretch")
-    st.caption(f"pool = each model's top-{pool_k}; tie → highest Σp; ✓ = ≥{MAJORITY}/5 panel majority. "
+    st.caption(f"pool = each model's top-{pool_k}; tie → highest Σp; ✓ = ≥{MAJORITY}/7 panel majority. "
                "Bull-only amplifier (`_028`) — 1 stock/day, not promoted.")
 
 
