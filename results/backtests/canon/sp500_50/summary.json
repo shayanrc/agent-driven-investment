@@ -19,12 +19,12 @@
   },
   "strategy": {
     "start": 100000.0,
-    "end": 164316.26851034834,
-    "total_return": 0.6431626851034833,
-    "cagr": 0.600770068790023,
-    "max_dd": -0.14979351056623225,
-    "n_trades": 693,
-    "gross_exposure_avg": 0.7237613984833906
+    "end": 256409.34111514303,
+    "total_return": 1.5640934111514304,
+    "cagr": 1.4401190128523123,
+    "max_dd": -0.12207267882581152,
+    "n_trades": 632,
+    "gross_exposure_avg": 0.7027386275825676
   },
   "benchmarks": {
     "ndx_bh": {
@@ -56,13 +56,13 @@
     }
   },
   "turnover": {
-    "entries": 223,
-    "exits": 221,
-    "trims": 249,
-    "open_at_end_unresolved": 2
+    "entries": 207,
+    "exits": 206,
+    "trims": 219,
+    "open_at_end_unresolved": 1
   },
   "exit_triggers": {
     "target": 99,
-    "DD": 122
+    "DD": 107
   }
 }
