@@ -1,0 +1,9 @@
+experiment_name: sp500_up_50pct_50d_dd25pct_canon_ft
+features:
+  candidates: all
+target:
+  direction: up
+  horizon_days: 50
+  max_drawdown: 0.25
+  threshold_pct: 50
+  universe: sp500
