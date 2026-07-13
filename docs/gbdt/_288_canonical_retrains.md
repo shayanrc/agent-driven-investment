@@ -15,7 +15,7 @@ keep the base (high-@1); select on val, confirm on test by the **book (R-p@K)**,
 ## Test R-p@K — controlled baseline vs chosen model (raw p, test window)
 | # | cell | prev | base@1 | chosen model | base R-p@3 | chosen R-p@3 | verdict |
 |---|---|---|---|---|---|---|---|
-| 49 | sp500 +50%/50d | 0.9% | 0.311 | c9 144f·d6·mcw10·ss0.7 | 0.323 | 0.306 | base wins book; c9 wins @1 (kept per user) |
+| 49 | sp500 +50%/50d | 0.9% | 0.311 | baseline all/d6 | 0.323 | 0.323 | baseline is the #49 model (wins the book on test); c9 (R-p@3 0.306) → sp500_50_c9 candidate |
 | 50 | sp500 +20%/25d | 4.8% | 0.253 | 279f·d8·ss0.85 | 0.277 | **0.313** | FT wins EVERY K |
 | 51 | nasdaq +40%/50d | 3.0% | 0.564 | baseline all/d6 | 0.462 | 0.462 | base stands |
 | 52 | russell +40%/100d | 8% | 0.208 | 279f·d8·ss0.7·cs0.7 | 0.288 | **0.351** | FT wins EVERY K |
@@ -63,10 +63,11 @@ full-feature default on **test** — the controlled-baseline discipline mattered
 - Gross (no costs — downstream). Equal-weight, not Kelly (the Kelly gate zeroed on the stale
   eval-R-p@K per-pick prob; actual +10/-5 win rate ~54%). Bull window (NDX +32%).
 - **test R-p@K does not perfectly predict backtest return** (russell_40_100 won every K on
-  test but lagged the backtest, +21%). The backtest window is the independent arbiter.
-- The ambiguous top-vs-book cells (#49, #51, #53) had BOTH the chosen model and the alternative
-  backtested (the Tie-break section above) to settle the @1-vs-book call — done, which is what
-  swapped #49 to the baseline.
+  test but lagged the backtest, +21%). Model selection stays on `test`; the backtest is a
+  strategy/deploy check, NOT the model arbiter (see the Canonical-discipline note).
+- The ambiguous top-vs-book cells (#49, #51, #53) had both the chosen model and the alternative
+  backtested (the Tie-break section) to *sanity-check* the @1-vs-book call. The #49 baseline-over-c9
+  choice is decided on the **test** book (0.323 vs 0.306); the backtest is consistent, not the basis.
 - **#54 F18 is deployed by the backtest criterion despite the prior "F18 not promoted"
   (_279/_280) note** — flagged; a fundamentals model is now `deployed=True` for the first time.
 - **Go-live caveat (2026-07-14): the F18 cell currently FAILS the `/daily-predictions`
@@ -78,7 +79,7 @@ full-feature default on **test** — the controlled-baseline discipline mattered
   cell's trained ticker set / min_rows). Until that lands, sp500_f18 can't be served.
 
 ## Canonical-discipline note (backtest-window usage)
-Model **configs/HP were selected purely on train/val/test** — nothing about the fits or feature/HP
+Model **configs/HP were selected purely on train/val/eval/test** — nothing about the fits or feature/HP
 choices saw the `backtest` window, so the model-side discipline is clean (the `final_fit` rebuild
 proves it). But the **deploy cut** (target-hits > DD-stops) is a strategy-simulation metric computed
 **on the backtest window**, so choosing the deployed set (sp500_20, sp500_f18) *does* use it. Per the
