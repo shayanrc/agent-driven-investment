@@ -7,6 +7,8 @@ description: Run a single gbdt experiment end-to-end from a YAML spec — builds
 
 End-to-end orchestrator for a single gbdt experiment. The skill consumes a YAML spec, drives the FS+HP iteration loop (the agent reads a diagnostic bundle each iteration and decides feature pruning + HP changes), and produces one artifact directory per invocation.
 
+> **Use the canonical evaluation periods for any new training / fine-tuning** (set 2026-07-13; supersedes the `2019-01-01` D2 anchor): **train** 2015-01-01→2022-03-29 (fit) · **val** 2022-03-30→2023-06-30 (feature selection + early stopping) · **eval** 2023-07-01→2024-06-30 (hyperparameter tuning) · **test** 2024-07-01→2025-06-30 (final evaluation + comparison). Keep 2025-07-01→2026-06-30 reserved for **backtesting only** — never train/select on it. One role per window. Choose `split.train_start` + row-count durations that reproduce these boundaries at the run's snapshot, then verify `metrics.json::segment_dates`. See `[[project-canonical-evaluation-periods]]` + `docs/gbdt/EXPERIMENT_SPEC.md` § `split`.
+
 **Two loop modes** (`backend.fs_hp_loop.callback_mode`):
 
 - **`default`** — the runner drives the loop end-to-end with a fixed algorithmic callback (importance-based prune + a small HP nudge). One process, no agent in the loop. This is the CLI-atom path and the default for unattended runs.

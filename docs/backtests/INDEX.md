@@ -2,6 +2,8 @@
 
 One line per back-test memo. Format: `- [_<NNN>: <short-name>](_<NNN>_<short-name>.md) — <one-line hook>`.
 
+> **Canonical backtest window: 2025-07-01 → 2026-06-30** (set 2026-07-13). A dedicated, never-touched held-out window — models are trained/selected on the earlier train/val/eval/test windows (`[[project-canonical-evaluation-periods]]` + CLAUDE.md "Canonical evaluation periods"), so backtest returns are on data no model-selection step saw. Do NOT backtest on the `test` window (2024-07→2025-06, reserved for final metric comparison), and do NOT compute model-comparison R-p@K on the backtest window.
+
 Plans (work-in-progress and historical):
 - [V1 — Cell-5 Bayesian + Kelly Back-Test](V1_cell5_bayesian_kelly_plan.md) — first cross-module back-test plan; new modules `src/calibration/` + `src/trading_strategies/`
 
