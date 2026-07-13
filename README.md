@@ -115,6 +115,8 @@ The agent is the ML iteration loop: it reads a per-iteration diagnostic bundle (
 
 279-column core feature pool across 16 families, including cross-sectional rank/z-score features, plus opt-in families off by default: F17 macro covariates and F18 point-in-time fundamentals (see `docs/gbdt/EXPERIMENT_SPEC.md`). Walk-forward validation with conditional isotonic calibration gated by Spiegelhalter Z-test.
 
+**Canonical evaluation periods** — all new training / fine-tuning / backtesting uses one fixed, regime-corrected window set (one role per window): **train** 2015-01-01→2022-03-29 (fit) · **val** 2022-03-30→2023-06-30 (feature selection + early stopping) · **eval** 2023-07-01→2024-06-30 (hyperparameter tuning) · **test** 2024-07-01→2025-06-30 (final comparison) · **backtest** 2025-07-01→2026-06-30 (backtesting only, never touched by model selection). Specify via the `date_aligned` explicit-boundary form; see `docs/gbdt/CANONICAL_FINETUNE_RECIPE.md` + the "Canonical evaluation periods" bullet in `CLAUDE.md`.
+
 ### calibration
 
 Probability calibration (isotonic and friends) as its own module: calibrators are fit separately on held-out predictions and handed to strategies already-fit, so the strategy layer never trains anything.
