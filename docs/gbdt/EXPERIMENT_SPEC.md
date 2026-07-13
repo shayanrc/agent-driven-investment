@@ -119,7 +119,7 @@ If unset, the loader takes the maximum range each ticker has in the cache, then 
 
 Walk-forward fold scheme. **Global defaults live in `configs/gbdt/default.yaml::split`; the spec overrides only what it cares about.**
 
-> **Canonical evaluation periods (use for all new training / fine-tuning / backtesting).** Set by the project owner 2026-07-13, superseding the `2019-01-01` D2 anchor for new work: **train** 2015-01-01→2022-03-29 (fit) · **val** 2022-03-30→2023-06-30 (feature selection + early stopping) · **eval** 2023-07-01→2024-06-30 (hyperparameter tuning) · **test** 2024-07-01→2025-06-30 (final evaluation + comparison) · **backtest** 2025-07-01→2026-06-30 (backtesting ONLY, a separate never-touched window). One role per window — do not use `test` for backtesting or `val`/`eval` for final comparison. Back-extended to 2015 to de-bias the COVID-rally regime skew (`_285`). Choose `train_start` + row-count durations that reproduce these boundaries for the run's snapshot, then verify `metrics.json::segment_dates`. Full rationale: `[[project-canonical-evaluation-periods]]` + CLAUDE.md "Canonical evaluation periods".
+> **Canonical evaluation periods (use for all new training / fine-tuning / backtesting).** Set by the project owner 2026-07-13, superseding the `2019-01-01` D2 anchor for new work: **train** 2015-01-01→2022-03-29 (fit) · **val** 2022-03-30→2023-06-30 (feature selection + early stopping) · **eval** 2023-07-01→2024-06-30 (hyperparameter tuning) · **test** 2024-07-01→2025-06-30 (final evaluation + comparison) · **backtest** 2025-07-01→2026-06-30 (backtesting ONLY, a separate never-touched window). One role per window — do not use `test` for backtesting or `val`/`eval` for final comparison. Back-extended to 2015 to de-bias the COVID-rally regime skew (`_285`). **Specify them directly with the explicit-boundary form** (`val_start`/`eval_start`/`test_start`/`test_end`, below) so the spec carries the literal dates rather than calendar-arithmetic row counts; verify `metrics.json::segment_dates` after the run. Full rationale: `[[project-canonical-evaluation-periods]]` + CLAUDE.md "Canonical evaluation periods".
 
 | Field | Type | Default (from `default.yaml`) |
 |---|---|---|
@@ -132,12 +132,26 @@ Walk-forward fold scheme. **Global defaults live in `configs/gbdt/default.yaml::
 | `min_rows_per_ticker` | int | `1600` (= sum of the four segments) |
 | `train_start` | ISO date | _none_ (required when `mode == "date_aligned"`; runner default `2019-01-01`) |
 | `min_train_rows_per_ticker` | int | `200` (= `max(lookback_windows)`) |
+| `val_start` / `eval_start` / `test_start` / `test_end` | ISO date | _none_ — the **explicit-boundary form** (date_aligned only; all four required together) |
 
 **`mode == "trailing"` (default)**: each ticker's last `train_rows + val_rows + eval_rows + test_rows` rows are carved into `[train | val | eval | test]` in time order. Used by every pre-V1.4 spec. **Silently re-defines the cell across cache growth** (the eval/test windows slide forward as new bars arrive) — the V1.4 plan's motivating bug.
 
 **`mode == "date_aligned"` (V1.4 opt-in)**: segment windows are anchored to **universe-level calendar dates** computed from `train_start` and the per-segment durations on the universe's canonical trading calendar (NYSE for US universes, NSE for NSE universes; mapping in `configs/gbdt/default.yaml::universes::<name>::calendar` — defaults inferred from universe name prefix). Per-ticker membership uses `min_train_rows_per_ticker` (≥ 200 valid feature rows) on the train segment and ≥ 1 row on val/eval/test; late-IPO tickers contribute only to whichever segments they have valid features for. The 4-segment row counts are NOT guaranteed to equal `{train,val,eval,test}_rows` per ticker — that's the duration the calendar window spans, not the count of cached bars. **Reproducible across cache growth**: adding new bars past `test_end` leaves segments bit-identical.
 
 When `mode == "date_aligned"`, `train_rows` / `val_rows` / `eval_rows` / `test_rows` are interpreted as **trading-day durations** measured on the universe calendar (not row counts). A `train_start` falling on a non-trading day advances to the next trading day (`searchsorted(side="left")` semantics).
+
+**Explicit-boundary form (V1.4.1 opt-in)** — instead of durations, give the four segment-boundary dates `val_start` / `eval_start` / `test_start` / `test_end` (with `train_start` as the anchor; **all four required together**, `date_aligned` only). The windows are then the literal calendar dates, and `train_rows`/`val_rows`/`eval_rows`/`test_rows` are IGNORED. Snapping: each segment **start** date maps to the first trading day **≥** it; `test_end` maps to the last trading day **≤** it; each intermediate segment's end is the trading day before the next segment's start. Boundaries must be strictly ordered (`train_start < val_start < eval_start < test_start ≤ test_end`, every segment non-empty). This is the recommended way to pin the **canonical evaluation periods** (above): the same literal dates produce identical windows across the NYSE and NSE calendars (each snapping to its own nearest trading day), instead of sharing durations and drifting apart.
+
+```yaml
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start:   '2022-03-30'   # feature selection + early stopping
+  eval_start:  '2023-07-01'   # hyperparameter tuning
+  test_start:  '2024-07-01'   # final evaluation + comparison
+  test_end:    '2025-06-30'
+  # (backtest 2025-07-01 → 2026-06-30 is scored forward, never in the split)
+```
 
 Example (canonical date-aligned cell):
 ```yaml
