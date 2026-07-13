@@ -59,7 +59,9 @@ SEED_JOBS = 8         # parallel fetch workers for the seed (network I/O-bound; 
 # (+135%, 98/83) and sp500_f18 (+134.6%, 92/79) clear it. sp500_50 (baseline all/d6) is the
 # best backtest performer (+156.4%) but has MORE DD-stops than target-hits (99/107), so it
 # stays a candidate; c9 (the FS+HP fine-tune, +64.3%) is also a candidate. test_end is
-# 2025-06-30 for every canonical cell, so OOS forward-scoring begins 2025-07-01 (backfill_from).
+# 2025-06-30 for every canonical cell, so backfill_from is 2025-07-01. NOTE 2025-07→2026-06 is
+# also the deploy-cut backtest window, so the *honest* deployed-set OOS is the forward log from
+# 2026-07-14 onward (docs/gbdt/_288 canonical-discipline note), not the backfilled slice.
 CELLS = {
     # DEPLOYED (target-hits > DD-stops on the backtest window)
     "sp500_20":         {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_canon_ft",
