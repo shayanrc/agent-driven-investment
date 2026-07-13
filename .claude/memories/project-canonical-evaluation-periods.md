@@ -19,4 +19,14 @@ The fixed, regime-corrected window set to use for **all** model training, fine-t
 - `test` — final model evaluation + cross-model comparison (report R-p@K / AUC / Brier here).
 - `backtest` — strategy backtesting ONLY; a separate, later, never-touched window, so backtest returns are on data no model-selection step ever saw. Do NOT compute R-p@K model-comparison on it, and do NOT use `test` for backtesting.
 
-**How to apply.** Dates are fixed calendar boundaries, not row-count-derived. When writing a `date_aligned` spec, pick `train_start`/row counts (or explicit boundaries) that reproduce these windows for the run's snapshot; verify the realized `segment_dates` in `metrics.json` match the table before trusting a run. See CLAUDE.md "Canonical evaluation periods" bullet (the summary) and `docs/gbdt/EXPERIMENT_SPEC.md` § `split`.
+**How to apply.** Dates are fixed calendar boundaries, not row-count-derived. Write them as the `date_aligned` **explicit-boundary form** — `split.train_start` + `val_start`/`eval_start`/`test_start`/`test_end` (all four required together; date_aligned only), which puts the literal dates in the spec (start snaps to first trading day ≥, `test_end` to last trading day ≤). Then verify the realized `segment_dates` in `metrics.json` match the table before trusting a run. See CLAUDE.md "Canonical evaluation periods" bullet (the summary) and `docs/gbdt/EXPERIMENT_SPEC.md` § `split`.
+
+```yaml
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start:   '2022-03-30'
+  eval_start:  '2023-07-01'
+  test_start:  '2024-07-01'
+  test_end:    '2025-06-30'
+```
