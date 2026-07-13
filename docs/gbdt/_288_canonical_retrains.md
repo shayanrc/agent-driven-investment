@@ -31,7 +31,7 @@ Benchmark ^NDX buy-hold +32.1%. Full data + per-cell dirs: `results/backtests/ca
 
 | # | cell | model | return | maxDD | EW basket | target/DD | deploy |
 |---|---|---|---|---|---|---|---|
-| 49 | sp500 +50%/50d | **baseline all/d6** | **+156.4%** | -12.2% | +26.5% | 99/107 | **deployed** |
+| 49 | sp500 +50%/50d | **baseline all/d6** | **+156.4%** | -12.2% | +26.5% | 99/107 | candidate |
 | 49 | sp500 +50%/50d | c9 (candidate) | +64.3% | -15.0% | +26.5% | 99/122 | candidate |
 | 50 | sp500 +20%/25d | d8·ss0.85 | +135.1% | -14.4% | +26.5% | 98/83 | **deployed** |
 | 51 | nasdaq +40%/50d | baseline | +73.2% | -18.1% | +36.5% | 98/114 | candidate |
@@ -41,15 +41,18 @@ Benchmark ^NDX buy-hold +32.1%. Full data + per-cell dirs: `results/backtests/ca
 | 53 | russell +50%/200d | baseline (alt) | +16.6% | -21.0% | +20.5% | 91/130 | — |
 | 54 | sp500 +40%/200d F18 | baseline | +134.6% | -11.3% | +26.5% | 92/79 | **deployed** |
 
-**Deployed set (3):** sp500_20 (98/83) + sp500_f18 (92/79) clear the target>DD rule; **sp500_50
-baseline is deployed on best-return grounds (+156.4% — the top performer, beating both
-champions) despite a near-even 99/107 (user decision)**. c9 retained as a candidate.
+**Deployed set (2):** only sp500_20 (98/83) + sp500_f18 (92/79) clear the strict target>DD
+rule. **sp500_50 baseline is the top backtest performer (+156.4%) but has MORE DD-stops than
+target-hits (99/107), so it stays a candidate** (holding the rule; a user decision reversing the
+earlier best-return deploy). c9 (the +50%/50d fine-tune, +64.3%) is also a candidate.
 
 ## Tie-break (alternative vs chosen, backtest window)
 Backtested the model NOT chosen for the three ambiguous top-vs-book cells:
 - **#49: baseline all/d6 (+156.4%) CRUSHES the chosen c9 (+64.3%)** — and beats both deployed
   champions; also wins the test book (R-p@3 0.323 vs 0.306) and DD (-12.2% vs -15.0%). The FS+HP
-  fine-tune (c9) was the wrong pick → swapped: **baseline deployed, c9 → candidate (sp500_50_c9)**.
+  fine-tune (c9) was the wrong pick → the **baseline replaces c9 as the #49 model** (`_canon_ft`),
+  c9 kept as the `sp500_50_c9` candidate. Neither is deployed: the baseline fails the strict
+  target>DD rule (99/107), so both +50%/50d configs are candidates.
 - #51: d8/ss0.85 (+78.7%) ≈ baseline (+73.2%) — a wash; baseline retained.
 - #53: chosen d8/ss0.7/cs0.7 (+82.5%) >> baseline (+16.6%, -21% DD) — the FT choice was correct.
 Lesson: on the highest-signal rare cell, the FS+HP fine-tune anti-selected vs the plain
