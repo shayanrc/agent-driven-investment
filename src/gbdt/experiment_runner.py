@@ -58,7 +58,7 @@ from gbdt.sweep_lookup import (
     lookup_sweep_row,
 )
 from gbdt.targets import build_target
-from gbdt.train import SplitSpec, walk_forward_train
+from gbdt.train import SplitSpec, segment_bound_indices, walk_forward_train
 from gbdt.uniqueness import (
     compute_uniqueness_weights,
     effective_sample_size,
@@ -613,13 +613,31 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
             f"spec.split.mode must be 'trailing' or 'date_aligned', got "
             f"{split_mode!r}"
         )
-    train_start_raw = split_d.get("train_start")
-    train_start_val: date | None = None
-    if train_start_raw is not None:
-        if isinstance(train_start_raw, date):
-            train_start_val = train_start_raw
-        else:
-            train_start_val = date.fromisoformat(str(train_start_raw)[:10])
+    def _opt_date(key: str) -> "date | None":
+        raw = split_d.get(key)
+        if raw is None:
+            return None
+        return raw if isinstance(raw, date) else date.fromisoformat(str(raw)[:10])
+
+    train_start_val = _opt_date("train_start")
+    # V1.4.1 explicit-boundary form (opt-in): the four segment boundary dates.
+    val_start_val = _opt_date("val_start")
+    eval_start_val = _opt_date("eval_start")
+    test_start_val = _opt_date("test_start")
+    test_end_val = _opt_date("test_end")
+    _n_expl = sum(d is not None for d in
+                  (val_start_val, eval_start_val, test_start_val, test_end_val))
+    if _n_expl not in (0, 4):
+        raise ValueError(
+            "spec.split: the explicit-boundary form requires ALL FOUR of "
+            "val_start / eval_start / test_start / test_end together "
+            f"(got {_n_expl}/4). Omit all four to use trading-day durations."
+        )
+    if _n_expl == 4 and split_mode != "date_aligned":
+        raise ValueError(
+            "spec.split: explicit boundary dates (val_start / eval_start / "
+            "test_start / test_end) require split.mode: date_aligned."
+        )
     if split_mode == "date_aligned" and train_start_val is None:
         # V1.4 D2: canonical anchor for new date-aligned cells.
         train_start_val = date(2019, 1, 1)
@@ -641,6 +659,10 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         min_train_rows_per_ticker=int(split_d.get(
             "min_train_rows_per_ticker", 200,
         )),
+        val_start=val_start_val,
+        eval_start=eval_start_val,
+        test_start=test_start_val,
+        test_end=test_end_val,
     )
     min_rows = split_d.get("min_rows_per_ticker", split.total)
 
@@ -675,14 +697,9 @@ def run_experiment(spec_path: Path, *, overwrite: bool = False,
         # after retries. Sub-case A (universe-level shortfall) raises
         # CacheCurrencyError inline. Runs BEFORE load_panel so REFUSE skips
         # the heavy panel build entirely.
-        days_train_start = int(universe_cal.searchsorted(
-            pd.Timestamp(split.train_start), side="left",
-        ))
-        days_test_end = (
-            days_train_start
-            + split.train_rows + split.val_rows + split.eval_rows + split.test_rows
-            - 1
-        )
+        # test_end calendar index (duration OR explicit-boundary form) — the
+        # single source of truth shared with carve_universe_aligned.
+        days_test_end = segment_bound_indices(split, universe_cal)["test"][1]
         universe_tickers = gbdt_data.resolve_universe(
             target["universe"], repo_root=repo_root,
         )
