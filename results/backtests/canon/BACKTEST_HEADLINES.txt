@@ -1,0 +1,46 @@
+##### sp500_50
+[cfg] horizon_days=50 (cell spec) target_return=0.1 stop_dd=0.05 K=3
+    fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 468 tickers
+    comparison_end=2026-07-10 (full 50-BD resolution only for signals <= 2026-04-28)
+window 2025-07-01 -> 2026-07-10 | 223 entries / 221 exits / 249 trims | 2 open(unresolved) at end
+Strategy          end $164,316  +64.3%  maxDD -15.0%  avg_gross_exp 0.72
+NDX buy-hold        end $132,119  +32.1%  maxDD -12.1%
+EW basket           end $126,532  +26.5%  maxDD -7.8%
+exit triggers: {'target': 99, 'DD': 122}
+##### nasdaq_40_50
+[cfg] horizon_days=50 (cell spec) target_return=0.1 stop_dd=0.05 K=3
+    fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 86 tickers
+    comparison_end=2026-07-10 (full 50-BD resolution only for signals <= 2026-04-28)
+window 2025-07-01 -> 2026-07-10 | 212 entries / 212 exits / 242 trims | 0 open(unresolved) at end
+Strategy          end $173,208  +73.2%  maxDD -18.1%  avg_gross_exp 0.73
+NDX buy-hold        end $132,119  +32.1%  maxDD -12.1%
+EW basket           end $136,483  +36.5%  maxDD -8.8%
+exit triggers: {'DD': 114, 'target': 98}
+##### russell_40_100
+[cfg] horizon_days=100 (cell spec) target_return=0.1 stop_dd=0.05 K=3
+    fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 815 tickers
+    comparison_end=2026-07-10 (full 100-BD resolution only for signals <= 2026-02-13)
+window 2025-07-01 -> 2026-07-10 | 239 entries / 238 exits / 248 trims | 1 open(unresolved) at end
+Strategy          end $121,216  +21.2%  maxDD -15.3%  avg_gross_exp 0.75
+NDX buy-hold        end $132,119  +32.1%  maxDD -12.1%
+EW basket           end $120,545  +20.5%  maxDD -8.1%
+exit triggers: {'target': 95, 'DD': 143}
+##### russell_50_200
+[cfg] horizon_days=200 (cell spec) target_return=0.1 stop_dd=0.05 K=3
+    fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 815 tickers
+    comparison_end=2026-07-10 (full 200-BD resolution only for signals <= 2025-09-22)
+window 2025-07-01 -> 2026-07-10 | 223 entries / 222 exits / 199 trims | 1 open(unresolved) at end
+Strategy          end $182,534  +82.5%  maxDD -14.7%  avg_gross_exp 0.74
+NDX buy-hold        end $132,119  +32.1%  maxDD -12.1%
+EW basket           end $120,545  +20.5%  maxDD -8.1%
+exit triggers: {'target': 103, 'DD': 119}
+##### sp500_f18_40_200
+[cfg] horizon_days=200 (cell spec) target_return=0.1 stop_dd=0.05 K=3
+    fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 468 tickers
+    comparison_end=2026-07-10 (full 200-BD resolution only for signals <= 2025-09-22)
+window 2025-07-01 -> 2026-07-10 | 172 entries / 171 exits / 185 trims | 1 open(unresolved) at end
+Strategy          end $234,630  +134.6%  maxDD -11.3%  avg_gross_exp 0.77
+NDX buy-hold        end $132,119  +32.1%  maxDD -12.1%
+EW basket           end $126,532  +26.5%  maxDD -7.8%
+exit triggers: {'target': 92, 'DD': 79}
+ALL BACKTESTS DONE
