@@ -119,6 +119,8 @@ If unset, the loader takes the maximum range each ticker has in the cache, then 
 
 Walk-forward fold scheme. **Global defaults live in `configs/gbdt/default.yaml::split`; the spec overrides only what it cares about.**
 
+> **Canonical evaluation periods (use for all new training / fine-tuning / backtesting).** Set by the project owner 2026-07-13, superseding the `2019-01-01` D2 anchor for new work: **train** 2015-01-01→2022-03-29 (fit) · **val** 2022-03-30→2023-06-30 (feature selection + early stopping) · **eval** 2023-07-01→2024-06-30 (hyperparameter tuning) · **test** 2024-07-01→2025-06-30 (final evaluation + comparison) · **backtest** 2025-07-01→2026-06-30 (backtesting ONLY, a separate never-touched window). One role per window — do not use `test` for backtesting or `val`/`eval` for final comparison. Back-extended to 2015 to de-bias the COVID-rally regime skew (`_285`). Choose `train_start` + row-count durations that reproduce these boundaries for the run's snapshot, then verify `metrics.json::segment_dates`. Full rationale: `[[project-canonical-evaluation-periods]]` + CLAUDE.md "Canonical evaluation periods".
+
 | Field | Type | Default (from `default.yaml`) |
 |---|---|---|
 | `mode` | `"trailing"` \| `"date_aligned"` | `"trailing"` |
