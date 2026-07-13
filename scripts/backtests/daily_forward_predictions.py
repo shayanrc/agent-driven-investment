@@ -50,34 +50,28 @@ MIN_FREE_GB = 10.0
 REGIME_MA = 200       # SMA window for the deployment gate
 SEED_JOBS = 8         # parallel fetch workers for the seed (network I/O-bound; V1.6 S2)
 
-# Cells tracked by the cadence. ``deployed=True`` are the two validated sp500
-# champions wired into /daily-predictions (the signal record). ``deployed=False``
-# are higher-ranked registry candidates tracked for forward comparison — NOT
-# deployed (their registry ``daily_preds`` stays False); a later promotion is a
-# separate decision. ``backfill_from`` floors a cell's FIRST-run backfill, clamped
-# to >= the cell's gbdt test_end (pre-test_end dates are in-sample, NOT forward-OOS).
-# Candidate test windows end 2024-10 (russell_50_200), 2026-03 (nasdaq_40_50),
-# 2025-05 (russell_40_100): January 2026 is genuine OOS for the two russell cells
-# (backfilled from 2026-01-01), but IN-sample for nasdaq_40_50 — its backfill_from
-# of 2026-01-01 therefore clamps to its 2026-03-13 OOS start. Champions (test_end
-# 2026-03/04) stay ``None`` -> test_end (their OOS legitimately begins then).
-# CANONICAL-PERIODS RETRAINS (see docs/gbdt/CANONICAL_FINETUNE_RECIPE.md). All six cells
-# retrained on the canonical evaluation windows (train 2015-01-01→2022-03-29, val→2023-06-30,
-# eval→2024-06-30, test 2024-07→2025-06) for consistency, replacing the ad-hoc agentloop/
-# champmatch artifacts. Each ``cell`` is the ``_canon_ft`` dir (model.ubj + features.yaml +
-# hp.yaml + spec.yaml). ``deployed=True`` is chosen by the backtest-window (2025-07→2026-06)
-# criterion **target hits > drawdown stops** (the two sp500 cells clear it: 98/83 and 92/79);
-# the four with more DD-stops than target-hits stay ``deployed=False`` candidates. test_end is
+# CANONICAL-PERIODS RETRAINS (see docs/gbdt/CANONICAL_FINETUNE_RECIPE.md + docs/gbdt/
+# _288_canonical_retrains.md). All cells retrained on the canonical evaluation windows
+# (train 2015-01-01→2022-03-29, val→2023-06-30, eval→2024-06-30, test 2024-07→2025-06) for
+# consistency, replacing the ad-hoc agentloop/champmatch artifacts. Each ``cell`` is a
+# ``_canon_ft`` dir (model.ubj + features.yaml + hp.yaml + spec.yaml). ``deployed`` reflects
+# the backtest-window (2025-07→2026-06) evidence: sp500_20 (+135%, target/DD 98/83) and
+# sp500_f18 (+134.6%, 92/79) clear the target>DD rule; **sp500_50 (baseline all/d6) is deployed
+# on best-backtest-return grounds (+156.4%, the top performer, beating both champions) despite
+# a near-even 99/107 — a user decision**. c9 (the FS+HP fine-tune, +64.3%) is retained as a
+# candidate (sp500_50_c9). The other three stay deployed=False candidates. test_end is
 # 2025-06-30 for every canonical cell, so OOS forward-scoring begins 2025-07-01 (backfill_from).
 CELLS = {
-    # DEPLOYED (target hits > DD stops on the backtest window)
+    # DEPLOYED
     "sp500_20":         {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_canon_ft",
                          "deployed": True,  "backfill_from": "2025-07-01"},
     "sp500_f18_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_f18_canon_ft",
                          "deployed": True,  "backfill_from": "2025-07-01"},
-    # CANDIDATES (more DD stops than target hits — forward comparison, not deployed)
     "sp500_50":         {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft",
-                         "deployed": False, "backfill_from": "2025-07-01"},
+                         "deployed": True,  "backfill_from": "2025-07-01"},  # baseline all/d6 (+156.4%)
+    # CANDIDATES (deployed=False — forward comparison)
+    "sp500_50_c9":      {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft_c9",
+                         "deployed": False, "backfill_from": "2025-07-01"},  # FS+HP fine-tune (+64.3%)
     "nasdaq_40_50":     {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_canon_ft",
                          "deployed": False, "backfill_from": "2025-07-01"},
     "russell_40_100":   {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_canon_ft",
