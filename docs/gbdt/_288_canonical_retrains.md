@@ -48,15 +48,16 @@ earlier best-return deploy). c9 (the +50%/50d fine-tune, +64.3%) is also a candi
 
 ## Tie-break (alternative vs chosen, backtest window)
 Backtested the model NOT chosen for the three ambiguous top-vs-book cells:
-- **#49: baseline all/d6 (+156.4%) CRUSHES the chosen c9 (+64.3%)** — and beats both deployed
-  champions; also wins the test book (R-p@3 0.323 vs 0.306) and DD (-12.2% vs -15.0%). The FS+HP
-  fine-tune (c9) was the wrong pick → the **baseline replaces c9 as the #49 model** (`_canon_ft`),
-  c9 kept as the `sp500_50_c9` candidate. Neither is deployed: the baseline fails the strict
-  target>DD rule (99/107), so both +50%/50d configs are candidates.
-- #51: d8/ss0.85 (+78.7%) ≈ baseline (+73.2%) — a wash; baseline retained.
-- #53: chosen d8/ss0.7/cs0.7 (+82.5%) >> baseline (+16.6%, -21% DD) — the FT choice was correct.
-Lesson: on the highest-signal rare cell, the FS+HP fine-tune anti-selected vs the plain
-full-feature default even in the backtest — the controlled-baseline discipline mattered.
+- **#49: the baseline all/d6 wins the held-out TEST book (R-p@3 0.323 vs c9's 0.306) — that is
+  the test-grounded basis** for making it the primary #49 model (`_canon_ft`); the FS+HP c9
+  fine-tune becomes the `sp500_50_c9` candidate. The backtest (+156.4% vs c9 +64.3%, DD -12.2%
+  vs -15.0%) is *consistent* with this but is NOT the basis (see the canonical-discipline note
+  below). Neither is deployed: the baseline fails the strict target>DD rule (99/107).
+- #51: baseline retained over d8/ss0.85 (both ≈ on test; backtest +73.2% vs +78.7% a wash).
+- #53: d8/ss0.7/cs0.7 retained — it wins the **test** book (R-p@3 0.511 vs baseline 0.497) and
+  the backtest agrees (+82.5% vs +16.6%). The controlled-baseline-vs-FT call is test-grounded.
+Lesson: on the highest-signal rare cell the FS+HP fine-tune anti-selected vs the plain
+full-feature default on **test** — the controlled-baseline discipline mattered.
 
 ## Caveats
 - Gross (no costs — downstream). Equal-weight, not Kelly (the Kelly gate zeroed on the stale
@@ -68,3 +69,21 @@ full-feature default even in the backtest — the controlled-baseline discipline
   swapped #49 to the baseline.
 - **#54 F18 is deployed by the backtest criterion despite the prior "F18 not promoted"
   (_279/_280) note** — flagged; a fundamentals model is now `deployed=True` for the first time.
+- **Go-live caveat (2026-07-14): the F18 cell currently FAILS the `/daily-predictions`
+  faithfulness self-check** — `infer_fresh` resolves the sp500 universe at its ≥1600-td floor
+  (~479 tickers) vs the cell's trained 2591-gate (~468), and the +11 extra tickers perturb the
+  universe-relative cross-sectional F18 columns (`_xs_rank`/`_xs_zscore`) → max_abs_diff 5.4e-02
+  > the 1e-4 gate → the runner aborts. The MODEL is faithful (`final_fit` reproduces `test.csv`
+  byte-identically, max_abs_diff 0); the fix is in `infer_fresh` (align its F18 build to the
+  cell's trained ticker set / min_rows). Until that lands, sp500_f18 can't be served.
+
+## Canonical-discipline note (backtest-window usage)
+Model **configs/HP were selected purely on train/val/test** — nothing about the fits or feature/HP
+choices saw the `backtest` window, so the model-side discipline is clean (the `final_fit` rebuild
+proves it). But the **deploy cut** (target-hits > DD-stops) is a strategy-simulation metric computed
+**on the backtest window**, so choosing the deployed set (sp500_20, sp500_f18) *does* use it. Per the
+canonical role discipline (backtest = "never touched by model selection"), that makes the quoted
+backtest returns **retrospectively in-sample for the deploy choice** — treat them as informational,
+NOT a clean OOS estimate. The honest out-of-sample record for the deployed models is the forward
+**/daily-predictions** log accumulated from 2026-07-14 onward, on data no selection step has seen.
+(The #49 model choice is re-grounded on the test book above, so only the deploy cut leans on the backtest.)
