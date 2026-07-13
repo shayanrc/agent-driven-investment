@@ -1,0 +1,34 @@
+# sp500 +50%/50d/dd25% — CANONICAL-PERIODS regime-corrected BASE (matched baseline).
+# Default-HP single fit on the canonical evaluation periods (explicit-boundary form):
+#   train 2015-01-01 → val 2022-03-30 → eval 2023-07-01 → test 2024-07-01 → 2025-06-30.
+# min_rows_per_ticker 2591 = the _285/_287 de-biasing gate (require ~2015-present tickers
+# so the train pool isn't polluted by rally-only late-IPO history). No hp_starting =
+# clean untuned reference for the fine-tune (_canon_ft) to beat. --snapshot-end 2026-07-06.
+experiment_name: sp500_up_50pct_50d_dd25pct_canon_base
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
+date_range:
+  end: 2026-07-06

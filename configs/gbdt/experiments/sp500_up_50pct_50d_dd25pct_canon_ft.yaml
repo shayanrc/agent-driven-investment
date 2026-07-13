@@ -1,0 +1,37 @@
+# sp500 +50%/50d/dd25% — CANONICAL-PERIODS FINE-TUNE (agent-driven FS+HP).
+# Same canonical explicit-boundary split + de-biasing gate as _canon_base; the fine-tune
+# adds the scout single-knob response curves + FS-prefit cliff-cut before iter_0, then the
+# agent (this session) drives the FS+HP loop, selecting by eval R-Precision@K (the holdout
+# oracle). Recipe = #45: scout + fs_prefit + 1000-tree ES-on-val HP sweep. --snapshot-end 2026-07-06.
+experiment_name: sp500_up_50pct_50d_dd25pct_canon_ft
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 50
+  max_drawdown: 0.25
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: agent_file_protocol
+    max_iterations: 5
+    plateau_threshold: 0.0001
+    degradation_gate: 0.01
+  scout:
+    enabled: true
+  fs_prefit:
+    enabled: true
+random_seed: 42
+date_range:
+  end: 2026-07-06
