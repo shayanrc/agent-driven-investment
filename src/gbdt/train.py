@@ -73,11 +73,26 @@ class SplitSpec:
       across cache growth — adding new bars past ``test_end`` leaves
       segments bit-identical.
 
-    When ``mode == "date_aligned"``, ``train_rows`` / ``val_rows`` /
-    ``eval_rows`` / ``test_rows`` are interpreted as **trading-day
-    durations** measured on the universe calendar (not row counts).
-    ``train_start`` is required (default in the runner is
-    ``2019-01-01`` per V1.4 D2).
+    When ``mode == "date_aligned"``, segment boundaries can be specified
+    two ways:
+
+    - **Duration form** (default): ``train_rows`` / ``val_rows`` /
+      ``eval_rows`` / ``test_rows`` are **trading-day durations** measured
+      on the universe calendar (not row counts), walked forward from
+      ``train_start``.
+    - **Explicit-boundary form** (opt-in): give the four segment-boundary
+      dates ``val_start`` / ``eval_start`` / ``test_start`` / ``test_end``
+      (with ``train_start`` as the fifth anchor). The windows are then the
+      literal calendar dates — each start snaps to the first trading day
+      **≥** it, ``test_end`` snaps to the last trading day **≤** it, and
+      each segment's end is the trading day before the next segment's
+      start. The trading-day durations are IGNORED in this form. This lets
+      a spec carry the canonical evaluation periods as fixed dates
+      (identical across the NYSE / NSE calendars, each snapping to its own
+      nearest trading day) rather than as calendar-arithmetic row counts.
+
+    ``train_start`` is required for either date_aligned form (runner
+    default is ``2019-01-01`` per V1.4 D2).
     """
 
     train_rows: int = 800
@@ -90,10 +105,26 @@ class SplitSpec:
     mode: Literal["trailing", "date_aligned"] = "trailing"
     train_start: date | None = None
     min_train_rows_per_ticker: int = 200
+    # Explicit-boundary form (date_aligned only): all four required together.
+    val_start: date | None = None
+    eval_start: date | None = None
+    test_start: date | None = None
+    test_end: date | None = None
 
     @property
     def total(self) -> int:
         return self.train_rows + self.val_rows + self.eval_rows + self.test_rows
+
+    @property
+    def has_explicit_boundaries(self) -> bool:
+        """True iff the explicit-boundary form is fully specified (all four
+        segment-boundary dates set). Partial specification is an error the
+        runner raises before carve."""
+        return all(
+            d is not None
+            for d in (self.val_start, self.eval_start,
+                      self.test_start, self.test_end)
+        )
 
 
 @dataclass
@@ -163,6 +194,61 @@ def _carve_trailing(panel: pd.DataFrame, split: SplitSpec) -> Fold:
     return Fold(train_idx=train, val_idx=val, eval_idx=ev, test_idx=te)
 
 
+def segment_bound_indices(
+    split: SplitSpec,
+    universe_calendar: pd.DatetimeIndex,
+) -> dict[str, tuple[int, int]]:
+    """Calendar-index ``(start, end)`` INCLUSIVE pairs for the four
+    date_aligned segments — for both the duration form and the
+    explicit-boundary form.
+
+    Shared by :func:`carve_universe_aligned` and the runner's cache-currency
+    preflight so both agree on where ``test`` ends.
+
+    Explicit-boundary snapping: a segment START date maps to the first
+    trading day **≥** it (``searchsorted(side="left")``); ``test_end`` maps
+    to the last trading day **≤** it (``searchsorted(side="right") - 1``);
+    each intermediate segment's end is the trading day before the next
+    segment's start. Raises if the explicit boundaries are not strictly
+    ordered (each segment must be non-empty on the calendar).
+    """
+    cal = pd.DatetimeIndex(universe_calendar).sort_values()
+    if split.train_start is None:
+        raise ValueError(
+            "segment_bound_indices: split.train_start must be set "
+            "(date_aligned mode anchors all segments to this date)."
+        )
+    i_train = int(cal.searchsorted(pd.Timestamp(split.train_start), side="left"))
+    if split.has_explicit_boundaries:
+        i_val = int(cal.searchsorted(pd.Timestamp(split.val_start), side="left"))
+        i_eval = int(cal.searchsorted(pd.Timestamp(split.eval_start), side="left"))
+        i_test = int(cal.searchsorted(pd.Timestamp(split.test_start), side="left"))
+        i_test_end = int(
+            cal.searchsorted(pd.Timestamp(split.test_end), side="right")
+        ) - 1
+        if not (i_train < i_val < i_eval < i_test <= i_test_end):
+            raise ValueError(
+                "segment_bound_indices: explicit boundaries must satisfy "
+                "train_start < val_start < eval_start < test_start ≤ test_end "
+                "with every segment non-empty on the universe calendar; got "
+                f"train={split.train_start} val={split.val_start} "
+                f"eval={split.eval_start} test={split.test_start} "
+                f"test_end={split.test_end} → calendar indices "
+                f"[{i_train}, {i_val}, {i_eval}, {i_test}, {i_test_end}]."
+            )
+    else:
+        i_val = i_train + split.train_rows
+        i_eval = i_val + split.val_rows
+        i_test = i_eval + split.eval_rows
+        i_test_end = i_test + split.test_rows - 1
+    return {
+        "train": (i_train, i_val - 1),
+        "val":   (i_val,   i_eval - 1),
+        "eval":  (i_eval,  i_test - 1),
+        "test":  (i_test,  i_test_end),
+    }
+
+
 def carve_universe_aligned(
     panel: pd.DataFrame,
     split: SplitSpec,
@@ -194,29 +280,17 @@ def carve_universe_aligned(
     if len(cal) == 0:
         raise ValueError("carve_universe_aligned: universe_calendar is empty.")
 
-    # Normalize train_start to a Timestamp aligned to the calendar. `side="left"`
-    # advances to the next trading day if train_start falls on a non-trading day.
-    ts_train_start = pd.Timestamp(split.train_start)
-    days_train_start = int(cal.searchsorted(ts_train_start, side="left"))
-    days_val_start = days_train_start + split.train_rows
-    days_eval_start = days_val_start + split.val_rows
-    days_test_start = days_eval_start + split.eval_rows
-    days_test_end = days_test_start + split.test_rows - 1  # inclusive index
-
-    if days_test_end >= len(cal):
+    # Boundary indices (duration form OR explicit-boundary form) — shared with
+    # the runner's preflight via segment_bound_indices so both agree on test_end.
+    bounds_idx = segment_bound_indices(split, cal)
+    if bounds_idx["test"][1] >= len(cal):
         raise ValueError(
-            "carve_universe_aligned: requested window "
-            f"[{ts_train_start.date()} + {split.train_rows + split.val_rows + split.eval_rows + split.test_rows} "
-            f"trading days] runs past the end of the supplied universe_calendar "
-            f"({cal[-1].date()}). Either extend the calendar or shrink the "
-            f"per-segment durations."
+            "carve_universe_aligned: requested window runs past the end of the "
+            f"supplied universe_calendar ({cal[-1].date()}). Either extend the "
+            f"calendar or shrink the per-segment durations / bring test_end in."
         )
-
     seg_bounds: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {
-        "train": (cal[days_train_start], cal[days_val_start - 1]),
-        "val":   (cal[days_val_start],   cal[days_eval_start - 1]),
-        "eval":  (cal[days_eval_start],  cal[days_test_start - 1]),
-        "test":  (cal[days_test_start],  cal[days_test_end]),
+        seg: (cal[i0], cal[i1]) for seg, (i0, i1) in bounds_idx.items()
     }
     segment_dates: dict[str, dict[str, str]] = {
         seg: {
@@ -1353,6 +1427,7 @@ __all__ = [
     "Fold",
     "carve_single_fold",
     "carve_universe_aligned",
+    "segment_bound_indices",
     "WalkForwardResult",
     "walk_forward_train",
     "default_fs_hp_callback",

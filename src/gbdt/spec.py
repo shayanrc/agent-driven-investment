@@ -212,6 +212,29 @@ def _validate_spec(spec: dict) -> None:
                   + sp.get("eval_rows", 0) + sp.get("test_rows", 0))
         if total > sp.get("min_rows_per_ticker", total):
             raise ValueError("split sum exceeds min_rows_per_ticker")
+        # V1.4.1 explicit-boundary form: all four segment-boundary dates
+        # together (or none), require date_aligned, and be date-ordered.
+        _bkeys = ("val_start", "eval_start", "test_start", "test_end")
+        _bset = [k for k in _bkeys if sp.get(k) is not None]
+        if _bset and len(_bset) != 4:
+            raise ValueError(
+                "split: the explicit-boundary form needs ALL of val_start / "
+                "eval_start / test_start / test_end (or none of them)"
+            )
+        if len(_bset) == 4:
+            if sp.get("mode") != "date_aligned":
+                raise ValueError(
+                    "split: explicit boundary dates require mode: date_aligned"
+                )
+            _d = [str(sp.get("train_start", ""))[:10]] + [
+                str(sp[k])[:10] for k in _bkeys
+            ]
+            if _d[0] == "" or not all(_d[i] < _d[i + 1] for i in range(4)):
+                raise ValueError(
+                    "split: explicit boundaries require train_start and must be "
+                    "strictly increasing train_start < val_start < eval_start "
+                    "< test_start < test_end"
+                )
 
 
 def _spec_hash(spec: dict) -> str:
