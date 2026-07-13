@@ -1,0 +1,33 @@
+# russell1000 +50%/200d/dd25% — CANONICAL-PERIODS regime-corrected BASE.
+# Default-HP single fit on the canonical evaluation periods (explicit-boundary form).
+# 200d horizon: the backtest window (2025-07..2026-06) labels are mostly NaN (needs data to
+# ~2027-04) — expected; backtest predictions do not need labels. Shares the russell1000
+# universe matrix with the +40%/100d cell (features target-agnostic). Same gate + snapshot.
+experiment_name: russell1000_up_50pct_200d_dd25pct_canon_base
+target:
+  universe: russell1000
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
+date_range:
+  end: 2026-07-06

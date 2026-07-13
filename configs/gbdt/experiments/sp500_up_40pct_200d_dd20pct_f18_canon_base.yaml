@@ -1,0 +1,33 @@
+# sp500 +40%/200d/dd20% F18 fundamentals — CANONICAL-PERIODS regime-corrected BASE.
+# Default-HP single fit on the canonical evaluation periods (explicit-boundary form).
+# candidates: all_fundamentals -> F1-F16 technical + F18 point-in-time valuation-ratio cols
+# (needs results/valuation/data/valuation_panel.parquet). 200d horizon: backtest-window labels
+# mostly NaN (expected). Same de-biasing gate + snapshot as the sp500 technical cells.
+experiment_name: sp500_up_40pct_200d_dd20pct_f18_canon_base
+target:
+  universe: sp500
+  direction: up
+  threshold_pct: 40
+  horizon_days: 200
+  max_drawdown: 0.20
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all_fundamentals
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
+date_range:
+  end: 2026-07-06
