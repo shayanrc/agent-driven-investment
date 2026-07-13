@@ -153,7 +153,8 @@ split:
   # (backtest 2025-07-01 → 2026-06-30 is scored forward, never in the split)
 ```
 
-Example (canonical date-aligned cell):
+Example (duration form — back-compat; NOT the canonical periods. The canonical
+periods are the 2015 explicit-boundary block above — use that for new work):
 ```yaml
 split:
   mode: date_aligned
