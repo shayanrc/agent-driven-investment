@@ -6,6 +6,7 @@ When adding a new memory, append a one-line pointer below. Before adding, check 
 
 ## Project facts
 
+- [project-canonical-evaluation-periods.md](project-canonical-evaluation-periods.md) — THE fixed regime-corrected windows for all training/fine-tuning/backtesting (train 2015-01-01→2022-03-29 · val →2023-06-30 · eval →2024-06-30 · test →2025-06-30 · backtest 2025-07-01→2026-06-30); one role per window (val=FS+ES, eval=HP, test=final compare, backtest=backtest only); supersedes the 2019 D2 anchor for new work. Set by owner 2026-07-13
 - [project-overview.md](project-overview.md) — Four modules: analog_mc + data_pipelines + forecasters + gbdt (all v1 shipped to main as of 2026-05-26). Per-module `docs/<module>/goal.md` for specifics
 - [project-data-source.md](project-data-source.md) — analog_mc reads from `data/NASDAQ100.csv`; gbdt v1 reads NIFTY 50 panel via `data_pipelines.fetch()`; per-module switchover for analog_mc is a separate plan
 - [project-streamlit.md](project-streamlit.md) — Local dashboard designed for concurrent runs (per-run lockfile, no global mutex)
