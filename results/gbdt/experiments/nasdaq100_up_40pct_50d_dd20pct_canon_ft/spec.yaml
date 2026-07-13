@@ -1,0 +1,9 @@
+experiment_name: nasdaq100_up_40pct_50d_dd20pct_canon_ft
+features:
+  candidates: all
+target:
+  direction: up
+  horizon_days: 50
+  max_drawdown: 0.2
+  threshold_pct: 40
+  universe: nasdaq100

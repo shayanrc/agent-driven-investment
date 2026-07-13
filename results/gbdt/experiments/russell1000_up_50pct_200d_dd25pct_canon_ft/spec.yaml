@@ -1,0 +1,9 @@
+experiment_name: russell1000_up_50pct_200d_dd25pct_canon_ft
+features:
+  candidates: all
+target:
+  direction: up
+  horizon_days: 200
+  max_drawdown: 0.25
+  threshold_pct: 50
+  universe: russell1000
