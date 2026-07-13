@@ -31,16 +31,29 @@ Benchmark ^NDX buy-hold +32.1%. Full data + per-cell dirs: `results/backtests/ca
 
 | # | cell | model | return | maxDD | EW basket | target/DD | deploy |
 |---|---|---|---|---|---|---|---|
-| 49 | sp500 +50%/50d | c9 | +64.3% | -15.0% | +26.5% | 99/122 | candidate |
+| 49 | sp500 +50%/50d | **baseline all/d6** | **+156.4%** | -12.2% | +26.5% | 99/107 | **deployed** |
+| 49 | sp500 +50%/50d | c9 (candidate) | +64.3% | -15.0% | +26.5% | 99/122 | candidate |
 | 50 | sp500 +20%/25d | d8·ss0.85 | +135.1% | -14.4% | +26.5% | 98/83 | **deployed** |
 | 51 | nasdaq +40%/50d | baseline | +73.2% | -18.1% | +36.5% | 98/114 | candidate |
+| 51 | nasdaq +40%/50d | d8·ss0.85 (alt) | +78.7% | -13.3% | +36.5% | 84/113 | — |
 | 52 | russell +40%/100d | d8·ss0.7·cs0.7 | +21.2% | -15.3% | +20.5% | 95/143 | candidate |
 | 53 | russell +50%/200d | d8·ss0.7·cs0.7 | +82.5% | -14.7% | +20.5% | 103/119 | candidate |
+| 53 | russell +50%/200d | baseline (alt) | +16.6% | -21.0% | +20.5% | 91/130 | — |
 | 54 | sp500 +40%/200d F18 | baseline | +134.6% | -11.3% | +26.5% | 92/79 | **deployed** |
 
-5/6 beat NDX buy-hold; all beat their own EW basket. **Deploy criterion = target hits > DD
-stops** (user's rule): sp500_20 (98/83) and sp500_F18 (92/79) clear it → wired into
-`/daily-predictions` as `deployed=True`; the other four track as `deployed=False` candidates.
+**Deployed set (3):** sp500_20 (98/83) + sp500_f18 (92/79) clear the target>DD rule; **sp500_50
+baseline is deployed on best-return grounds (+156.4% — the top performer, beating both
+champions) despite a near-even 99/107 (user decision)**. c9 retained as a candidate.
+
+## Tie-break (alternative vs chosen, backtest window)
+Backtested the model NOT chosen for the three ambiguous top-vs-book cells:
+- **#49: baseline all/d6 (+156.4%) CRUSHES the chosen c9 (+64.3%)** — and beats both deployed
+  champions; also wins the test book (R-p@3 0.323 vs 0.306) and DD (-12.2% vs -15.0%). The FS+HP
+  fine-tune (c9) was the wrong pick → swapped: **baseline deployed, c9 → candidate (sp500_50_c9)**.
+- #51: d8/ss0.85 (+78.7%) ≈ baseline (+73.2%) — a wash; baseline retained.
+- #53: chosen d8/ss0.7/cs0.7 (+82.5%) >> baseline (+16.6%, -21% DD) — the FT choice was correct.
+Lesson: on the highest-signal rare cell, the FS+HP fine-tune anti-selected vs the plain
+full-feature default even in the backtest — the controlled-baseline discipline mattered.
 
 ## Caveats
 - Gross (no costs — downstream). Equal-weight, not Kelly (the Kelly gate zeroed on the stale

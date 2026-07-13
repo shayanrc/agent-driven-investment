@@ -1,0 +1,20 @@
+##### ALT 49_baseline
+[   109s] test: base=0.0093 auc=0.9343 rp@3=0.323 rp@10=0.406
+window 2025-07-01 -> 2026-07-10 | 207 entries / 206 exits / 219 trims | 1 open(unresolved) at end
+Strategy          end $256,409  +156.4%  maxDD -12.2%  avg_gross_exp 0.70
+exit triggers: {'target': 99, 'DD': 107}
+##### ALT 51_d8ss085
+[    17s] test: base=0.0300 auc=0.9414 rp@3=0.472 rp@10=0.726
+window 2025-07-01 -> 2026-07-10 | 201 entries / 198 exits / 248 trims | 3 open(unresolved) at end
+Strategy          end $178,683  +78.7%  maxDD -13.3%  avg_gross_exp 0.75
+exit triggers: {'target': 84, 'DD': 113, 'horizon': 1}
+##### ALT 53_baseline
+[   187s] test: base=0.1196 auc=0.7765 rp@3=0.497 rp@10=0.422
+window 2025-07-01 -> 2026-07-10 | 223 entries / 221 exits / 219 trims | 2 open(unresolved) at end
+Strategy          end $116,611  +16.6%  maxDD -21.0%  avg_gross_exp 0.73
+exit triggers: {'DD': 130, 'target': 91}
+===ALTS DONE===
+[    82s] test: base=0.0093 auc=0.9316 rp@3=0.306 rp@10=0.357
+[    15s] test: base=0.0300 auc=0.9396 rp@3=0.462 rp@10=0.719
+[   175s] test: base=0.1196 auc=0.7787 rp@3=0.511 rp@10=0.459
+===RESTORE DONE===
