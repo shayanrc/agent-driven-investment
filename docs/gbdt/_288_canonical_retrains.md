@@ -60,7 +60,8 @@ full-feature default even in the backtest — the controlled-baseline discipline
   eval-R-p@K per-pick prob; actual +10/-5 win rate ~54%). Bull window (NDX +32%).
 - **test R-p@K does not perfectly predict backtest return** (russell_40_100 won every K on
   test but lagged the backtest, +21%). The backtest window is the independent arbiter.
-- The ambiguous top-vs-book cells (#49, #51, #53) would ideally have BOTH the chosen model and
-  the alternative backtested to settle the @1-vs-book call — a follow-up.
+- The ambiguous top-vs-book cells (#49, #51, #53) had BOTH the chosen model and the alternative
+  backtested (the Tie-break section above) to settle the @1-vs-book call — done, which is what
+  swapped #49 to the baseline.
 - **#54 F18 is deployed by the backtest criterion despite the prior "F18 not promoted"
   (_279/_280) note** — flagged; a fundamentals model is now `deployed=True` for the first time.

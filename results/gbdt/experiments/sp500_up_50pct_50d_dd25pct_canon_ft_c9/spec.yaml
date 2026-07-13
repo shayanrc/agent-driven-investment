@@ -1,4 +1,4 @@
-experiment_name: sp500_up_50pct_50d_dd25pct_canon_ft
+experiment_name: sp500_up_50pct_50d_dd25pct_canon_ft_c9
 features:
   candidates: all
 target:
