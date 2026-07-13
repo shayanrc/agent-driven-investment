@@ -10,7 +10,7 @@ so a weekend / holiday / vacation gap is caught up correctly on the next run.
 seeds + scores only the two deployed sp500 champions (the signal record), skipping
 the heavier russell1000/nasdaq100 comparison candidates, so the daily run stays fast
 (one sp500 build; no ~1,006-ticker russell seed). A **weekly** timer
-(`daily-predictions-weekly`) runs the FULL cadence (all five cells) to refresh the
+(`daily-predictions-weekly`) runs the FULL cadence (all seven cells) to refresh the
 candidates — the backfill logs every candidate day since the last full run. Both
 write the same forward log.
 

@@ -1,4 +1,6 @@
-##### sp500_50
+##### sp500_50_c9 (candidate) — NOTE: this block is the c9 config's backtest (+64.3%).
+##### The DEPLOYED sp500_50 model is the baseline all/d6 (+156.4%, 99/107) — see SUMMARY.md
+##### and canon_tiebreak/49_baseline/. (Raw batch dump below predates the #49 baseline swap.)
 [cfg] horizon_days=50 (cell spec) target_return=0.1 stop_dd=0.05 K=3
     fresh signals [2025-07-01 .. 2026-06-30] 251 dates, 468 tickers
     comparison_end=2026-07-10 (full 50-BD resolution only for signals <= 2026-04-28)
