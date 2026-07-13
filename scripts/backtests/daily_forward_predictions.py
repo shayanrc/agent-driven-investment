@@ -54,22 +54,21 @@ SEED_JOBS = 8         # parallel fetch workers for the seed (network I/O-bound; 
 # _288_canonical_retrains.md). All cells retrained on the canonical evaluation windows
 # (train 2015-01-01→2022-03-29, val→2023-06-30, eval→2024-06-30, test 2024-07→2025-06) for
 # consistency, replacing the ad-hoc agentloop/champmatch artifacts. Each ``cell`` is a
-# ``_canon_ft`` dir (model.ubj + features.yaml + hp.yaml + spec.yaml). ``deployed`` reflects
-# the backtest-window (2025-07→2026-06) evidence: sp500_20 (+135%, target/DD 98/83) and
-# sp500_f18 (+134.6%, 92/79) clear the target>DD rule; **sp500_50 (baseline all/d6) is deployed
-# on best-backtest-return grounds (+156.4%, the top performer, beating both champions) despite
-# a near-even 99/107 — a user decision**. c9 (the FS+HP fine-tune, +64.3%) is retained as a
-# candidate (sp500_50_c9). The other three stay deployed=False candidates. test_end is
+# ``_canon_ft`` dir (model.ubj + features.yaml + hp.yaml + spec.yaml). ``deployed`` is the
+# **strict backtest-window (2025-07→2026-06) target-hits > DD-stops rule**: only sp500_20
+# (+135%, 98/83) and sp500_f18 (+134.6%, 92/79) clear it. sp500_50 (baseline all/d6) is the
+# best backtest performer (+156.4%) but has MORE DD-stops than target-hits (99/107), so it
+# stays a candidate; c9 (the FS+HP fine-tune, +64.3%) is also a candidate. test_end is
 # 2025-06-30 for every canonical cell, so OOS forward-scoring begins 2025-07-01 (backfill_from).
 CELLS = {
-    # DEPLOYED
+    # DEPLOYED (target-hits > DD-stops on the backtest window)
     "sp500_20":         {"cell": "results/gbdt/experiments/sp500_up_20pct_25d_dd10pct_canon_ft",
                          "deployed": True,  "backfill_from": "2025-07-01"},
     "sp500_f18_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_f18_canon_ft",
                          "deployed": True,  "backfill_from": "2025-07-01"},
-    "sp500_50":         {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft",
-                         "deployed": True,  "backfill_from": "2025-07-01"},  # baseline all/d6 (+156.4%)
     # CANDIDATES (deployed=False — forward comparison)
+    "sp500_50":         {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft",
+                         "deployed": False, "backfill_from": "2025-07-01"},  # baseline all/d6 (+156.4%; 99/107 fails target>DD)
     "sp500_50_c9":      {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft_c9",
                          "deployed": False, "backfill_from": "2025-07-01"},  # FS+HP fine-tune (+64.3%)
     "nasdaq_40_50":     {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_canon_ft",
