@@ -5,7 +5,7 @@
     "K": 3,
     "target_return": 0.1,
     "stop_drawdown": 0.05,
-    "horizon_days": 25,
+    "horizon_days": 50,
     "selection_mode": "rank",
     "rank_by": "raw",
     "sizing_mode": "equal",
@@ -15,16 +15,16 @@
     "fresh_start": "2025-07-01",
     "fresh_end": "2026-06-30",
     "comparison_end": "2026-07-10",
-    "full_resolve_cutoff": "2026-06-03"
+    "full_resolve_cutoff": "2026-04-28"
   },
   "strategy": {
     "start": 100000.0,
-    "end": 235091.26571987284,
-    "total_return": 1.3509126571987284,
-    "cagr": 1.2474898100454963,
-    "max_dd": -0.1442276533508674,
-    "n_trades": 602,
-    "gross_exposure_avg": 0.6814166590822169
+    "end": 164316.26851034834,
+    "total_return": 0.6431626851034833,
+    "cagr": 0.600770068790023,
+    "max_dd": -0.14979351056623225,
+    "n_trades": 693,
+    "gross_exposure_avg": 0.7237613984833906
   },
   "benchmarks": {
     "ndx_bh": {
@@ -56,14 +56,13 @@
     }
   },
   "turnover": {
-    "entries": 186,
-    "exits": 184,
-    "trims": 232,
+    "entries": 223,
+    "exits": 221,
+    "trims": 249,
     "open_at_end_unresolved": 2
   },
   "exit_triggers": {
-    "target": 98,
-    "DD": 83,
-    "horizon": 3
+    "target": 99,
+    "DD": 122
   }
 }

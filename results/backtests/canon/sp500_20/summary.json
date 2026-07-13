@@ -8,8 +8,8 @@
     "horizon_days": 25,
     "selection_mode": "rank",
     "rank_by": "raw",
-    "sizing_mode": "rank_kelly",
-    "rank_kelly_p": 0.2647058823529411
+    "sizing_mode": "equal",
+    "rank_kelly_p": null
   },
   "window": {
     "fresh_start": "2025-07-01",
@@ -19,12 +19,12 @@
   },
   "strategy": {
     "start": 100000.0,
-    "end": 100000.0,
-    "total_return": 0.0,
-    "cagr": 0.0,
-    "max_dd": 0.0,
-    "n_trades": 0,
-    "gross_exposure_avg": 0.0
+    "end": 235091.26571987284,
+    "total_return": 1.3509126571987284,
+    "cagr": 1.2474898100454963,
+    "max_dd": -0.1442276533508674,
+    "n_trades": 602,
+    "gross_exposure_avg": 0.6814166590822169
   },
   "benchmarks": {
     "ndx_bh": {
@@ -56,10 +56,14 @@
     }
   },
   "turnover": {
-    "entries": 0,
-    "exits": 0,
-    "trims": 0,
-    "open_at_end_unresolved": 0
+    "entries": 186,
+    "exits": 184,
+    "trims": 232,
+    "open_at_end_unresolved": 2
   },
-  "exit_triggers": {}
+  "exit_triggers": {
+    "target": 98,
+    "DD": 83,
+    "horizon": 3
+  }
 }

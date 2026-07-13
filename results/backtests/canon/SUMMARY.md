@@ -7,7 +7,8 @@ backtest window (never touched during train/val/eval/test selection). $100k star
 
 | # | cell | model | return | maxDD | NDX b&h | EW basket | entries | target/DD |
 |---|---|---|---|---|---|---|---|---|
-| 49 | sp500 +50%/50d | c9 144f·d6·mcw10·ss0.7 | +64.3% | -15.0% | +32.1% | +26.5% | 223 | 99/122 |
+| 49 | sp500 +50%/50d | baseline all/d6 (DEPLOYED) | +156.4% | -12.2% | +32.1% | +26.5% | 207 | 99/107 |
+| 49 | sp500 +50%/50d | c9 144f·d6·mcw10·ss0.7 (candidate) | +64.3% | -15.0% | +32.1% | +26.5% | 223 | 99/122 |
 | 50 | sp500 +20%/25d | 279f·d8·ss0.85 | +135.1% | -14.4% | +32.1% | +26.5% | 186 | 98/83 |
 | 51 | nasdaq +40%/50d | baseline all/d6 | +73.2% | -18.1% | +32.1% | +36.5% | 212 | 98/114 |
 | 52 | russell +40%/100d | 279f·d8·ss0.7·cs0.7 | +21.2% | -15.3% | +32.1% | +20.5% | 239 | 95/143 |
