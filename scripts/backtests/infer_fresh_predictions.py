@@ -210,42 +210,42 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
             ).hexdigest()[:16]
         panel = aligned
 
-    # Fundamentals cells: PIN membership to the cell's OWN trained (date,ticker) keys.
-    # The fund path full-builds the cross-sectional fund_*_xs_rank / _xs_zscore columns
-    # from scratch, so at every scored date it must rank over EXACTLY the tickers the
-    # model saw at that date. Two things otherwise widen the cross-section → the self-check
-    # diverges (observed max_abs_diff 5.4e-2 on sp500 F18):
-    #   (1) infer's default roster floor (min_rows=1600 td) admits +11 names the cell's
-    #       stricter training gate (min_rows_per_ticker=2591) excluded; and
-    #   (2) _align_panel aligns to whatever cached feature-matrix contains the test-keys —
-    #       for a fund cell that is typically the *technical* build of the same universe
-    #       (wider 1600-floor roster), whose train_keys already CONTAIN the +11, so align
-    #       does not drop them.
-    # Technical cells avoid this because the incremental cache replays frozen training-time
-    # rows; the fund full-build has no such cache and must pin explicitly. predictions/test.csv
-    # holds one row per trained (date,ticker) over the test window, so it IS the exact
-    # per-date membership. Roster union alone is insufficient — it matches the ticker SET
-    # across the window but not the per-date cross-section (which is what fund_*_xs_* rank
-    # over), leaving a residual on dates where a name was present some days but not others.
-    # Outside the test window: roster tickers only — each kept ticker's own path-dependent
-    # history stays intact (path features are per-ticker; warmup/forward cross-sections use
-    # the same trained roster as training).
-    if token in FUNDAMENTALS_TOKENS:
-        test = pd.read_csv(cell / "predictions" / "test.csv",
-                           parse_dates=["date"], usecols=["date", "ticker"])
-        roster = set(test["ticker"])
-        test_mi = pd.MultiIndex.from_arrays([test["date"], test["ticker"]],
-                                            names=["date", "ticker"])
-        dates = panel.index.get_level_values("date")
-        in_test_win = (dates >= test["date"].min()) & (dates <= test["date"].max())
-        # test window → EXACT trained keys; elsewhere → trained roster (path warmup + fresh).
-        keep = (~in_test_win & panel.index.get_level_values("ticker").isin(roster)) \
-            | panel.index.isin(test_mi)
-        if not keep.all():
-            dropped = int((~keep).sum())
-            print(f"[roster] fund cell: pinning to the trained {len(roster)}-ticker roster "
-                  f"+ exact test-window keys (dropping {dropped} out-of-roster/off-key row(s))")
-            panel = panel[keep]
+    # PIN membership to the cell's OWN trained (date,ticker) keys — for EVERY cell
+    # (technical + fund). The cross-sectional features (technical F-family rank/zscore AND
+    # fund_*_xs_rank/_xs_zscore) rank over whatever tickers are present at each date, so
+    # infer must present the model with EXACTLY its trained cross-section. The canonical
+    # cells train with min_rows_per_ticker=2591 (~468 sp500 tickers), but infer resolves the
+    # roster at the default 1600-td floor (~479); the +11 extra names re-rank the cross-section
+    # → the self-check diverges (observed: sp500 F18 fund max 5.4e-2; sp500_20 technical max
+    # 8.3e-2). _align_panel does NOT drop them — it aligns to whatever cached feature-matrix
+    # holds the test-keys (typically the *technical* build of the same universe, wider roster),
+    # whose train_keys already contain the +11. predictions/test.csv holds one row per trained
+    # (date,ticker) over the test window, so it IS the exact per-date membership. Roster union
+    # alone is insufficient — it matches the ticker SET across the window but not the per-date
+    # cross-section, leaving a residual on dates where a name was present some days but not
+    # others. Test window → EXACT trained keys; elsewhere → trained roster only (each kept
+    # ticker's own path-dependent history stays intact; path features are per-ticker, and
+    # warmup/forward cross-sections use the same trained roster the model learned on).
+    # roster_sig is folded into the technical incremental-cache signature below so a pinned
+    # (468-roster) build never reuses an unpinned (479-roster) cache entry whose FROZEN
+    # test-window rows carry the wider cross-section.
+    roster_sig = ""
+    test = pd.read_csv(cell / "predictions" / "test.csv",
+                       parse_dates=["date"], usecols=["date", "ticker"])
+    roster = set(test["ticker"])
+    test_mi = pd.MultiIndex.from_arrays([test["date"], test["ticker"]],
+                                        names=["date", "ticker"])
+    dates = panel.index.get_level_values("date")
+    in_test_win = (dates >= test["date"].min()) & (dates <= test["date"].max())
+    keep = (~in_test_win & panel.index.get_level_values("ticker").isin(roster)) \
+        | panel.index.isin(test_mi)
+    if not keep.all():
+        dropped = int((~keep).sum())
+        print(f"[roster] pinning to the trained {len(roster)}-ticker roster + exact "
+              f"test-window keys (dropping {dropped} out-of-roster/off-key row(s))")
+        panel = panel[keep]
+        roster_sig = hashlib.sha256(
+            ",".join(sorted(roster)).encode("utf-8")).hexdigest()[:12]
 
     # Feature build keyed by the ALIGNED row-set AND the feature token — identical
     # (universe, slice, alignment, token) ⇒ one in-process build. The token is in the
@@ -282,6 +282,8 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
             # + align_signature only and stores just the max date, so it can't tell
             # a truncated matrix from a full one).
             cache_sig = align_sig if panel_start is None else f"{align_sig}|ps={panel_start}"
+            if roster_sig:  # pinned build → distinct cache namespace (see roster pin above)
+                cache_sig = f"{cache_sig}|roster={roster_sig}"
             feat_cache[fk] = _ifc.build_or_extend(
                 INCREMENTAL_CACHE_DIR, universe, warmup_start, panel, panel_obj.index_series,
                 annualization=panel_obj.annualization_factor, align_signature=cache_sig,
