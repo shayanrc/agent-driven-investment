@@ -42,6 +42,15 @@ CELLS = {
     "nifty_30_50_fbase": dict(universe="nifty500", thr=30, hor=50, dd=0.15,
                               token="all_calendar2",
                               stem="nifty500_up_30pct_50d_dd15pct_fbase"),
+    # V1.11 (task #60): the two deploy-shaped every-K fund wins from the _289 scan
+    # (common base rate + ~+0.12 test R-p@1) — the natural next finetunes after the
+    # rare 50%/200d. Both all_fundamentals_calendar2 (F18-IN de-confounded).
+    "nifty_10_25_ffund": dict(universe="nifty500", thr=10, hor=25, dd=0.05,
+                              token="all_fundamentals_calendar2",
+                              stem="nifty500_up_10pct_25d_dd5pct_ffund"),
+    "nifty_20_100_ffund": dict(universe="nifty500", thr=20, hor=100, dd=0.10,
+                               token="all_fundamentals_calendar2",
+                               stem="nifty500_up_20pct_100d_dd10pct_ffund"),
 }
 
 

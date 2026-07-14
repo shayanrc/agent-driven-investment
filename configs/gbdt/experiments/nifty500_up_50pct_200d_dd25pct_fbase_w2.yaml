@@ -1,0 +1,33 @@
+# nifty500_up_50pct_200d_dd25pct_fbase_w2 — V1.11 SECOND-WINDOW replication (task #61) of the _289 +50%/200d F18-IN win.
+# Independent EARLIER date-aligned window (test 2023-07->2024-06, off the canonical
+# 2024-25 test AND the 2025-26 backtest). Matched base-vs-fund single fit (default HP),
+# only features.candidates differs. --snapshot-end 2025-06-30 (200d labels from test_end
+# 2024-06-30 reach ~2025-04, before the backtest window).
+experiment_name: nifty500_up_50pct_200d_dd25pct_fbase_w2
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 50
+  horizon_days: 200
+  max_drawdown: 0.25
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2021-07-01'
+  eval_start: '2022-07-01'
+  test_start: '2023-07-01'
+  test_end: '2024-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all_calendar2
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
+date_range:
+  end: 2025-06-30
