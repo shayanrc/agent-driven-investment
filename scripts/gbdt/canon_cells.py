@@ -33,6 +33,15 @@ CELLS = {
     "sp500_40_200_f18": dict(universe="sp500", thr=40, hor=200, dd=0.20,
                              token="all_fundamentals",
                              stem="sp500_up_40pct_200d_dd20pct_f18"),
+    # V1.10 nifty500 canonical-scan finetunes (task #55): the strongest fund win
+    # (50%/200d ffund, +0.341 test R-p@1) + the top technical champion (30%/50d
+    # fbase, AUC 0.669). NSE calendar + all_*_calendar2 tokens flow through resolve().
+    "nifty_50_200_ffund": dict(universe="nifty500", thr=50, hor=200, dd=0.25,
+                               token="all_fundamentals_calendar2",
+                               stem="nifty500_up_50pct_200d_dd25pct_ffund"),
+    "nifty_30_50_fbase": dict(universe="nifty500", thr=30, hor=50, dd=0.15,
+                              token="all_calendar2",
+                              stem="nifty500_up_30pct_50d_dd15pct_fbase"),
 }
 
 
