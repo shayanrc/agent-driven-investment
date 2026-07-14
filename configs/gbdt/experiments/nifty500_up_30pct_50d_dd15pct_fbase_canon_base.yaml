@@ -1,0 +1,31 @@
+# nifty500_up_30pct_50d_dd15pct_fbase_canon_base — V1.10 canonical-periods BASE (matched baseline for the finetune).
+# nifty500 the top technical champion (AUC 0.669); de-confounded F18-IN. Default-HP single fit, canonical
+# explicit-boundary split; min_rows 2591 de-biasing gate. --snapshot-end 2026-07-06.
+experiment_name: nifty500_up_30pct_50d_dd15pct_fbase_canon_base
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 30
+  horizon_days: 50
+  max_drawdown: 0.15
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+features:
+  candidates: all_calendar2
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+random_seed: 42
+date_range:
+  end: 2026-07-06
