@@ -70,13 +70,21 @@ full-feature default on **test** — the controlled-baseline discipline mattered
   choice is decided on the **test** book (0.323 vs 0.306); the backtest is consistent, not the basis.
 - **#54 F18 is deployed by the backtest criterion despite the prior "F18 not promoted"
   (_279/_280) note** — flagged; a fundamentals model is now `deployed=True` for the first time.
-- **Go-live caveat (2026-07-14): the F18 cell currently FAILS the `/daily-predictions`
-  faithfulness self-check** — `infer_fresh` resolves the sp500 universe at its ≥1600-td floor
-  (~479 tickers) vs the cell's trained 2591-gate (~468), and the +11 extra tickers perturb the
-  universe-relative cross-sectional F18 columns (`_xs_rank`/`_xs_zscore`) → max_abs_diff 5.4e-02
-  > the 1e-4 gate → the runner aborts. The MODEL is faithful (`final_fit` reproduces `test.csv`
-  byte-identically, max_abs_diff 0); the fix is in `infer_fresh` (align its F18 build to the
-  cell's trained ticker set / min_rows). Until that lands, sp500_f18 can't be served.
+- **F18 self-check (fixed 2026-07-14, commit `ab16851b`): sp500_f18 now serves.** The fund
+  full-build in `infer_fresh` had aborted (max_abs_diff 5.4e-2) for two reasons, both specific
+  to the fundamentals path (technical cells ride the incremental cache, which replays frozen
+  training-time cross-sections): (1) infer resolved the sp500 roster at its ≥1600-td floor
+  (~479) vs the cell's trained 2591-gate (~468), and `_align_panel` aligned to the *technical*
+  cache of the same universe so it didn't drop the +11 → they re-ranked the cross-sectional
+  `fund_*_xs_rank`/`_xs_zscore` columns. Fix: pin the fund build to the cell's OWN trained
+  `(date,ticker)` keys (`predictions/test.csv`) → membership exact (+0/−0), mean 7.2e-4→1.6e-5.
+  (2) A ~3.4e-2 residual on 504/117000 rows, clustered on ~30 tickers with the step-constant-
+  across-a-filing-window signature = point-in-time `fund_*` revision across valuation-panel
+  rebuilds — a fund cell can't reproduce `test.csv` byte-identically forever. Fix: a bounded
+  fund-drift tolerance (`FUND_VALIDATION_TOL=0.05` max **and** `FUND_MEAN_TOL=1e-3` mean,
+  unchanged-universe only) mirroring `allow_universe_growth`; the mean bound is the corruption
+  guard (the _007 backfill bug lifts the mean far past it). Forward scores always use the
+  current panel. The MODEL itself was always faithful (`final_fit` reproduced `test.csv`).
 
 ## Canonical-discipline note (backtest-window usage)
 Model **configs/HP were selected purely on train/val/eval/test** — nothing about the fits or feature/HP
