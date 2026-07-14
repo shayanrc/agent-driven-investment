@@ -1,0 +1,35 @@
+# Experiment: nifty500_up_10pct_10d_dd5pct_fbase_canon
+# V1.10 nifty500 canonical scan (task #55) — supersedes the INVALIDATED _285 sweep.
+# Canonical explicit-boundary date_aligned split; F18-IN de-confounded by the
+# screener.in pre-2019 backfill. Matched base-vs-fund A/B: fbase arm differs from
+# its sibling ONLY in features.candidates (xgboost default HP, single fit), so each
+# cell's fund-minus-base delta is a clean read of the F18 contribution.
+target:
+  universe: nifty500
+  direction: up
+  threshold_pct: 10
+  horizon_days: 10
+  max_drawdown: 0.05
+
+split:
+  mode: date_aligned
+  train_start: '2015-01-01'
+  val_start: '2022-03-30'
+  eval_start: '2023-07-01'
+  test_start: '2024-07-01'
+  test_end: '2025-06-30'
+  min_rows_per_ticker: 2591
+
+features:
+  candidates: all_calendar2
+
+backend:
+  library: xgboost
+  calibration_method: conditional_isotonic
+  fs_hp_loop:
+    callback_mode: default
+    max_iterations: 1
+    plateau_threshold: 0.005
+    degradation_gate: 0.01
+
+random_seed: 42
