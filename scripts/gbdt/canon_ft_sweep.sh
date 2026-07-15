@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# V1.10 Phase 2 finetune HP sweep (task #55): deep+bagging grid on FEATS=all per
+# Canonical-finetune deep+bagging HP sweep (recipe §3) — cell-generic via canon_cells.py: deep+bagging grid on FEATS=all per
 # the canonical recipe §3. hp_one_canon fits each config on val+eval (test untouched)
 # and appends val/eval R-p@K to the cell's FT jsonl. Select on VAL (eval unreliable).
-# Usage: CELL=<id> bash nifty_ft_sweep.sh
+# Usage: CELL=<id> bash canon_ft_sweep.sh
 set -u
 cd /mnt/Workspace/Workspace/wt-nse-valuation
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
