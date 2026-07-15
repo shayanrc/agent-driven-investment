@@ -320,31 +320,94 @@ def extend_matrix_full(
 # Phase 5 — on-disk persistence + build-or-extend orchestrator
 # ---------------------------------------------------------------------------
 #
-# The cache is keyed on (universe, warmup_start, min_rows, features.py source hash) —
-# NOT on the panel content or cached_max_date, which are exactly what the extend
-# advances. A features.py edit flips the code signature → cold rebuild (correct). A
-# changed alignment / a revised bar is caught by the seam check at extend time, not
-# the key. Stored one dir per key under ``<cache_root>/<key>/``.
+# The cache is keyed on (universe, warmup_start, min_rows, features.py source hash,
+# content prefix) — NOT on the full panel content or cached_max_date, which are
+# exactly what the extend advances. A features.py edit flips the code signature →
+# cold rebuild (correct). Data-content staleness (V1.9_TBD #2 — the V5
+# split-adjustment re-seed served a 19G STALE cache that only the seam check
+# caught) is guarded twice:
+#
+# 1. **In the key**: ``content_signature`` — a content hash of a fixed PREFIX of the
+#    panel (the first ``_CONTENT_PREFIX_DATES`` dates' index + values). The prefix is
+#    append-invariant (the panel only grows at the END within one key namespace), so
+#    the key stays stable day-to-day, yet any broad historical correction (a re-seed
+#    / adjustment-basis change rescales deep history) flips it → clean cold rebuild.
+# 2. **At load time** (build_or_extend): the meta stores a content hash of the FULL
+#    panel the matrix was built from; on a key hit the hash is recomputed over the
+#    current panel's overlap (dates ≤ cached_max_date) and any mismatch — e.g. a
+#    surgical single-bar correction past the prefix, which the key can't see —
+#    forces a full rebuild instead of a stale reuse. This makes the (secondary,
+#    windowed) seam check no longer the only guard against revised values.
+#
+# A changed alignment / newly-eligible ticker is still caught by the seam check at
+# extend time. Stored one dir per key under ``<cache_root>/<key>/``.
 
-_CACHE_SCHEMA = "v1"
+# v2 (V1.9_TBD #2): content_signature in the key + content_signature in the meta
+# (overlap check). Bump invalidates any v1 entry on disk once — correctness over
+# reuse (the 19G stale-unadjusted incident is exactly what this prevents).
+_CACHE_SCHEMA = "v2"
 _MATRIX_FILE = "matrix.parquet"
 _META_FILE = "meta.json"
 
+# Distinct dates in the fixed panel prefix hashed into the cache key. Deep enough
+# that any historical re-adjustment touches it; small enough to hash in ~ms.
+_CONTENT_PREFIX_DATES = 256
+
+
+def panel_content_signature(panel: pd.DataFrame, *, upto=None) -> str:
+    """Content hash (SHA-256) of the panel's ``(date, ticker)`` index + numeric
+    OHLCV *values*, optionally restricted to rows with ``date <= upto``.
+
+    Vectorized via ``pd.util.hash_pandas_object`` (NaN-deterministic) — ~1 s on a
+    1.3M-row sp500 panel, negligible next to the feature build it guards. Used
+    both for the key's prefix component and for the load-time overlap check."""
+    if upto is not None:
+        panel = panel[panel.index.get_level_values("date") <= pd.Timestamp(upto)]
+    h = hashlib.sha256()
+    # Which rows entered the build …
+    h.update(pd.util.hash_pandas_object(
+        panel.index.to_frame(index=False), index=False).to_numpy().tobytes())
+    # … and what values they carried (the part the v1 key was blind to).
+    num = panel.select_dtypes(include="number")
+    h.update(",".join(map(str, num.columns)).encode("utf-8"))
+    if num.shape[1]:
+        h.update(pd.util.hash_pandas_object(num, index=False).to_numpy().tobytes())
+    return h.hexdigest()
+
+
+def panel_prefix_content_signature(panel: pd.DataFrame,
+                                   *, n_dates: int = _CONTENT_PREFIX_DATES) -> str:
+    """Content hash of the panel's first ``n_dates`` distinct dates — the
+    append-invariant prefix folded into :func:`cache_key`. Stable as new bars
+    arrive at the end; flips on any values-only correction inside the prefix
+    (e.g. a split-adjustment re-seed, which rescales deep history)."""
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    if len(dates) == 0:
+        return panel_content_signature(panel)
+    cutoff = dates[min(n_dates, len(dates)) - 1]
+    return panel_content_signature(panel, upto=cutoff)
+
 
 def cache_key(universe: str, warmup_start, *, min_rows: int = 1600,
-              align_signature: str = "noalign") -> str:
+              align_signature: str = "noalign",
+              content_signature: str = "nocontent") -> str:
     """Deterministic cache key (SHA-256). Stable as the panel grows; invalidated by a
     ``features.py`` edit (via ``feature_code_signature``), a different universe /
-    warmup anchor / eligibility floor / panel ALIGNMENT. ``align_signature`` is a hash
-    of the gap-fill rows ``_align_panel`` drops — stable day-to-day (gap-fill is
-    historical, ≤ test_end) but distinct per cell when alignments differ, so two cells
-    never collide on one cache entry."""
+    warmup anchor / eligibility floor / panel ALIGNMENT / prefix CONTENT.
+    ``align_signature`` is a hash of the gap-fill rows ``_align_panel`` drops —
+    stable day-to-day (gap-fill is historical, ≤ test_end) but distinct per cell when
+    alignments differ, so two cells never collide on one cache entry.
+    ``content_signature`` is the append-invariant panel-prefix content hash
+    (:func:`panel_prefix_content_signature`) — stable day-to-day, flips on a
+    values-only historical correction so a re-seeded panel never reuses a stale
+    entry (V1.9_TBD #2)."""
     payload = {
         "schema": _CACHE_SCHEMA,
         "universe": universe,
         "warmup_start": str(warmup_start),
         "min_rows": int(min_rows),
         "align_signature": align_signature,
+        "content_signature": content_signature,
         "code_signature": _feature_cache.feature_code_signature(),
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
@@ -355,8 +418,15 @@ def _key_dir(cache_root, key: str) -> Path:
     return Path(cache_root) / key
 
 
-def save(cache_root, key: str, X: pd.DataFrame, cached_max_date) -> Path:
-    """Persist the matrix + a sidecar (atomic temp-rename, per ``feature_cache``)."""
+def save(cache_root, key: str, X: pd.DataFrame, cached_max_date,
+         *, content_signature: str = "") -> Path:
+    """Persist the matrix + a sidecar (atomic temp-rename, per ``feature_cache``).
+
+    ``content_signature`` is the FULL-panel content hash
+    (:func:`panel_content_signature` of the panel the matrix was built from) —
+    verified against the current panel's overlap at load time by
+    :func:`build_or_extend`, so a values-only correction under an unchanged
+    index forces a rebuild instead of a stale reuse (V1.9_TBD #2)."""
     d = _key_dir(cache_root, key)
     d.mkdir(parents=True, exist_ok=True)
     mp = d / _MATRIX_FILE
@@ -367,6 +437,7 @@ def save(cache_root, key: str, X: pd.DataFrame, cached_max_date) -> Path:
         "schema": _CACHE_SCHEMA, "key": key,
         "cached_max_date": str(pd.Timestamp(cached_max_date).date()),
         "n_rows": int(len(X)), "n_cols": int(X.shape[1]),
+        "content_signature": content_signature,
     }
     kp = d / _META_FILE
     ktmp = kp.with_suffix(kp.suffix + ".tmp")
@@ -375,9 +446,9 @@ def save(cache_root, key: str, X: pd.DataFrame, cached_max_date) -> Path:
     return mp
 
 
-def load(cache_root, key: str) -> tuple[pd.DataFrame, pd.Timestamp] | None:
-    """Load ``(matrix, cached_max_date)`` iff the sidecar key matches; else ``None``
-    (any corruption / mismatch → miss → the caller rebuilds)."""
+def load(cache_root, key: str) -> tuple[pd.DataFrame, pd.Timestamp, dict] | None:
+    """Load ``(matrix, cached_max_date, meta)`` iff the sidecar key matches; else
+    ``None`` (any corruption / mismatch → miss → the caller rebuilds)."""
     d = _key_dir(cache_root, key)
     mp, kp = d / _MATRIX_FILE, d / _META_FILE
     if not mp.exists() or not kp.exists():
@@ -394,7 +465,7 @@ def load(cache_root, key: str) -> tuple[pd.DataFrame, pd.Timestamp] | None:
         return None
     if int(meta.get("n_rows", -1)) != len(X):
         return None
-    return X, pd.Timestamp(meta["cached_max_date"])
+    return X, pd.Timestamp(meta["cached_max_date"]), meta
 
 
 def build_or_extend(
@@ -412,23 +483,42 @@ def build_or_extend(
     the on-disk incremental cache: load + ``extend_matrix_full`` when possible
     (seam-checked; falls back to a full rebuild on ``SeamMismatch`` — a changed
     alignment / revised bar / newly-eligible ticker), else a full build. Persists the
-    result. Matches a from-scratch build to the ~1e-4 contract."""
-    key = cache_key(universe, warmup_start, min_rows=min_rows, align_signature=align_signature)
+    result. Matches a from-scratch build to the ~1e-4 contract.
+
+    Data-content guard (V1.9_TBD #2): the key carries the panel's PREFIX content
+    hash (broad historical corrections → new key → cold rebuild) and, on a key hit,
+    the meta's full-panel content hash is verified against the current panel's
+    overlap (dates ≤ cached_max_date) — any values-only correction the prefix
+    misses forces a full rebuild instead of a stale reuse or an early stale
+    return."""
+    key = cache_key(universe, warmup_start, min_rows=min_rows,
+                    align_signature=align_signature,
+                    content_signature=panel_prefix_content_signature(panel))
     panel_max = _panel_dates(panel).max()
     hit = load(cache_root, key)
     if hit is not None:
-        cached_X, cmd = hit
+        cached_X, cmd, meta = hit
+        # Overlap content check BEFORE the nothing-new early return: the cached
+        # matrix was built from a panel whose rows ≤ cmd must hash identically to
+        # the current panel's rows ≤ cmd. A mismatch = revised values (or index)
+        # under the same key → treat as a miss.
+        if meta.get("content_signature") != panel_content_signature(panel, upto=cmd):
+            hit = None
+    if hit is not None:
+        cached_X, cmd, _meta = hit
         if cmd >= panel_max:
             return cached_X  # nothing new to score
         try:
             X = extend_matrix_full(cached_X, panel, index_df,
                                    annualization=annualization, cached_max_date=cmd)
-            save(cache_root, key, X, panel_max)
+            save(cache_root, key, X, panel_max,
+                 content_signature=panel_content_signature(panel))
             return X
         except SeamMismatch:
             pass  # fall through to a full rebuild + cache refresh
     X = gbdt_features.build_feature_matrix(
         panel, index_df, annualization=annualization,
     ).dropna(axis=1, how="all")
-    save(cache_root, key, X, panel_max)
+    save(cache_root, key, X, panel_max,
+         content_signature=panel_content_signature(panel))
     return X
