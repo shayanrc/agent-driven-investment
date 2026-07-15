@@ -407,13 +407,14 @@ def test_two_target_cells_share_same_universe_cache(tmp_path, panel_and_key):
 # ---------------------------------------------------------------------------
 
 
-def test_schema_version_is_v2():
+def test_schema_version_is_v3():
     """Task #190 bumped SCHEMA_VERSION v1 → v2 so any v1-keyed parquet on
     disk (notably the 6.2 G russell1000 cache from PR #85's build) misses
-    cleanly and gets rebuilt under the new key shape. Correctness over
-    reuse — we'd rather rebuild once than risk reusing under an
-    inconsistent key shape."""
-    assert ufc.SCHEMA_VERSION == "v2"
+    cleanly and gets rebuilt under the new key shape; V1.9_TBD #2 bumped
+    v2 → v3 when ``panel_signature`` gained the OHLCV content hashes.
+    Correctness over reuse — we'd rather rebuild once than risk reusing
+    under an inconsistent key shape."""
+    assert ufc.SCHEMA_VERSION == "v3"
 
 
 # ---------------------------------------------------------------------------

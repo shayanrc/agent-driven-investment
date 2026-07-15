@@ -38,7 +38,9 @@ Design
   contract the moment a feature gains a seeded subsampler), the feature-code
   signature (now including a SHA-256 of the ``gbdt.features`` source — see
   :func:`gbdt.feature_cache.feature_code_signature`), and a data-snapshot
-  signature (panel rows + min/max date + index hash). The cache is no longer
+  signature (panel rows + min/max date + index hash + OHLCV content hash —
+  values-aware since v3, see :func:`gbdt.feature_cache.panel_signature`).
+  The cache is no longer
   keyed on the git commit (pre-#190 it was, which over-invalidated on every
   unrelated commit — see PRs #86/#87 cold-rebuild incident); the source hash
   of ``features.py`` is the targeted invalidator.
@@ -92,7 +94,12 @@ from gbdt import feature_cache as _per_cell_cache
 # ``source_sha256`` of ``gbdt.features`` for targeted invalidation. The bump
 # guarantees any v1 parquet on disk (notably the 6.2 G russell1000 cache)
 # misses cleanly and gets rebuilt at the new schema — correctness over reuse.
-SCHEMA_VERSION = "v2"
+# v3 (V1.9_TBD #2): in step with the per-cell cache — ``panel_signature`` now
+# hashes the OHLCV *values* too (``panel_content_hash`` +
+# ``index_series_content_hash``), so a values-only data correction (e.g. the
+# V5 split-adjustment re-seed) invalidates instead of silently serving stale
+# features. One-time invalidation of any v2 parquet on disk.
+SCHEMA_VERSION = "v3"
 
 # Default subdir under ``data_root`` where shared matrices land.
 DEFAULT_CACHE_SUBDIR = "gbdt_feature_cache"

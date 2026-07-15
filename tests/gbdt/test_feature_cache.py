@@ -205,6 +205,47 @@ def test_key_stable_across_what_used_to_be_commit_invalidation(panel_and_key):
     )
 
 
+def test_values_only_correction_invalidates_cache(tmp_path, panel_and_key):
+    """V1.9_TBD #2 regression — the soundness bug that bit for real in the V5
+    split-adjustment re-seed. A values-only data correction (ONE bar's close
+    revised, ``(date, ticker)`` index UNCHANGED) must flip ``panel_signature``
+    → flip ``compute_key`` → miss the on-disk cache. Pre-v3 the signature
+    hashed only the index, so the stale matrix was served."""
+    panel, index_df, base_key = panel_and_key
+    X = _build_matrix(panel, index_df)
+    run_dir = tmp_path / "cell"
+    fc.write_cache(run_dir, X, base_key)
+    assert fc.load_cache(run_dir, base_key) is not None  # sanity: hit pre-correction
+
+    # Correct ONE bar's VALUE — same index, same shape, same dates/tickers.
+    corrected = panel.copy()
+    corrected.iloc[len(corrected) // 2, corrected.columns.get_loc("close")] += 1.0
+    assert corrected.index.equals(panel.index)
+
+    sig = fc.panel_signature(corrected, index_df)
+    base_sig = fc.panel_signature(panel, index_df)
+    assert sig["panel_index_hash"] == base_sig["panel_index_hash"]  # index unchanged
+    assert sig["panel_content_hash"] != base_sig["panel_content_hash"]
+
+    new_key = fc.compute_key(panel_sig=sig, **_BASE_KW)
+    assert new_key != base_key
+    assert fc.load_cache(run_dir, new_key) is None  # MISS → caller rebuilds
+
+
+def test_index_series_values_only_correction_invalidates_key(panel_and_key):
+    """Same guarantee for the index series (used by the beta/relative
+    features): revising one of ITS values — panel untouched — must flip the
+    signature and the key."""
+    panel, index_df, base_key = panel_and_key
+    corrected = index_df.copy()
+    corrected.iloc[len(corrected) // 2, corrected.columns.get_loc("close")] *= 1.01
+
+    sig = fc.panel_signature(panel, corrected)
+    assert sig["index_series_content_hash"] != \
+        fc.panel_signature(panel, index_df)["index_series_content_hash"]
+    assert fc.compute_key(panel_sig=sig, **_BASE_KW) != base_key
+
+
 def test_key_differs_on_changed_data_snapshot(panel_and_key):
     panel, index_df, base_key = panel_and_key
     # A different data snapshot (one extra ticker / different rows) → new sig.
@@ -255,12 +296,13 @@ def test_panel_signature_stable_across_calls(panel_and_key):
 # ---------------------------------------------------------------------------
 
 
-def test_schema_version_is_v2():
+def test_schema_version_is_v3():
     """Task #190 bumped SCHEMA_VERSION v1 → v2 to invalidate any cache
-    written under the old key shape (which keyed on code_commit). Old
-    parquets on disk MUST miss cleanly and get rebuilt — never reused
+    written under the old key shape (which keyed on code_commit); V1.9_TBD #2
+    bumped v2 → v3 when ``panel_signature`` gained the OHLCV content hashes.
+    Old parquets on disk MUST miss cleanly and get rebuilt — never reused
     under an inconsistent schema."""
-    assert fc.SCHEMA_VERSION == "v2"
+    assert fc.SCHEMA_VERSION == "v3"
 
 
 def test_feature_code_signature_includes_source_sha256():

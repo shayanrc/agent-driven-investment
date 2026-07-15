@@ -28,7 +28,8 @@ Design
   feature-code version signature (which now includes a SHA-256 of the
   :mod:`gbdt.features` module source — see :func:`feature_code_signature`),
   and a data-snapshot signature (panel row count + min/max date + a hash of
-  the panel index, plus the index series row count + max date). A mismatch
+  the panel index + a content hash of the OHLCV values, plus the index series
+  row count + max date + its own content hash). A mismatch
   (changed seed/threshold/data/features-source) or an absent/corrupt cache
   forces a rebuild + cache refresh. NOTE: the cache is no longer keyed on
   ``git rev-parse HEAD`` — that over-invalidated on any unrelated commit
@@ -66,9 +67,12 @@ import pandas as pd
 # layout, so a stale cache from an older code version never key-matches.
 # v2 (task #190): dropped ``code_commit`` + ``code_dirty`` from the key,
 # added a SHA-256 of ``gbdt.features`` source to ``feature_code_signature``.
-# The bump guarantees any v1 parquet still on disk misses cleanly and gets
-# rebuilt at the new schema (correctness over reuse).
-SCHEMA_VERSION = "v2"
+# v3 (V1.9_TBD #2): ``panel_signature`` now also hashes the OHLCV *values*
+# (``panel_content_hash`` + ``index_series_content_hash``), so a values-only
+# data correction (e.g. the V5 split-adjustment re-seed) invalidates the key
+# instead of silently serving stale features. One-time invalidation of any
+# v2 parquet on disk (correctness over reuse).
+SCHEMA_VERSION = "v3"
 
 _MATRIX_FILENAME = "_feature_matrix_cache.parquet"
 _KEY_FILENAME = "_feature_matrix_cache.key.json"
@@ -125,6 +129,23 @@ def feature_code_signature() -> dict[str, Any]:
     }
 
 
+def _frame_content_hash(df: pd.DataFrame) -> str:
+    """Vectorized SHA-256 over a frame's numeric *values* (not its index).
+
+    Uses ``pd.util.hash_pandas_object`` (C-level, NaN-deterministic) so the
+    cost is a few hundred ms even on a 1.3M-row sp500 panel — cheap relative
+    to the panel load, and orders of magnitude below the feature build. The
+    column-name list is folded in so a renamed/reordered value column also
+    flips the hash.
+    """
+    num = df.select_dtypes(include="number")
+    h = hashlib.sha256()
+    h.update(",".join(map(str, num.columns)).encode("utf-8"))
+    if num.shape[1]:
+        h.update(pd.util.hash_pandas_object(num, index=False).to_numpy().tobytes())
+    return h.hexdigest()
+
+
 def panel_signature(panel: pd.DataFrame, index_df: pd.DataFrame) -> dict[str, Any]:
     """A data-snapshot signature of the loaded panel + index series.
 
@@ -132,10 +153,12 @@ def panel_signature(panel: pd.DataFrame, index_df: pd.DataFrame) -> dict[str, An
     from. It combines coarse summaries (row counts, min/max date) with a hash
     of the full ``(date, ticker)`` index — so a re-cached run on a refreshed
     cache (rows appended, tickers added/dropped, dates shifted) misses the key
-    and rebuilds. The hash is computed over the index tuples, which fully
-    determine which rows entered the build; the OHLCV values are not hashed
-    (cache freshness is governed by the snapshot identity, and re-fetching the
-    same dates from the same provider is deterministic per data_pipelines).
+    and rebuilds — **and** (v3, V1.9_TBD #2) a content hash of the OHLCV
+    *values* of both frames. Pre-v3 the values were not hashed, so a
+    values-only data correction under an unchanged ``(date, ticker)`` index
+    (e.g. the V5 split-adjustment re-seed) was invisible to the key and stale
+    features were served; ``panel_content_hash`` / ``index_series_content_hash``
+    close that blind spot.
     """
     idx = panel.index
     # Stable, order-sensitive hash of the panel's MultiIndex tuples. The panel
@@ -162,9 +185,11 @@ def panel_signature(panel: pd.DataFrame, index_df: pd.DataFrame) -> dict[str, An
         "panel_date_min": pmin,
         "panel_date_max": pmax,
         "panel_index_hash": h.hexdigest(),
+        "panel_content_hash": _frame_content_hash(panel),
         "index_series_rows": int(len(index_df)),
         "index_series_date_min": imin,
         "index_series_date_max": imax,
+        "index_series_content_hash": _frame_content_hash(index_df),
     }
 
 
