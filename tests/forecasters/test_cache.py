@@ -49,6 +49,7 @@ def _k(**overrides) -> str:
         origin="2024-01-02",
         horizon=60,
         seed=42,
+        data_hash="sha256:data",
     )
     base.update(overrides)
     return cache_key(**base)
@@ -73,12 +74,19 @@ def test_cache_key_changes_with_each_arg() -> None:
     assert _k(origin="2024-01-03") != base
     assert _k(horizon=61) != base
     assert _k(seed=43) != base
+    assert _k(data_hash="sha256:other") != base
     # data_path vs identifier — different keys.
     assert _k(identifier=None, data_path="data/NASDAQ100.csv") != base
 
 
 def test_cache_key_seed_none_distinct_from_zero() -> None:
     assert _k(seed=None) != _k(seed=0)
+
+
+def test_cache_key_data_hash_none_distinct_from_value() -> None:
+    """V2_TBD #18: the data_hash field is ALWAYS folded into the digest —
+    a None (column-probe fallback) key never collides with a hashed one."""
+    assert _k(data_hash=None) != _k(data_hash="sha256:data")
 
 
 def test_cache_key_is_short_hex() -> None:
@@ -136,6 +144,31 @@ def test_preset_edit_invalidates(tmp_path: Path) -> None:
     write_cached(k_before, _good_result(), cache_root=tmp_path)
     assert read_cached(k_before, cache_root=tmp_path) is not None
     assert read_cached(k_after, cache_root=tmp_path) is None
+
+
+def test_data_correction_invalidates(tmp_path: Path) -> None:
+    """V2_TBD #18 regression — a values-only correction in the input data
+    (ONE bar revised; same dates, same (identifier, start, end) call) must
+    yield a different data_hash → different key → cache MISS, never a stale
+    hit. Pre-fix the key had no data component at all."""
+    import pandas as pd
+    from forecasters.data import data_hash
+
+    df = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=30, freq="B"),
+        "adj_close": [100.0 + i for i in range(30)],
+    })
+    k_before = _k(data_hash=data_hash(df))
+    write_cached(k_before, _good_result(), cache_root=tmp_path)
+    assert read_cached(k_before, cache_root=tmp_path) is not None  # sanity: hit
+
+    corrected = df.copy()
+    corrected.loc[15, "adj_close"] += 0.5  # one bar's VALUE; index unchanged
+    assert corrected["date"].equals(df["date"])
+    k_after = _k(data_hash=data_hash(corrected))
+
+    assert k_after != k_before
+    assert read_cached(k_after, cache_root=tmp_path) is None  # MISS → recompute
 
 
 def test_write_to_default_root_overridden_by_arg(tmp_path: Path) -> None:

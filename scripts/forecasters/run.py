@@ -30,7 +30,7 @@ import pandas as pd
 import yaml
 
 from forecasters.cache import cache_key, read_cached, write_cached
-from forecasters.data import prepare_data
+from forecasters.data import data_hash, prepare_data
 from forecasters.dispatch import dispatch_forecast, dispatch_tune
 from forecasters.errors import (
     PresetSchemaError,
@@ -73,7 +73,16 @@ def _cmd_forecast(args: argparse.Namespace) -> int:
             return 2
         hp.update(overrides)
 
-    # Cache key + lookup.
+    # Cache key + lookup. The key includes a content hash of the
+    # fetched-and-sliced input data (V2_TBD #18): a data_pipelines backfill or
+    # correction under the same (identifier, start, end) must MISS and
+    # recompute, never serve a stale cached forecast.
+    try:
+        dh = data_hash(df)
+    except ValueError:
+        # Unrecognized column layout — the backend's column probe may still
+        # accept it; key on <none> rather than blocking the forecast.
+        dh = None
     key = cache_key(
         preset_name=preset["name"],
         preset_content_hash=preset["__content_hash__"],
@@ -84,6 +93,7 @@ def _cmd_forecast(args: argparse.Namespace) -> int:
         origin=args.origin,
         horizon=args.horizon,
         seed=args.seed,
+        data_hash=dh,
     )
     cache_root = Path(args.cache_path) if args.cache_path else None
     if not args.no_cache:
