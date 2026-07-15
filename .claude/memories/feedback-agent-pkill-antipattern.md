@@ -1,6 +1,6 @@
 ---
 name: feedback-agent-pkill-antipattern
-description: Sub-agents must NOT use `pkill -f <pattern>` in their bash wrappers; pattern-based kills catch ALL matching processes, including unrelated work from the parent session
+description: Never use `pkill -f <pattern>` in bash wrappers — it catches ALL matching processes (sub-agent variant kills the parent's concurrent work; parent variant self-kills the Bash tool's own shell → exit 144). Kill by PID; prefer resumable runners.
 metadata:
   type: feedback
 ---
@@ -44,6 +44,26 @@ The agent had been given an explicit prompt: "use `timeout 300 ...`" — which i
 - `pgrep -f <pattern> | xargs kill` — same issue.
 - Any subshell that does `for p in $(pgrep ...); do kill $p; done`.
 
-**Exception:** the parent session legitimately uses `pkill -f` during cleanup of stuck processes (e.g. nselib network hangs); only the parent has full visibility into what's safe to kill. Sub-agents do NOT have that visibility and must not use these patterns.
+**The self-kill variant (bites the PARENT session too — merged from per-user memory 2026-07-15):**
+`pkill -f "<pattern>"` matches against the FULL command line of every process — including
+the Bash tool's **own shell**, whose command string contains the very pattern being passed
+to pkill. The pkill kills its own parent shell and the command aborts with **exit 144**
+before any later step (spec-gen, relaunch) runs. This bit 3+ times in one session: it
+killed running gbdt sweeps mid-flight and repeatedly aborted "kill + regenerate + relaunch"
+compound commands at the pkill line, leaving specs unwritten and waiters stuck. Each
+failure looked like a mysterious `exit 144`.
+
+- To stop a background job you launched, **kill by PID** — capture `pid=$!` at launch (or
+  `pgrep` into a var), then `kill $pid`. Never `pkill -f` a pattern that is a substring of
+  the command doing the killing.
+- If a pattern-kill is truly needed (e.g. cleanup of stuck nselib network hangs), isolate
+  it in its OWN Bash call with a pattern that CANNOT appear in that call's text, and expect
+  a non-zero rc (`|| true`). Only the parent session — with full visibility into what's
+  safe to kill — may do even this; sub-agents never.
+- Better: make runners **resumable/idempotent** (skip a cell if its output exists, e.g.
+  `[ -f eval.csv ] && continue`) so recovery is "relaunch", not "kill + restart".
+- A `&`-backgrounded fit keeps running after the launcher returns — the Bash task showing
+  "completed" means the launcher finished, NOT the fit. Verify process-alive + progress
+  log per [[feedback-process-death-verification]] / [[feedback-longrun-heartbeat]].
 
 See also `[[feedback-sub-agent-foreground.md]]` for the related antipattern of background+Monitor for short tasks, and `[[feedback-experiment-agent-loop.md]]` for the loop guidance that should be in long-running agent prompts.
