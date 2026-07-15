@@ -51,6 +51,15 @@ CELLS = {
     "nifty_20_100_ffund": dict(universe="nifty500", thr=20, hor=100, dd=0.10,
                                token="all_fundamentals_calendar2",
                                stem="nifty500_up_20pct_100d_dd10pct_ffund"),
+    # #56 PILOT (champion-matrix row 1): the deployed +20%/25d/dd10% champion cell
+    # replicated across the other universes, matched token `all` (same as the sp500
+    # champion) so the universe is the only variable. Transfer test, not a champion swap.
+    "nasdaq_20_25": dict(universe="nasdaq100", thr=20, hor=25, dd=0.10, token="all",
+                         stem="nasdaq100_up_20pct_25d_dd10pct"),
+    "russell_20_25": dict(universe="russell1000", thr=20, hor=25, dd=0.10, token="all",
+                          stem="russell1000_up_20pct_25d_dd10pct"),
+    "nifty_20_25": dict(universe="nifty500", thr=20, hor=25, dd=0.10, token="all",
+                        stem="nifty500_up_20pct_25d_dd10pct"),
 }
 
 
