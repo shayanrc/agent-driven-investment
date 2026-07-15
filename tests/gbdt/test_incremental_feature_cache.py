@@ -156,13 +156,83 @@ def test_build_or_extend_roundtrip(tmp_path):
 
     p1 = panel[panel.index.get_level_values("date") <= T1]
     i1 = index_df[index_df.index <= T1]
+    # The panel-prefix content signature is append-invariant: p1 (600 dates) and
+    # the full panel (750 dates) share the first-256-dates prefix, so the key is
+    # STABLE across the extend (that's what makes the cache incremental).
+    key = inc.cache_key("synth", ws,
+                        content_signature=inc.panel_prefix_content_signature(p1))
+    assert key == inc.cache_key(
+        "synth", ws, content_signature=inc.panel_prefix_content_signature(panel))
+
     inc.build_or_extend(tmp_path, "synth", ws, p1, i1, annualization=250)   # cold build → cache
-    assert (tmp_path / inc.cache_key("synth", ws) / "matrix.parquet").exists()
-    assert inc.load(tmp_path, inc.cache_key("synth", ws))[1] == T1
+    assert (tmp_path / key / "matrix.parquet").exists()
+    assert inc.load(tmp_path, key)[1] == T1
 
     X2 = inc.build_or_extend(tmp_path, "synth", ws, panel, index_df, annualization=250)  # load + extend
     full = F.build_feature_matrix(panel, index_df, annualization=250).dropna(axis=1, how="all")
     assert list(X2.columns) == list(full.columns)
     X2 = X2.reindex(full.index)
     assert np.allclose(X2.to_numpy(float), full.to_numpy(float), rtol=1e-6, atol=1e-9, equal_nan=True)
-    assert inc.load(tmp_path, inc.cache_key("synth", ws))[1] == dates.max()
+    assert inc.load(tmp_path, key)[1] == dates.max()
+
+
+def test_build_or_extend_values_only_correction_rebuilds(tmp_path):
+    """V1.9_TBD #2 regression — the 19G stale-unadjusted-cache incident. Populate
+    the cache, then revise ONE historical bar's VALUES (same (date,ticker) index,
+    same max date) mid-history — past the key's prefix window AND outside the
+    seam-check window, so pre-fix NEITHER guard fired and (cmd >= panel_max) the
+    stale matrix was returned untouched. The overlap content check must treat it
+    as a miss and serve a matrix rebuilt from the corrected values."""
+    panel, index_df = _synth(750, 5, seed=7)
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    ws = str(dates[0].date())
+
+    stale = inc.build_or_extend(tmp_path, "synth", ws, panel, index_df, annualization=250)
+
+    # Values-only correction: one close bar at date ~500 (prefix stops at 256;
+    # seam check covers only the last DEFAULT_CHECK_TD=20 cached dates).
+    corrected = panel.copy()
+    tkr = corrected.index.get_level_values("ticker")[0]
+    loc = (dates[500], tkr)
+    for col in ("close", "adj_close"):
+        corrected.loc[loc, col] = corrected.loc[loc, col] * 1.5
+    assert corrected.index.equals(panel.index)
+
+    # Same key (prefix untouched) — the stale entry is what a content-blind
+    # cache would serve, since cached_max_date == panel max (early return).
+    key = inc.cache_key("synth", ws,
+                        content_signature=inc.panel_prefix_content_signature(corrected))
+    assert inc.load(tmp_path, key) is not None
+
+    got = inc.build_or_extend(tmp_path, "synth", ws, corrected, index_df, annualization=250)
+    fresh = F.build_feature_matrix(corrected, index_df, annualization=250).dropna(axis=1, how="all")
+    got = got.reindex(index=fresh.index, columns=fresh.columns)
+    assert np.allclose(got.to_numpy(float), fresh.to_numpy(float),
+                       rtol=1e-9, atol=1e-11, equal_nan=True), \
+        "build_or_extend served a stale matrix after a values-only correction"
+    # And it genuinely differs from the stale matrix (the correction moved features).
+    stale = stale.reindex(index=fresh.index, columns=fresh.columns)
+    assert not np.allclose(stale.to_numpy(float), fresh.to_numpy(float),
+                           rtol=1e-9, atol=1e-11, equal_nan=True)
+    # The refreshed cache entry now carries the corrected content signature.
+    assert inc.load(tmp_path, key)[2]["content_signature"] == \
+        inc.panel_content_signature(corrected)
+
+
+def test_prefix_correction_flips_cache_key(tmp_path):
+    """A values-only correction INSIDE the prefix window (e.g. a split-adjustment
+    re-seed rescaling deep history) flips the key itself → clean cold miss."""
+    panel, _ = _synth(750, 5, seed=8)
+    dates = pd.DatetimeIndex(panel.index.get_level_values("date").unique()).sort_values()
+    ws = str(dates[0].date())
+
+    corrected = panel.copy()
+    tkr = corrected.index.get_level_values("ticker")[0]
+    corrected.loc[(dates[10], tkr), "close"] *= 2.0  # same index, revised value
+    assert corrected.index.equals(panel.index)
+
+    k_before = inc.cache_key("synth", ws,
+                             content_signature=inc.panel_prefix_content_signature(panel))
+    k_after = inc.cache_key("synth", ws,
+                            content_signature=inc.panel_prefix_content_signature(corrected))
+    assert k_before != k_after

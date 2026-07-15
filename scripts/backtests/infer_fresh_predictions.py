@@ -282,9 +282,14 @@ def _build_one(cell: Path, end: str, *, align_panel: bool, warmup_start: str,
         else:
             # panel_start folded into the cache signature: a short (fast-path)
             # matrix does NOT cover [warmup_start, panel_start) and must never
-            # share a key with a full build (build_or_extend keys on warmup_start
-            # + align_signature only and stores just the max date, so it can't tell
-            # a truncated matrix from a full one).
+            # share a key with a full build (build_or_extend stores just the max
+            # date, so it can't tell a truncated matrix from a full one; its
+            # panel-prefix content signature would also separate them, but the
+            # explicit ps= component keeps the namespaces self-describing).
+            # build_or_extend additionally guards data CONTENT (V1.9_TBD #2):
+            # prefix content hash in the key + a full-overlap content check at
+            # load, so a values-only correction (e.g. a split-adjustment re-seed)
+            # cold-rebuilds instead of serving the stale matrix.
             cache_sig = align_sig if panel_start is None else f"{align_sig}|ps={panel_start}"
             if roster_sig:  # pinned build → distinct cache namespace (see roster pin above)
                 cache_sig = f"{cache_sig}|roster={roster_sig}"
