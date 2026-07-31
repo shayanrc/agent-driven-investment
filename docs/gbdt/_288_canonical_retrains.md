@@ -37,12 +37,12 @@ Benchmark ^NDX buy-hold +32.1%. Full data + per-cell dirs: `results/backtests/ca
 | 51 | nasdaq +40%/50d | baseline | +73.2% | -18.1% | +36.5% | 98/114 | candidate |
 | 51 | nasdaq +40%/50d | d8·ss0.85 (alt) | +78.7% | -13.3% | +36.5% | 84/113 | — |
 | 52 | russell +40%/100d | d8·ss0.7·cs0.7 | +21.2% | -15.3% | +20.5% | 95/143 | candidate |
+| 53 | russell +50%/200d | **stratified (t=13)** ⭐ | **+71.9%** | **-29.6%** | **+31.0%** | **25/16** | **deployed** |
 | 53 | russell +50%/200d | d8·ss0.7·cs0.7 | +82.5% | -14.7% | +20.5% | 103/119 | candidate |
-| 53 | russell +50%/200d | baseline (alt) | +16.6% | -21.0% | +20.5% | 91/130 | — |
 | 54 | sp500 +40%/200d F18 | baseline | +134.6% | -11.3% | +26.5% | 92/79 | **deployed** |
 
-**Deployed set (2):** only sp500_20 (98/83) + sp500_f18 (92/79) clear the strict target>DD
-rule. **sp500_50 baseline is the top backtest performer (+156.4%) but has MORE DD-stops than
+**Deployed set (3):** `sp500_20` (98/83), `sp500_f18` (92/79), and **`russell_50_200` Stratified** (25/16) clear the strict target>DD rule.
+ **sp500_50 baseline is the top backtest performer (+156.4%) but has MORE DD-stops than
 target-hits (99/107), so it stays a candidate** (holding the rule; a user decision reversing the
 earlier best-return deploy). c9 (the +50%/50d fine-tune, +64.3%) is also a candidate.
 
