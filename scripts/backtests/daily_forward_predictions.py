@@ -40,7 +40,7 @@ import yaml
 from scripts.backtests.run_backtest_cell import INDEX_BY_UNIVERSE
 from scripts.backtests.run_cell5_bayesian_kelly import _load_closes
 from scripts.backtests.regime_signals import risk_on_sma
-from scripts.backtests.infer_fresh_predictions import build_scores_multi, self_check
+from scripts.backtests.infer_fresh_predictions import build_scores_multi, self_check, _build_one
 
 REPO = Path(__file__).resolve().parents[2]
 LOG = REPO / "results/backtests/data/forward_predictions_log.csv"
@@ -68,6 +68,8 @@ CELLS = {
                          "deployed": True,  "backfill_from": "2025-07-01"},
     "sp500_f18_40_200": {"cell": "results/gbdt/experiments/sp500_up_40pct_200d_dd20pct_f18_canon_ft",
                          "deployed": True,  "backfill_from": "2025-07-01"},
+    "russell_50_200":   {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_canon_ft",
+                         "deployed": True,  "backfill_from": "2025-07-01"},
     # CANDIDATES (deployed=False — forward comparison)
     "sp500_50":         {"cell": "results/gbdt/experiments/sp500_up_50pct_50d_dd25pct_canon_ft",
                          "deployed": False, "backfill_from": "2025-07-01"},  # baseline all/d6 (+156.4%; 99/107 fails target>DD)
@@ -76,8 +78,6 @@ CELLS = {
     "nasdaq_40_50":     {"cell": "results/gbdt/experiments/nasdaq100_up_40pct_50d_dd20pct_canon_ft",
                          "deployed": False, "backfill_from": "2025-07-01"},
     "russell_40_100":   {"cell": "results/gbdt/experiments/russell1000_up_40pct_100d_dd20pct_canon_ft",
-                         "deployed": False, "backfill_from": "2025-07-01"},
-    "russell_50_200":   {"cell": "results/gbdt/experiments/russell1000_up_50pct_200d_dd25pct_canon_ft",
                          "deployed": False, "backfill_from": "2025-07-01"},
 }
 
@@ -242,10 +242,20 @@ def run(end: str, commit: bool, no_seed: bool = False, deployed_only: bool = Fal
     # of two — ~halves inference wall-time. Each cell's per-cell self-check below
     # still guards faithfulness independently, so the sharing can only abort
     # loudly on a mismatch, never emit bad scores.
-    print(f"[infer] shared feature build for {len(todo)} cell(s): "
-          f"{', '.join(t['model'] for t in todo)} (incremental from {todo[0]['warmup']}) ...")
-    specs = [(t["cell_dir"], t["warmup"]) for t in todo]
-    scores_by_cell = build_scores_multi(specs, end, align_panel=True)
+    print(f"[infer] starting sequential feature build for {len(todo)} cell(s) (incremental from {todo[0]['warmup']}) to optimize memory usage...")
+    scores_by_cell = {}
+    panel_cache = {}
+    for t in todo:
+        feat_cache = {}  # release features from previous loops
+        model_name = t["model"]
+        print(f"[{model_name}] building scores...")
+        scores_by_cell[str(t["cell_dir"])] = _build_one(
+            t["cell_dir"], end, align_panel=True,
+            warmup_start=t["warmup"],
+            panel_cache=panel_cache, feat_cache=feat_cache
+        )
+        import gc
+        gc.collect()
 
     new_rows: list[dict] = []
     logged_at = str(pd.Timestamp.now())

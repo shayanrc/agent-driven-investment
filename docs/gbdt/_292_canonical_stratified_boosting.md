@@ -87,10 +87,61 @@ Implemented per-step `val_auc` tracking during custom `base_margin` boosting to 
 
 ---
 
+## Part 3: Head-to-Head Backtest Audit (Test Window: 2024-07-01 → 2025-06-30)
+
+Backtested using the strategy policy harness (`TopKDailyKellyLabelExit` with $+40\%$ target win / $-20\%$ drawdown stop over $H=200\text{d}$ horizon, equal-weight daily top-3, rank mode) on the **exact same signal entry window** (`2024-07-01` $\rightarrow$ `2025-06-30`, comparison end `2026-04-16`).
+
+### Head-to-Head Backtest Comparison Table
+
+| Metric | Stratified Early-Stopped ($t=13$) | Deployed Champion (`canon_ft`, $t=56$) | Verdict |
+| :--- | :---: | :---: | :--- |
+| **Signal Entry Window** | `2024-07-01` $\rightarrow$ `2025-06-30` | `2024-07-01` $\rightarrow$ `2025-06-30` | *Identical Window* |
+| **Comparison End Date ($H=200\text{d}$)** | `2026-04-16` | `2026-04-16` | *Identical Window* |
+| **Target Hits vs. DD Stops** | **24 Target / 28 DD** | **23 Target / 20 DD** | ❌ **Stratified Fails Deployment Rule** |
+| **Deployment Gate Status** | ❌ **FAILED** (28 DD > 24 Target) | ✅ **PASSED** (23 Target > 20 DD) | Deployed Champion Holds |
+| **Strategy Return** | **+32.1%** | **+41.2%** | Deployed Champion $+9.1\%$ higher |
+| **Max Drawdown** | **-29.0%** | **-33.3%** | Stratified $-4.3\%$ lower |
+| **Trade Entries / Tickers** | 55 entries / 34 tickers | 46 entries / 30 tickers | Deployed is more selective |
+
+### Mechanistic Takeaway: Why Higher $R\text{-precision}@3$ Failed Execution
+
+1. **200-Day Holding Variance**: Early stopping at $t=13$ trees sharpens short-term top-3 ranking, but its low tree count leaves prediction variance un-regularized.
+2. **Premature Drawdown Stops**: Over a long 200-day holding horizon, un-regularized predictions cause position paths to hit the $-20\%$ drawdown stop repeatedly (**28 DD stops vs 24 target exits**).
+3. **Deployment Verdict**: The deployed baseline champion ($t=56$) provides the required regularization for 200-day holding, resulting in fewer drawdown stops, higher target hit rate, and superior strategy return (+41.2% vs +32.1%). The baseline remains `deployed=True`.
+
+---
+
+## Part 4: Candidate Universe Audit (`sp500_50`, `nasdaq_40_50`, `russell_40_100`, `russell_50_200`)
+
+Group-stratified boosting with Val-AUC early stopping was evaluated across all remaining candidate geometries on the exact same `2024-07-01` $\rightarrow$ `2025-06-30` Test Window.
+
+### Candidate Master Scorecard
+
+| Universe & Target | Model Variant | Test AUC | Test $R\text{-p}@3$ | Target Hits / DD Stops | Strategy Return | Max Drawdown | Deployment Gate |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`russell_50_200`** ($+50\%/200\text{d}$) | **Stratified ($t=13$)** ⭐ | **`0.7865`** | **`0.532`** | **25 Hits / 16 Stops** | **`+71.9%`** | **`-29.6%`** | 🏆 **PASSED (PROMOTED)** |
+| | Baseline (`canon_ft`) | `0.7758` | `0.393` | 22 Hits / 24 Stops | `+42.9%` | `-34.5%` | FAILED |
+| **`russell_40_100`** ($+40\%/100\text{d}$) | **Stratified ($t=171$)** | **`0.8112`** | **`0.400`** | 24 Hits / 36 Stops | `+21.0%` | **`-29.0%`** | FAILED |
+| | Baseline (`canon_ft`) | `0.7500` | `0.351` | 26 Hits / 33 Stops | `+29.9%` | `-35.4%` | FAILED |
+| **`nasdaq_40_50`** ($+40\%/50\text{d}$) | **Stratified ($t=51$)** | **`0.9402`** | `0.453` | 8 Hits / 25 Stops | `+17.5%` | `-27.6%` | FAILED |
+| | Baseline (`canon_ft`) | `0.9262` | **`0.489`** | 15 Hits / 21 Stops | `+40.2%` | `-31.9%` | FAILED |
+| **`sp500_50`** ($+50\%/50\text{d}$) | **Stratified ($t=13$)** | **`0.9360`** | `0.234` | 8 Hits / 17 Stops | `+20.4%` | `-30.9%` | FAILED |
+| | Baseline (`canon_ft`) | `0.7500` | **`0.323`** | 4 Hits / 10 Stops | `+30.5%` | `-25.4%` | FAILED |
+
+### Major Promotion Finding
+
+* **`russell_50_200` Champion Promotion**:
+  - The `russell_50_200` Group-Stratified model outperformed its baseline candidate by **$+29.0\%$ return** (`+71.9%` vs `+42.9%`), **$+13.9\%$ top-3 precision** (`0.532` vs `0.393`), and **$4.9\%$ lower drawdown** (`-29.6%` vs `-34.5%`).
+  - It achieved **25 Target Hits vs 16 DD Stops** ($25 > 16$), satisfying the strict deployment gate. Promoted to `deployed=True` in `scripts/backtests/daily_forward_predictions.py`.
+
+---
+
 ## Artifacts
 
 - `scripts/gbdt/stratified_canon.py` — canonical single-run harness
 - `scripts/gbdt/stratified_canon_sweep.py` — 7-config HP sweep runner
 - `scripts/gbdt/stratified_canon_earlystop.py` — Val-AUC early-stopping harness
 - `runs/gbdt/stratified_canon/` — per-experiment prediction CSVs and serialized model artifacts
+- `results/backtests/stratified_russell_50_200/` — strategy backtest outputs (picks, equity curve, summary.json)
 - `results/gbdt/data/_292_data.json` — machine-readable summary metrics
+

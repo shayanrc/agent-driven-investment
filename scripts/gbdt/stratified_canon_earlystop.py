@@ -115,14 +115,17 @@ def _load_or_build_matrix(cell_info: dict) -> pd.DataFrame:
     print(f"[matrix] building fresh {token} matrix for {universe}...", flush=True)
     panel_result = load_panel(universe, end=SNAP)
     panel = panel_result.panel
-    index_df = panel_result.index_df
+    index_df = panel_result.index_series
 
     fund_df = None
     if "fundamentals" in token:
         try:
-            from valuation.panel import load_valuation_panel
-            fund_df = load_valuation_panel()
-            print(f"[matrix] loaded valuation panel: {fund_df.shape}", flush=True)
+            val_path = REPO / "results/valuation/data/valuation_panel.parquet"
+            if val_path.exists():
+                fund_df = pd.read_parquet(val_path)
+                print(f"[matrix] loaded valuation panel: {fund_df.shape}", flush=True)
+            else:
+                print(f"[warn] valuation panel path does not exist: {val_path}", flush=True)
         except Exception as e:
             print(f"[warn] could not load valuation panel: {e}", flush=True)
 

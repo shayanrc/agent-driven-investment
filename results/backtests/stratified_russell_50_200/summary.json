@@ -1,0 +1,81 @@
+{
+  "cell": "russell1000_up_50pct_200d_dd25pct_canon_ft",
+  "config": {
+    "fractional_c": 0.25,
+    "selection_bound": "mean",
+    "K": 3,
+    "selection_mode": "rank",
+    "sizing_mode": "equal",
+    "min_entry_p": 0.0,
+    "min_entry_p_raw": 0.0,
+    "n_candidate_days": 250,
+    "rank_kelly_p": null,
+    "rank_by": "calibrated",
+    "vol_window": null,
+    "prob_weight_alpha": null
+  },
+  "geometry": {
+    "universe": "russell1000",
+    "win": 0.5,
+    "loss": 0.25,
+    "horizon": 200,
+    "breakeven_p": 0.3333333333333333,
+    "index": "SPX (proxy: ^RUI uncached)"
+  },
+  "window": {
+    "test_start": "2024-07-01",
+    "test_end": "2025-06-30",
+    "comparison_end": "2026-04-16",
+    "data_end": "2026-07-29"
+  },
+  "strategy": {
+    "start": 100000.0,
+    "end": 171932.59819924587,
+    "total_return": 0.7193259819924587,
+    "cagr": 0.34740580056109915,
+    "max_dd": -0.295577362736115,
+    "n_trades": 362,
+    "gross_exposure_avg": 0.6100504072406053
+  },
+  "benchmarks": {
+    "index_bh": {
+      "start": 100000.0,
+      "end": 128605.73956049523,
+      "total_return": 0.28605739560495236,
+      "cagr": 0.15129282123162113,
+      "max_dd": -0.18902206184283998,
+      "n_trades": 1,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_basket": {
+      "start": 99999.9999999998,
+      "end": 130950.3384022116,
+      "total_return": 0.30950338402211863,
+      "cagr": 0.16299998743911215,
+      "max_dd": -0.20277699580308162,
+      "n_trades": 815,
+      "gross_exposure_avg": 1.0
+    },
+    "ew_topk_no_kelly": {
+      "start": 100000.0,
+      "end": 200764.31625100673,
+      "total_return": 1.0076431625100675,
+      "cagr": 0.4774216317129809,
+      "max_dd": -0.11619138049084554,
+      "n_trades": 7,
+      "gross_exposure_avg": 1.0
+    }
+  },
+  "turnover": {
+    "entries": 45,
+    "exits": 45,
+    "trims": 272,
+    "unique_tickers": 27,
+    "open_at_end": 0
+  },
+  "exit_triggers": {
+    "target": 25,
+    "DD": 16,
+    "horizon": 4
+  }
+}
