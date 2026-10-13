@@ -1,6 +1,8 @@
 """Tests for the daily data-update helpers (no network, no cache)."""
 from __future__ import annotations
 
+import sqlite3
+
 import pandas as pd
 import pytest
 
@@ -268,3 +270,171 @@ class TestRepairState:
         p = tmp_path / "state.json"
         p.write_text("{not json")
         assert load_repair_state(p) == {}
+
+
+class TestRepairCrashSafety:
+    """The repair must never leave a ticker with zero rows.
+
+    The naive form (delete every suspect, then re-fetch in a loop) loses data if a
+    provider fails or the process is killed mid-loop: the ticker ends up empty,
+    invisible to the seam scan, and no scheduled seed fetches enough history to
+    restore it. These tests pin the journalled, per-ticker, recoverable behaviour.
+    """
+
+    @staticmethod
+    def _mkdb(tmp_path):
+        db = tmp_path / "processed.db"
+        con = sqlite3.connect(db)
+        con.execute("CREATE TABLE us_equities_data "
+                    "(ticker TEXT, date TEXT, close REAL, adj_close REAL)")
+        con.execute("CREATE TABLE us_equities_meta (ticker TEXT, schema_version INTEGER)")
+        for t in ("A", "B"):
+            con.execute("INSERT INTO us_equities_data VALUES (?, '2026-01-01', 1.0, 1.0)", (t,))
+            con.execute("INSERT INTO us_equities_meta VALUES (?, 1)", (t,))
+        con.commit()
+        con.close()
+        return db
+
+    @staticmethod
+    def _rows(db, ticker):
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            return con.execute("SELECT COUNT(*) FROM us_equities_data WHERE ticker=?",
+                               (ticker,)).fetchone()[0]
+        finally:
+            con.close()
+
+    def _call(self, tmp_path, monkeypatch, tickers, *, fetch, reprocess):
+        import scripts.data_pipelines.daily_update as du
+
+        monkeypatch.setattr(du, "_full_refetch", fetch)
+        monkeypatch.setattr(du, "_reprocess_from_raw", reprocess)
+        state, pending = {}, {}
+        ok = du.repair_basis_seams(
+            tickers, pd.Timestamp("2026-10-13"), tmp_path, repair=True, max_repairs=10,
+            state_path=tmp_path / "state.json", state=state,
+            pending_path=tmp_path / "pending.json", pending=pending)
+        return ok, state, pending
+
+    def test_successful_repair_records_state_and_clears_journal(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+
+        def fetch(ticker, end, data_root):
+            con = sqlite3.connect(db)
+            con.execute("INSERT INTO us_equities_data VALUES (?, '2026-02-01', 9.0, 9.0)", (ticker,))
+            con.commit()
+            con.close()
+            return 5
+
+        ok, state, pending = self._call(tmp_path, monkeypatch, ["A", "B"],
+                                        fetch=fetch, reprocess=lambda t, dr: True)
+        assert ok is True
+        assert set(state) == {"A", "B"}
+        assert pending == {}                       # journal drained
+        assert self._rows(db, "A") == 1            # old row replaced, not duplicated
+        assert self._rows(db, "B") == 1
+        assert load_repair_state(tmp_path / "pending.json") == {}
+
+    def test_failed_fetch_falls_back_to_raw_and_is_not_lost(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+        reprocessed = []
+
+        def fetch(ticker, end, data_root):
+            if ticker == "B":
+                raise RuntimeError("all providers down")
+            return 5
+
+        def reprocess(ticker, data_root):
+            reprocessed.append(ticker)
+            # offline rebuild restores the pre-repair rows
+            con = sqlite3.connect(db)
+            con.execute("INSERT INTO us_equities_data VALUES (?, '2026-01-01', 2.0, 2.0)", (ticker,))
+            con.commit()
+            con.close()
+            return True
+
+        ok, state, pending = self._call(tmp_path, monkeypatch, ["A", "B"],
+                                        fetch=fetch, reprocess=reprocess)
+        assert ok is False                          # surfaced as a failure
+        assert reprocessed == ["B"]
+        assert self._rows(db, "B") == 1             # B is NOT empty
+        assert "B" not in pending                   # recovered → journal cleared
+        assert state.get("A") and "B" not in state  # B is retried next run
+
+    def test_unrecovered_ticker_stays_journalled(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+
+        def fetch(ticker, end, data_root):
+            if ticker == "B":
+                raise RuntimeError("all providers down")
+            return 5
+
+        ok, state, pending = self._call(tmp_path, monkeypatch, ["A", "B"],
+                                        fetch=fetch, reprocess=lambda t, dr: False)
+        assert ok is False
+        assert "B" in pending
+        # the journal on disk is what a later run heals from
+        assert "B" in load_repair_state(tmp_path / "pending.json")
+        assert self._rows(db, "B") == 0             # exposed, but journalled
+
+    def test_next_run_heals_a_leftover_journal(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+        (tmp_path / "pending.json").write_text('{"B": "2026-10-13"}')
+
+        def fetch(ticker, end, data_root):
+            con = sqlite3.connect(db)
+            con.execute("INSERT INTO us_equities_data VALUES (?, '2026-02-01', 3.0, 3.0)", (ticker,))
+            con.commit()
+            con.close()
+            return 4
+
+        import scripts.data_pipelines.daily_update as du
+        monkeypatch.setattr(du, "_full_refetch", fetch)
+        monkeypatch.setattr(du, "_reprocess_from_raw", lambda t, dr: True)
+        state = {}
+        pending = load_repair_state(tmp_path / "pending.json")
+        ok = du.repair_basis_seams([], pd.Timestamp("2026-10-13"), tmp_path, repair=True,
+                                   max_repairs=10, state_path=tmp_path / "state.json",
+                                   state=state, pending_path=tmp_path / "pending.json",
+                                   pending=pending)
+        assert ok is True
+        assert self._rows(db, "B") == 1             # healed
+        assert load_repair_state(tmp_path / "pending.json") == {}
+
+    def test_journal_is_written_before_the_rows_are_deleted(self, tmp_path, monkeypatch):
+        """A crash between the delete and the re-fetch must still be recoverable."""
+        db = self._mkdb(tmp_path)
+        observed = {}
+
+        def fetch(ticker, end, data_root):
+            observed["journal_during_fetch"] = load_repair_state(tmp_path / "pending.json")
+            raise RuntimeError("killed mid-loop")
+
+        ok, state, pending = self._call(tmp_path, monkeypatch, ["B"],
+                                        fetch=fetch, reprocess=lambda t, dr: False)
+        assert ok is False
+        assert observed["journal_during_fetch"].get("B"), \
+            "the ticker must be journalled before its rows are touched"
+
+    def test_no_repair_leaves_cache_untouched(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+        import scripts.data_pipelines.daily_update as du
+        monkeypatch.setattr(du, "_full_refetch",
+                            lambda *a, **k: pytest.fail("must not fetch"))
+        ok = du.repair_basis_seams(["A", "B"], pd.Timestamp("2026-10-13"), tmp_path,
+                                   repair=False, max_repairs=10,
+                                   state_path=tmp_path / "state.json", state={},
+                                   pending_path=tmp_path / "pending.json", pending={})
+        assert ok is True
+        assert self._rows(db, "A") == 1 and self._rows(db, "B") == 1
+
+    def test_max_repairs_aborts_before_any_delete(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path)
+        import scripts.data_pipelines.daily_update as du
+        monkeypatch.setattr(du, "_full_refetch", lambda *a, **k: pytest.fail("must not fetch"))
+        ok = du.repair_basis_seams(["A", "B"], pd.Timestamp("2026-10-13"), tmp_path,
+                                   repair=True, max_repairs=1,
+                                   state_path=tmp_path / "state.json", state={},
+                                   pending_path=tmp_path / "pending.json", pending={})
+        assert ok is False
+        assert self._rows(db, "A") == 1 and self._rows(db, "B") == 1
