@@ -24,7 +24,9 @@ What it does
    so any ticker with a split in between gets a discontinuity *exactly at the
    seam* (close continuous, adj_close stepping by the split factor, or vice
    versa). A daily incremental refresh recreates this continuously, so the guard
-   is part of the refresh, not an occasional cleanup.
+   is part of the refresh, not an occasional cleanup. The repair is crash-safe:
+   each ticker is journalled to disk before its rows are touched, and a failed
+   re-fetch falls back to the immutable raw store offline.
 5. Optionally (``--with-valuation``, intended for a weekly timer) refresh the
    ``us_fundamentals`` cache and rebuild the point-in-time valuation panel.
 
@@ -207,14 +209,47 @@ def _chunks(start: pd.Timestamp, end: pd.Timestamp) -> list[tuple[pd.Timestamp, 
     return out
 
 
-def seed_universe(universe: str, start: pd.Timestamp, end: pd.Timestamp,
-                  jobs: int, data_root: Path) -> bool:
-    """Seed one universe over [start, end], chunked. True if every chunk succeeded."""
+def _cache_max_date(data_root: Path, identifiers: list[str]) -> pd.Timestamp | None:
+    """Latest cached session across ``identifiers`` (None on a cold cache)."""
+    db = data_root / "processed.db"
+    if not db.exists() or not identifiers:
+        return None
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=60)
+    try:
+        placeholders = ",".join("?" * len(identifiers))
+        row = con.execute(
+            f"SELECT MAX(date) FROM us_equities_data WHERE ticker IN ({placeholders})",
+            tuple(identifiers),
+        ).fetchone()
+    finally:
+        con.close()
+    return pd.Timestamp(row[0]).normalize() if row and row[0] else None
+
+
+def seed_universe(universe: str, end: pd.Timestamp, jobs: int, data_root: Path,
+                  *, fallback_days: int = 30) -> bool:
+    """Bring one universe up to ``end``, starting from whatever the cache holds.
+
+    The start is derived from the cache rather than a fixed trailing window: a
+    fixed window only ever refills that window, so an outage longer than it would
+    leave a hole that never closes (each later run would refill the same short
+    tail). Starting at the cache's own last session means any outage length is
+    caught up, with ``_chunks`` keeping the request bounded.
+    """
+    identifiers = _universe_identifiers(universe)
+    cache_max = _cache_max_date(data_root, identifiers)
+    start = (cache_max - pd.Timedelta(days=1)) if cache_max is not None \
+        else (end - pd.Timedelta(days=fallback_days))
+    if start > end:
+        start = end
+
     spans = _chunks(start, end)
     if not spans:
         print(f"[seed] {universe}: no NYSE sessions in "
               f"{start.date()}..{end.date()} — nothing to do", flush=True)
         return True
+    print(f"[seed] {universe}: cache_max={cache_max.date() if cache_max is not None else 'cold'} "
+          f"→ spanning {start.date()}..{end.date()} in {len(spans)} chunk(s)", flush=True)
     ok = True
     for lo, hi in spans:
         # NB: --data-root is a GLOBAL option and must precede the subcommand.
@@ -275,49 +310,120 @@ def select_suspects(frame: pd.DataFrame, *, move_threshold: float,
     return suspects, skipped
 
 
+def _delete_ticker(db: Path, ticker: str) -> None:
+    con = sqlite3.connect(db, timeout=120)
+    try:
+        con.execute("DELETE FROM us_equities_data WHERE ticker=?", (ticker,))
+        con.execute("DELETE FROM us_equities_meta WHERE ticker=?", (ticker,))
+        con.commit()
+    finally:
+        con.close()
+
+
+def _reprocess_from_raw(ticker: str, data_root: Path) -> bool:
+    """Rebuild one ticker's processed rows from the immutable raw store (offline).
+
+    The raw downloads are never mutated, so this restores the pre-repair series
+    without any network call — the recovery path when a re-fetch fails.
+    """
+    cmd = [sys.executable, "-m", "data_pipelines", "--data-root", str(data_root),
+           "reprocess", "--identifier", ticker]
+    r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+    ok = r.returncode == 0
+    detail = (r.stdout.strip().splitlines() or [r.stderr.strip()[-200:]])[-1]
+    print(f"[seam]   {'recovered' if ok else 'recovery FAILED'} {ticker} from raw: {detail}",
+          file=sys.stdout if ok else sys.stderr, flush=True)
+    return ok
+
+
+def _full_refetch(ticker: str, end: pd.Timestamp, data_root: Path) -> int:
+    import data_pipelines.domains.us_equities  # noqa: F401  (registers the domain)
+    from data_pipelines import fetch_with_meta
+
+    _, meta = fetch_with_meta(identifier=ticker, start="2000-01-01",
+                              end=str(end.date()), data_root=data_root)
+    return meta.row_count
+
+
+def _repair_one(ticker: str, db: Path, end: pd.Timestamp, data_root: Path) -> int:
+    """Delete one ticker and re-fetch its full history from a single response.
+
+    The delete is unconditional even on the heal path: a crash can land either
+    side of it, so healing a journalled ticker must work whether its rows are
+    still present (crash before the delete) or already gone (crash after).
+    """
+    _delete_ticker(db, ticker)
+    return _full_refetch(ticker, end, data_root)
+
+
 def repair_basis_seams(tickers: list[str], end: pd.Timestamp, data_root: Path,
                        *, repair: bool, max_repairs: int, state_path: Path,
-                       state: dict) -> bool:
-    """Drop and fully re-fetch the given tickers so each has ONE basis.
+                       state: dict, pending_path: Path, pending: dict) -> bool:
+    """Re-fetch affected tickers in full so each series has ONE basis.
 
-    A full-history re-fetch in a single provider response is the fix: the
-    incremental merge cannot re-base rows it never re-fetches.
+    Crash-safe by construction. The naive form — delete every suspect, then
+    re-fetch in a loop — is a data-loss bug: a provider failure or a kill mid-loop
+    leaves tickers with ZERO rows, and they cannot self-heal (absent rows are
+    invisible to the seam scan, the state file records only successes, and no
+    scheduled seed fetches enough history to restore them).
+
+    Instead each ticker is:
+      1. journalled to ``pending`` (fsynced to disk) BEFORE anything is deleted,
+      2. deleted on its own,
+      3. re-fetched in full; on success the journal entry is cleared,
+      4. on failure, recovered offline from the immutable raw store via
+         ``data_pipelines reprocess``, and left in the journal if that fails too.
+    Any journal entries left by a previous crash are healed at the start of the
+    next run, so the window of exposure is one ticker and it is self-closing.
     """
-    if not tickers:
+    if not tickers and not pending:
         print("[seam] nothing to repair", flush=True)
         return True
     if not repair:
         print("[seam] --no-repair set; leaving the cache untouched", flush=True)
         return True
+
+    db = data_root / "processed.db"
+    today = pd.Timestamp.now("UTC").normalize().strftime("%Y-%m-%d")
+    ok = True
+
+    # Heal anything a previous run left half-done.
+    for t in sorted(pending):
+        print(f"[seam] healing {t} (interrupted by an earlier run)", flush=True)
+        try:
+            rows = _repair_one(t, db, end, data_root)
+            print(f"[seam]   healed {t}: {rows} rows", flush=True)
+            state[t] = today
+            pending.pop(t, None)
+            save_repair_state(pending_path, pending)
+        except Exception as e:  # noqa: BLE001
+            ok &= _reprocess_from_raw(t, data_root)
+            if ok:
+                pending.pop(t, None)
+                save_repair_state(pending_path, pending)
+            else:
+                print(f"[seam]   {t} still unresolved: {e}", file=sys.stderr, flush=True)
+
     if len(tickers) > max_repairs:
         print(f"[seam] ABORT: {len(tickers)} exceeds --max-repairs {max_repairs}; "
               "refusing a bulk rewrite. Investigate before raising the cap.",
               file=sys.stderr, flush=True)
         return False
 
-    db = data_root / "processed.db"
-    con = sqlite3.connect(db, timeout=120)
-    try:
-        con.executemany("DELETE FROM us_equities_data WHERE ticker=?", [(t,) for t in tickers])
-        con.executemany("DELETE FROM us_equities_meta WHERE ticker=?", [(t,) for t in tickers])
-        con.commit()
-    finally:
-        con.close()
-
-    import data_pipelines.domains.us_equities  # noqa: F401  (registers the domain)
-    from data_pipelines import fetch_with_meta
-
-    ok = True
-    today = pd.Timestamp.now("UTC").normalize().strftime("%Y-%m-%d")
     for t in tickers:
+        pending[t] = today
+        save_repair_state(pending_path, pending)  # durable BEFORE the delete
         try:
-            _, meta = fetch_with_meta(identifier=t, start="2000-01-01",
-                                      end=str(end.date()), data_root=data_root)
-            print(f"[seam]   re-fetched {t}: {meta.row_count} rows", flush=True)
+            rows = _repair_one(t, db, end, data_root)
+            print(f"[seam]   re-fetched {t}: {rows} rows", flush=True)
             state[t] = today
+            pending.pop(t, None)
         except Exception as e:  # noqa: BLE001
-            ok = False
             print(f"[seam]   FAILED {t}: {e}", file=sys.stderr, flush=True)
+            ok = False
+            if _reprocess_from_raw(t, data_root):
+                pending.pop(t, None)  # cache restored (older basis); retried next run
+        save_repair_state(pending_path, pending)
     save_repair_state(state_path, state)
     return ok
 
@@ -361,6 +467,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="|1-day move| that flags a ticker for a look (default 0.40)")
     ap.add_argument("--max-repairs", type=int, default=150,
                     help="safety cap on how many tickers one run may re-fetch")
+    ap.add_argument("--fallback-days", type=int, default=30,
+                    help="fetch depth when the cache is cold (default 30)")
     ap.add_argument("--with-valuation", action="store_true",
                     help="also refresh us_fundamentals and rebuild the valuation panel")
     args = ap.parse_args(argv)
@@ -374,26 +482,39 @@ def main(argv: list[str] | None = None) -> int:
 
     ok = True
     for u in args.universes:
-        # The trailing window is BACKFILL tolerance, not a re-state: `fetch` only
-        # fills gaps, it never rewrites rows already cached, so a run after several
-        # missed days still catches up. Bars providers re-state later are handled
-        # by the basis-step guard below — the only thing allowed to rewrite history
-        # (a partial rewrite is precisely what CREATES a basis seam, so it is never
-        # done speculatively).
-        ok &= seed_universe(u, end - pd.Timedelta(days=10), end, args.jobs, data_root)
+        # The start is derived from the cache's own last session (see
+        # seed_universe), so any outage length is caught up rather than only the
+        # last few days. `fetch` fills gaps only — it never rewrites cached rows —
+        # so provider re-statements are left to the basis-step guard below, which
+        # is the only thing allowed to rewrite history (a partial rewrite is
+        # precisely what CREATES a basis seam, so it is never done speculatively).
+        ok &= seed_universe(u, end, args.jobs, data_root,
+                            fallback_days=args.fallback_days)
 
     identifiers = sorted({i for u in args.universes for i in _universe_identifiers(u)})
     frame = _scan_window(data_root, identifiers, args.lookback_days)
     state_path = data_root / ".daily_update_repairs.json"
+    pending_path = data_root / ".daily_update_pending.json"
     state = load_repair_state(state_path)
+    pending = load_repair_state(pending_path)
     suspects, _skipped = select_suspects(frame, move_threshold=args.move_threshold,
                                         state=state, lookback_days=args.lookback_days)
     ok &= repair_basis_seams(suspects, end, data_root, repair=not args.no_repair,
                              max_repairs=args.max_repairs,
-                             state_path=state_path, state=state)
+                             state_path=state_path, state=state,
+                             pending_path=pending_path, pending=pending)
 
     if args.with_valuation:
-        ok &= refresh_fundamentals_and_valuation(data_root, end)
+        # The panel builder reads `<repo-root>/data` and resolves the fundamentals
+        # cache through the library default, so it cannot follow a custom root.
+        # Fail loudly rather than silently rebuilding from the wrong cache.
+        if data_root.resolve() != (REPO / "data").resolve():
+            print(f"[valuation] --with-valuation requires the default data root "
+                  f"({REPO / 'data'}); got {data_root}. Run the valuation leg "
+                  "separately or use the default root.", file=sys.stderr, flush=True)
+            ok = False
+        else:
+            ok &= refresh_fundamentals_and_valuation(data_root, end)
 
     print(f"[done] {'OK' if ok else 'WITH FAILURES'}", flush=True)
     return 0 if ok else 1

@@ -26,8 +26,11 @@ already fresh when scoring starts.
    `America/New_York` terms. Deliberately ET-based: IST is a calendar day ahead
    of ET for the entire US session, so a local-date check can count a still-open
    session as finished.
-3. Seed each universe over a short trailing window (backfill tolerance; `fetch`
-   only fills gaps, it never rewrites cached rows).
+3. Seed each universe from **the cache's own last session** up to `end`.
+   Deliberately not a fixed trailing window: a fixed window can only ever refill
+   itself, so an outage longer than it would leave a hole that never closes. Spans
+   over 90 sessions are chunked, which also keeps them off the domain's slow
+   Stooq-first "big gap" tier.
 4. **Corporate-action seam guard.** Rows fetched at one time sit on the
    adjustment basis then in force; rows fetched later on the basis in force now.
    Any ticker with a split in between gets a discontinuity exactly at the seam —
@@ -38,8 +41,22 @@ already fresh when scoring starts.
    affected tickers' **full history from a single provider response** so each
    series has one basis. Recently-repaired tickers are skipped for the scan
    window so a genuine large move is not re-fetched daily.
+
+   The repair is **crash-safe**. Each ticker is journalled to
+   `data/.daily_update_pending.json` (written to disk) *before* its rows are
+   touched, deleted on its own, then re-fetched. If the re-fetch fails, the
+   series is rebuilt offline from the immutable raw store
+   (`data_pipelines reprocess`); if that also fails the journal entry is left and
+   healed at the start of the next run. This matters because the naive form —
+   delete everything, then re-fetch in a loop — loses data permanently: a ticker
+   with zero rows is invisible to the seam scan, the state file records only
+   successes, and no scheduled seed fetches enough history to restore it.
+
 5. `--with-valuation` additionally refreshes `us_fundamentals` and rebuilds
-   `results/valuation/data/valuation_panel.parquet`.
+   `results/valuation/data/valuation_panel.parquet`. That leg requires the
+   default `--data-root` (the panel builder reads `<repo-root>/data` and resolves
+   fundamentals through the library default); a custom root fails loudly rather
+   than silently rebuilding from the wrong cache.
 
 Exit status is non-zero if any seed, repair or optional step failed.
 
