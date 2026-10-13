@@ -322,6 +322,11 @@ def _delete_ticker(db: Path, ticker: str) -> None:
 
 def _ticker_row_count(data_root: Path, ticker: str) -> int:
     db = data_root / "processed.db"
+    # Deliberately a read-write open, not ?mode=ro. A read-only connection to a
+    # WAL database needs the -shm file and fails outright when it is missing
+    # ("unable to open database file") — precisely the post-crash state this
+    # recovery path exists to handle. Read-write is harmless here: the repair is
+    # the only writer, and a plain SELECT takes no lock that matters.
     con = sqlite3.connect(db, timeout=60)
     try:
         return con.execute("SELECT COUNT(*) FROM us_equities_data WHERE ticker=?",
