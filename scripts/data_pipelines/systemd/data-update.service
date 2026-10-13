@@ -1,0 +1,22 @@
+[Unit]
+Description=Daily us_equities cache refresh (tracked universes + corporate-action seam guard)
+# The seed needs the data provider; skip the run if there is no network rather
+# than recording a failed refresh.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# EDIT this path for your machine (the repo root).
+WorkingDirectory=/path/to/agent-driven-investment
+# Refreshes sp500 + russell1000 + nasdaq100 to the last COMPLETED NYSE session
+# (computed in ET, so a machine-local date that has rolled over cannot count a
+# still-open US session as done), then repairs any corporate-action basis seam
+# it finds. Idempotent: a run with nothing new is a fast no-op.
+ExecStart=/path/to/agent-driven-investment/.venv/bin/python -m scripts.data_pipelines.daily_update
+# The seed walks ~1,000 identifiers; a generous ceiling guards a wedged run.
+TimeoutStartSec=3600
+Nice=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Fire the weekly fundamentals + valuation-panel refresh
+
+[Timer]
+# Saturday morning: the trading week is finalized and the heavier fundamentals /
+# panel build runs off the daily critical path.
+OnCalendar=Sat 08:00
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

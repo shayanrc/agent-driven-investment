@@ -1,0 +1,20 @@
+[Unit]
+Description=Weekly fundamentals + valuation-panel refresh (with the daily us_equities update)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# EDIT this path for your machine (the repo root).
+WorkingDirectory=/path/to/agent-driven-investment
+# Runs the daily refresh AND the fundamentals/valuation leg. The valuation panel
+# is point-in-time on filed_date (quarterly data), so weekly is ample — it only
+# needs to be rebuilt as the fundamentals cache grows. This run also picks up
+# Friday's US session, which the Mon..Fri daily timer cannot see until Monday.
+ExecStart=/path/to/agent-driven-investment/.venv/bin/python -m scripts.data_pipelines.daily_update --with-valuation
+# fundamentals (us_fundamentals/sp500) + a full panel rebuild are the slow part.
+TimeoutStartSec=7200
+Nice=10
+
+[Install]
+WantedBy=default.target

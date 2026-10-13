@@ -1,0 +1,17 @@
+[Unit]
+Description=Fire the daily us_equities cache refresh on weekday mornings
+
+[Timer]
+# 07:30 local, an hour ahead of the predictions cadence (08:30) so the data is
+# already fresh when it scores. The prior US session is finalized well before
+# this in any timezone east of the US.
+OnCalendar=Mon..Fri 07:30
+# Not-always-on machine: run the most recent missed occurrence on next
+# boot/wake/login. The updater backfills every missed session, so a multi-day
+# gap is caught up correctly on the next run.
+Persistent=true
+# Jitter so it does not hit the provider at exactly the same second daily.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
