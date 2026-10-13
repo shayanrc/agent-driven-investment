@@ -320,20 +320,40 @@ def _delete_ticker(db: Path, ticker: str) -> None:
         con.close()
 
 
+def _ticker_row_count(data_root: Path, ticker: str) -> int:
+    db = data_root / "processed.db"
+    con = sqlite3.connect(db, timeout=60)
+    try:
+        return con.execute("SELECT COUNT(*) FROM us_equities_data WHERE ticker=?",
+                           (ticker,)).fetchone()[0]
+    finally:
+        con.close()
+
+
 def _reprocess_from_raw(ticker: str, data_root: Path) -> bool:
     """Rebuild one ticker's processed rows from the immutable raw store (offline).
 
     The raw downloads are never mutated, so this restores the pre-repair series
     without any network call — the recovery path when a re-fetch fails.
+
+    Success is judged by whether rows actually came back, NOT by the exit code:
+    ``data_pipelines reprocess`` returns 0 unconditionally, including its
+    "no raw files; skipping" branch and the case where every raw file fails to
+    parse and nothing is written. Trusting the exit code would pop the journal
+    entry on a no-op and leave the ticker empty and invisible to the seam scan —
+    the very silent-loss class this recovery path exists to prevent.
     """
     cmd = [sys.executable, "-m", "data_pipelines", "--data-root", str(data_root),
            "reprocess", "--identifier", ticker]
     r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
-    ok = r.returncode == 0
-    detail = (r.stdout.strip().splitlines() or [r.stderr.strip()[-200:]])[-1]
-    print(f"[seam]   {'recovered' if ok else 'recovery FAILED'} {ticker} from raw: {detail}",
-          file=sys.stdout if ok else sys.stderr, flush=True)
-    return ok
+    rows = _ticker_row_count(data_root, ticker)
+    if r.returncode != 0 or rows == 0:
+        detail = (r.stdout.strip().splitlines() or [r.stderr.strip()[-200:]])[-1]
+        print(f"[seam]   recovery FAILED {ticker} (rc={r.returncode}, rows={rows}): {detail}",
+              file=sys.stderr, flush=True)
+        return False
+    print(f"[seam]   recovered {ticker} from raw: {rows} rows", flush=True)
+    return True
 
 
 def _full_refetch(ticker: str, end: pd.Timestamp, data_root: Path) -> int:
@@ -397,11 +417,13 @@ def repair_basis_seams(tickers: list[str], end: pd.Timestamp, data_root: Path,
             pending.pop(t, None)
             save_repair_state(pending_path, pending)
         except Exception as e:  # noqa: BLE001
-            ok &= _reprocess_from_raw(t, data_root)
-            if ok:
+            # Per-ticker result, not the cumulative `ok`: one failed heal must not
+            # leave every later successful heal stuck in the journal.
+            if _reprocess_from_raw(t, data_root):
                 pending.pop(t, None)
                 save_repair_state(pending_path, pending)
             else:
+                ok = False
                 print(f"[seam]   {t} still unresolved: {e}", file=sys.stderr, flush=True)
 
     if len(tickers) > max_repairs:

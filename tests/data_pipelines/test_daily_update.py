@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+import types
 
 import pandas as pd
 import pytest
@@ -438,3 +439,86 @@ class TestRepairCrashSafety:
                                    pending_path=tmp_path / "pending.json", pending={})
         assert ok is False
         assert self._rows(db, "A") == 1 and self._rows(db, "B") == 1
+
+
+class TestReprocessRecoverySemantics:
+    """`_reprocess_from_raw` must judge success by rows restored, not exit code.
+
+    `data_pipelines reprocess` returns 0 unconditionally — including its
+    "no raw files; skipping" branch and the case where every raw file fails to
+    parse. Treating that as recovery pops the journal entry and leaves the ticker
+    empty and invisible to the seam scan: the same silent-loss class the recovery
+    path exists to prevent. These tests exercise the REAL function (the repair
+    tests stub it), so its return semantics are actually pinned.
+    """
+
+    def _mkdb(self, tmp_path, tickers=("A",)):
+        db = tmp_path / "processed.db"
+        con = sqlite3.connect(db)
+        con.execute("CREATE TABLE us_equities_data "
+                    "(ticker TEXT, date TEXT, close REAL, adj_close REAL)")
+        con.execute("CREATE TABLE us_equities_meta (ticker TEXT, schema_version INTEGER)")
+        for t in tickers:
+            con.execute("INSERT INTO us_equities_data VALUES (?, '2026-01-01', 1.0, 1.0)", (t,))
+            con.execute("INSERT INTO us_equities_meta VALUES (?, 1)", (t,))
+        con.commit()
+        con.close()
+        return db
+
+    def _stub_run(self, monkeypatch, du, *, returncode, writes_rows_for=None, db=None):
+        def fake_run(*a, **k):
+            if writes_rows_for and db is not None:
+                con = sqlite3.connect(db)
+                con.execute("INSERT INTO us_equities_data VALUES (?, '2026-01-01', 5.0, 5.0)",
+                            (writes_rows_for,))
+                con.commit()
+                con.close()
+            return types.SimpleNamespace(returncode=returncode,
+                                         stdout="reprocess: no raw files; skipping", stderr="")
+        monkeypatch.setattr(du.subprocess, "run", fake_run)
+
+    def test_rc0_with_no_rows_written_is_not_recovery(self, tmp_path, monkeypatch):
+        self._mkdb(tmp_path, tickers=())
+        import scripts.data_pipelines.daily_update as du
+        self._stub_run(monkeypatch, du, returncode=0)  # rc=0, writes nothing
+        assert du._reprocess_from_raw("B", tmp_path) is False
+        assert du._ticker_row_count(tmp_path, "B") == 0
+
+    def test_rc0_with_rows_written_is_recovery(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path, tickers=())
+        import scripts.data_pipelines.daily_update as du
+        self._stub_run(monkeypatch, du, returncode=0, writes_rows_for="B", db=db)
+        assert du._reprocess_from_raw("B", tmp_path) is True
+        assert du._ticker_row_count(tmp_path, "B") == 1
+
+    def test_nonzero_rc_is_not_recovery_even_if_rows_exist(self, tmp_path, monkeypatch):
+        db = self._mkdb(tmp_path, tickers=("B",))
+        import scripts.data_pipelines.daily_update as du
+        self._stub_run(monkeypatch, du, returncode=2)
+        assert du._reprocess_from_raw("B", tmp_path) is False
+
+
+class TestHealLoopPerTicker:
+    def test_one_failed_heal_does_not_strand_later_successes(self, tmp_path, monkeypatch):
+        db = TestRepairCrashSafety._mkdb(tmp_path)
+        (tmp_path / "pending.json").write_text('{"A": "2026-10-13", "B": "2026-10-13"}')
+        import scripts.data_pipelines.daily_update as du
+
+        def fetch(*a, **k):
+            raise RuntimeError("providers down")
+
+        def reprocess(ticker, data_root):
+            return ticker == "B"          # A cannot be recovered, B can
+
+        monkeypatch.setattr(du, "_full_refetch", fetch)
+        monkeypatch.setattr(du, "_reprocess_from_raw", reprocess)
+        state = {}
+        pending = load_repair_state(tmp_path / "pending.json")
+        ok = du.repair_basis_seams([], pd.Timestamp("2026-10-13"), tmp_path, repair=True,
+                                   max_repairs=10, state_path=tmp_path / "state.json",
+                                   state=state, pending_path=tmp_path / "pending.json",
+                                   pending=pending)
+        assert ok is False                       # A is unresolved
+        assert "A" in pending                    # stays journalled
+        assert "B" not in pending                # NOT stranded by A's failure
+        assert load_repair_state(tmp_path / "pending.json") == {"A": "2026-10-13"}
